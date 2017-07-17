@@ -8,6 +8,7 @@
 using UnityEngine;
 
 using SenseGloveCs;
+using System;
 
 /// <summary>
 /// A SenseGlove object with Unity Wrappers and other fun stuff! Used by applications that depend on the SenseGlove.
@@ -18,18 +19,23 @@ public class SenseGlove_Object : MonoBehaviour
     //--------------------------------------------------------------------------------------------------------------------------
     // Publicly visible attributes
 
-    /// <summary> Determines if the DeviceScanner of Hard-Coded connection is made. </summary>
+    /// <summary>Determines if this SenseGlove_Object will attempt to connect on startup, or wait until the RetryConnection method is called.</summary>
     [Header("Communication Settings")]
-    [Tooltip("Set this value to true if you want the SenseGlove to look for the first L/R hand it finds. If turned off, it will automatically connect to the specified port")]
-    public bool automaticMode = true;
+    [Tooltip("Determines if this SenseGlove_Object will attempt to connect on startup, or wait until the RetryConnection method is called.")]
+    public bool connectOnStartUp = true;
     
-    /// <summary> Indicates if this is or will be a Left or Right hand. </summary>
-    [Tooltip("Indicates that this glove is a L or R hand (if automaticMode is false) or if it should automatically connect to the first left or right hand (if automaticMode is true) ")]
+    /// <summary> The logic used to connect to this SenseGlove. </summary>
+    [Tooltip("The logic used to connect to this SenseGlove.")]
+    public ConnectionMethod connectionMethod = ConnectionMethod.FindNextGlove;
+
+    /// <summary> The address of this glove (as found in the Device Manager) to which this SenseGlove is connected. </summary>
+    [Tooltip("The address of this glove (as found in the Device Manager) to which this SenseGlove is connected.")]
+    public string address = "COM3";
+
+    /// <summary> Indicates if this glove is a left or right hand. </summary>
+    [Tooltip("Indicates if this glove is a left or right hand. ")]
     public bool rightHand = true;
 
-    /// <summary> The address of the SenseGlove's Communicator. </summary>
-    [Tooltip("The (virtual) COM Port that this SenseGlove will connect to (if automaticMode is false), or the port the glove is currently conencted to (if automaticMode is true).")]
-    public string COMPort = "COM3";
 
     /// <summary> Determines up to which level the Kinematics of the glove are Updated. </summary>
     [Header("Hand Model Settings")]
@@ -56,11 +62,7 @@ public class SenseGlove_Object : MonoBehaviour
     /// <summary> A 'Briefcase' representing all of the Data that can be obtained from this SenseGlove. </summary>
     private GloveData gloveData;
 
-    /// <summary> Used in the Update function to run a method in the DLL which parses the glove data for initialization. </summary>
-    private bool finishedSetup = false;
-
-    /// <summary> Wether or not this SenseGlove is allowed to update itself. Used to save calculation power when the glove is disconnected. </summary>
-    private bool canUpdate = false;
+    private bool calibratedWrist = false;
 
     /// <summary>  Time that has elapsed since the Setup was called. Can be used to delay the Update Finction by setting it back to 0. </summary>
     private float elapsedTime = 0;
@@ -71,13 +73,16 @@ public class SenseGlove_Object : MonoBehaviour
     /// <summary> Only true during the frame where the setup finishes. </summary>
     private bool gloveReady = false;
 
-    /// <summary> Determines if the manual wrist correction has been assigned. </summary>
-    private bool wristCalibrated = false;
-
     /// <summary> Indicates if Calibration has already started. </summary>
     private bool calibrating = false;
     /// <summary> Indicates which of the calibration steps is currently being performed. </summary>
     private int calSteps = 0;
+
+    /// <summary> Determines if a connection should be made. </summary>
+    private bool standBy = false;
+
+    /// <summary> Ensures we send a debug message only once. </summary>
+    private bool canReport = true;
 
     //--------------------------------------------------------------------------------------------------------------------------
     // Events
@@ -112,135 +117,101 @@ public class SenseGlove_Object : MonoBehaviour
     // Use this for initialization
     void Start()
     {
-        RetryConnection();
+        SenseGloveCs.DeviceScanner.pingTime = 200;
+        SenseGloveCs.DeviceScanner.scanDelay = 500;
+        if (this.connectOnStartUp)
+        {
+            RetryConnection();
+        }
+        else
+        {
+            this.Disconnect();
+        }
     }
 
     // Update is called once per frame
     void Update()
     {
-        if (gloveReady) { gloveReady = false; } //return the boolean to false, ensuring that it is only for one update, allowing us to use it like an event.
-
-        if (canUpdate)
+        if (!standBy)
         {
-            if (elapsedTime < setupTime)
+            if (this.elapsedTime < SenseGlove_Object.setupTime) { this.elapsedTime += Time.deltaTime; }
+            else if (this.glove == null) //No connection yet...
             {
-                elapsedTime += Time.deltaTime;
-            }
-            else if (!finishedSetup)
-            {
-                if (automaticMode)
+                if (this.connectionMethod == ConnectionMethod.HardCoded)
                 {
-                    IODevice[] devices = DeviceScanner.GetDevices();
-                    if (devices.Length > 0)
-                    {
-                        for (int i = 0; i < devices.Length; i++)
-                        {
-                            GloveData SD = ((SenseGlove)devices[i]).Update(Kinematics.GlovePositions, false);
-                            if (devices[i] is SenseGlove && ((SenseGlove)devices[i]).IsRight() == this.rightHand)
-                            {
-                                glove = (SenseGlove)devices[i];
-                                this.gloveData = SD;
-                            }
-                        }
-                        if (glove == null) //the glove is still null even though we've gone through all of them
-                        {
-                            if (rightHand)
-                            {
-                                Debug.Log("WARNING : No right-handed gloves found...");
-                            }
-                            else
-                            {
-                                Debug.Log("WARNING : No left-handed gloves found...");
-                            }
-                            elapsedTime = 0;
-                        }
-                        else
-                        {
-                            Debug.Log("Connected to a SenseGlove with ID " + glove.communicator.deviceID + " on " + glove.communicator.Address());
-                            if (!gloveReady)
-                            {
-                                GloveLoaded(); //raise the gloveloaded event.
-                            }
-                            gloveReady = true;
-                            finishedSetup = true;
-                        }
-                    }
-                    else
-                    {
-                        elapsedTime = 0; //no glove(s) detected....Keep searching again?
-                        Debug.Log("Looking for SenseGlove...");
-                    }
+                    //no glove was ever assigned...
+                    this.RetryConnection(); //keep trying!
                 }
                 else
                 {
-                    if (glove == null)
-                    {
-                        if (this.COMPort.Length > 4 && this.COMPort.Length < 8) { this.COMPort = "\\\\.\\" + this.COMPort; } //Unity port name correction.
-                        Communicator Teensy = new SerialCommunicator(this.COMPort);
-                        Teensy.Connect();
-                        if (Teensy.IsConnected())
-                        {
-                            //Debug.Log("Connected to a SenseGlove on " + Teensy.Address());
-                            this.glove = new SenseGlove(Teensy);
-                        }
-                        else
-                        {
-                            Debug.Log("WARNING : Could not connect to the SenseGlove on " + Teensy.Address() + ".");
-                        }
-                    }
-                    else if (glove.IsConnected())
-                    {
-                        gloveData = glove.Update(Kinematics.GlovePositions, false);
-                        gloveReady = true;
-                        finishedSetup = true;
-                        this.SetupWrist();
-                    }
+                    SenseGlove myGlove = ExtractSenseGlove(SenseGloveCs.DeviceScanner.GetDevices());
+                    if (myGlove != null) { this.glove = myGlove; } //The glove matches our parameters!
                     else
                     {
-                        //the glove has disconnected D:
-                        RetryConnection();
+                        if (this.canReport)
+                        {
+                            string message = this.gameObject.name + " looking for SenseGlove...";
+                            if (this.connectionMethod == ConnectionMethod.FindNextLeftHand)
+                            {
+                                message = this.gameObject.name + " looking for left-handed SenseGlove...";
+                            }
+                            else if (this.connectionMethod == ConnectionMethod.FindNextRightHand)
+                            {
+                                message = this.gameObject.name + " looking for right-handed SenseGlove...";
+                            }
+                            SenseGlove_Debugger.Log(message);
+                            this.canReport = false;
+                        }
+                        this.elapsedTime = 0;
                     }
                 }
             }
-            else if (glove != null)
+            else if (this.connectionMethod == ConnectionMethod.HardCoded && !this.glove.IsConnected())
+            {   //lost connection :(
+                this.canReport = true;
+                this.RetryConnection(); //keep trying!
+            }
+            else if (!gloveReady)
             {
-                if (glove.gloveData.dataLoaded && !wristCalibrated)
+                if (this.glove.GetData(false).dataLoaded)
                 {
+                    bool runSetup = this.gloveData == null; //used to raise event only once!
+                    this.gloveData = this.glove.GetData(false); //get the latest data without calculating anything.
                     this.SetupWrist();
-                    wristCalibrated = true;
+                    this.calibratedWrist = false;
+                    this.gloveReady = true;
+                    if (runSetup)
+                    {
+                        this.GloveLoaded();  //raise the event!
+                    }
                 }
+            }
+            else //glove != null && gloveReady!
+            {
+                //Update to the latest GloveData.
+                Quaternion lowerArm = this.foreArm != null ? this.foreArm.transform.rotation : Quaternion.identity;
+                this.gloveData = this.glove.Update(this.updateTo, this.updateWrist, SenseGlove_Util.ToQuaternion(lowerArm), this.checkGestures);
 
-
-                //Update the Glove every frame, using the correct input.
-                float[] foreArmRotation;
-                if (foreArm == null)
+                //Calibrate once more after reconnecting to the glove.
+                if (!calibratedWrist)
                 {
-                    foreArmRotation = Quaternions.Identity();
+                    this.CalibrateWrist();
+                    this.calibratedWrist = true;
                 }
-                else
+
+                //Update the public values automatically.
+                if (connectionMethod != ConnectionMethod.HardCoded)
                 {
-                    foreArmRotation = SenseGlove_Util.ToQuaternion(this.foreArm.transform.rotation);
+                    this.address = glove.communicator.Address();
                 }
-                gloveData = glove.Update(this.updateTo, this.updateWrist, foreArmRotation, this.checkGestures);
-                //Debug.Log( SenseGlove_Util.ToString( glove.gloveData.gloveValues[1] ));
-
-                //Update the public values, based on the detection mode.
-                if (automaticMode) { this.COMPort = glove.communicator.Address(); }
-                else { this.rightHand = glove.IsRight(); }
-
-                //if (glove.IsConnected())
-                //{
-                //    Debug.Log("The glove is still connected!");
-                //}
-                //else
-                //{
-                //    Debug.Log("The glove is no longer connected...");
-                //}
-
-
+                this.rightHand = glove.IsRight();
+                
             }
         }
+
+
     }
+
 
     // OnApplicationQuit is called when the game shuts down.
     void OnApplicationQuit()
@@ -249,13 +220,43 @@ public class SenseGlove_Object : MonoBehaviour
         if (glove != null)
         {
             glove.Disconnect();
-            Debug.Log("Disconnected the SenseGlove on " + glove.communicator.Address());
+            SenseGlove_Debugger.Log("Disconnected the SenseGlove on " + glove.communicator.Address());
         }
-        DeviceScanner.CleanUp();
+        SenseGloveCs.DeviceScanner.CleanUp();
     }
 
     //------------------------------------------------------------------------------------------------------------------------------------
     // Communication methods.
+
+    /// <summary>
+    /// Extract a SenseGlove matching the parameters of this SenseGlove_Object from a list retieved by the SenseGloveCs.DeviceScanner.
+    /// </summary>
+    /// <param name="devices"></param>
+    /// <returns></returns>
+    private SenseGlove ExtractSenseGlove(SenseGloveCs.IODevice[] devices)
+    {
+        for (int i = 0; i < devices.Length; i++)
+        {
+            if (devices[i] is SenseGlove)
+            {
+                SenseGlove tempGlove = ((SenseGlove)devices[i]);
+                GloveData tempData = tempGlove.GetData(false);
+                //SenseGlove_Debugger.Log("Dataloaded = " + tempData.dataLoaded + ". IsUsed = " + SenseGlove_Manager.IsUsed(tempData.deviceID) + ". isRight = " + tempData.isRight);
+                if (tempData.dataLoaded && !SenseGlove_Manager.IsUsed(tempData.deviceID))
+                {   //the SenseGlove is done loading data AND is not already in memory
+
+                    if ( (this.connectionMethod == ConnectionMethod.FindNextGlove) 
+                        || (this.connectionMethod == ConnectionMethod.FindNextLeftHand && !tempData.isRight)
+                        || (this.connectionMethod == ConnectionMethod.FindNextRightHand && tempData.isRight) )
+                    {
+                        return tempGlove;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
 
     /// <summary>
     /// Disconnect the glove and stop updating until the RetryConnection is called.
@@ -263,12 +264,13 @@ public class SenseGlove_Object : MonoBehaviour
     /// </summary>
     public void Disconnect()
     {
-        canUpdate = false;
-        gloveReady = false;
-        if (glove != null)
+        this.gloveReady = false;
+        if (this.gloveData != null)
         {
-            glove = null; //if done via DeviceScanner, the destructor should not be called. Else the destructor will be called and the connection will end.
+            SenseGlove_Manager.SetUsed(this.gloveData.deviceID, false);
         }
+        this.glove = null; //The DeviceScanner will still keep them, specifically their communicator, in memory.
+        this.standBy = true;
     }
 
     /// <summary> 
@@ -277,28 +279,49 @@ public class SenseGlove_Object : MonoBehaviour
     /// </summary>
     public void RetryConnection()
     {
-        if (glove != null)
+        this.Disconnect();
+        if (this.connectionMethod != ConnectionMethod.HardCoded)
         {
-            glove = null;
+            if (!SenseGloveCs.DeviceScanner.IsScanning()) { SenseGloveCs.DeviceScanner.StartScanning(true); }
         }
-
-        if (automaticMode)
+        else //we're dealing with a custom connection!
         {
-            if (!DeviceScanner.IsScanning())
+            if (canReport)
             {
-                DeviceScanner.StartScanning(true); //Start the DeviceScanner if it is not already running.
+                SenseGlove_Debugger.Log("Attempting to connect to " + this.address);
+            }
+            Communicator PCB = null;
+            if (this.address.Contains("COM")) //Serial connections
+            {
+                if (this.address.Length > 4 && this.address.Length < 6) { this.address = "\\\\.\\" + this.address; }
+                PCB = new SerialCommunicator(this.address);
+            }
+            if (PCB != null)
+            {
+                PCB.Connect();
+                if (PCB.IsConnected())
+                {
+                    this.glove = new SenseGlove(PCB);
+                }
+                else if (canReport)
+                {
+                    SenseGlove_Debugger.Log("ERROR: Could not connect to " + this.address);
+                    canReport = false;
+                }
+            }
+            else if (canReport)
+            {
+                Debug.Log("ERROR: " + this.address + " is not a valid address.");
+                canReport = false;
             }
         }
 
-        elapsedTime = 0;
-        gloveReady = false;
-        canUpdate = true;
-        finishedSetup = false;
+
+        this.elapsedTime = 0;
+        this.standBy = false;
     }
 
-    /// <summary>
-    /// Check if the GloveReady flag is up. Use this function like an event in the Update() function : if ( mySenseGloveObject.GloveReady() ) { doSomeSetupStuff; } ) 
-    /// </summary>
+    /// <summary> Check if this glove's setup is completed. A.k.a. The glove is loaded. </summary>
     /// <returns></returns>
     public bool GloveReady()
     {
@@ -309,12 +332,13 @@ public class SenseGlove_Object : MonoBehaviour
     /// Check if this glove's setup is completed. A.k.a. The glove is loaded.
     /// </summary>
     /// <returns></returns>
+    [Obsolete("Replaced with the GloveReady function.")]
     public bool SetupFinished()
     {
-        return this.finishedSetup;
+        return this.gloveReady;
     }
 
-    /// <summary> Manually assign IMU Correction </summary>
+    /// <summary> Manually assign IMU Correction for old firmware versions. </summary>
     public void SetupWrist()
     {
         if (this.glove != null && this.glove.gloveData.dataLoaded)
@@ -329,20 +353,30 @@ public class SenseGlove_Object : MonoBehaviour
                 if (ID.Contains("120101"))
                 {
                     this.glove.gloveData.wrist.SetHardwareOrientation(Quaternions.FromEuler(Mathf.PI, 0, 0)); //correction for glove 1
-                    Debug.Log("Glove Version v2.19 or earlier. Adding Hardware Compensation");
+                    SenseGlove_Debugger.Log("Firmware Version v2.19 or earlier. Adding Hardware Compensation");
                 }
                 else if (ID.Contains("120203"))
                 {
                     this.glove.gloveData.wrist.SetHardwareOrientation(Quaternions.FromEuler(0, 0, Mathf.PI / 2.0f)); //correction?
-                    Debug.Log("Glove Version v2.19 or earlier. Adding Hardware Compensation");
+                    SenseGlove_Debugger.Log("Firmware Version v2.19 or earlier. Adding Hardware Compensation");
                 }
                 else if (ID.Contains("120307") || ID.Contains("120204") || ID.Contains("120310") || ID.Contains("120309") || ID.Contains("120311") || ID.Contains("120312"))
                 {
                     this.glove.gloveData.wrist.SetHardwareOrientation(Quaternions.FromEuler(0, 0, Mathf.PI)); //correction for glove 7 & 4?  
-                    Debug.Log("Glove Version v2.19 or earlier. Adding Hardware Compensation");
+                    SenseGlove_Debugger.Log("Firmware Version v2.19 or earlier. Adding Hardware Compensation");
                 }
             }
         }
+    }
+
+
+    /// <summary> Call the CalibrationFinished event when the calculations within the DLL are finished. </summary>
+    /// <param name="source"></param>
+    /// <param name="args"></param>
+    private void Glove_OnFingerCalibrationFinished(object source, System.EventArgs args)
+    {
+        this.gloveData = glove.Update(this.updateTo); //retrieve the latest gloveData, which contains the new lengths.
+        CalibrationFinished();
     }
 
     //------------------------------------------------------------------------------------------------------------------------------------
@@ -404,7 +438,7 @@ public class SenseGlove_Object : MonoBehaviour
         if (glove != null)
         {
             glove.ResetCalibration();
-            Debug.Log("Canceled Calibration");
+            SenseGlove_Debugger.Log("Canceled Calibration");
         }
     }
 
@@ -415,7 +449,7 @@ public class SenseGlove_Object : MonoBehaviour
     /// <param name="calibrationKey">The key used to call this method, used for the debug messages.</param>
     public void NextCalibrationStep(KeyCode calibrationKey)
     {
-        if (glove != null && finishedSetup)
+        if (glove != null && gloveReady)
         {
 
             if (!calibrating)
@@ -423,36 +457,35 @@ public class SenseGlove_Object : MonoBehaviour
                 this.CancelCalibration();
                 this.Calibrate(new bool[] { false, true, true, true, true }, true);
                 calSteps = 0;
-                // Debug.Log("Calibrate is called : " + calSteps);
+                // SenseGlove_Debugger.Log("Calibrate is called : " + calSteps);
             }
             else if (calSteps <= 3)
             {
                 this.NextCalibrationStep();
-                // Debug.Log("NextStep is called : " + calSteps);
+                // SenseGlove_Debugger.Log("NextStep is called : " + calSteps);
             }
 
             if (calSteps == 0)
             {
                 calibrating = true;
-                Debug.Log("Started Calibration. Please stretch your fingers in front of you and press " + calibrationKey.ToString());
+                SenseGlove_Debugger.Log("Started Calibration. Please stretch your fingers in front of you and press " + calibrationKey.ToString());
                 calSteps++;
             }
             else if (calSteps == 1)
             {
-                Debug.Log("Step 1 completed. Please bend you MCP joint to 45* and press " + calibrationKey.ToString());
+                SenseGlove_Debugger.Log("Step 1 completed. Please bend you MCP joint to 45* and press " + calibrationKey.ToString());
                 calSteps++;
             }
             else if (calSteps == 2)
             {
-                Debug.Log("Step 2 completed. Please bend you MCP joint to 90* and press " + calibrationKey.ToString());
+                SenseGlove_Debugger.Log("Step 2 completed. Please bend you MCP joint to 90* and press " + calibrationKey.ToString());
                 calSteps++;
             }
             else
             {
-                Debug.Log("Step 3 completed. Calibration has finished. Resizing model.");
+                SenseGlove_Debugger.Log("Step 3 completed. Calibration has finished. Resizing model.");
                 calibrating = false;
                 calSteps = 0;
-                CalibrationFinished(); //raise the calibrationFinished event.
             }
         }
 
@@ -486,6 +519,31 @@ public class SenseGlove_Object : MonoBehaviour
         return new float[][] { };
     }
    
+    /// <summary>
+    /// Get the positions of the starting finger joints, the CMC or MCP joints.
+    /// </summary>
+    /// <returns></returns>
+    public float[][] GetStartJointPositions()
+    {
+        if (this.glove != null)
+        {
+            return this.gloveData.handModel.GetJointPositions();
+        }
+        return new float[][] { };
+    }
+
+    /// <summary>
+    /// Set the positions of the starting finger joints, the CMC or MCP joints.
+    /// </summary>
+    /// <returns></returns>
+    public void SetStartJointPositions(float[][] positions)
+    {
+        if (this.glove != null)
+        {
+            this.glove.SetJointPositions(positions);
+        }
+    }
+
 
     /// <summary>
     /// Calibrate the Wrist, based on the orientatio of the foreArm.
@@ -496,7 +554,7 @@ public class SenseGlove_Object : MonoBehaviour
         if (glove != null && glove.IsConnected() && foreArm != null)
         {
             glove.CalibrateWrist(null, SenseGlove_Util.ToQuaternion(this.foreArm.transform.rotation));
-            Debug.Log("Calibrated Wrist");
+            SenseGlove_Debugger.Log("Calibrated Wrist");
             return true;
         }
         return false;
@@ -512,10 +570,45 @@ public class SenseGlove_Object : MonoBehaviour
         if (glove != null && glove.IsConnected())
         {
             glove.CalibrateWrist(null, SenseGlove_Util.ToQuaternion(lowerArm));
-            Debug.Log("Calibrated Wrist");
+            SenseGlove_Debugger.Log("Calibrated Wrist");
             return true;
         }
         return false;
     }
 
+
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Haptic Feedback
+
+
+
+    /// <summary>
+    /// Verify if this SenseGlove has a particular functionality (buzz motors, haptic feedback, ect)
+    /// </summary>
+    /// <param name="function"></param>
+    /// <returns></returns>
+    public bool HasFunction(GloveFunctions function)
+    {
+        if (this.glove != null)
+        {
+            return glove.HasFunction(function);
+        }
+        return false;
+    }
+
+
+
+}
+
+public enum ConnectionMethod
+{
+    /// <summary> Connect to the first unconnected SenseGlove on the system. </summary>
+    FindNextGlove = 0,
+    /// <summary> Connect to the first unconnected Right Handed SenseGlove on the system. </summary>
+    FindNextRightHand,
+    /// <summary> Connect to the first unconnected Left Handed SenseGlove on the system. </summary>
+    FindNextLeftHand,
+    /// <summary> Connect to a COM port that may or may not be a SenseGlove. </summary>
+    HardCoded
 }

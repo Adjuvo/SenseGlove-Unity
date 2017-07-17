@@ -36,7 +36,7 @@ public class SenseGlove_Touch : MonoBehaviour
         if (this.touchedObject != null && this.IsTouching(col.gameObject))
         {
             this.touchedObject = null;
-            //Debug.Log(this.name + " is no longer colliding with " + col.name);
+            //SenseGlove_Debugger.Log(this.name + " is no longer colliding with " + col.name);
         }
     }
 
@@ -51,7 +51,7 @@ public class SenseGlove_Touch : MonoBehaviour
             bool t = GameObject.ReferenceEquals(this.touchedObject, obj);
             //return this.touchedObject.Equals(obj);
             //return this.touchedObject == obj;
-            //Debug.Log("The thumb is touching " + touchedObject.name + " and Index is touching " + obj.name + ". Equals = " + t);
+            //SenseGlove_Debugger.Log("The thumb is touching " + touchedObject.name + " and Index is touching " + obj.name + ". Equals = " + t);
             return t;
         }
         return false;

@@ -21,7 +21,7 @@ public class ResetPosition : MonoBehaviour {
     {
 		if (Input.GetKeyDown(resetKey))
         {
-            Debug.Log("Reset!");
+            SenseGlove_Debugger.Log("Reset!");
             this.Reset();
         }
 	}

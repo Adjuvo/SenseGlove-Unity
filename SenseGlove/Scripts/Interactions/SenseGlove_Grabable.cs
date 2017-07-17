@@ -7,7 +7,7 @@ using UnityEngine;
 public class SenseGlove_Grabable : SenseGlove_Interactable
 {
     public Rigidbody physicsBody;
-
+    
     private Vector3 originalPos = Vector3.zero;
     private Quaternion originalRot = Quaternion.identity;
 
@@ -15,11 +15,21 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
     private Vector3 grabOffset = Vector3.zero;
     private Quaternion grabRotation = Quaternion.identity;
 
+    private bool wasKinematic;
+    private bool usedGravity;
+
     protected override void HandleStart()
     {
         this.originalPos = this.transform.position;
         this.originalRot = this.transform.rotation;
         if (!this.physicsBody) { this.physicsBody = this.gameObject.GetComponent<Rigidbody>(); }
+
+        //Verify the kinematic variables
+        if (this.physicsBody)
+        {
+            this.wasKinematic = this.physicsBody.isKinematic;
+            this.usedGravity = this.physicsBody.useGravity;
+        }
     }
 
     protected override void HandleUpdate()
@@ -31,7 +41,7 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
     {
         if (this.isInteractable)
         {
-            Debug.Log("PickUp");
+            SenseGlove_Debugger.Log("PickUp");
 
             this.grabReference = grabScript.grabReference;
 
@@ -43,6 +53,9 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
 
             if (this.physicsBody)
             {
+                this.wasKinematic = this.physicsBody.isKinematic;
+                this.usedGravity = this.physicsBody.useGravity;
+                
                 this.physicsBody.useGravity = false;
                 this.physicsBody.isKinematic = true;
                 this.physicsBody.velocity = new Vector3(0, 0, 0);
@@ -69,13 +82,13 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
         {
             if (this.physicsBody != null)
             {
-                this.physicsBody.useGravity = true;
-                this.physicsBody.isKinematic = false;
+                this.physicsBody.useGravity = this.usedGravity;
+                this.physicsBody.isKinematic = this.wasKinematic;
                 this.physicsBody.velocity = grabScript.GetVelocity();
                 //this.physicsBody.angularVelocity = ???
             }
         }
-        Debug.Log("Put down!");
+        SenseGlove_Debugger.Log("Put down!");
         this.grabReference = null;
     }
 

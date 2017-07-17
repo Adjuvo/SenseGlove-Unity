@@ -78,11 +78,18 @@
         <member name="F:SenseGloveCs.Communicator.constants">
             <summary> Contains constants string as received by the Communicator. To be parsed by the IODevice.  </summary>
         </member>
-        <member name="F:SenseGloveCs.Communicator.wasReset">
-            <summary> Indicates if the SenseGlove has been (manually) reset, meaning it requires a new connection to be made. </summary>
-        </member>
         <member name="F:SenseGloveCs.Communicator.lastValues">
             <summary>  </summary>
+        </member>
+        <member name="F:SenseGloveCs.Communicator.activationTime">
+            <summary>
+            The time since this device was activated by the DLL.
+            </summary>
+        </member>
+        <member name="F:SenseGloveCs.Communicator.samplesPerSecond">
+            <summary>
+            The number of sensor packets that are received by the communicator every second.
+            </summary>
         </member>
         <member name="F:SenseGloveCs.Communicator.idByte">
             <summary> 'I' Used to request ID </summary>
@@ -216,6 +223,27 @@
             </summary>
             <param name="bytes"></param>
             <returns></returns>
+        </member>
+        <member name="T:SenseGloveCs.Communicator.CommandRecievedEventHandler">
+            <summary> Delegate function implemented by subscribers to the OnFingerCalibrationFinished event. </summary>
+            <param name="source"></param>
+            <param name="args"></param>
+        </member>
+        <member name="E:SenseGloveCs.Communicator.CommandRecieved">
+            <summary> Fires when the new finger lengths and joint positions are calculated. </summary>
+        </member>
+        <member name="M:SenseGloveCs.Communicator.OnCommandRecieved(System.String)">
+            <summary>  Used to call the OnFingerCalibrationFinished event in all subscribers. </summary>
+        </member>
+        <member name="T:SenseGloveCs.CMDEventArgs">
+            <summary> Event arguments passed when recieving a command form the SenseGlove. </summary>
+        </member>
+        <member name="P:SenseGloveCs.CMDEventArgs.command">
+            <summary> The command revieved by the Communicator </summary>
+        </member>
+        <member name="M:SenseGloveCs.CMDEventArgs.#ctor(System.String)">
+            <summary> Create a new instance of the CMDeventArgs </summary>
+            <param name="cmd"></param>
         </member>
         <member name="T:SenseGloveCs.Gesture">
             <summary>
@@ -1301,6 +1329,13 @@
             <param name="finger"></param>
             <returns></returns>
         </member>
+        <member name="M:SenseGloveCs.HandKinematics.SetJointPositions(System.Single[][])">
+            <summary> Set the starting joint positions of the thumb and fingers; the CMC and MCP joints. </summary>
+            <param name="positions"></param>
+        </member>
+        <member name="M:SenseGloveCs.HandKinematics.GetJointPositions">
+            <summary> Retieve the positions of the starting joints (CMC and MCP) </summary>
+        </member>
         <member name="T:SenseGloveCs.IODevice">
             <summary>
             An Adjuvo Sense device that can be used as input.
@@ -1348,6 +1383,17 @@
             A Data-block containing the variables of this Sense Glove
             </summary>
         </member>
+        <member name="T:SenseGloveCs.SenseGlove.FingerCalibrationFinishedEventHandler">
+            <summary> Delegate function implemented by subscribers to the OnFingerCalibrationFinished event. </summary>
+            <param name="source"></param>
+            <param name="args"></param>
+        </member>
+        <member name="E:SenseGloveCs.SenseGlove.OnFingerCalibrationFinished">
+            <summary> Fires when the new finger lengths and joint positions are calculated. </summary>
+        </member>
+        <member name="M:SenseGloveCs.SenseGlove.FingerCalibrationFinished">
+            <summary>  Used to call the OnFingerCalibrationFinished event in all subscribers. </summary>
+        </member>
         <member name="M:SenseGloveCs.SenseGlove.#ctor">
             <summary>
             Create a SenseGlove without a Communicator.
@@ -1358,6 +1404,17 @@
             Create a new SenseGlove from a Communicator
             </summary>
             <param name="source"></param>
+        </member>
+        <member name="M:SenseGloveCs.SenseGlove.ReConnect(SenseGloveCs.Communicator)">
+            <summary>
+            Reconnect this SenseGlove to a different communicator.
+            </summary>
+            <param name="source"></param>
+        </member>
+        <member name="M:SenseGloveCs.SenseGlove.Disconnect">
+            <summary>
+            Manually disconnect this SenseGlove.
+            </summary>
         </member>
         <member name="M:SenseGloveCs.SenseGlove.Finalize">
             <summary>
@@ -1476,12 +1533,19 @@
             </summary>
             <param name="handLengths"></param>
         </member>
-        <member name="M:SenseGloveCs.SenseGlove.GetLengths">
+        <member name="M:SenseGloveCs.SenseGlove.GetFingerLengths">
             <summary>
             Retrieve the FingerLengths of the SenseGlove.
             The array size is 0 if the handModel has not been loaded yet.
             </summary>
             <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.SenseGlove.SetJointPositions(System.Single[][])">
+            <summary> Set the starting joint positions of the thumb and fingers; the CMC and MCP joints. </summary>
+            <param name="positions"></param>
+        </member>
+        <member name="M:SenseGloveCs.SenseGlove.GetJointPositions">
+            <summary> Retieve the positions of the starting joints (CMC and MCP) </summary>
         </member>
         <member name="M:SenseGloveCs.SenseGlove.SetCalibrationMode(System.Boolean)">
             <summary>
@@ -1586,6 +1650,12 @@
         </member>
         <member name="F:SenseGloveCs.SerialCommunicator.isSending">
             <summary> Is true while the Communicator is Writing to the SerialPort. </summary>
+        </member>
+        <member name="F:SenseGloveCs.SerialCommunicator.samples">
+            <summary> The amount of sensor samples recieved since the last time we've checked. </summary>
+        </member>
+        <member name="F:SenseGloveCs.SerialCommunicator.sampleTimer">
+            <summary> A timer that checks for the amount of samples per second. </summary>
         </member>
         <member name="M:SenseGloveCs.SerialCommunicator.#ctor(System.String)">
             <summary>

@@ -20,26 +20,21 @@ public class SenseGlove_PhysGrab : MonoBehaviour
     [Tooltip("Adding a SenseGlove_Object to this script is entirely optional, but increases the precision of the grab detection by checking the joint angles.")]
     public SenseGlove_Object trackedGlove;
 
-    /// <summary> When an object is picked up, this GameObject (Typically the wrist) is used as a reference for its movement. </summary>
+    /// <summary> When an object is picked up, this GameObject (Typically the wrist) is used as a reference for its movement / parent / fixedJoint. </summary>
     [Header("Settings")]
     [Tooltip("When an object is picked up, this GameObject (Typically the wrist) is used as a reference for its movement.")]
     public GameObject grabReference;
 
-    /// <summary> The rotation difference between the grabReference and the object that is/was picked up. </summary>
-    private Quaternion grabRotation;
-    /// <summary> The Positional difference between the grabReference and the object that is/was pickes up. </summary>
-    private Vector3 grabOffset;
+    /// <summary> Determines if the grabscript interacts with objects between the thumb and at least one finger. </summary>
+    [Tooltip("Determine if the grabscript interacts with objects between the thumb and at least one finger.")]
+    public bool thumbFingerCollision = true;
 
-    /// <summary> Determines if the PhysGrab script can actually pick up the object(s) </summary>
-    [Tooltip("If this flag is set to true, the glove will not actually pickup anything. It will only raise events")]
-    public bool isTrigger = false;
+    /// <summary> Determines if the grabscript interacts with objects between the hand palm and at least one finger. </summary>
+    [Tooltip("Determine if the grabscript interacts with objects between the hand palm and at least one finger.")]
+    public bool fingerPalmCollision = true;
 
-    /// <summary> Determines if the FollowObject is called manually from an outside class. </summary>
-    [Tooltip("Set this flag to true if you wish to control when the FollowObject function is called.")]
-    public bool manualFollow = false;
-
-    [Tooltip("A complex Grab Script allows one to pick up objects between the fingerTips and MCP joint(s)")]
-    public bool complexGrab = false;
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // private variables.
 
     /// <summary> The colliders for each finger, which will be checked from distal to proximal. Those at index 0 are of the thumb. </summary>
     private SenseGlove_Touch[][] fingerColliders;
@@ -175,7 +170,7 @@ public class SenseGlove_PhysGrab : MonoBehaviour
             this.setupFinished = (oneThumb || palm) && oneFinger; //ensure there is at leas one finger.
             if (!this.setupFinished)
             {
-                Debug.Log("Setup failed; we require at least one finger and one thumb- or palm collider!");
+                SenseGlove_Debugger.Log("Setup failed; we require at least one finger and one thumb- or palm collider!");
             }
         }
     }
@@ -233,7 +228,7 @@ public class SenseGlove_PhysGrab : MonoBehaviour
             this.setupFinished = (oneThumb || palm) && oneFinger; //ensure there is at leas one finger.
             if (!this.setupFinished)
             {
-                Debug.Log("Setup failed; we require at least one finger and one thumb- or palm collider!");
+                SenseGlove_Debugger.Log("Setup failed; we require at least one finger and one thumb- or palm collider!");
             }
         }
     }
@@ -297,7 +292,7 @@ public class SenseGlove_PhysGrab : MonoBehaviour
                 //if we can grab the object and not 
                 if (!canPickup && !holdingObject) //if we could not pickup the object before and are not holding anythign else, pick it up now!
                 {
-                    //Debug.Log("Grabbing an object");
+                    //SenseGlove_Debugger.Log("Grabbing an object");
                     OnGrabbingObject(grabAble); //raise the event;
                     GrabObject(grabAble);
                 }
@@ -307,7 +302,7 @@ public class SenseGlove_PhysGrab : MonoBehaviour
             {
                 if (canPickup) //if we could pickup an object before...
                 {
-                    //Debug.Log("Releasing an object");
+                    //SenseGlove_Debugger.Log("Releasing an object");
                     OnReleasingObject(this.objectToGrab); // raise event
                     ReleaseObject(this.objectToGrab);
                     holdingObject = false;
@@ -330,17 +325,6 @@ public class SenseGlove_PhysGrab : MonoBehaviour
 
     //--------------------------------------------------------------------------------------------------------------------------------------
     // Grab / Touch Logic
-
-    /// <summary> Have the object that is being held by the GrabScript follow the grabReference </summary>
-    public void FollowObject()
-    {
-        //have the heldObject follow the 'anchor'
-        if (this.holdingObject && this.objectToGrab != null)
-        {
-            this.objectToGrab.transform.rotation = this.grabReference.transform.rotation * this.grabRotation;
-            this.objectToGrab.transform.position = this.grabReference.transform.position - (this.grabReference.transform.rotation * grabOffset);
-        }
-    }
 
 
     /// <summary> Check if we can grab an object. If we can, update the ObjectToGrab and return true. </summary>
@@ -372,11 +356,11 @@ public class SenseGlove_PhysGrab : MonoBehaviour
                 }
             }
 
-           // Debug.Log("Index isOpen is " + fingerOpen[1]);
+           // SenseGlove_Debugger.Log("Index isOpen is " + fingerOpen[1]);
 
             if (thumbTouches != null || palmTouches != null)
             {
-                if (handPalm.IsTouching(thumbTouches) && !fingerOpen[0])
+                if (handPalm.IsTouching(thumbTouches) && !fingerOpen[0] && fingerPalmCollision)
                 {
                     return thumbTouches; //The hanpalm touches the same object as the thumb.
                 }
@@ -388,11 +372,11 @@ public class SenseGlove_PhysGrab : MonoBehaviour
                     {
                         for (int i = fingerColliders[f].Length; i-- > 0;)
                         {
-                            if (fingerColliders[f][i].IsTouching(thumbTouches))
+                            if (thumbFingerCollision && fingerColliders[f][i].IsTouching(thumbTouches))
                             {
                                 return thumbTouches;
                             }
-                            else if (fingerColliders[f][i].IsTouching(palmTouches))
+                            else if (fingerPalmCollision && fingerColliders[f][i].IsTouching(palmTouches))
                             {
                                 return palmTouches;
                             }
@@ -443,38 +427,6 @@ public class SenseGlove_PhysGrab : MonoBehaviour
             this.objectToGrab = obj;
             holdingObject = true;
         }
-
-        //if (obj != null && this.grabReference != null)
-        //{
-        //    if (!this.isTrigger)
-        //    {
-        //        this.objectToGrab = obj;
-
-        //        //Quaternion.Inverse(QT) * (vT - vO);
-        //        this.grabOffset = Quaternion.Inverse(this.grabReference.transform.rotation) * (this.grabReference.transform.position - obj.transform.position);
-
-        //        //Quaternion.Inverse(QT) * (Qo);
-        //        this.grabRotation = Quaternion.Inverse(this.grabReference.transform.rotation) * obj.transform.rotation;
-
-        //        //Debug.Log("ObjectToGrab = " + SenseGlove_Util.ToString(objectToGrab.transform.position) +
-        //        //    ". TrackedObject = " + SenseGlove_Util.ToString(anchor.transform.position)
-        //        //    + ". Diff = " + SenseGlove_Util.ToString(anchorPosition));
-
-        //        //Debug.Log("ObjectToGrab = " + SenseGlove_Util.ToString(objectToGrab.transform.rotation.eulerAngles) +
-        //        //    ". TrackedObject = " + SenseGlove_Util.ToString(anchor.transform.rotation.eulerAngles)
-        //        //    + ". Diff = " + SenseGlove_Util.ToString(anchorRotation.eulerAngles));
-
-        //        Rigidbody RB = obj.GetComponent<Rigidbody>();
-        //        if (RB != null)
-        //        {
-        //            RB.useGravity = false;
-        //            RB.isKinematic = true;
-        //            RB.velocity = new Vector3(0, 0, 0);
-        //            RB.angularVelocity = new Vector3(0, 0, 0);
-        //        }
-        //    }
-        //    holdingObject = true;
-        //}
     }
 
     /// <summary> Release a GameObject and, if it has a RigidBody, throw it! </summary>
@@ -490,25 +442,25 @@ public class SenseGlove_PhysGrab : MonoBehaviour
     /// Throw a rigidbody, using the (angular) velocity of the grabReference.
     /// </summary>
     /// <param name="RB"></param>
+    [Obsolete("Will be removed due to the new GrabScript Handling")]
     void TossObject(Rigidbody RB)
     {
         if (RB != null)
         {
             RB.useGravity = true;
             RB.isKinematic = false;
-            //RB.velocity = new Vector3(0, 0, 0);
             RB.velocity = this.velocity;
             RB.angularVelocity = new Vector3(0, 0, 0);
         }
     }
 
     /// <summary>
-    /// Check if this script can pick up an object
+    /// Check if this script can interact with SenseGlove_Interactable objects.
     /// </summary>
     /// <returns></returns>
     public bool CanPickup()
     {
-        return this.canPickup;
+        return this.thumbFingerCollision || this.fingerPalmCollision;
     }
 
     /// <summary>
@@ -521,13 +473,15 @@ public class SenseGlove_PhysGrab : MonoBehaviour
         this.elapsedTime = 0;
         this.pauseTime = timeToReactivate;
 
-        //Debug.Log("Releasing an object");
-        OnReleasingObject(this.objectToGrab); // raise the event
         ReleaseObject(this.objectToGrab);
         holdingObject = false;
         this.objectToGrab = null;
     }
 
+    /// <summary>
+    /// Retrieve the Velocity of this GameObject
+    /// </summary>
+    /// <returns></returns>
     public Vector3 GetVelocity()
     {
         return this.velocity;

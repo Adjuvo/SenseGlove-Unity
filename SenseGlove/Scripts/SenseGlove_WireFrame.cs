@@ -108,13 +108,13 @@ public class SenseGlove_WireFrame : MonoBehaviour
 
     private void TrackedGlove_OnCalibrationFinished(object source, System.EventArgs args)
     {
-        Debug.Log("Resizing Model.");
+        SenseGlove_Debugger.Log("Resizing Model.");
         this.shouldResize = true;
     }
 
     private void TrackedGlove_OnGloveLoaded(object source, System.EventArgs args)
     {
-        Debug.Log("Setting up WireFrame...");
+        SenseGlove_Debugger.Log("Setting up WireFrame...");
         SetupGlove(trackedGlove.GetGloveData());
         SetupHand(trackedGlove.GetGloveData());
         SetGlove(false);    //hide the glove by default.
@@ -135,7 +135,7 @@ public class SenseGlove_WireFrame : MonoBehaviour
         if (this.setupComplete) { this.setupComplete = false; } //reset the setupCOmplete "Event" back to zero.
 
         //update the glove.
-        if (trackedGlove != null && trackedGlove.SetupFinished())
+        if (trackedGlove != null && trackedGlove.GloveReady())
         {
             if (!wristCalibrated)
             {
@@ -197,12 +197,6 @@ public class SenseGlove_WireFrame : MonoBehaviour
                 }
             }
 
-            SenseGlove_PhysGrab PG = this.GetComponent<SenseGlove_PhysGrab>();
-            if (PG != null && PG.manualFollow)
-            {
-                PG.FollowObject();
-            }
-
         }
 
     }
@@ -216,7 +210,7 @@ public class SenseGlove_WireFrame : MonoBehaviour
     /// <param name="data"></param>
     private void SetupGlove(GloveData data)
     {
-        if (gloveGroup != null && gloveBase != null && data != null)
+        if (gloveGroup != null && gloveBase != null && data != null && !this.setupComplete)
         {
             gloveBase.SetActive(false);
             gloveGroup.SetActive(true);
@@ -272,12 +266,12 @@ public class SenseGlove_WireFrame : MonoBehaviour
             }
             else
             {
-                Debug.Log("ERROR : No Glove Data was found...");
+                SenseGlove_Debugger.Log("ERROR : No Glove Data was found...");
             }
         }
         else
         {
-            Debug.Log("WARNING : No base model for Glove Wireframe");
+            SenseGlove_Debugger.Log("WARNING : No base model for Glove Wireframe");
         }
     }
 
@@ -285,7 +279,7 @@ public class SenseGlove_WireFrame : MonoBehaviour
     /// <param name="data"></param>
     private void SetupHand(GloveData data)
     {
-        if (data != null)
+        if (data != null && !this.setupComplete)
         {
             if (handBase != null && handGroup != null)
             {
@@ -295,6 +289,7 @@ public class SenseGlove_WireFrame : MonoBehaviour
                     handGroup.transform.GetChild(i).gameObject.SetActive(true); //activate the palm model.
                     if (i == 1 && !data.isRight)
                     {
+                        handGroup.transform.GetChild(i).gameObject.name = "Palm (L)";
                         Vector3 pos = handGroup.transform.GetChild(i).localPosition;
                         handGroup.transform.GetChild(i).localPosition = new Vector3(pos.x, pos.y, -pos.z); //invert Z if its a left hand.
                     }
@@ -356,17 +351,17 @@ public class SenseGlove_WireFrame : MonoBehaviour
                 }
                 else
                 {
-                    Debug.Log("ERROR : No Hand Data was found...");
+                    SenseGlove_Debugger.Log("ERROR : No Hand Data was found...");
                 }
             }
             else
             {
-                Debug.Log("WARNING : No base model for Hand Wireframe");
+                SenseGlove_Debugger.Log("WARNING : No base model for Hand Wireframe");
             }
         }
         else
         {
-            Debug.Log("WARNING : GloveData is null?");
+            SenseGlove_Debugger.Log("WARNING : GloveData is null?");
         }
 
 
@@ -391,12 +386,12 @@ public class SenseGlove_WireFrame : MonoBehaviour
             if (followObject != null)
             {
                 trackOffset = Quaternion.Inverse(trackedObject.transform.rotation) * (followObject.transform.position - trackedObject.transform.position);
-                //Debug.Log("ForeArm = " + SenseGlove_Util.ToString(followObject.transform.position) + 
+                //SenseGlove_Debugger.Log("ForeArm = " + SenseGlove_Util.ToString(followObject.transform.position) + 
                 //    ". TrackedObject = " + SenseGlove_Util.ToString(trackedObject.transform.position)
                 //    + ". Diff = " + SenseGlove_Util.ToString(anchorPosition) );
 
                 trackRotation = Quaternion.Inverse(trackedObject.transform.rotation) * followObject.transform.rotation;
-                //Debug.Log("ForeArm = " + SenseGlove_Util.ToString(followObject.transform.rotation.eulerAngles) +
+                //SenseGlove_Debugger.Log("ForeArm = " + SenseGlove_Util.ToString(followObject.transform.rotation.eulerAngles) +
                 //    ". TrackedObject = " + SenseGlove_Util.ToString(trackedObject.transform.rotation.eulerAngles)
                 //    + ". Diff = " + SenseGlove_Util.ToString(anchorRotation.eulerAngles));
             }
@@ -418,25 +413,26 @@ public class SenseGlove_WireFrame : MonoBehaviour
     /// <summary>  If this WireFrame model has a grabscript, attach the appropriate colliders. </summary>
     private void SetupGrabColliders()
     {
-        SenseGlove_PhysGrab grabscript = this.GetComponent<SenseGlove_PhysGrab>();
-        if (grabscript != null)
+        if (!this.setupComplete)
         {
-            //attack capsule colliders to the fingers
-            Debug.Log("Grabscript detected! Attaching colliders.");
-            Collider[] tipColliders = new Collider[handPositions.Length];
-
-            for (int f = 0; f < handPositions.Length; f++) //DEBUG : Only thumb & index
+            SenseGlove_PhysGrab grabscript = this.GetComponent<SenseGlove_PhysGrab>();
+            if (grabscript != null)
             {
-                GameObject fingerTip = this.handPositions[f][handPositions[f].Length - 1];
-                SphereCollider C = fingerTip.AddComponent<SphereCollider>();
-                C.radius = fingerTip.transform.FindChild("Point").localScale.x / 1f;
-                tipColliders[f] = C;
+                //attack capsule colliders to the fingers
+                SenseGlove_Debugger.Log("Grabscript detected! Attaching colliders.");
+                Collider[] tipColliders = new Collider[handPositions.Length];
+
+                for (int f = 0; f < handPositions.Length; f++) //DEBUG : Only thumb & index
+                {
+                    GameObject fingerTip = this.handPositions[f][handPositions[f].Length - 1];
+                    SphereCollider C = fingerTip.AddComponent<SphereCollider>();
+                    C.radius = fingerTip.transform.FindChild("Point").localScale.x / 1f;
+                    tipColliders[f] = C;
+                }
+                grabscript.SetupColliders(tipColliders, this.palmCollider);
             }
-            grabscript.SetupColliders(tipColliders, this.palmCollider);
+            //else try other forms of grabscripts
         }
-
-        //else try other forms of grabscripts
-
     }
 
     /// <summary> Check whether or not this glove has completed its setup. </summary>

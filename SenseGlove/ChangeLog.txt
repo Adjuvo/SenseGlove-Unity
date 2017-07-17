@@ -1,9 +1,35 @@
 # Changelog
 All notable changes to the SenseGlove Prefabs will be documented in this file.
 
-You are currently using version 0.8.
+You are currently using version 0.9
 
---------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------
+
+## [v0.9] - 2017-07-17
+Connection overhaul!
+
+### Added
+-	HasFunction() wrapper to SenseGlove_Object in preparation for the force-feedback prototypes.
+-	SetStartJointPositions() & GetStartJointPositions() methods to SenseGlove_Object to access MCP/CMC Joint Positions.
+-	SenseGlove_Manager; a static class that keeps track of which SenseGlove devices are in use by this project.
+
+### Changed
+-	Documentation update; added images for calibration, cleaned up the table of contents.
+-	SenseGlove_Physgrab's deprecated (old pickUp) code was removed . 
+-	SenseGlove_PhysGrab : Added two new public booleans; thumbFingerCollision and palmFingerCollision, which are used to customize the grab logic.
+-	SenseGlove_Grabable now re-applies its isKinematic and useGravity settings to before it was picked up.
+-	Prefabs : Palm (R) object will now be renamed to Palm (L) when a left handed SenseGlove is connected.
+-	SenseGlove_Debugger has separate booleans for DLL messages (default false) and Unity messages (default true).
+-	Overhauled the way the SenseGlove_Object connects to its SenseGlove : Instead of a combination of rightHand / automaticMode,
+	the ConnectionMethod Enumerator controls how the glove is connected. (choose from Find Next Glove, Find Next Right/Left Hand, and Hard-Coded via Address. )
+-	SenseGlove_Object now has a connectOnStartup option, which can be toggled.
+
+### Fixed
+-	Bug where the OnCalibrationFinished event was fired before finger length calculations were finshed.
+-	SenseGlove_Wireframe can now only run its setup methods once.
+-	SenseGlove_Object will now connect to new gloves after StartUp.
+
+-------------------------------------------------------------------------------------------------------
 
 ## [v0.8] - 2017-07-11
 Grabscript overhaul

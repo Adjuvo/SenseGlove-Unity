@@ -11,6 +11,8 @@ public class GloveTester : MonoBehaviour
 
     public GameObject Tracker;
 
+    public TextMesh debugText;
+
     public float spd = 0.5f;
 
     public bool gloveActive = true;
@@ -26,14 +28,6 @@ public class GloveTester : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        //if (grabScript != null)
-        //{
-        //    if (Input.GetKeyDown(KeyCode.LeftAlt))
-        //    {
-        //        grabScript.ManualRelease();
-        //    }
-
-        //}
 
         if (Tracker != null)
         {
@@ -82,11 +76,15 @@ public class GloveTester : MonoBehaviour
 
             //if (Input.GetKeyDown(KeyCode.Space))
             //{
-            //    //Debug.Log("Calibrate Glove.");
+            //    //SenseGlove_Debugger.Log("Calibrate Glove.");
             //    wireframe.CalibrateWrist();
             //}
         }
 
+        if (debugText != null && glove.GetSenseGlove() != null)
+        {
+            debugText.text = "Samples / Second = " + glove.GetSenseGlove().communicator.samplesPerSecond;
+        }
 
 
     }
