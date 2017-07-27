@@ -1,9 +1,40 @@
 # Changelog
 All notable changes to the SenseGlove Prefabs will be documented in this file.
 
-You are currently using version 0.9
+You are currently using version 0.10
 
 -------------------------------------------------------------------------------------------------------
+
+## [v0.10] - 2017-07-27
+GloveData and Calibration Upgrades
+
+### Added
+-	SenseGlove_Data class, which is a wrapper for the SenseGlove's GloveData. Autmatically converts to Unity Quaternions / Vector3 positions.
+-	ToUnityEuler() method to SenseGlove_Util, which converts Euler angles from the SenseGlove's right handed coordinate system to Unity's left handed one.
+-	The number of 'sensor packets' per second recieved from the Sense Glove (+/- 100) is now available through SenseGlove_Data.
+-	limitFingers and limitWrist options to SenseGlove_Object, which allows one to limit the joint angles of the fingers within realistic contraints.
+	However, the wrist limits are not fully functional due to a Gimball lock when converting between Euler and Quaternion angles...
+-	UpdateGloveData() method in the SenseGlove_Object to retrieve the latest glove data, which can be moved to the FixedUpdate() if a fixed update rate is desired.
+
+
+### Changed
+-	Renamed Kinematics enumerator to UpdateLevel to allow room for the Kinematics namespace within the DLL.
+-	Added GetData() function to SenseGlove_Object, which returns the new GloveData wrapper.
+-	Added a warning to scripts using the GetGloveData() method, telling them that a Unity wrapper is available.
+-	SenseGlove_Wireframe now makes use of the new SenseGlove_Data wrapper.
+-	New way to handle calibration within the DLL, which is called the same way, but does not get stuck.
+-	Newly calibrated finger lengths are automatically limited between those of 5th percentile females and 95th percentile males. 
+-	To pervent breaking the joint positions, newly calibrated joint positions can now only move a limited amount (20mm) from their previous location.
+-	The OnCalibrationFinished event now fires with FingerCalibrationArgs, which contains the new joint positions and finger lengths.
+-	A new RescaleHand(float[][]) method for SenseGlove_Wireframe, which shows how to rescale the hand using input from the SenseGlove_Object.GetFingerLengths() method. 
+
+### Fixed
+-	Bug where the calibration steps were not properly reset from the Unity Side.
+-	Unity crashing because the calibration thread was relying on a while loop.
+
+
+-------------------------------------------------------------------------------------------------------
+
 
 ## [v0.9] - 2017-07-17
 Connection overhaul!
@@ -30,6 +61,7 @@ Connection overhaul!
 -	SenseGlove_Object will now connect to new gloves after StartUp.
 
 -------------------------------------------------------------------------------------------------------
+
 
 ## [v0.8] - 2017-07-11
 Grabscript overhaul

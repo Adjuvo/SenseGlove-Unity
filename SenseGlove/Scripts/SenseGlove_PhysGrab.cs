@@ -75,6 +75,9 @@ public class SenseGlove_PhysGrab : MonoBehaviour
     private Vector3 lastPosition;
     private Vector3 velocity = Vector3.zero;
 
+    /// <summary>
+    /// Update the dynamics (velocity, angular velocity) of the grabreference.
+    /// </summary>
     private void UpdateDynamics()
     {
         if (this.grabReference != null)
@@ -85,30 +88,6 @@ public class SenseGlove_PhysGrab : MonoBehaviour
         }
     }
 
-    //----------------------------------------------------------------------------------------------------------------------------------------
-    // Events
-
-    public delegate void GrabObjectEventHandler(object source, GrabEventArgs args);
-    public event GrabObjectEventHandler GrabbingObject;
-
-    protected void OnGrabbingObject(GameObject obj)
-    {
-        if (GrabbingObject != null)
-        {
-            GrabbingObject(this, new GrabEventArgs() { gameObject = obj } );
-        }
-    }
-
-    public delegate void ReleaseObjectEventHandler(object source, GrabEventArgs args);
-    public event ReleaseObjectEventHandler ReleasingObject;
-
-    protected void OnReleasingObject(GameObject obj)
-    {
-        if (ReleasingObject != null)
-        {
-            ReleasingObject(this, new GrabEventArgs() { gameObject = obj } );
-        }
-    }
 
     //----------------------------------------------------------------------------------------------------------------------------------------
     // Setup / Activation / Cleanup methods. Called by outside script(s)
@@ -293,7 +272,6 @@ public class SenseGlove_PhysGrab : MonoBehaviour
                 if (!canPickup && !holdingObject) //if we could not pickup the object before and are not holding anythign else, pick it up now!
                 {
                     //SenseGlove_Debugger.Log("Grabbing an object");
-                    OnGrabbingObject(grabAble); //raise the event;
                     GrabObject(grabAble);
                 }
                 canPickup = true;
@@ -303,7 +281,6 @@ public class SenseGlove_PhysGrab : MonoBehaviour
                 if (canPickup) //if we could pickup an object before...
                 {
                     //SenseGlove_Debugger.Log("Releasing an object");
-                    OnReleasingObject(this.objectToGrab); // raise event
                     ReleaseObject(this.objectToGrab);
                     holdingObject = false;
                 }
@@ -390,21 +367,22 @@ public class SenseGlove_PhysGrab : MonoBehaviour
     }
 
     /// <summary>
-    /// Check if the fingers are in the 'open' position (MCP-PIP-DIP joint angles +/- 0 deg),
+    /// Check if the fingers are in the 'open' position (MCP-PIP-DIP joint angles +/- 0 deg) for a few ms,
     /// which would indicate that someone wants to let go of an object.
     /// </summary>
     /// <returns></returns>
     private bool[] CheckFingersOpen()
     {
         bool[] res = new bool[5];
-        if (this.trackedGlove != null)
+        if (this.trackedGlove != null && trackedGlove.GloveReady())
         {
-            float[][][] angles = this.trackedGlove.GetGloveData().handModel.handAngles;
-            float minAngle = Mathf.Deg2Rad * 15;
+            Vector3[][] angles = this.trackedGlove.GloveData().handAngles;
+            float minAngle = -15;
             res[0] = false; //ToDo - Check the thumb.
-            for (int f=1; f<res.Length; f++)
+            res[res.Length - 1] = false; //prevent pinky interference.
+            for (int f=1; f<res.Length - 1; f++)
             {
-                if (angles[f][0][1] < minAngle && angles[f][1][1] < minAngle && angles[f][2][1] < minAngle) //the fingers are open, but for how long?
+                if (angles[f][0].z > minAngle && angles[f][1].z > minAngle && angles[f][2].z > minAngle) //the fingers are open, but for how long?
                 {
                     if (openTimers[f] < openTime) { openTimers[f] += Time.deltaTime; }
                     else { res[f] = true; }

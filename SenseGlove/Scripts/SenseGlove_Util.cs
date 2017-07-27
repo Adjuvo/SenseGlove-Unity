@@ -55,6 +55,46 @@ public class SenseGlove_Util
     }
 
     /// <summary>
+    /// Convert an array of float[3] positions taken from the DLL into a Vector3[].
+    /// </summary>
+    /// <param name="pos"></param>
+    /// <returns></returns>
+    public static Vector3[] ToUnityPosition(float[][] pos)
+    {
+        Vector3[] res = new Vector3[pos.Length];
+        for (int f=0; f<pos.Length;f++)
+        {
+            res[f] = SenseGlove_Util.ToUnityPosition(pos[f]);
+        }
+        return res;
+    }
+
+    /// <summary> Convert from a unity vector3 to a float[3] used in the DLL. </summary>
+    /// <param name="pos"></param>
+    /// <returns></returns>
+    public static float[] ToPosition(Vector3 pos)
+    {
+        return new float[] { pos.x, pos.z, pos.y };
+    }
+
+    /// <summary>
+    /// Convert an array of unity positions back into an array used by the DLL
+    /// </summary>
+    /// <param name="pos"></param>
+    /// <returns></returns>
+    public static float[][] ToPosition(Vector3[] pos)
+    {
+        float[][] res = new float[pos.Length][];
+        for (int f = 0; f < pos.Length; f++)
+        {
+            res[f] = SenseGlove_Util.ToPosition(pos[f]);
+        }
+        return res;
+    }
+
+
+
+    /// <summary>
     /// Convert a float[4] quaternion taken from the DLL into a Unity Quaternion. 
     /// </summary>
     /// <param name="quat"></param>
@@ -72,30 +112,27 @@ public class SenseGlove_Util
         return new float[] { -Q.x, -Q.z, -Q.y, Q.w };
     }
 
-    /// <summary> Convert from a unity vector3 to a float[3] used in the DLL. </summary>
-    /// <param name="pos"></param>
-    /// <returns></returns>
-    public static float[] ToPosition(Vector3 pos)
-    {
-        return new float[] { pos.x, pos.z, pos.y };
-    }
+    
+
+
 
     /// <summary>
     /// Convert a unity eulerAngles notation into one used by the DLL.
     /// </summary>
     /// <param name="euler"></param>
     /// <returns></returns>
-    public float[] ToEuler(Vector3 euler)
+    public static float[] ToEuler(Vector3 euler)
     {
-        throw new System.NotImplementedException();
+        return SenseGloveCs.Values.Radians(new float[] { -euler.x, -euler.z, -euler.y });
     }
 
     /// <summary> Convert a set of euler angles from the DLL into the Unity notation. </summary>
     /// <param name="euler"></param>
     /// <returns></returns>
-    public Vector3 ToEuler(float[] euler)
+    public static Vector3 ToUnityEuler(float[] euler)
     {
-        throw new System.NotImplementedException();
+        euler = SenseGloveCs.Values.Degrees(euler);
+        return new Vector3(-euler[x], -euler[z], -euler[y]);
     }
 
 
@@ -111,10 +148,4 @@ public enum AnchorPoint
     ForeArm
 }
 
-/// <summary>
-/// Grab event arguments used by the physics- and gesture based grab scripts.
-/// </summary>
-public class GrabEventArgs : System.EventArgs
-{
-    public GameObject gameObject { get; set; }
-}
+

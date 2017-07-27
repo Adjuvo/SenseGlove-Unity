@@ -85,7 +85,6 @@ public class SenseGlove_WireFrame : MonoBehaviour
     /// <summary> used to force the Resize method during the next frame, as the Calibration requires a few ms to take effect.  </summary>
     private bool shouldResize = false;
 
-
     //------------------------------------------------------------------------------------------------------------------------------------
     // Unity / MonoDevelop
 
@@ -100,23 +99,24 @@ public class SenseGlove_WireFrame : MonoBehaviour
     void Start()
     {
         trackedGlove.OnGloveLoaded += TrackedGlove_OnGloveLoaded;
-        trackedGlove.OnCalibrationFinished += TrackedGlove_OnCalibrationFinished;
+        trackedGlove.OnCalibrationFinished += TrackedGlove_OnCalibrationFinished; ;
         
         //remove the preview models, if any are available
         if (this.preview != null) { Destroy(this.preview); }
     }
 
-    private void TrackedGlove_OnCalibrationFinished(object source, System.EventArgs args)
+    private void TrackedGlove_OnCalibrationFinished(object source, CalibrationArgs args)
     {
         SenseGlove_Debugger.Log("Resizing Model.");
         this.shouldResize = true;
+        //ShouldRescale is called because we cannot Get() transforms outside of the main thread.
     }
 
     private void TrackedGlove_OnGloveLoaded(object source, System.EventArgs args)
     {
         SenseGlove_Debugger.Log("Setting up WireFrame...");
-        SetupGlove(trackedGlove.GetGloveData());
-        SetupHand(trackedGlove.GetGloveData());
+        SetupGlove(trackedGlove.GloveData());
+        SetupHand(trackedGlove.GloveData());
         SetGlove(false);    //hide the glove by default.
         SetHand(true);      //show the hand by default.
         SetupGrabColliders();
@@ -126,9 +126,10 @@ public class SenseGlove_WireFrame : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        //Rescaling - done here because it requires access to the children of the glovepositions, which cannot be done outside the main thread.
         if (this.shouldResize && this.trackedGlove != null)
         {
-            this.RescaleHand(trackedGlove.GetGloveData().handModel.handLengths);
+            this.RescaleHand(this.trackedGlove.GetFingerLengths());
             this.shouldResize = false;
         }
 
@@ -155,11 +156,9 @@ public class SenseGlove_WireFrame : MonoBehaviour
                     wristCalibrated = true;
                 }
             }
-            UpdateGlove(trackedGlove.GetGloveData());
-            UpdateHand(trackedGlove.GetGloveData());
-            UpdateWrist(trackedGlove.GetGloveData());
-            
-
+            UpdateGlove(trackedGlove.GloveData());
+            UpdateHand(trackedGlove.GloveData());
+            UpdateWrist(trackedGlove.GloveData());
         }
     }
 
@@ -208,7 +207,7 @@ public class SenseGlove_WireFrame : MonoBehaviour
 
     /// <summary> Create and distribute the glovePositions based on the GloveData received from the trackedGlove. </summary>
     /// <param name="data"></param>
-    private void SetupGlove(GloveData data)
+    private void SetupGlove(SenseGlove_Data data)
     {
         if (gloveGroup != null && gloveBase != null && data != null && !this.setupComplete)
         {
@@ -217,11 +216,11 @@ public class SenseGlove_WireFrame : MonoBehaviour
 
             if (data.dataLoaded)
             {
-                this.gloveGroup.transform.localPosition = SenseGlove_Util.ToUnityPosition(data.handModel.gloveRelPos);
-                this.gloveGroup.transform.localRotation = SenseGlove_Util.ToUnityQuaternion(data.handModel.gloveRelOrient);
+                this.gloveGroup.transform.localPosition = data.commonOriginPos;
+                this.gloveGroup.transform.localRotation = data.commonOriginRot;
 
-                float[][][] glovePos = data.handModel.glovePositions;
-                float[][][] gloveLengths = data.handModel.gloveLengths;
+                Vector3[][] glovePos = data.glovePositions;
+                Vector3[][] gloveLengths = data.gloveLengths;
                 glovePositions = new GameObject[glovePos.Length][];
                 for (int f = 0; f < glovePositions.Length; f++)
                 {
@@ -238,18 +237,18 @@ public class SenseGlove_WireFrame : MonoBehaviour
                                 Transform dX = glovePositions[f][i].transform.GetChild(2);
                                 Transform dY = glovePositions[f][i].transform.GetChild(1);
                                 Transform dZ = glovePositions[f][i].transform.GetChild(0);
-
+                                
                                 //Setup correct sizes.
                                 if (gloveLengths[f][i][x] != 0) { dX.localScale = new Vector3(dX.localScale.x, gloveLengths[f][i][x] / 2.0f, dX.localScale.z); }
                                 else { dX.gameObject.SetActive(false); }
-                                if (gloveLengths[f][i][z] != 0) { dY.localScale = new Vector3(dX.localScale.x, gloveLengths[f][i][z] / 2.0f, dX.localScale.z); }
+                                if (gloveLengths[f][i][y] != 0) { dY.localScale = new Vector3(dX.localScale.x, gloveLengths[f][i][y] / 2.0f, dX.localScale.z); }
                                 else { dY.gameObject.SetActive(false); }
-                                if (gloveLengths[f][i][y] != 0) { dZ.localScale = new Vector3(dX.localScale.x, gloveLengths[f][i][y] / 2.0f, dX.localScale.z); }
+                                if (gloveLengths[f][i][z] != 0) { dZ.localScale = new Vector3(dX.localScale.x, gloveLengths[f][i][z] / 2.0f, dX.localScale.z); }
                                 else { dZ.gameObject.SetActive(false); }
 
                                 //set correct positions based on ZYX?
-                                dY.localPosition = new Vector3(0, gloveLengths[f][i][z] / 2.0f, 0);
-                                dX.localPosition = new Vector3(gloveLengths[f][i][x] / 2.0f, gloveLengths[f][i][z], 0);
+                                dY.localPosition = new Vector3(0, gloveLengths[f][i][y] / 2.0f, 0);
+                                dX.localPosition = new Vector3(gloveLengths[f][i][x] / 2.0f, gloveLengths[f][i][y], 0);
                                 //dY ?
                             }
                         }
@@ -277,7 +276,7 @@ public class SenseGlove_WireFrame : MonoBehaviour
 
     /// <summary> Create and distribute the handPositions based on the GloveData received from the trackedGlove. </summary>
     /// <param name="data"></param>
-    private void SetupHand(GloveData data)
+    private void SetupHand(SenseGlove_Data data)
     {
         if (data != null && !this.setupComplete)
         {
@@ -297,11 +296,11 @@ public class SenseGlove_WireFrame : MonoBehaviour
 
                 if (data.dataLoaded)
                 {
-                    this.handGroup.transform.localPosition = SenseGlove_Util.ToUnityPosition(data.handModel.gloveRelPos);
-                    this.handGroup.transform.localRotation = SenseGlove_Util.ToUnityQuaternion(data.handModel.gloveRelOrient);
+                    this.handGroup.transform.localPosition = data.commonOriginPos;
+                    this.handGroup.transform.localRotation = data.commonOriginRot;
 
-                    float[][][] handPos = data.handModel.handPositions;
-                    float[][][] handLengths = data.handModel.handLengths;
+                    Vector3[][] handPos = data.handPositions;
+                    Vector3[][] handLengths = data.handLengths;
                     handPositions = new GameObject[handPos.Length][];
                     for (int f = 0; f < handPositions.Length; f++)
                     {
@@ -323,17 +322,17 @@ public class SenseGlove_WireFrame : MonoBehaviour
                                     if (handLengths[f][i][x] != 0) { dX.localScale = new Vector3(dX.localScale.x, handLengths[f][i][x] / 2.0f, dX.localScale.z); }
                                     else { dX.gameObject.SetActive(false); }
 
-                                    if (handLengths[f][i][z] != 0) { dY.localScale = new Vector3(dX.localScale.x, handLengths[f][i][z] / 2.0f, dX.localScale.z); }
+                                    if (handLengths[f][i][y] != 0) { dY.localScale = new Vector3(dX.localScale.x, handLengths[f][i][y] / 2.0f, dX.localScale.z); }
                                     else { dY.gameObject.SetActive(false); }
 
-                                    if (handLengths[f][i][y] != 0) { dZ.localScale = new Vector3(dX.localScale.x, handLengths[f][i][y] / 2.0f, dX.localScale.z); }
+                                    if (handLengths[f][i][z] != 0) { dZ.localScale = new Vector3(dX.localScale.x, handLengths[f][i][z] / 2.0f, dX.localScale.z); }
                                     else { dZ.gameObject.SetActive(false); }
 
                                     dX.localPosition = new Vector3(handLengths[f][i][x] / 2.0f, 0, 0);
-                                    //dY.localPosition = new Vector3(handLengths[f][i][x], handLengths[f][i][z] / 2.0f, 0);
+                                    //dY.localPosition = new Vector3(handLengths[f][i][x], handLengths[f][i][y] / 2.0f, 0);
                                     dY.gameObject.SetActive(false);
                                     //set correct positions based on ZYX?
-                                    //dY.localPosition = new Vector3(0, handLengths[f][i][z] / 2.0f, 0);
+                                    //dY.localPosition = new Vector3(0, handLengths[f][i][y] / 2.0f, 0);
 
                                     //dZ ?
                                 }
@@ -475,27 +474,46 @@ public class SenseGlove_WireFrame : MonoBehaviour
         }
     }
 
+
+
+    /// <summary>
+    /// Resize the hand using new fingerLengths, as retrieved from a FingerCalibrationFinished event.
+    /// </summary>
+    /// <param name="newLengths"></param>
+    public void RescaleHand(float[][] newLengths)
+    {
+        if (newLengths != null && newLengths.Length > 4)
+        {
+            for (int f=0; f<newLengths.Length && f<this.handPositions.Length; f++)
+            {
+                for (int i=0; i<newLengths[f].Length && i<this.handPositions[f].Length; i++)
+                {
+                    Transform dX = handPositions[f][i].transform.GetChild(2);
+                    if (newLengths[f][i] != 0) { dX.localScale = new Vector3(dX.localScale.x, newLengths[f][i] / 2.0f, dX.localScale.z); }
+                    dX.localPosition = new Vector3(newLengths[f][i] / 2.0f, 0, 0);
+                }
+            }
+        }
+    }
+
     //------------------------------------------------------------------------------------------------------------------------------------
     // Transform methods
 
 
     /// <summary> Update all glove positions based on the latest data taken from the trackedGlove, but only if the gloveGroup is active in the heirarchy. </summary>
     /// <param name="data"></param>
-    private void UpdateGlove(GloveData data)
+    private void UpdateGlove(SenseGlove_Data data)
     {
         if (glovePositions != null && gloveGroup.activeInHierarchy && data.dataLoaded)
         {
-
-            for (int f = 0; f < glovePositions.Length && f < data.handModel.glovePositions.Length; f++)
+            Vector3[][] pos = data.glovePositions;
+            Quaternion[][] rot = data.gloveRotations;
+            for (int f = 0; f < glovePositions.Length && f < data.glovePositions.Length; f++)
             {
-                float[][] pos = data.handModel.glovePositions[f];
-                float[][] rot = data.handModel.gloveRotations[f];
-
-
-                for (int i = 0; i < glovePositions[f].Length && i < pos.Length; i++)
+                for (int i = 0; i < glovePositions[f].Length && i < pos[f].Length; i++)
                 {
-                    glovePositions[f][i].transform.localPosition = SenseGlove_Util.ToUnityPosition(pos[i]);
-                    glovePositions[f][i].transform.localRotation = SenseGlove_Util.ToUnityQuaternion(rot[i]);
+                    glovePositions[f][i].transform.localPosition = pos[f][i];
+                    glovePositions[f][i].transform.localRotation = rot[f][i];
                 }
             }
         }
@@ -503,19 +521,18 @@ public class SenseGlove_WireFrame : MonoBehaviour
 
     /// <summary> Update all hand positions based on the latest data taken from the trackedGlove, but only if the handGroup is active in the heirarchy </summary>
     /// <param name="data"></param>
-    private void UpdateHand(GloveData data)
+    private void UpdateHand(SenseGlove_Data data)
     {
         if (handPositions != null && handGroup.activeInHierarchy && data.dataLoaded)
         {
-            for (int f = 0; f < handPositions.Length && f < data.handModel.handPositions.Length; f++)
+            Vector3[][] pos = data.handPositions;
+            Quaternion[][] rot = data.handRotations;
+            for (int f = 0; f < handPositions.Length && f < data.handPositions.Length; f++)
             {
-                float[][] pos = data.handModel.handPositions[f];
-                float[][] rot = data.handModel.handRotations[f];
-
-                for (int i = 0; i < handPositions[f].Length && i < pos.Length; i++)
+                for (int i = 0; i < handPositions[f].Length && i < pos[f].Length; i++)
                 {
-                    handPositions[f][i].transform.localPosition = SenseGlove_Util.ToUnityPosition(pos[i]);
-                    handPositions[f][i].transform.localRotation = SenseGlove_Util.ToUnityQuaternion(rot[i]);
+                    handPositions[f][i].transform.localPosition = pos[f][i];
+                    handPositions[f][i].transform.localRotation = rot[f][i];
                 }
             }
         }
@@ -526,16 +543,11 @@ public class SenseGlove_WireFrame : MonoBehaviour
     /// Includes conversion from Right- handed coordinate system to the Unity left handed coordinate system. 
     /// </summary>
     /// <param name="data"></param>
-    private void UpdateWrist(GloveData data)
+    private void UpdateWrist(SenseGlove_Data data)
     {
         if (wrist != null && data != null)
         {
-            float[] q = data.wrist.Qrelative;
-            if (q != null && q.Length > 3)
-            {
-                Quaternion Qr = SenseGlove_Util.ToUnityQuaternion(q);
-                wrist.transform.rotation = Qr;
-            }
+            wrist.transform.rotation = data.absoluteCalibratedWrist;
         }
     }
 

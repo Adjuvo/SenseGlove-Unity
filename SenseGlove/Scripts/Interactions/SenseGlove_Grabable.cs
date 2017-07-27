@@ -41,8 +41,6 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
     {
         if (this.isInteractable)
         {
-            SenseGlove_Debugger.Log("PickUp");
-
             this.grabReference = grabScript.grabReference;
 
             //Quaternion.Inverse(QT) * (vT - vO);
@@ -88,7 +86,6 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
                 //this.physicsBody.angularVelocity = ???
             }
         }
-        SenseGlove_Debugger.Log("Put down!");
         this.grabReference = null;
     }
 
@@ -102,8 +99,8 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
         {
             this.physicsBody.velocity = Vector3.zero;
             this.physicsBody.angularVelocity = Vector3.zero;
-            this.physicsBody.isKinematic = false;   //TDO : Change this?
-            this.physicsBody.useGravity = true;     //TODO : Change this?
+            this.physicsBody.isKinematic = this.wasKinematic;   //TDO : Change this?
+            this.physicsBody.useGravity = this.usedGravity;     //TODO : Change this?
         }
     }
     
