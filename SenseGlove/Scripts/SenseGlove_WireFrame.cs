@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 using SenseGloveCs;
+using System;
 
+/// <summary> A prefab script useful for debugging purposes. </summary>
 public class SenseGlove_WireFrame : MonoBehaviour
 {
     //--------------------------------------------------------------------------------------
@@ -43,7 +45,7 @@ public class SenseGlove_WireFrame : MonoBehaviour
     /// <summary> The base model which is duplicated and adapted to represent a section of the Glove. </summary>
     [Tooltip("The base model which is duplicated and adapted to represent a section of the Glove.")]
     public GameObject gloveBase;
-    /// <summary> The base model which is duplicated and adpted to represent a phalange of the hanger. </summary>
+    /// <summary> The base model which is duplicated and adpted to represent a phalange of the hand. </summary>
     [Tooltip("The base model which is duplicated and adpted to represent a phalange of the hanger.")]
     public GameObject handBase;
 
@@ -55,6 +57,9 @@ public class SenseGlove_WireFrame : MonoBehaviour
     [Tooltip("An optional collider for the hand palm")]
     public Collider palmCollider;
 
+    /// <summary> Determines if the fingers of this wireframe model will have a rigidBody or not. </summary>
+    [Tooltip("Determines if the fingers of this wireframe model will have a rigidBody or not.")]
+    public bool rigidFingers = false;
 
     //--------------------------------------------------------------------------------------
     // internal global variables.
@@ -282,7 +287,6 @@ public class SenseGlove_WireFrame : MonoBehaviour
         {
             if (handBase != null && handGroup != null)
             {
-              
                 for (int i = 1; i < handGroup.transform.childCount; i++)
                 {
                     handGroup.transform.GetChild(i).gameObject.SetActive(true); //activate the palm model.
@@ -335,6 +339,16 @@ public class SenseGlove_WireFrame : MonoBehaviour
                                     //dY.localPosition = new Vector3(0, handLengths[f][i][y] / 2.0f, 0);
 
                                     //dZ ?
+                                    if (rigidFingers && i == handPositions[f].Length - 2)
+                                    {
+                                        Debug.Log("Added a collider and rb to " + f + "." + i);
+                                        Collider C = dX.gameObject.AddComponent<CapsuleCollider>();
+                                        C.isTrigger = false;
+
+                                        Rigidbody RB = dX.gameObject.AddComponent<Rigidbody>();
+                                        RB.isKinematic = true;
+                                        RB.useGravity = false;
+                                    }
                                 }
                             }
                             else
@@ -556,6 +570,7 @@ public class SenseGlove_WireFrame : MonoBehaviour
 
     /// <summary> Access the gloveReady event of the trackedGlove. </summary>
     /// <returns> True during the frame that the GloveReady is called. </returns>
+    [Obsolete("No longer used since this can be achieved by a SenseGlove_Object.")]
     public bool GloveReady()
     {
         return trackedGlove != null && trackedGlove.GloveReady();
@@ -628,3 +643,14 @@ public class SenseGlove_WireFrame : MonoBehaviour
     }
 
 }
+
+
+/// <summary>
+/// Determines where the TrackedObject should connect to.
+/// </summary>
+public enum AnchorPoint
+{
+    Wrist = 0,
+    ForeArm
+}
+

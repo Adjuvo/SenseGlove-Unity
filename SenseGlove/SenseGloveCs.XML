@@ -343,6 +343,15 @@
             Contains Calibration Formulae used by the Thumb, Finger and Wrist Methods.
             </summary>
         </member>
+        <member name="F:SenseGloveCs.Calibration.x">
+            <summary> Helpful indicators. </summary>
+        </member>
+        <member name="F:SenseGloveCs.Calibration.y">
+            <summary> Helpful indicators. </summary>
+        </member>
+        <member name="F:SenseGloveCs.Calibration.z">
+            <summary> Helpful indicators. </summary>
+        </member>
         <member name="M:SenseGloveCs.Calibration.MCPPosition2D(System.Single[][])">
             <summary>
             Calculate the position of the MCP joint, based on three 2D points in the xz plane.
@@ -718,6 +727,12 @@
             The starting position of the glove origin relative to the wrist
             </summary>
             <param name="isRight"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.DefaultValues.ThimbleCompensation">
+            <summary>
+            Return the default Thimble compensation.
+            </summary>
             <returns></returns>
         </member>
         <member name="M:SenseGloveCs.DefaultValues.Position">
@@ -1238,14 +1253,6 @@
             <param name="correctNames">(optional) Correct names for older .Net versions, such as the one used by Unity.</param>
             <returns></returns>
         </member>
-        <member name="M:SenseGloveCs.DeviceScanner.GetSerialDevices(System.Boolean,SenseGloveCs.DeviceType)">
-            <summary>
-            Returns a list of all IODevices connected via SerialPort.
-            </summary>
-            <param name="correctNames"></param>
-            <param name="searchFor">Allow one to search for specific devices!</param>
-            <returns></returns>
-        </member>
         <member name="M:SenseGloveCs.DeviceScanner.CheckDevicesIndex(System.String)">
             <summary>
             Check if a certain address is already being checked for IODevices
@@ -1315,7 +1322,7 @@
             <param name="rotations"></param>
             <param name="xOnly">Use only the X-coordinates. Used to determine handPositions.</param>
         </member>
-        <member name="M:SenseGloveCs.FingerKinematics.InverseKinematics_2D(System.Single[],System.Single[],System.Single[],System.Single[],System.Single[][],System.Boolean@,System.Single)">
+        <member name="M:SenseGloveCs.FingerKinematics.InverseKinematics_2D(System.Single[],System.Single[],System.Single[],System.Single[],System.Single[],System.Single[][],System.Boolean@,System.Single)">
             <summary>
             Solve the Inverse Kinematics of the finger in 2D
             </summary>
@@ -1323,19 +1330,20 @@
             <param name="thimbleOrient"></param>
             <param name="mcpPos"></param>
             <param name="mcpOrient"></param>
+            <param name="thimbleComp"></param>
             <param name="fingerLengths"></param>
             <param name="approx"></param>
             <param name="glovePitch"></param>
             <returns></returns>
         </member>
-        <member name="M:SenseGloveCs.FingerKinematics.InverseKinematics_3D(System.Single[],System.Single[],System.Single[],System.Single[],System.Single[][],System.Boolean@,System.Single)">
+        <member name="M:SenseGloveCs.FingerKinematics.InverseKinematics_3D(System.Single[][]@,System.Single[][]@,System.Single[],System.Single[],System.Single[][],System.Boolean@,System.Single)">
             <summary>
             Solve the inverse kinematics of the finger in 3D
             </summary>
+            <param name="fingerPositions"></param>
+            <param name="fingerRotations"></param>
             <param name="thimblePos"></param>
             <param name="thimbleRot"></param>
-            <param name="mcpPos"></param>
-            <param name="mcpRot"></param>
             <param name="fingerLengths"></param>
             <param name="approx"></param>
             <param name="glovePitch"></param>
@@ -1382,6 +1390,9 @@
             The last element of each finger is the Thimble Position.
             </summary>
         </member>
+        <member name="F:SenseGloveCs.HandKinematics.thimbleCompensation">
+            <summary> The thimble compensation [xyz] for each finger. </summary>
+        </member>
         <member name="F:SenseGloveCs.HandKinematics.handLengths">
             <summary> The phalangeal lengths of the fingers. </summary>
         </member>
@@ -1420,7 +1431,7 @@
             <param name="_gloveStartPos"> The starting positions [x,y,z] of the five glove finger sections, relative to the glove origin. </param>
             <param name="_gloveStartOrient"> The starting orientation [roll,pitch,yaw] of the five glove finger sections, relative to the glove origin. </param>
         </member>
-        <member name="M:SenseGloveCs.HandKinematics.Update(System.Single[][][],System.Boolean[],SenseGloveCs.UpdateLevel,System.Boolean)">
+        <member name="M:SenseGloveCs.HandKinematics.Update(System.Single[][][],System.Boolean[],SenseGloveCs.UpdateLevel,System.Boolean,System.Boolean)">
             <summary>
             Update the Kinematic Model of the Hand
             </summary>
@@ -1428,6 +1439,7 @@
             <param name="fingers"> Boolean array that indicates which fingers are updated. </param>
             <param name="upToWhere"> Up to which point the kinematics are updated </param>
             <param name="limitJoints">Whether ot not the finger joints should be limited to natural constraints.</param>
+            <param name="solve2D"></param>
         </member>
         <member name="M:SenseGloveCs.HandKinematics.Get(SenseGloveCs.HandData)">
             <summary>
@@ -1644,9 +1656,28 @@
             <param name="dur"></param>
             <returns></returns>
         </member>
+        <member name="M:SenseGloveCs.SenseGlove.SimpleBrakeCmd(System.Int32,System.Int32,System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Send a simple brake-level command to the Communicator.
+            </summary>
+            <param name="thumbCmd"></param>
+            <param name="indexCmd"></param>
+            <param name="middleCmd"></param>
+            <param name="ringCmd"></param>
+            <param name="pinkyCmd"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.SenseGlove.SimpleBrakeCmd(System.Int32[])">
+            <summary>
+            Send a simple brake-level command to the Communicator.
+            </summary>
+            <param name="commands"></param>
+            <returns></returns>
+        </member>
         <member name="M:SenseGloveCs.SenseGlove.CheckCommunicatorUpdates">
             <summary>
             Check if any new commands or errors have come in from the communicator
+            TODO: Replace all these with a subscription to the OnCommandRecieved Event.
             </summary>
         </member>
         <member name="M:SenseGloveCs.SenseGlove.HasFunction(SenseGloveCs.GloveFunctions)">
@@ -1742,7 +1773,7 @@
             <param name="gloveAngles"></param>
             <returns></returns>
         </member>
-        <member name="M:SenseGloveCs.ThumbKinematics.InverseKinematics(System.Single[][]@,System.Single[][]@,System.Single[],System.Single[],System.Single[][],System.Boolean@,System.Single)">
+        <member name="M:SenseGloveCs.ThumbKinematics.InverseKinematics(System.Single[][]@,System.Single[][]@,System.Single[],System.Single[],System.Single[],System.Single[][],System.Boolean@,System.Single)">
             <summary>
             Solve both the Inverse- and forward kinematics of the Thumb Model.
             </summary>
@@ -1750,6 +1781,7 @@
             <param name="thumbRotations"></param>
             <param name="thimblePos"></param>
             <param name="thimbleRot"></param>
+            <param name="thimbleComp"></param>
             <param name="thumbLengths"></param>
             <param name="approx"></param>
             <param name="glovePitch"></param>

@@ -2,24 +2,36 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary> A utility class you can attach to a SenseGlove_Object to call its functions using the keyboard. </summary>
 [RequireComponent(typeof(SenseGlove_Object))] //must be connected to a GameObject containing a SenseGlove_Object
 public class SenseGlove_KeyBinds : MonoBehaviour
 {
+    /// <summary> The SenseGlove_Object that is controlled by this script. </summary>
     [Header("Objects")]
-
     private SenseGlove_Object senseGlove;
+    /// <summary> (Optional) grabscript that is attacked to the senseGlove. </summary>
     private SenseGlove_PhysGrab grabScript;
 
+    /// <summary> The key used to align the wrist with the SenseGlove's foreArm. </summary>
     [Header("Keybinds")]
-
+    [Tooltip("The key used to align the wrist with the SenseGlove's foreArm.")]
     public KeyCode calibrateWristKey = KeyCode.P;
 
+    /// <summary> The key to enter the next step of the finger calibration. </summary>
+    [Tooltip("The key to enter the next step of the finger calibration.")]
     public KeyCode calibrateFingersKey = KeyCode.RightShift;
+    
+    /// <summary> The keys to cancel and reset the calibration of the fingers. </summary>
+    [Tooltip("The keys to cancel and reset the calibration of the fingers.")]
     public KeyCode cancelCalibrationKey = KeyCode.Escape;
 
+    /// <summary> The key which forces the grabScript to drop any object it is currently holding. </summary>
+    [Tooltip("The key which forces the grabScript to drop any object it is currently holding.")]
     public KeyCode releaseObjectKey = KeyCode.E;
 
+    /// <summary> The time in seconds before the SenseGlove_Grabscript can pick up another object again. </summary>
     [Header("Settings")]
+    [Tooltip("The time in seconds before the SenseGlove_Grabscript can pick up another object again. ")]
     public float releaseTimeOut = 1;
 
     // Use this for initialization

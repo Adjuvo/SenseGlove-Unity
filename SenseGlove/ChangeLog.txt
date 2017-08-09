@@ -1,9 +1,30 @@
 # Changelog
 All notable changes to the SenseGlove Prefabs will be documented in this file.
 
-You are currently using version 0.10
+You are currently using version 0.11
 
 -------------------------------------------------------------------------------------------------------
+
+## [v0.11] - 2017-08-09
+Finger Precision and Bug Fixing
+
+### Added
+-	SendBrakeCmd() wrapper for the SenseGlove_Object, which allows one to send a simple PWM command (0...255) to a SenseGlove with brakes.
+-	SenseGlove_Detector, which checks how many (colliders of a) SenseGlove are inside an area.
+-	rigidFingers option for the SenseGlove_Wireframe, which adds capsule colliders and rigidbodies to the last digits, allowing them to push objects like a VRTK_Button.
+-	OnPickup and OnRelease events to the SenseGlove_Grabable script.
+
+### Changed
+-	The Kinematic models now take into account the distal transversal arches of the MCP joints and the hand.
+-	The twist of the thumb is now dependant on an experimentally determined function, rather than liner interpolation.
+
+### Fixed
+-	Removed the System.Management dependency of the SenseGloveCs library, which would cause build errors in Unity.
+	Since this System.Management is not available in MonoDevelop anyway, there are no changes to the Unity Scripts.
+
+
+-------------------------------------------------------------------------------------------------------
+
 
 ## [v0.10] - 2017-07-27
 GloveData and Calibration Upgrades

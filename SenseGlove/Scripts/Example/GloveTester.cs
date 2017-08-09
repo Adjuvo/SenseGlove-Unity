@@ -18,10 +18,20 @@ public class GloveTester : MonoBehaviour
     public bool gloveActive = true;
     public bool handActive = true;
 
+    public SenseGlove_Detector detector;
+
     // Use this for initialization
     void Start()
     {
-       
+        if (detector)
+        {
+            this.detector.GloveDetected += Detector_GloveDetected;
+        }  
+    }
+
+    private void Detector_GloveDetected(object source, System.EventArgs args)
+    {
+        Debug.Log("Detected a new glove!");
     }
 
 

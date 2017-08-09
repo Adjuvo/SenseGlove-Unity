@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class SenseGlove_Util
+public static class SenseGlove_Util
 { 
     
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -138,14 +138,5 @@ public class SenseGlove_Util
 
 }
 
-
-/// <summary>
-/// Determines where the TrackedObject should connect to.
-/// </summary>
-public enum AnchorPoint
-{
-    Wrist = 0,
-    ForeArm
-}
 
 

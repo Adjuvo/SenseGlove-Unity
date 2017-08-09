@@ -75,6 +75,7 @@ public class SenseGlove_Object : MonoBehaviour
     /// <summary> GloveData converted to Unity variables. </summary>
     private SenseGlove_Data convertedGloveData;
 
+    /// <summary> Determines whether or not the wrist has been calibrated on startup. </summary>
     private bool calibratedWrist = false;
 
     /// <summary>  Time that has elapsed since the Setup was called. Can be used to delay the Update Finction by setting it back to 0. </summary>
@@ -346,7 +347,7 @@ public class SenseGlove_Object : MonoBehaviour
             }
             else if (canReport)
             {
-                Debug.Log("ERROR: " + this.address + " is not a valid address.");
+                SenseGlove_Debugger.Log("ERROR: " + this.address + " is not a valid address.");
                 canReport = false;
             }
         }
@@ -371,6 +372,19 @@ public class SenseGlove_Object : MonoBehaviour
     public bool SetupFinished()
     {
         return this.gloveReady;
+    }
+
+    /// <summary>
+    /// Check if this SenseGlove_Object is (still) connected.
+    /// </summary>
+    /// <returns></returns>
+    public bool IsConnected()
+    {
+        if (glove != null)
+        {
+            return glove.IsConnected();
+        }
+        return false;
     }
 
     //------------------------------------------------------------------------------------------------------------------------------------
@@ -442,7 +456,7 @@ public class SenseGlove_Object : MonoBehaviour
                     this.glove.gloveData.wrist.SetHardwareOrientation(Quaternions.FromEuler(0, 0, Mathf.PI / 2.0f)); //correction?
                     SenseGlove_Debugger.Log("Firmware Version v2.19 or earlier. Adding Hardware Compensation");
                 }
-                else if (ID.Contains("120307") || ID.Contains("120204") || ID.Contains("120310") || ID.Contains("120309") || ID.Contains("120311") || ID.Contains("120312"))
+                else if (ID.Contains("120307") || ID.Contains("120304") || ID.Contains("120310") || ID.Contains("120309") || ID.Contains("120311") || ID.Contains("120312"))
                 {
                     this.glove.gloveData.wrist.SetHardwareOrientation(Quaternions.FromEuler(0, 0, Mathf.PI)); //correction for glove 7 & 4?  
                     SenseGlove_Debugger.Log("Firmware Version v2.19 or earlier. Adding Hardware Compensation");
@@ -459,12 +473,12 @@ public class SenseGlove_Object : MonoBehaviour
         this.gloveData = glove.GetData(false); //retrieve the latest gloveData, which contains the new lengths.
         this.convertedGloveData = new SenseGlove_Data(this.gloveData, this.glove.communicator.samplesPerSecond);
         CalibrationArgs arguments = new CalibrationArgs(args, this.GetStartJointPositions());
-        Debug.Log("Internal Calibration has finished!");
+        SenseGlove_Debugger.Log("Internal Calibration has finished!");
         this.CalibrationFinished(arguments);
     }
 
     /// <summary>
-    /// Initializa Calibration of the chosen fingers and the chosen complexity
+    /// Initialize Calibration of the chosen fingers and the chosen complexity
     /// </summary>
     /// <param name="whichFingers"></param>
     /// <param name="simpleCalibration"></param>
@@ -560,7 +574,7 @@ public class SenseGlove_Object : MonoBehaviour
     // Manual Calibration methods
 
     /// <summary>
-    /// Set the finger lengths used but this sense glove as a 5x3 array, 
+    /// Set the finger lengths used by this sense glove as a 5x3 array, 
     /// which contains the Proximal-, Medial-, and Distal Phalange lengths for each finger, in that order.
     /// </summary>
     /// <param name="newFingerLengths"></param>
@@ -663,7 +677,7 @@ public class SenseGlove_Object : MonoBehaviour
 
 
     /// <summary>
-    /// Verify if this SenseGlove has a particular functionality (buzz motors, haptic feedback, ect)
+    /// Verify if this SenseGlove has a particular functionality (buzz motors, haptic feedback, etc)
     /// </summary>
     /// <param name="function"></param>
     /// <returns></returns>
@@ -676,7 +690,33 @@ public class SenseGlove_Object : MonoBehaviour
         return false;
     }
 
+    /// <summary>
+    /// Send a simple brake PWM command to the SenseGlove.
+    /// </summary>
+    /// <param name="commands"></param>
+    /// <returns></returns>
+    public bool SimpleBrakeCmd(int[] commands)
+    {
+        if (this.glove != null)
+        {
+            return this.glove.SimpleBrakeCmd(commands);
+        }
+        return false;
+    }
 
+    /// <summary>
+    /// Send a simple brake PWM command to the SenseGlove.
+    /// </summary>
+    /// <param name="thumbCmd"></param>
+    /// <param name="indexCmd"></param>
+    /// <param name="middleCmd"></param>
+    /// <param name="ringCmd"></param>
+    /// <param name="pinkyCmd"></param>
+    /// <returns></returns>
+    public bool SimpleBrakeCmd(int thumbCmd, int indexCmd, int middleCmd, int ringCmd, int pinkyCmd)
+    {
+        return this.SimpleBrakeCmd(new int[] { thumbCmd, indexCmd, middleCmd, ringCmd, pinkyCmd });
+    }
 
 }
 
@@ -700,16 +740,12 @@ public class CalibrationArgs : System.EventArgs
 
     public CalibrationArgs(SenseGloveCs.FingerCalibrationArgs arguments, Vector3[] oldPos)
     {
-        Debug.Log("0");
         newLengths = arguments.fingerLengths;
-        Debug.Log("1");
         if (arguments.jointPositions != null)
         {
-            Debug.Log("3");
             jointPositions = new Vector3[arguments.jointPositions.Length];
             for (int f = 0; f < arguments.jointPositions.Length; f++)
             {
-                Debug.Log("4."+f+".1");
                 if (arguments.jointPositions[f].Length > 2)
                 {
                     jointPositions[f] = SenseGlove_Util.ToUnityPosition(arguments.jointPositions[f]);
@@ -718,14 +754,11 @@ public class CalibrationArgs : System.EventArgs
                 {
                     jointPositions[f] = oldPos[f];
                 }
-                Debug.Log("4." + f + ".2");
             }
         }
         else
         {
-            Debug.Log("Jointpos = null");
             jointPositions = new Vector3[] { };
         }
-        Debug.Log("Ode to joy!");
     }
 }
