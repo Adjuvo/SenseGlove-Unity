@@ -14,6 +14,9 @@ public abstract class SenseGlove_Interactable : MonoBehaviour
     [Tooltip("Indicates if this object can be interacted with at this moment.")]
     public bool isInteractable = true;
 
+    /// <summary> A reference to the GrabScript that is currently interacting with this SenseGlove. </summary>
+    protected SenseGlove_PhysGrab _grabScript;
+
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Monobehaviour
 
@@ -77,5 +80,26 @@ public abstract class SenseGlove_Interactable : MonoBehaviour
     /// Reset this object to its original state.
     /// </summary>
     public abstract void ResetObject();
+
+    /// <summary> Access the grabscript that is currently interacting with this object. </summary>
+    /// <returns></returns>
+    public SenseGlove_PhysGrab GrabScript()
+    {
+        return this._grabScript;
+    }
+
+    /// <summary>
+    /// Check if this Interactable is (already) interacting with a specified grabscript.
+    /// </summary>
+    /// <param name="grabScript"></param>
+    /// <returns></returns>
+    public bool InteractingWith(SenseGlove_PhysGrab grabScript)
+    {
+        if (grabScript != null && this._grabScript != null)
+        {
+            return GameObject.ReferenceEquals(grabScript, this._grabScript);
+        }
+        return false;
+    }
 
 }

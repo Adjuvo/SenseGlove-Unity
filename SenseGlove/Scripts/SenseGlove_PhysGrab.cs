@@ -123,6 +123,7 @@ public class SenseGlove_PhysGrab : MonoBehaviour
         {
             palmCollider.isTrigger = true;
             this.handPalm = palmCollider.gameObject.AddComponent<SenseGlove_Touch>();
+            this.handPalm.SetSourceScript(this);
             this.handPalm.touch = palmCollider;
             palm = this.handPalm != null;
         }
@@ -184,6 +185,7 @@ public class SenseGlove_PhysGrab : MonoBehaviour
         if (palmCollider != null)
         {
             palmCollider.touch.isTrigger = true;
+            palmCollider.SetSourceScript(this);
             this.handPalm = palmCollider;
             palm = true;
         }
@@ -212,6 +214,7 @@ public class SenseGlove_PhysGrab : MonoBehaviour
                     }
                 }
             }
+
             this.setupFinished = (oneThumb || palm) && oneFinger; //ensure there is at leas one finger.
             if (!this.setupFinished)
             {
@@ -483,7 +486,7 @@ public class SenseGlove_PhysGrab : MonoBehaviour
     }
 
     /// <summary>
-    /// 
+    /// Manually force the SenseGlove_PhysGrab to drop whatever it is holding.
     /// </summary>
     /// <param name="time">The amount of time before the Grabscript can pick up objects again </param>
     public void ManualRelease(float timeToReactivate = 1.0f)
@@ -496,6 +499,8 @@ public class SenseGlove_PhysGrab : MonoBehaviour
         holdingObject = false;
         this.objectToGrab = null;
     }
+
+
 
     //--------------------------------------------------------------------------------------------------------------------------------------
     // Get Functions for other scipts.
@@ -510,8 +515,12 @@ public class SenseGlove_PhysGrab : MonoBehaviour
         return this.velocity;
     }
 
-
-    
+    /// <summary> Retrieve the hand palm of this SenseGlove_touch </summary>
+    /// <returns></returns>
+    public SenseGlove_Touch GetPalm()
+    {
+        return this.handPalm;
+    }
 
 
 }

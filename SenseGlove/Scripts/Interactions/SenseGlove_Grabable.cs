@@ -86,9 +86,10 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
 
     public override void BeginInteraction(SenseGlove_PhysGrab grabScript)
     {
-        if (this.isInteractable)
+        if (this.isInteractable && !InteractingWith(grabScript)) //never interact twice with the same grabscript before EndInteraction is called.
         {
             this.grabReference = grabScript.grabReference;
+            this._grabScript = grabScript;
 
             //Quaternion.Inverse(QT) * (vT - vO);
             this.grabOffset = Quaternion.Inverse(this.grabReference.transform.rotation) * (this.grabReference.transform.position - this.transform.position);
@@ -100,13 +101,14 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
             {
                 this.wasKinematic = this.physicsBody.isKinematic;
                 this.usedGravity = this.physicsBody.useGravity;
-                
+
                 this.physicsBody.useGravity = false;
                 this.physicsBody.isKinematic = true;
                 this.physicsBody.velocity = new Vector3(0, 0, 0);
                 this.physicsBody.angularVelocity = new Vector3(0, 0, 0);
             }
             OnPickedUp();
+            
         }
     }
 
@@ -121,18 +123,24 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
 
     public override void EndInteraction(SenseGlove_PhysGrab grabScript)
     {
-        if (grabScript != null)
+        if (InteractingWith(grabScript)) //only do the proper endInteraction if the EndInteraction comes from the script currently holding it.
         {
-            if (this.physicsBody != null)
+            if (grabScript != null)
             {
-                this.physicsBody.useGravity = this.usedGravity;
-                this.physicsBody.isKinematic = this.wasKinematic;
-                this.physicsBody.velocity = grabScript.GetVelocity();
-                //this.physicsBody.angularVelocity = ???
+                //if we're not being held by this same grabscript a.k.a. we've been passed on to another one...
+
+                if (this.physicsBody != null)
+                {
+                    this.physicsBody.useGravity = this.usedGravity;
+                    this.physicsBody.isKinematic = this.wasKinematic;
+                    this.physicsBody.velocity = grabScript.GetVelocity();
+                    //this.physicsBody.angularVelocity = ???
+                }
             }
+            OnPickedUp();
+            this.grabReference = null;
+            this._grabScript = null;
         }
-        OnPickedUp();
-        this.grabReference = null;
     }
 
     public override void ResetObject()
@@ -147,5 +155,19 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
             this.physicsBody.useGravity = this.usedGravity;     //TODO : Change this?
         }
     }
+ 
+    //----------------------------------------------------------------------------------------------------------------------------------
+    // Utility Methods
+
+
+    /// <summary>
+    /// Check if this Interactable is currently being held by a SenseGlove GrabScript.
+    /// </summary>
+    /// <returns></returns>
+    public bool IsGrabbed()
+    {
+        return this.grabReference != null;
+    }
     
+       
 }

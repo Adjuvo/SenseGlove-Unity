@@ -1,9 +1,31 @@
 # Changelog
 All notable changes to the SenseGlove Prefabs will be documented in this file.
 
-You are currently using version 0.11
+You are currently using version 0.12
 
 -------------------------------------------------------------------------------------------------------
+
+## [v0.12] - 2017-08-14
+SenseGlove_Detector Fixes
+
+### Added
+-	Simple Force Feedback option for the SenseGlove_Physgrab; which sends full brake commands to the SenseGlove whenever its fingertip colliders are touching something.
+-	ignorePalm option for SenseGlove_Detector, which allows one to have interactions with fingers only.
+-	singleGlove option for SenseGlove, which limits its GloveDetected and GloveRemoved to one, no matter mow many additional grabscripts it detects.
+
+### Changed
+-	SenseGlove_physGrab can now only be attached to an object with a SenseGlove_object script attached.
+-	SenseGlove_Grabable now has a reference to its grabScript which one can access.
+-	The SenseGlove_Detector's GloveRemoved event now only fires if the glove is completely removed from the zone.
+-	SenseGlove_Detector's event arguments now include the GrabScript that raised the event(s).
+
+### Fixed
+-	Bug where the palm collider did not have a reference to its GrabScript, causing the SenseGlove_Detector to fire its events twice.
+-	Bug where a SenseGlove_Detector with activationthresholds > 1 would trigger multiple GloveDetected events.
+
+-------------------------------------------------------------------------------------------------------
+
+
 
 ## [v0.11] - 2017-08-09
 Finger Precision and Bug Fixing
@@ -16,7 +38,8 @@ Finger Precision and Bug Fixing
 
 ### Changed
 -	The Kinematic models now take into account the distal transversal arches of the MCP joints and the hand.
--	The twist of the thumb is now dependant on an experimentally determined function, rather than liner interpolation.
+-	The twist of the thumb is now dependent on an experimentally determined function, rather than linear interpolation.
+-	SenseGlove_Touch now has a reference to its grabscript.
 
 ### Fixed
 -	Removed the System.Management dependency of the SenseGloveCs library, which would cause build errors in Unity.

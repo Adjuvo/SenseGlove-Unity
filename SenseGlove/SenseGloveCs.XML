@@ -494,155 +494,6 @@
             </summary>
             <returns></returns>
         </member>
-        <member name="T:SenseGloveCs.UnityCommunicator">
-            <summary>
-            A deprecated test class for unity communication.
-            </summary>
-        </member>
-        <member name="F:SenseGloveCs.UnityCommunicator.recieveData">
-            <summary> 
-            Controls if the ReadThread should still be reading data. 
-            Set to false to force the thread to exit as a last resort. The Disconnect() function is neater.
-            </summary>
-        </member>
-        <member name="F:SenseGloveCs.UnityCommunicator.br">
-            <summary> The Baud-Rate of the Serial Port </summary>
-        </member>
-        <member name="F:SenseGloveCs.UnityCommunicator.dataBts">
-            <summary> The Databits of the Serial Port </summary>
-        </member>
-        <member name="F:SenseGloveCs.UnityCommunicator.par">
-            <summary> The Partity Bit of the Serial Port </summary>
-        </member>
-        <member name="F:SenseGloveCs.UnityCommunicator.stopBts">
-            <summary> The number of StopBits of the Serial </summary>
-        </member>
-        <member name="F:SenseGloveCs.UnityCommunicator.rts">
-            <summary> Must be set to true to communicate with Arduino-Like PCBs. </summary>
-        </member>
-        <member name="F:SenseGloveCs.UnityCommunicator._port">
-            <summary> The Serial Port that sends / recieves the data. </summary>
-        </member>
-        <member name="F:SenseGloveCs.UnityCommunicator.readThread">
-            <summary> The worker thread that receives serial data. </summary>
-        </member>
-        <member name="F:SenseGloveCs.UnityCommunicator.charBuffer">
-            <summary> The buffer of unfinished commands. </summary>
-        </member>
-        <member name="F:SenseGloveCs.UnityCommunicator.lastByte">
-            <summary> The byte that was received before the current measurement, used mostly to catch escape characters. </summary>
-        </member>
-        <member name="F:SenseGloveCs.UnityCommunicator.isSending">
-            <summary>
-            Flag is high when sending data 
-            </summary>
-        </member>
-        <member name="F:SenseGloveCs.UnityCommunicator.outBuffer">
-            <summary>
-            Buffer of outgoing commands
-            </summary>
-        </member>
-        <member name="F:SenseGloveCs.UnityCommunicator.lastOut">
-            <summary>
-            THe last character sent to the MC
-            </summary>
-        </member>
-        <member name="M:SenseGloveCs.UnityCommunicator.#ctor(System.String)">
-            <summary>
-            Create a new USBCommunicator on the specified COMPort;
-            </summary>
-            <param name="COMPort"></param>
-        </member>
-        <member name="M:SenseGloveCs.UnityCommunicator.Finalize">
-            <summary>
-            Deconstructor
-            </summary>
-        </member>
-        <member name="M:SenseGloveCs.UnityCommunicator.Connect">
-            <summary>
-            (Re)Connect to the Serial USB device.
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="M:SenseGloveCs.UnityCommunicator.Disconnect(SenseGloveCs.Diagnostics.ErrorCodes)">
-            <summary>
-            Disconnect from this device.
-            </summary>
-        </member>
-        <member name="M:SenseGloveCs.UnityCommunicator.Read">
-            <summary>
-            Function that is run within the ReadThread and keeps it in scope.
-            </summary>
-        </member>
-        <member name="M:SenseGloveCs.UnityCommunicator.AddCommand(System.Char)">
-            <summary>
-            Add a new command to the queue
-            </summary>
-            <param name="c"></param>
-        </member>
-        <member name="M:SenseGloveCs.UnityCommunicator.Address">
-            <summary>
-            Retrieve the name of the Serial Port.
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="M:SenseGloveCs.UnityCommunicator.Send2Device(System.String)">
-            <summary>
-            Send command(s) to the MicroController aboard the Sense Glove.
-            </summary>
-            <param name="command">The command to send</param>
-            <returns>Returns true if the command has been fired.</returns>
-        </member>
-        <member name="M:SenseGloveCs.UnityCommunicator.Send2Device(System.Int16)">
-            <summary>
-            sends a 16 bit integer to the device as a byte array of 2 elements
-            </summary>
-            <param name="i16"></param>
-            <returns></returns>
-        </member>
-        <member name="M:SenseGloveCs.UnityCommunicator.Send2Device(System.Int32)">
-            <summary>
-            sends a 32 bit integer to the device as a byte array of 4 elements
-            </summary>
-            <param name="i32"></param>
-            <returns></returns>
-        </member>
-        <member name="M:SenseGloveCs.UnityCommunicator.Send2Device(System.Int64)">
-            <summary>
-            sends a 64 bit integer to the device as a byte array of 8 elements
-            </summary>
-            <param name="i64"></param>
-            <returns></returns>
-        </member>
-        <member name="M:SenseGloveCs.UnityCommunicator.Send2Device(System.Byte[])">
-            <summary>
-            Send an array of Bytes to the Teensy
-            </summary>
-            <param name="bytes"></param>
-            <returns></returns>
-        </member>
-        <member name="M:SenseGloveCs.UnityCommunicator.Send2Device(System.Byte[],System.Int32,System.Int32)">
-            <summary>
-            Send an array of Bytes to the Teensy
-            </summary>
-            <param name="bytes"></param>
-            <param name="offset"></param>
-            <param name="count"></param>
-            <returns></returns>
-        </member>
-        <member name="M:SenseGloveCs.UnityCommunicator.Send2Device(System.Char)">
-            <summary>
-            Send a single byte to 
-            </summary>
-            <param name="c"></param>
-            <returns></returns>
-        </member>
-        <member name="M:SenseGloveCs.UnityCommunicator.IsConnected">
-            <summary>
-            Check if the Serial Port is (still) connected.
-            </summary>
-            <returns></returns>
-        </member>
         <member name="T:SenseGloveCs.DefaultValues">
             <summary>
             Utility class to create default (kinematic) values
@@ -900,6 +751,19 @@
             <summary> Create a new instance of the FingerEventArgs. </summary>
             <param name="newFingerLengths"></param>
             <param name="newJointPositions"></param>
+        </member>
+        <member name="T:SenseGloveCs.ThumbCalibration">
+            <summary>
+            Class that contains the calibration formulae for the Thumb
+            </summary>
+        </member>
+        <member name="F:SenseGloveCs.ThumbCalibration.feelCompensation">
+            <summary> A compensation used when determining the CMC joint </summary>
+        </member>
+        <member name="M:SenseGloveCs.ThumbCalibration.FeelerBased(SenseGloveCs.GloveData)">
+            <summary> Calculate the CMC joint position and thumb length </summary>
+            <param name="data"></param>
+            <returns></returns>
         </member>
         <member name="T:SenseGloveCs.Util.DeviceInfo">
             <summary>
@@ -1755,6 +1619,11 @@
             <param name="qWrist"></param>
             <param name="qForeArm"></param>
         </member>
+        <member name="M:SenseGloveCs.SenseGlove.CalibrateThumb">
+            <summary>
+            Calibrate the thumb position.
+            </summary>
+        </member>
         <member name="T:SenseGloveCs.ThumbKinematics">
             <summary>
             Contains kinematic formulae related to the thumb
@@ -1773,7 +1642,7 @@
             <param name="gloveAngles"></param>
             <returns></returns>
         </member>
-        <member name="M:SenseGloveCs.ThumbKinematics.InverseKinematics(System.Single[][]@,System.Single[][]@,System.Single[],System.Single[],System.Single[],System.Single[][],System.Boolean@,System.Single)">
+        <member name="M:SenseGloveCs.ThumbKinematics.InverseKinematics_3D(System.Single[][]@,System.Single[][]@,System.Single[],System.Single[],System.Single[],System.Single[][],System.Boolean,System.Boolean@,System.Single)">
             <summary>
             Solve both the Inverse- and forward kinematics of the Thumb Model.
             </summary>
@@ -1783,6 +1652,7 @@
             <param name="thimbleRot"></param>
             <param name="thimbleComp"></param>
             <param name="thumbLengths"></param>
+            <param name="limitAngles"></param>
             <param name="approx"></param>
             <param name="glovePitch"></param>
             <returns></returns>
@@ -1807,7 +1677,7 @@
             Set to false to force the thread to exit as a last resort. The Disconnect() function is neater.
             </summary>
         </member>
-        <member name="F:SenseGloveCs.SerialCommunicator.br">
+        <member name="F:SenseGloveCs.SerialCommunicator.baudRate">
             <summary> The Baud-Rate of the Serial Port </summary>
         </member>
         <member name="F:SenseGloveCs.SerialCommunicator.dataBts">

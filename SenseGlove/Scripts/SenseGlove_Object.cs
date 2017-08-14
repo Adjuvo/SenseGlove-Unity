@@ -594,7 +594,7 @@ public class SenseGlove_Object : MonoBehaviour
     /// <returns></returns>
     public float[][] GetFingerLengths()
     {
-        if (this.glove != null)
+        if (this.glove != null && this.GloveReady())
         {
             return this.gloveData.handModel.GetFingerLengths();   
         }
@@ -669,6 +669,16 @@ public class SenseGlove_Object : MonoBehaviour
         return false;
     }
 
+    /// <summary>
+    /// Using the index glove link as a 'feeler', calibrate the thumb CMC position/
+    /// </summary>
+    public void CalibrateThumb()
+    {
+        if (this.GloveReady())
+        {
+            this.glove.CalibrateThumb();
+        }
+    }
 
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -717,6 +727,9 @@ public class SenseGlove_Object : MonoBehaviour
     {
         return this.SimpleBrakeCmd(new int[] { thumbCmd, indexCmd, middleCmd, ringCmd, pinkyCmd });
     }
+
+
+
 
 }
 

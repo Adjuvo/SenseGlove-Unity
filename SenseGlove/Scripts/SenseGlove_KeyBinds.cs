@@ -17,12 +17,16 @@ public class SenseGlove_KeyBinds : MonoBehaviour
     [Tooltip("The key used to align the wrist with the SenseGlove's foreArm.")]
     public KeyCode calibrateWristKey = KeyCode.P;
 
+    /// <summary> Using the index finger as a 'feeler', calibrate the thumb CMC joint and finger length </summary>
+    [Tooltip("The key used to calibrate the thumb, using the index link as a 'feeler'.")]
+    public KeyCode calibrateThumb = KeyCode.T;
+
     /// <summary> The key to enter the next step of the finger calibration. </summary>
     [Tooltip("The key to enter the next step of the finger calibration.")]
     public KeyCode calibrateFingersKey = KeyCode.RightShift;
     
     /// <summary> The keys to cancel and reset the calibration of the fingers. </summary>
-    [Tooltip("The keys to cancel and reset the calibration of the fingers.")]
+    [Tooltip("The key to cancel and reset the calibration of the fingers.")]
     public KeyCode cancelCalibrationKey = KeyCode.Escape;
 
     /// <summary> The key which forces the grabScript to drop any object it is currently holding. </summary>
@@ -64,6 +68,15 @@ public class SenseGlove_KeyBinds : MonoBehaviour
             {
                 this.senseGlove.CancelCalibration();
             }
+
+            /////////
+
+            if (Input.GetKeyDown(this.calibrateThumb))
+            {
+                SenseGlove_Debugger.Log("Calibrating Thumb...");
+                this.senseGlove.CalibrateThumb();
+            }
+        
         }	
 
         if (grabScript != null)

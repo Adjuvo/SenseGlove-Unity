@@ -7,8 +7,14 @@ using UnityEngine;
 /// </summary>
 public static class SenseGlove_Manager
 {
+    //--------------------------------------------------------------------------------------------------------------------------------
+    // Private Variables
+
     /// <summary> List of all devices that are already connected to something. </summary>
     private static List<string> connectedIDs = new List<string>();
+
+    //--------------------------------------------------------------------------------------------------------------------------------
+    // Glove Management
 
     /// <summary> Tell the SenseGlove_Manager that this deviceID is now in use or no longer in use. </summary>
     /// <param name="deviceID"></param>
@@ -54,6 +60,9 @@ public static class SenseGlove_Manager
         else { connectedIDs = new List<string>(); }
         return -1;
     }
+
+    //--------------------------------------------------------------------------------------------------------------------------------
+    // Monobehaviour (if added to the scene)
 
 
 

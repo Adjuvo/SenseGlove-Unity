@@ -26,7 +26,13 @@ public class GloveTester : MonoBehaviour
         if (detector)
         {
             this.detector.GloveDetected += Detector_GloveDetected;
+            this.detector.GloveRemoved += Detector_GloveRemoved;
         }  
+    }
+
+    private void Detector_GloveRemoved(object source, System.EventArgs args)
+    {
+        Debug.Log("Glove was removed...");
     }
 
     private void Detector_GloveDetected(object source, System.EventArgs args)
