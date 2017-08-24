@@ -4,6 +4,478 @@
         <name>SenseGloveCs</name>
     </assembly>
     <members>
+        <member name="T:SenseGloveCs.Calibration.AutoCalibration">
+            <summary> Record a number of points, then choose the most likely candidates from the set. </summary>
+        </member>
+        <member name="F:SenseGloveCs.Calibration.AutoCalibration.dataPoints">
+            <summary> The points / snapshot recorded </summary>
+        </member>
+        <member name="F:SenseGloveCs.Calibration.AutoCalibration.minimumPoints">
+            <summary> The minimum amount of points needed to complete this calibration, taken from myAlgorithm. </summary>
+        </member>
+        <member name="F:SenseGloveCs.Calibration.AutoCalibration.pointLimit">
+            <summary> The maximum amount of points that are collected before processing starts. Set to 0 to ignore this constraint. </summary>
+        </member>
+        <member name="F:SenseGloveCs.Calibration.AutoCalibration.timeLimit">
+            <summary> The time (in seconds) that must pass before processing starts. Set to 0 to ignore this constraint. </summary>
+        </member>
+        <member name="F:SenseGloveCs.Calibration.AutoCalibration.activationTime">
+            <summary> Time that the first datapoint was added. Used to check time limits. </summary>
+        </member>
+        <member name="F:SenseGloveCs.Calibration.AutoCalibration.maxTimeLimit">
+            <summary> The maximum amount of time that an Autocalibrator can collect data for. </summary>
+        </member>
+        <member name="F:SenseGloveCs.Calibration.AutoCalibration.maxPointLimit">
+            <summary> The maximum amount of time that an Autocalibrator can collect data for. </summary>
+        </member>
+        <member name="F:SenseGloveCs.Calibration.AutoCalibration.maxAttempts">
+            <summary> The maximum attempts that will be made to find the best candidates. </summary>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.AutoCalibration.#ctor(SenseGloveCs.Calibration.CalibrationAlgorithm,System.Boolean,System.Int32,System.Single,System.Int32)">
+            <summary> Create a new automatic calibration method using the following algorithm </summary>
+            <param name="algorithm"></param>
+            <param name="processAsynch"></param>
+            <param name="maxPoints"></param>
+            <param name="maxTime"></param>
+            <param name="minPoints"></param>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.AutoCalibration.Reset">
+            <summary> Remove the stored points. </summary>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.AutoCalibration.IsAutomated">
+            <summary> This class takes data from the Update method. </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.AutoCalibration.TimeLimitPassed">
+            <summary> Check if the time limit has been reached. </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.AutoCalibration.PointLimitPassed">
+            <summary> Check if the point limit has been reached. </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.AutoCalibration.AddDataPoint(SenseGloveCs.GloveData)">
+            <summary> Add a snapshot to our DataPoints, then check if we can start processing.  </summary>
+            <param name="data"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.AutoCalibration.AddSnapShot(SenseGloveCs.GloveData)">
+            <summary> Adds a snapshot to myAlgorithm. Not required here since the entry point is the AddDataPoint method. </summary>
+            <param name="data"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.AutoCalibration.Run">
+            <summary> Extract the required points, then do as normal, </summary>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.AutoCalibration.ValidateLimits(System.Int32@,System.Single@)">
+            <summary> Ensure that the chosen parameters will not cause a memory overflow. </summary>
+            <param name="maxPoints"></param>
+            <param name="maxTime"></param>
+        </member>
+        <member name="T:SenseGloveCs.Calibration.CalibrationAlgorithm">
+            <summary> An algorithm that can caluclate the joint positions and/or finger lengths based on a number of 'snapshots' </summary>
+        </member>
+        <member name="F:SenseGloveCs.Calibration.CalibrationAlgorithm.calibrateLengths">
+            <summary> Calculate new finger lengths. </summary>
+        </member>
+        <member name="F:SenseGloveCs.Calibration.CalibrationAlgorithm.calibrateJoints">
+            <summary> Calculate new Joint positions. </summary>
+        </member>
+        <member name="F:SenseGloveCs.Calibration.CalibrationAlgorithm.fingers">
+            <summary> Which fingers to apply the calibrationAlgorithm to. </summary>
+        </member>
+        <member name="F:SenseGloveCs.Calibration.CalibrationAlgorithm.snapshots">
+            <summary> The snapshots that have been stored in this algorithm. </summary>
+        </member>
+        <member name="F:SenseGloveCs.Calibration.CalibrationAlgorithm.currentSnapshot">
+            <summary> The current snapshot for which to add a datapoint. </summary>
+        </member>
+        <member name="F:SenseGloveCs.Calibration.CalibrationAlgorithm.x">
+            <summary> Assistive variables to access the X, Y, Z values. </summary>
+        </member>
+        <member name="F:SenseGloveCs.Calibration.CalibrationAlgorithm.y">
+            <summary> Assistive variables to access the X, Y, Z values. </summary>
+        </member>
+        <member name="F:SenseGloveCs.Calibration.CalibrationAlgorithm.z">
+            <summary> Assistive variables to access the X, Y, Z values. </summary>
+        </member>
+        <member name="F:SenseGloveCs.Calibration.CalibrationAlgorithm.allowableJointDeviation">
+            <summary> How far the joint positions are allowed to deviate from the last calibration step. </summary>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.CalibrationAlgorithm.IsStable(SenseGloveCs.GloveData,System.Single,System.Single,System.DateTime@)">
+            <summary> Check if the desired GloveData is stable enough. </summary>
+            <param name="data"></param>
+            <param name="lastSteadyTime"></param>
+            <param name="steadyDistance"></param>
+            <param name="steadyTime"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.CalibrationAlgorithm.IsDistinct(SenseGloveCs.GloveData,System.Single)">
+            <summary> Check if this datapoint is far enough away from the other points. </summary>
+            <param name="data"></param>
+            <param name="minimumDistance"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.CalibrationAlgorithm.FindCalibrationPoints(System.Collections.Generic.List{SenseGloveCs.GloveData}@,System.Int32)">
+            <summary> Find the indices in dataPoints that are the best candidates for this calibration algorithm. </summary>
+            <param name="dataPoints"></param>
+            <param name="maxAttempts"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.CalibrationAlgorithm.Name">
+            <summary> The name of this calibration sequence, used for debugging purposes. </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.CalibrationAlgorithm.WhichFingers">
+            <summary> Which fingers the calibration sequence calibrates. </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.CalibrationAlgorithm.NumberOfSteps">
+            <summary> Check how many snapshots are required to complete this calculation. </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.CalibrationAlgorithm.CurrentStep">
+            <summary> How many snapshots this algorithm has collected untill now. </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.CalibrationAlgorithm.CanStart">
+            <summary> Check if this calibration algorithm can start running. </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.CalibrationAlgorithm.AddDataPoint(SenseGloveCs.GloveData)">
+            <summary> Add a dataPoint to this algorithm. If enough have been added, run the calculation. </summary>
+            <param name="data"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.CalibrationAlgorithm.Calculate">
+            <summary> Run the calculations </summary>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.CalibrationAlgorithm.Reset">
+            <summary> Reset the dataPoints to re-use this calibration algorithm </summary>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.CalibrationAlgorithm.ValidateFingerOptions(System.Boolean[])">
+            <summary> Verify that the correct finger options are used for this algorithm. </summary>
+            <param name="fingers"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.CalibrationAlgorithm.ValidateFingerLengths(System.Single[][])">
+            <summary> Validate the new finger lengths </summary>
+            <param name="newLengths"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.CalibrationAlgorithm.ValidateJointPositions(System.Single[][],System.Single[][])">
+            <summary> Ensure that the new joint positions are not too far from the old ones... </summary>
+            <param name="newPositions"></param>
+            <param name="oldPositions"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.CalibrationAlgorithm.ValidateTotalLength(System.Single,System.Int32)">
+            <summary> Ensure the total lengths are not larger than that of a P95 man or smaller than that of a P5 woman? </summary>
+            <param name="totalLength"></param>
+            <param name="finger"></param>
+            <returns></returns>
+        </member>
+        <member name="T:SenseGloveCs.Calibration.CalibrationAlgorithm.CalibrationFinishedEventHandler">
+            <summary> Delegate function implemented by subscribers to the OnFingerCalibrationFinished event. </summary>
+            <param name="source"></param>
+            <param name="args"></param>
+        </member>
+        <member name="E:SenseGloveCs.Calibration.CalibrationAlgorithm.OnCalibrationFinished">
+            <summary> Fires when the new finger lengths and joint positions are calculated. </summary>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.CalibrationAlgorithm.CalibrationFinished(SenseGloveCs.FingerCalibrationArgs)">
+            <summary>  Used to call the OnFingerCalibrationFinished event in all subscribers. </summary>
+        </member>
+        <member name="T:SenseGloveCs.Calibration.CalibrationMethod">
+            <summary> A calibrationMethod that runs an algorithm eiher in the current thread or in a separate one. </summary>
+        </member>
+        <member name="F:SenseGloveCs.Calibration.CalibrationMethod.myAlgorithm">
+            <summary> The calibration algorithm that runs in the background of this Calibrator. </summary>
+        </member>
+        <member name="F:SenseGloveCs.Calibration.CalibrationMethod.calculationThread">
+            <summary> The thread used to fulfill all calculations once all data points have been collected. </summary>
+        </member>
+        <member name="F:SenseGloveCs.Calibration.CalibrationMethod.calibrationFired">
+            <summary> Prevents the CalibrationMethod from firing more than once before the Reset is called. </summary>
+        </member>
+        <member name="F:SenseGloveCs.Calibration.CalibrationMethod.asynch">
+            <summary> Whether or not to perform the calibration algorithm in a separate thread. </summary>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.CalibrationMethod.IsAutomated">
+            <summary> Check if this calibration method can recieve new data points through the Update() function.  </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.CalibrationMethod.AddDataPoint(SenseGloveCs.GloveData)">
+            <summary> Add a datapoint to this calibration method and verify if the calibration can start. </summary>
+            <param name="data"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.CalibrationMethod.AddSnapShot(SenseGloveCs.GloveData)">
+            <summary> Add a snapshot to the Calibration Algorithm if all conditions are met. </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.CalibrationMethod.StartCalculation">
+            <summary> Entry point to call the Run method, determines whether or not a new thread is required. </summary>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.CalibrationMethod.Run">
+            <summary> Entry point which calls the Calculate Method, and ensures a proper event calling and reset at the end of calculation. </summary>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.CalibrationMethod.IsCalculating">
+            <summary> Check whether or not the calibration calculations are running in the worker thread. </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.CalibrationMethod.CleanUpThread">
+            <summary> Clean up the calculation thread, if it is running. </summary>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.CalibrationMethod.Reset">
+            <summary> Reset this calibration sequence- and data. </summary>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.CalibrationMethod.Finalize">
+            <summary> Ensure that the calibration thread is cleaned up. </summary>
+        </member>
+        <member name="T:SenseGloveCs.Calibration.CalibrationMethod.CalibrationFinishedEventHandler">
+            <summary> Delegate function implemented by subscribers to the OnFingerCalibrationFinished event. </summary>
+            <param name="source"></param>
+            <param name="args"></param>
+        </member>
+        <member name="E:SenseGloveCs.Calibration.CalibrationMethod.OnCalibrationFinished">
+            <summary> Fires when the new finger lengths and joint positions are calculated. </summary>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.CalibrationMethod.CalibrationFinished(SenseGloveCs.FingerCalibrationArgs)">
+            <summary>  Used to call the OnFingerCalibrationFinished event in all subscribers. </summary>
+        </member>
+        <member name="T:SenseGloveCs.Calibration.Circle2D">
+            <summary> A calibration algorithm that uses three points to calculate the origin and raduis of a cirlce.  </summary>
+        </member>
+        <member name="F:SenseGloveCs.Calibration.Circle2D.lastSteadyPos">
+            <summary> The last thimble positions that were considered stable. </summary>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.Circle2D.Name">
+            <summary> Returns the name of the calibration algorithm. </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.Circle2D.#ctor(System.Boolean[],System.Boolean,System.Boolean)">
+            <summary> Create a new instance of this calibration algorithm. </summary>
+            <param name="whichFingers"></param>
+            <param name="fingerLengths"></param>
+            <param name="jointPositions"></param>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.Circle2D.Reset">
+            <summary> reset the datapoints of this algorithm </summary>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.Circle2D.Calculate">
+            <summary> Calculate the joint positions and figner lengths </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.Circle2D.IsDistinct(SenseGloveCs.GloveData,System.Single)">
+            <summary> Check if the positions of the thimble are distinct enough </summary>
+            <remarks> Using thimble positions and not finger positions since they all have the same offset. </remarks>
+            <param name="data"></param>
+            <param name="minimumDistance"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.Circle2D.IsStable(SenseGloveCs.GloveData,System.Single,System.Single,System.DateTime@)">
+            <summary> Check if the positions are stable. </summary>
+            <param name="data"></param>
+            <param name="steadyDistance"></param>
+            <param name="steadyTime"></param>
+            <param name="lastSteadyTime"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.Circle2D.FindCalibrationPoints(System.Collections.Generic.List{SenseGloveCs.GloveData}@,System.Int32)">
+            <summary> Find the indices in dataPoints that are the best candidates for this calibration algorithm. </summary>
+            <param name="dataPoints"></param>
+            <param name="maxAttempts"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.Circle2D.FindPoints(System.Single[][],System.Int32)">
+            <summary> Find the outer- and middle points to use in 2D calibration. </summary>
+            <param name="dataPoints"></param>
+            <param name="maxAttempts"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.Circle2D.RetrieveUpperPoints(System.Single,System.Single,System.Single,System.Single,System.Single[][]@,System.Collections.Generic.List{System.Int32}@,System.Int32,System.Int32)">
+            <summary>
+            
+            </summary>
+            <param name="topX"></param>
+            <param name="topZ"></param>
+            <param name="percX"></param>
+            <param name="percZ"></param>
+            <param name="points"></param>
+            <param name="upperPoints"></param>
+            <param name="maxIterations"></param>
+            <param name="attempt"></param>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.Circle2D.RetrieveLowerPoints(System.Single,System.Single,System.Single,System.Single,System.Single[][]@,System.Collections.Generic.List{System.Int32}@,System.Int32,System.Int32)">
+            <summary>
+            
+            </summary>
+            <param name="botX"></param>
+            <param name="botZ"></param>
+            <param name="percX"></param>
+            <param name="percZ"></param>
+            <param name="points"></param>
+            <param name="lowerPoints"></param>
+            <param name="maxIterations"></param>
+            <param name="attempt"></param>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.Circle2D.RetrieveMiddlePoints(System.Single,System.Single,System.Single[][]@,System.Collections.Generic.List{System.Int32}@)">
+            <summary>
+            
+            </summary>
+            <param name="centerX"></param>
+            <param name="centerZ"></param>
+            <param name="points"></param>
+            <param name="middlePoints"></param>
+        </member>
+        <member name="T:SenseGloveCs.Calibration.ManualCalibration">
+            <summary> A manual calibration method. </summary>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.ManualCalibration.#ctor(SenseGloveCs.Calibration.CalibrationAlgorithm,System.Boolean)">
+            <summary> Create a new instance of manual calibration. </summary>
+            <param name="algorithm"></param>
+            <param name="calculateAsynch"></param>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.ManualCalibration.IsAutomated">
+            <summary> A manual calibration is not automated. </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.ManualCalibration.AddSnapShot(SenseGloveCs.GloveData)">
+            <summary> Add this data to the snapshot. </summary>
+            <param name="data"></param>
+            <returns></returns>
+        </member>
+        <member name="T:SenseGloveCs.Calibration.SemiAutoCalibration">
+            <summary> A semi-automatic calibration method </summary>
+        </member>
+        <member name="F:SenseGloveCs.Calibration.SemiAutoCalibration.minimumDistance">
+            <summary> Distance (in mm) between the next point(s) to call them 'Distinct' from one another. </summary>
+        </member>
+        <member name="F:SenseGloveCs.Calibration.SemiAutoCalibration.steadyDistance">
+            <summary> Distance (in mm) that the  </summary>
+        </member>
+        <member name="F:SenseGloveCs.Calibration.SemiAutoCalibration.steadyTime">
+            <summary> Time (in seconds) that the data must be steady for. </summary>
+        </member>
+        <member name="F:SenseGloveCs.Calibration.SemiAutoCalibration.lastSteadyTime">
+            <summary> The time the positions were steady. </summary>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.SemiAutoCalibration.#ctor(SenseGloveCs.Calibration.CalibrationAlgorithm,System.Boolean,System.Single,System.Single,System.Single)">
+            <summary>  </summary>
+            <param name="algorithm"></param>
+            <param name="calculateAsynch"></param>
+            <param name="distinctionDist"></param>
+            <param name="steadyTimer"></param>
+            <param name="steadyDist"></param>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.SemiAutoCalibration.IsAutomated">
+            <summary> This is considered an automated calibration step. </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.SemiAutoCalibration.AddSnapShot(SenseGloveCs.GloveData)">
+            <summary>  </summary>
+            <param name="data"></param>
+            <returns></returns>
+        </member>
+        <member name="T:SenseGloveCs.Calibration.CalibrationFunctions">
+            <summary>
+            Contains Calibration Formulae used by the Thumb, Finger and Wrist Methods.
+            </summary>
+        </member>
+        <member name="F:SenseGloveCs.Calibration.CalibrationFunctions.x">
+            <summary> Helpful indicators. </summary>
+        </member>
+        <member name="F:SenseGloveCs.Calibration.CalibrationFunctions.y">
+            <summary> Helpful indicators. </summary>
+        </member>
+        <member name="F:SenseGloveCs.Calibration.CalibrationFunctions.z">
+            <summary> Helpful indicators. </summary>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.CalibrationFunctions.MCPPosition2D(System.Single[][])">
+            <summary>
+            Calculate the position of the MCP joint, based on three 2D points in the xz plane.
+            </summary>
+            <param name="points"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.CalibrationFunctions.CMCPosition3D(System.Single[][])">
+            <summary>
+            Calculate the position of the CMC or MCP joint, based on four distinct fingertip positions. 
+            </summary>
+            <param name="points"></param>
+            <remarks>Input in float.</remarks>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.CalibrationFunctions.CMCPosition3D_alternative(System.Single[][])">
+            <summary>
+            Calculate the position of the CMC or MCP joint, based on four distinct fingertip positions, alternatively 
+            </summary>
+            <remarks> 
+            https://en.wikipedia.org/wiki/Cramer%27s_rule
+             </remarks>
+            <param name="points"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.CalibrationFunctions.Determinant4x4(System.Single[0:,0:])">
+            <summary>
+            Calculate the Determinant of a 4x4 matrix
+            </summary>
+            <remarks> http://stackoverflow.com/questions/3013419/deteminant-of-matrix </remarks>
+            <param name="m">The 4x4 Matrix of which to calculate the determinant. </param>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.CalibrationFunctions.Determinant3x3(System.Single[0:,0:])">
+            <summary>
+            Calculate the Determinant of a 3x3 matrix
+            </summary>
+            <param name="m"></param>
+            <returns></returns>
+        </member>
+        <member name="F:SenseGloveCs.Calibration.CalibrationFunctions.feelCompensation">
+            <summary> A compensation used when determining the CMC joint </summary>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.CalibrationFunctions.FeelerBased(SenseGloveCs.GloveData,SenseGloveCs.Finger,SenseGloveCs.Finger)">
+            <summary> Calculate the CMC joint position and thumb length </summary>
+            <param name="data"></param>
+            <param name="from"></param>
+            <param name="to"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.CalibrationFunctions.CalculateJointPositions(SenseGloveCs.GloveData,System.Boolean[],System.Single[][],System.Single[][][])">
+            <summary>  Calculate the joint positions based on a known set of finger lengths. </summary>
+            <param name="data"></param>
+            <param name="fingers"></param>
+            <param name="handLengths"></param>
+            <param name="handAngles"></param>
+            <returns></returns>
+        </member>
+        <member name="T:SenseGloveCs.FingerCalibrationArgs">
+            <summary>
+            Arguments passed when the FingerCalibration finishes.
+            </summary>
+        </member>
+        <member name="F:SenseGloveCs.FingerCalibrationArgs.fingerLengths">
+            <summary> The new phalange lengths, in mm, from thumb to pinky, from proximal to distal. </summary>
+        </member>
+        <member name="F:SenseGloveCs.FingerCalibrationArgs.jointPositions">
+            <summary> The new joint positions, in mm, relative to the common origin, from thumb to pinky, from proximal to distal. </summary>
+        </member>
+        <member name="M:SenseGloveCs.FingerCalibrationArgs.#ctor(System.Single[][],System.Single[][])">
+            <summary> Create a new instance of the FingerEventArgs. </summary>
+            <param name="newFingerLengths"></param>
+            <param name="newJointPositions"></param>
+        </member>
+        <member name="M:SenseGloveCs.FingerCalibrationArgs.None">
+            <summary> Retrieve a set of empty FingerCalibrationArgs, which will not update the mathematical model. </summary>
+            <returns></returns>
+        </member>
+        <member name="T:SenseGloveCs.CalibrationType">
+            <summary> The Type of Calibration to initate </summary>
+        </member>
+        <member name="F:SenseGloveCs.CalibrationType.FingerMCPAndLengths">
+            <summary> Calculate the MCP joint positions and finger lengths based on the origin and radius of a circle. </summary>
+        </member>
         <member name="T:SenseGloveCs.Anatomy">
             <summary>
             Utility Class containing all anatomical data.
@@ -338,60 +810,6 @@
             <param name="wristAngles"></param>
             <returns></returns>
         </member>
-        <member name="T:SenseGloveCs.Calibration">
-            <summary>
-            Contains Calibration Formulae used by the Thumb, Finger and Wrist Methods.
-            </summary>
-        </member>
-        <member name="F:SenseGloveCs.Calibration.x">
-            <summary> Helpful indicators. </summary>
-        </member>
-        <member name="F:SenseGloveCs.Calibration.y">
-            <summary> Helpful indicators. </summary>
-        </member>
-        <member name="F:SenseGloveCs.Calibration.z">
-            <summary> Helpful indicators. </summary>
-        </member>
-        <member name="M:SenseGloveCs.Calibration.MCPPosition2D(System.Single[][])">
-            <summary>
-            Calculate the position of the MCP joint, based on three 2D points in the xz plane.
-            </summary>
-            <param name="points"></param>
-            <returns></returns>
-        </member>
-        <member name="M:SenseGloveCs.Calibration.CMCPosition3D(System.Single[][])">
-            <summary>
-            Calculate the position of the CMC or MCP joint, based on four distinct fingertip positions. 
-            </summary>
-            <param name="points"></param>
-            <remarks>Input in float.</remarks>
-            <returns></returns>
-        </member>
-        <member name="M:SenseGloveCs.Calibration.CMCPosition3D_alternative(System.Single[][])">
-            <summary>
-            Calculate the position of the CMC or MCP joint, based on four distinct fingertip positions, alternatively 
-            </summary>
-            <remarks> 
-            https://en.wikipedia.org/wiki/Cramer%27s_rule
-             </remarks>
-            <param name="points"></param>
-            <returns></returns>
-        </member>
-        <member name="M:SenseGloveCs.Calibration.Determinant4x4(System.Single[0:,0:])">
-            <summary>
-            Calculate the Determinant of a 4x4 matrix
-            </summary>
-            <remarks> http://stackoverflow.com/questions/3013419/deteminant-of-matrix </remarks>
-            <param name="m">The 4x4 Matrix of which to calculate the determinant. </param>
-            <returns></returns>
-        </member>
-        <member name="M:SenseGloveCs.Calibration.Determinant3x3(System.Single[0:,0:])">
-            <summary>
-            Calculate the Determinant of a 3x3 matrix
-            </summary>
-            <param name="m"></param>
-            <returns></returns>
-        </member>
         <member name="T:SenseGloveCs.GloveData">
             <summary>
             Data Block representing a 'Snaphot' of the SenseGlove at this moment
@@ -498,6 +916,18 @@
             <summary>
             Utility class to create default (kinematic) values
             </summary>
+        </member>
+        <member name="F:SenseGloveCs.DefaultValues.x">
+            <summary> Default indices for the X, Y, Z and W values. </summary>
+        </member>
+        <member name="F:SenseGloveCs.DefaultValues.y">
+            <summary> Default indices for the X, Y, Z and W values. </summary>
+        </member>
+        <member name="F:SenseGloveCs.DefaultValues.z">
+            <summary> Default indices for the X, Y, Z and W values. </summary>
+        </member>
+        <member name="F:SenseGloveCs.DefaultValues.w">
+            <summary> Default indices for the X, Y, Z and W values. </summary>
         </member>
         <member name="M:SenseGloveCs.DefaultValues.HandLengths">
             <summary>
@@ -636,134 +1066,6 @@
         </member>
         <member name="F:SenseGloveCs.DeviceType.Unknown">
             <summary> Indicated a device type that is not recognized or supported by the DLL. </summary>
-        </member>
-        <member name="T:SenseGloveCs.FingerCalibration">
-            <summary> A class to manage the finger calibration. </summary>
-        </member>
-        <member name="F:SenseGloveCs.FingerCalibration.calculationThread">
-            <summary> The thread used to fulfill all calculations once all data points have been collected. </summary>
-        </member>
-        <member name="F:SenseGloveCs.FingerCalibration.currentStep">
-            <summary> The current step of the calibration sequence. Used to access the proper dataPoint index. </summary>
-        </member>
-        <member name="F:SenseGloveCs.FingerCalibration.dataPoints">
-            <summary> The GloveData used to calculate the new finger lengths and joint positions. </summary>
-        </member>
-        <member name="F:SenseGloveCs.FingerCalibration.fingers">
-            <summary> Indicated which fingers will be calibrated. </summary>
-        </member>
-        <member name="F:SenseGloveCs.FingerCalibration.simpleCalibration">
-            <summary> Indicates whether or not ot use 2D or 3D calibration </summary>
-        </member>
-        <member name="F:SenseGloveCs.FingerCalibration.calibrateLengths">
-            <summary> Whether or not the lengths are calibrated </summary>
-        </member>
-        <member name="F:SenseGloveCs.FingerCalibration.calibrateJoints">
-            <summary> Wheter or not the new joint positions are calculated. </summary>
-        </member>
-        <member name="F:SenseGloveCs.FingerCalibration.allowableJointDeviation">
-            <summary> How far the joint positions are allowed to deviate from the last calibration step. </summary>
-        </member>
-        <member name="T:SenseGloveCs.FingerCalibration.CalibrationFinishedEventHandler">
-            <summary> Delegate function implemented by subscribers to the OnFingerCalibrationFinished event. </summary>
-            <param name="source"></param>
-            <param name="args"></param>
-        </member>
-        <member name="E:SenseGloveCs.FingerCalibration.OnCalibrationFinished">
-            <summary> Fires when the new finger lengths and joint positions are calculated. </summary>
-        </member>
-        <member name="M:SenseGloveCs.FingerCalibration.CalibrationFinished(System.Single[][],System.Single[][])">
-            <summary>  Used to call the OnFingerCalibrationFinished event in all subscribers. </summary>
-        </member>
-        <member name="M:SenseGloveCs.FingerCalibration.#ctor(System.Boolean,System.Boolean[],System.Boolean,System.Boolean)">
-            <summary> Create a new instance of the FingerCalibration. </summary>
-            <param name="calibrate2D"></param>
-            <param name="whichFingers"></param>
-            <param name="fingerLengths">
-            <param name="jointPositions"></param></param>
-        </member>
-        <member name="M:SenseGloveCs.FingerCalibration.Finalize">
-            <summary> Destructor, ensures the calculationThread is properly disposed of. </summary>
-        </member>
-        <member name="M:SenseGloveCs.FingerCalibration.NumberOfSteps">
-            <summary> The total number of steps required to complete this calibration. </summary>
-            <returns></returns>
-        </member>
-        <member name="M:SenseGloveCs.FingerCalibration.HasStarted">
-            <summary> Check whether or not the calibration has started </summary>
-            <returns></returns>
-        </member>
-        <member name="M:SenseGloveCs.FingerCalibration.IsCalculating">
-            <summary>
-            Check whether or not the calibration calculations are running in the worker thread. 
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="M:SenseGloveCs.FingerCalibration.NextStep(SenseGloveCs.GloveData,System.Boolean)">
-            <summary> Complete the next step of the calibration step. </summary>
-            <param name="currentData"></param>
-            <param name="calculateAsync"></param>
-            <returns></returns>
-        </member>
-        <member name="M:SenseGloveCs.FingerCalibration.CalculateNewKinematics(SenseGloveCs.GloveData[],System.Boolean[],System.Boolean,System.Boolean,System.Boolean)">
-            <summary> Based on a set of dataPoints, calculate a set finger lengths and joint positions. </summary>
-            <param name="snapshots"></param>
-            <param name="whichFingers"></param>
-            <param name="calibrate2D"></param>
-            <param name="fingerLengths"></param>
-            <param name="jointPos"></param>
-        </member>
-        <member name="M:SenseGloveCs.FingerCalibration.CleanUpThread">
-            <summary> Clean up the calculation thread, if it is running. </summary>
-        </member>
-        <member name="M:SenseGloveCs.FingerCalibration.Reset">
-            <summary> Reset this calibration sequence. </summary>
-        </member>
-        <member name="M:SenseGloveCs.FingerCalibration.ValidatFingerLengths(System.Single[][])">
-            <summary> Validate the new finger lengths </summary>
-            <param name="newLengths"></param>
-            <returns></returns>
-        </member>
-        <member name="M:SenseGloveCs.FingerCalibration.ValidateJointPositions(System.Single[][],System.Single[][])">
-            <summary> Ensure that the new joint positions are not too far from the old ones... </summary>
-            <param name="newPositions"></param>
-            <param name="oldPositions"></param>
-            <returns></returns>
-        </member>
-        <member name="M:SenseGloveCs.FingerCalibration.ValidateTotalLength(System.Single,System.Int32)">
-            <summary> Ensure the total lengths are not larger than that of a P95 man or smaller than that of a P5 woman? </summary>
-            <param name="totalLength"></param>
-            <param name="finger"></param>
-            <returns></returns>
-        </member>
-        <member name="T:SenseGloveCs.FingerCalibrationArgs">
-            <summary>
-            Arguments passed when the FingerCalibration finishes.
-            </summary>
-        </member>
-        <member name="F:SenseGloveCs.FingerCalibrationArgs.fingerLengths">
-            <summary> The new phalange lengths, in mm, from thumb to pinky, from proximal to distal. </summary>
-        </member>
-        <member name="F:SenseGloveCs.FingerCalibrationArgs.jointPositions">
-            <summary> The new joint positions, in mm, relative to the common origin, from thumb to pinky, from proximal to distal. </summary>
-        </member>
-        <member name="M:SenseGloveCs.FingerCalibrationArgs.#ctor(System.Single[][],System.Single[][])">
-            <summary> Create a new instance of the FingerEventArgs. </summary>
-            <param name="newFingerLengths"></param>
-            <param name="newJointPositions"></param>
-        </member>
-        <member name="T:SenseGloveCs.ThumbCalibration">
-            <summary>
-            Class that contains the calibration formulae for the Thumb
-            </summary>
-        </member>
-        <member name="F:SenseGloveCs.ThumbCalibration.feelCompensation">
-            <summary> A compensation used when determining the CMC joint </summary>
-        </member>
-        <member name="M:SenseGloveCs.ThumbCalibration.FeelerBased(SenseGloveCs.GloveData)">
-            <summary> Calculate the CMC joint position and thumb length </summary>
-            <param name="data"></param>
-            <returns></returns>
         </member>
         <member name="T:SenseGloveCs.Util.DeviceInfo">
             <summary>
@@ -1359,6 +1661,19 @@
         <member name="M:SenseGloveCs.HandKinematics.GetJointPositions">
             <summary> Retieve the positions of the starting joints (CMC and MCP) </summary>
         </member>
+        <member name="M:SenseGloveCs.HandKinematics.FingerTipPositions">
+            <summary> Retrieve all fingerTip positions, which includes the finger thickness and thimble compensation. </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.HandKinematics.FingerTipPositions(SenseGloveCs.Finger)">
+            <summary> Retrieve a fingerTip position, which includes the finger thickness and thimble compensation. </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.HandKinematics.ThimblePosition(SenseGloveCs.Finger)">
+            <summary> Returns the thimble position of the chosen finger. </summary>
+            <param name="finger"></param>
+            <returns></returns>
+        </member>
         <member name="T:SenseGloveCs.IODevice">
             <summary>
             An Adjuvo Sense device that can be used as input.
@@ -1406,7 +1721,7 @@
             A Data-block containing the variables of this Sense Glove
             </summary>
         </member>
-        <member name="F:SenseGloveCs.SenseGlove.fingerCalibrator">
+        <member name="F:SenseGloveCs.SenseGlove.calibration">
             <summary> Handles the finger calibration </summary>
         </member>
         <member name="T:SenseGloveCs.SenseGlove.FingerCalibrationFinishedEventHandler">
@@ -1578,38 +1893,16 @@
         <member name="M:SenseGloveCs.SenseGlove.GetJointPositions">
             <summary> Retieve the positions of the starting joints (CMC and MCP) </summary>
         </member>
+        <member name="M:SenseGloveCs.SenseGlove.CalculateJointPositions(System.Single[][])">
+            <summary> Calculate the joint positions, based on a set of handAngles. </summary>
+            <param name="fingerLengths"></param>
+        </member>
         <member name="M:SenseGloveCs.SenseGlove.RestoreFingerLengths">
-            <summary>
-            This method restores the lengths of the phalanxes to default values
-            </summary>
+            <summary> This method restores the lengths of the phalanxes to default values </summary>
         </member>
         <member name="M:SenseGloveCs.SenseGlove.RestoreJointPositions">
             <summary>
             Restore the joint positions back to their default values.
-            </summary>
-        </member>
-        <member name="M:SenseGloveCs.SenseGlove.StartCalibration(System.Boolean,System.Boolean[],System.Boolean,System.Boolean)">
-            <summary>  Start a new finger Calibration set </summary>
-            <param name="simpleCalibration"></param>
-            <param name="whichFingers"></param>
-            <param name="calibrateJoints"></param>
-            <param name="calibrateLengths"></param>
-            <returns></returns>
-        </member>
-        <member name="M:SenseGloveCs.SenseGlove.NextCalibrationStep">
-            <summary>
-            Continue on the next step of the calibration. If the startCalibration was nog called before, do so.
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="M:SenseGloveCs.SenseGlove.FingerCalibrator_OnCalibrationFinished(System.Object,SenseGloveCs.FingerCalibrationArgs)">
-            <summary> Apply the newly calculated fingerLengths and joint positions. </summary>
-            <param name="source"></param>
-            <param name="args"></param>
-        </member>
-        <member name="M:SenseGloveCs.SenseGlove.ResetCalibration">
-            <summary>
-            Reset the Calibration, and dispose of any resources.
             </summary>
         </member>
         <member name="M:SenseGloveCs.SenseGlove.CalibrateWrist(System.Single[],System.Single[])">
@@ -1623,6 +1916,50 @@
             <summary>
             Calibrate the thumb position.
             </summary>
+        </member>
+        <member name="M:SenseGloveCs.SenseGlove.ResetCalibration">
+            <summary> Reset the Calibration, using the same parameters </summary>
+        </member>
+        <member name="M:SenseGloveCs.SenseGlove.StopCalibration">
+            <summary> Stop calibration entirely. </summary>
+        </member>
+        <member name="M:SenseGloveCs.SenseGlove.IsCalculating">
+            <summary> Check if this glove is already calibrating. </summary>
+        </member>
+        <member name="M:SenseGloveCs.SenseGlove.FingerCalibrator_OnCalibrationFinished(System.Object,SenseGloveCs.FingerCalibrationArgs)">
+            <summary> Apply the newly calculated fingerLengths and joint positions. </summary>
+            <param name="source"></param>
+            <param name="args"></param>
+        </member>
+        <!-- Badly formed XML comment ignored for member "M:SenseGloveCs.SenseGlove.NextCalibrationStep" -->
+        <member name="M:SenseGloveCs.SenseGlove.StartCalibration(SenseGloveCs.Calibration.CalibrationMethod)">
+            <summary> Start a new calibration method using an externally created Calibrator. </summary>
+            <param name="calibrationMethod"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.SenseGlove.StartManualCalibration(SenseGloveCs.Calibration.CalibrationAlgorithm,System.Boolean)">
+            <summary> Start a new manual calibration sequence. You will have to call the NextCalibrationStep method to advance. </summary>
+            <param name="algorithm"></param>
+            <param name="calculateAsync"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.SenseGlove.StartSemiAutoCalibration(SenseGloveCs.Calibration.CalibrationAlgorithm,System.Boolean,System.Single,System.Single,System.Single)">
+            <summary> Start a new Semi-Automatic calibration sequence. It will automatically take snapshots based on the parameters you specify. </summary>
+            <param name="algorithm"></param>
+            <param name="calculateAsync"></param>
+            <param name="distinctDistance"></param>
+            <param name="steadyTime"></param>
+            <param name="steadyDistance"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.SenseGlove.StartAutoCalibration(SenseGloveCs.Calibration.CalibrationAlgorithm,System.Boolean,System.Int32,System.Single,System.Int32)">
+            <summary> Start a new automatic calibration sequence. The user will need to be making the desired movement untill the parameters have been reached. </summary>
+            <param name="algorithm"></param>
+            <param name="processAsync"></param>
+            <param name="maxPoints"></param>
+            <param name="maxTime"></param>
+            <param name="minPoints"></param>
+            <returns></returns>
         </member>
         <member name="T:SenseGloveCs.ThumbKinematics">
             <summary>

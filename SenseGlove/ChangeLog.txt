@@ -1,7 +1,26 @@
 # Changelog
 All notable changes to the SenseGlove Prefabs will be documented in this file.
 
-You are currently using version 0.12
+You are currently using version 0.13
+
+-------------------------------------------------------------------------------------------------------
+
+## [v0.13] - 2017-08-24
+Major Calibration Upgrades
+(https://github.com/Adjuvo/SenseGlove-Unity/wiki/Calibration)
+
+### Added
+-	Manual-, Semi-Automatic- and Automatic calibration options.
+-	manualCalibrationKey (default RightShift) property for the SenseGlove_KeyBinds, which replaces the fingerCalibrationKey. 
+
+### Changed
+-	SenseGlove_Debugger now fires during LateUpdate(), ensuring that it Logs all messages that were sent that frame.
+-	Changed the way calibration is handled within the DLL, with architecture that allows for automated procedures.
+-	SenseGlove_Object.SemiAutoCalibrateFingers() now starts a semi-automatic calibration sequence. It is possible to specify parameters.
+-	SenseGlove_Object.AutoCalibrateFingers() now starts an automated calibration sequence. It is possible to specify parameters.	
+-	SenseGlove_Object.CalibrateThumb() method now calls a Semi-Automatic calibration, similar to that of the fingers, the steps for which can be found on the Wiki.
+-	SenseGlove_KeyBinds calibrateFingersKey (default LeftShift) now starts a Semi-Automatic calibration sequence.
+
 
 -------------------------------------------------------------------------------------------------------
 
@@ -22,6 +41,7 @@ SenseGlove_Detector Fixes
 ### Fixed
 -	Bug where the palm collider did not have a reference to its GrabScript, causing the SenseGlove_Detector to fire its events twice.
 -	Bug where a SenseGlove_Detector with activationthresholds > 1 would trigger multiple GloveDetected events.
+
 
 -------------------------------------------------------------------------------------------------------
 

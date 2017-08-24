@@ -21,13 +21,17 @@ public class SenseGlove_KeyBinds : MonoBehaviour
     [Tooltip("The key used to calibrate the thumb, using the index link as a 'feeler'.")]
     public KeyCode calibrateThumb = KeyCode.T;
 
-    /// <summary> The key to enter the next step of the finger calibration. </summary>
+    /// <summary> The key to start a new Semi-Automatic finger Calibration. </summary>
     [Tooltip("The key to enter the next step of the finger calibration.")]
-    public KeyCode calibrateFingersKey = KeyCode.RightShift;
+    public KeyCode calibrateFingersKey = KeyCode.LeftShift;
     
     /// <summary> The keys to cancel and reset the calibration of the fingers. </summary>
     [Tooltip("The key to cancel and reset the calibration of the fingers.")]
     public KeyCode cancelCalibrationKey = KeyCode.Escape;
+
+    /// <summary> The key to enter the next step of the finger calibration. </summary>
+    [Tooltip("The key to enter the next step of the finger calibration.")]
+    public KeyCode manualCalibrationKey = KeyCode.RightShift;
 
     /// <summary> The key which forces the grabScript to drop any object it is currently holding. </summary>
     [Tooltip("The key which forces the grabScript to drop any object it is currently holding.")]
@@ -59,6 +63,13 @@ public class SenseGlove_KeyBinds : MonoBehaviour
 
             if (Input.GetKeyDown(this.calibrateFingersKey))
             {
+                this.senseGlove.SemiAutoCalibrateFingers();
+            }
+
+            ///////
+
+            if (Input.GetKeyDown(this.manualCalibrationKey))
+            {
                 this.senseGlove.NextCalibrationStep(this.calibrateFingersKey);
             }
 
@@ -73,7 +84,6 @@ public class SenseGlove_KeyBinds : MonoBehaviour
 
             if (Input.GetKeyDown(this.calibrateThumb))
             {
-                SenseGlove_Debugger.Log("Calibrating Thumb...");
                 this.senseGlove.CalibrateThumb();
             }
         

@@ -44,7 +44,6 @@ public class GloveTester : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-
         if (Tracker != null)
         {
             Vector3 pos = Tracker.transform.position;
@@ -135,6 +134,21 @@ public class GloveTester : MonoBehaviour
             //debugText.text = SenseGlove_Util.ToString(grabScript.GetVelocity());
         }
 
+        if (this.glove != null && this.glove.GloveReady())
+        {
+            if (Input.GetKeyDown(KeyCode.V))
+            {
+                float[][] handLengths = new float[5][]
+                {
+                    new float[3] { 43, 33, 33 },   //thumb
+                    new float[3] { 40, 22, 22 },   //index
+                    new float[3] { 45, 28, 22 },   //middle
+                    new float[3] { 47, 24, 23 },   //ring
+                    new float[3] { 33, 18, 21 },   //pinky
+                };
+                this.glove.CalculateJointPositions(handLengths);
+            }
+        }
 
     }
 }

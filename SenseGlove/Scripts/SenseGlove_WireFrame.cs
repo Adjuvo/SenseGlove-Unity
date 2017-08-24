@@ -23,7 +23,7 @@ public class SenseGlove_WireFrame : MonoBehaviour
     /// <summary> Which of the models the trackedObject connects to. </summary>
     [Tooltip("Where the trackedObject connects to. Use ForeArm when the tracker is connected via a wrist strap. Use Wrist when the Tracker is attached to the SenseGlove directy.")]
     public AnchorPoint anchor = AnchorPoint.ForeArm;
-
+    
     [Header("Wireframe Objects")]
 
     /// <summary> The GameObject containing the Hand- and Glove models. </summary>
@@ -90,6 +90,9 @@ public class SenseGlove_WireFrame : MonoBehaviour
     /// <summary> used to force the Resize method during the next frame, as the Calibration requires a few ms to take effect.  </summary>
     private bool shouldResize = false;
 
+    /// <summary> Used to keep the index MCP position of the WireFrame at the same location.  </summary>
+    private Vector3 dJoints = Vector3.zero, oldMCPPosition = Vector3.zero;
+
     //------------------------------------------------------------------------------------------------------------------------------------
     // Unity / MonoDevelop
 
@@ -113,6 +116,7 @@ public class SenseGlove_WireFrame : MonoBehaviour
     private void TrackedGlove_OnCalibrationFinished(object source, CalibrationArgs args)
     {
         SenseGlove_Debugger.Log("Resizing Model.");
+        this.dJoints = args.jointPositions[1] - oldMCPPosition;
         this.shouldResize = true;
         //ShouldRescale is called because we cannot Get() transforms outside of the main thread.
     }
@@ -135,6 +139,9 @@ public class SenseGlove_WireFrame : MonoBehaviour
         if (this.shouldResize && this.trackedGlove != null)
         {
             this.RescaleHand(this.trackedGlove.GetFingerLengths());
+            this.handGroup.transform.localPosition = this.handGroup.transform.localPosition - dJoints;
+            this.gloveGroup.transform.localPosition = this.gloveGroup.transform.localPosition - dJoints;
+            this.oldMCPPosition = this.trackedGlove.GloveData().handPositions[1][0];
             this.shouldResize = false;
         }
 
@@ -285,6 +292,7 @@ public class SenseGlove_WireFrame : MonoBehaviour
     {
         if (data != null && !this.setupComplete)
         {
+            this.oldMCPPosition = data.handPositions[1][0]; //store the last mcp position
             if (handBase != null && handGroup != null)
             {
                 for (int i = 1; i < handGroup.transform.childCount; i++)
@@ -488,8 +496,6 @@ public class SenseGlove_WireFrame : MonoBehaviour
         }
     }
 
-
-
     /// <summary>
     /// Resize the hand using new fingerLengths, as retrieved from a FingerCalibrationFinished event.
     /// </summary>
@@ -549,6 +555,9 @@ public class SenseGlove_WireFrame : MonoBehaviour
                     handPositions[f][i].transform.localRotation = rot[f][i];
                 }
             }
+
+            Debug.DrawLine(handPositions[0][1].transform.position, handPositions[1][0].transform.position);
+
         }
     }
 
@@ -653,4 +662,3 @@ public enum AnchorPoint
     Wrist = 0,
     ForeArm
 }
-

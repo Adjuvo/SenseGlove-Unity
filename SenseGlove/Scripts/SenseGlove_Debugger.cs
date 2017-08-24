@@ -32,8 +32,7 @@ public class SenseGlove_Debugger : MonoBehaviour {
         SenseGlove_Debugger.unityEnabled_S = this.unityEnabled;
 	}
 	
-	// Update is called once per frame
-	void Update ()
+    void LateUpdate()
     {
         string[] lastMessages = Debugger.GetMessages(); //Always retrieve the latest messages, which will clear the buffer in the DLL.
         if (dllEnabled)
@@ -49,7 +48,7 @@ public class SenseGlove_Debugger : MonoBehaviour {
         {
             SenseGlove_Debugger.unityEnabled_S = this.unityEnabled;
         }
-	}
+    }
 
     /// <summary>  Write a message to the SenseGlove_Debugger. </summary>
     /// <param name="message"></param>

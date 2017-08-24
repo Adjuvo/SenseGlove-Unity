@@ -1,13 +1,8 @@
-﻿ /*
- * 
- * 
- * 
- * 
- */
-
+﻿
 using UnityEngine;
 
 using SenseGloveCs;
+using SenseGloveCs.Calibration;
 using System;
 
 /// <summary>
@@ -431,7 +426,7 @@ public class SenseGlove_Object : MonoBehaviour
     }
 
     //------------------------------------------------------------------------------------------------------------------------------------
-    // internal Calibration methods
+    // Hardware compensation methods.
 
 
     /// <summary> Manually assign IMU Correction for old firmware versions. </summary>
@@ -464,6 +459,124 @@ public class SenseGlove_Object : MonoBehaviour
             }
         }
     }
+    
+
+    //------------------------------------------------------------------------------------------------------------------------------------
+    // Manual Calibration methods
+
+
+    /// <summary>
+    /// Set the finger lengths used by this sense glove as a 5x3 array, 
+    /// which contains the Proximal-, Medial-, and Distal Phalange lengths for each finger, in that order.
+    /// </summary>
+    /// <param name="newFingerLengths"></param>
+    public void SetFingerLengths(float[][] newFingerLengths)
+    {
+        if (this.glove != null)
+        {
+            this.glove.SetHandLengths(newFingerLengths);
+        }
+    }
+
+    /// <summary>
+    /// Retrive the finger lengths used by this SenseGlove. 
+    /// Returns a 5x3 array which contains the Proximal-, Medial-, and Distal Phalange lengths for each finger, in that order.
+    /// Returns an empty array if unsuccesfull.
+    /// </summary>
+    /// <returns></returns>
+    public float[][] GetFingerLengths()
+    {
+        if (this.glove != null && this.GloveReady())
+        {
+            return this.gloveData.handModel.GetFingerLengths();
+        }
+        return new float[][] { };
+    }
+
+    /// <summary>
+    /// Get the positions of the starting finger joints, the CMC or MCP joints.
+    /// </summary>
+    /// <returns></returns>
+    public Vector3[] GetStartJointPositions()
+    {
+        if (this.glove != null)
+        {
+            return SenseGlove_Util.ToUnityPosition(this.glove.GetJointPositions());
+        }
+        return new Vector3[] { };
+    }
+
+    /// <summary>
+    /// Set the positions of the starting finger joints, the CMC or MCP joints.
+    /// </summary>
+    /// <returns></returns>
+    public void SetStartJointPositions(float[][] positions)
+    {
+        if (this.glove != null)
+        {
+            this.glove.SetJointPositions(positions);
+        }
+    }
+
+    /// <summary>
+    /// Set the positions of the starting finger joints, the CMC or MCP joints.
+    /// </summary>
+    /// <returns></returns>
+    public void SetStartJointPositions(Vector3[] positions)
+    {
+        if (this.glove != null)
+        {
+            this.glove.SetJointPositions(SenseGlove_Util.ToPosition(positions));
+        }
+    }
+
+
+    /// <summary> Calculate the Joint positions based on a known set of finger lengths. </summary>
+    /// <remarks> Use this to (re)calculate the joint positions after loading the finger lengths. </remarks>
+    /// <param name="fingerLengths"></param>
+    public void CalculateJointPositions(float[][] fingerLengths = null)
+    {
+        if (this.glove != null && this.gloveReady)
+        {
+            this.glove.CalculateJointPositions(fingerLengths);
+        }
+    }
+
+    /// <summary>
+    /// Calibrate the Wrist, based on the orientatio of the foreArm.
+    /// </summary>
+    /// <returns></returns>
+    public bool CalibrateWrist()
+    {
+        if (glove != null && glove.IsConnected() && foreArm != null)
+        {
+            glove.CalibrateWrist(null, SenseGlove_Util.ToQuaternion(this.foreArm.transform.rotation));
+            SenseGlove_Debugger.Log("Calibrated Wrist");
+            return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Set the current lowerArm quaternion as the 'zero'
+    /// </summary>
+    /// <param name="lowerArm"></param>
+    /// <returns></returns>
+    public bool CalibrateWrist(Quaternion lowerArm)
+    {
+        if (glove != null && glove.IsConnected())
+        {
+            glove.CalibrateWrist(null, SenseGlove_Util.ToQuaternion(lowerArm));
+            SenseGlove_Debugger.Log("Calibrated Wrist");
+            return true;
+        }
+        return false;
+    }
+
+
+    //------------------------------------------------------------------------------------------------------------------------------------
+    // Manual Calibration Steps
+
 
     /// <summary> Call the CalibrationFinished event when the calculations within the DLL are finished. </summary>
     /// <param name="source"></param>
@@ -477,18 +590,31 @@ public class SenseGlove_Object : MonoBehaviour
         this.CalibrationFinished(arguments);
     }
 
-    /// <summary>
-    /// Initialize Calibration of the chosen fingers and the chosen complexity
-    /// </summary>
+
+    /// <summary> Reset the Calibration of the glove if, for instance, something went wrong. </summary>
+    public void CancelCalibration()
+    {
+        if (glove != null)
+        {
+            glove.StopCalibration();
+            this.calSteps = 0;
+            this.calibrating = false;
+            SenseGlove_Debugger.Log("Canceled Calibration");
+        }
+    }
+
+
+    /// <summary> Initialize Manual Calibration of the chosen fingers and the chosen complexity </summary>
     /// <param name="whichFingers"></param>
     /// <param name="simpleCalibration"></param>
     /// <returns></returns>
-    public bool StartCalibration(bool[] whichFingers, bool simpleCalibration = true, bool calibrateLengths = true, bool calibrateJoints = true)
+    public bool StartCalibration(bool[] whichFingers, bool calibrateLengths = true, bool calibrateJoints = true)
     {
         if (glove != null && glove.IsConnected())
         {
-            glove.StartCalibration(simpleCalibration, whichFingers, calibrateLengths, calibrateJoints);
-            return true;
+            CalibrationAlgorithm algorithm = new Circle2D(whichFingers, calibrateLengths, calibrateJoints);
+            CalibrationMethod method = new ManualCalibration(algorithm);
+            this.glove.StartCalibration(method);
         }
         return false;
     }
@@ -508,21 +634,6 @@ public class SenseGlove_Object : MonoBehaviour
     }
 
     /// <summary>
-    /// Reset the Calibration of the glove if, for instance, something went wrong.
-    /// </summary>
-    public void CancelCalibration()
-    {
-        if (glove != null)
-        {
-            glove.ResetCalibration();
-            this.calSteps = 0;
-            this.calibrating = false;
-            SenseGlove_Debugger.Log("Canceled Calibration");
-        }
-    }
-
-
-    /// <summary>
     /// Perform the next calibration step of the fingers. If we are not already calibrating, start the calibration!
     /// </summary>
     /// <param name="calibrationKey">The key used to call this method, used for the debug messages.</param>
@@ -530,7 +641,6 @@ public class SenseGlove_Object : MonoBehaviour
     {
         if (glove != null && gloveReady)
         {
-
             if (!calibrating)
             {
                 this.CancelCalibration();
@@ -570,116 +680,63 @@ public class SenseGlove_Object : MonoBehaviour
 
     }
 
+
+
+    /*
+    private void TestCalibration()
+    {
+        if (this.glove != null && this.gloveReady)
+        {
+            //SenseGloveCs.Calibration.HappyHands_SemiAuto testCalibrator = new SenseGloveCs.Calibration.HappyHands_SemiAuto(true, 1, 20, true);
+
+            CalibrationAlgorithm algorithm = new Circle2D(new bool[] { false, true, true, true, true });
+            this.glove.StartSemiAutoCalibration(algorithm);
+        }
+    }
+    */
+
+
     //------------------------------------------------------------------------------------------------------------------------------------
-    // Manual Calibration methods
+    // (Semi)Automatic Calibration Steps
 
-    /// <summary>
-    /// Set the finger lengths used by this sense glove as a 5x3 array, 
-    /// which contains the Proximal-, Medial-, and Distal Phalange lengths for each finger, in that order.
-    /// </summary>
-    /// <param name="newFingerLengths"></param>
-    public void SetFingerLengths(float[][] newFingerLengths)
-    {
-        if (this.glove != null)
-        {
-            this.glove.SetHandLengths(newFingerLengths);
-        }
-    }
 
-    /// <summary>
-    /// Retrive the finger lengths used by this SenseGlove. 
-    /// Returns a 5x3 array which contains the Proximal-, Medial-, and Distal Phalange lengths for each finger, in that order.
-    /// Returns an empty array if unsuccesfull.
-    /// </summary>
-    /// <returns></returns>
-    public float[][] GetFingerLengths()
-    {
-        if (this.glove != null && this.GloveReady())
-        {
-            return this.gloveData.handModel.GetFingerLengths();   
-        }
-        return new float[][] { };
-    }
-   
-    /// <summary>
-    /// Get the positions of the starting finger joints, the CMC or MCP joints.
-    /// </summary>
-    /// <returns></returns>
-    public Vector3[] GetStartJointPositions()
-    {
-        if (this.glove != null)
-        {
-            return SenseGlove_Util.ToUnityPosition(this.glove.GetJointPositions());
-        }
-        return new Vector3[] { };
-    }
-
-    /// <summary>
-    /// Set the positions of the starting finger joints, the CMC or MCP joints.
-    /// </summary>
-    /// <returns></returns>
-    public void SetStartJointPositions(float[][] positions)
-    {
-        if (this.glove != null)
-        {
-            this.glove.SetJointPositions(positions);
-        }
-    }
-
-    /// <summary>
-    /// Set the positions of the starting finger joints, the CMC or MCP joints.
-    /// </summary>
-    /// <returns></returns>
-    public void SetStartJointPositions(Vector3[] positions)
-    {
-        if (this.glove != null)
-        {
-            this.glove.SetJointPositions(SenseGlove_Util.ToPosition(positions));
-        }
-    }
-
-    /// <summary>
-    /// Calibrate the Wrist, based on the orientatio of the foreArm.
-    /// </summary>
-    /// <returns></returns>
-    public bool CalibrateWrist()
-    {
-        if (glove != null && glove.IsConnected() && foreArm != null)
-        {
-            glove.CalibrateWrist(null, SenseGlove_Util.ToQuaternion(this.foreArm.transform.rotation));
-            SenseGlove_Debugger.Log("Calibrated Wrist");
-            return true;
-        }
-        return false;
-    }
-
-    /// <summary>
-    /// Set the current lowerArm quaternion as the 'zero'
-    /// </summary>
-    /// <param name="lowerArm"></param>
-    /// <returns></returns>
-    public bool CalibrateWrist(Quaternion lowerArm)
-    {
-        if (glove != null && glove.IsConnected())
-        {
-            glove.CalibrateWrist(null, SenseGlove_Util.ToQuaternion(lowerArm));
-            SenseGlove_Debugger.Log("Calibrated Wrist");
-            return true;
-        }
-        return false;
-    }
-
-    /// <summary>
-    /// Using the index glove link as a 'feeler', calibrate the thumb CMC position/
-    /// </summary>
+    /// <summary> Start a semi-automatic calibration of the thumb, using thumb abduction. </summary>
     public void CalibrateThumb()
     {
         if (this.GloveReady())
         {
-            this.glove.CalibrateThumb();
+            CalibrationAlgorithm algorithm = new Circle2D(new bool[] { true, false, false, false, false });
+            this.glove.StartSemiAutoCalibration(algorithm, true, 10, 1, 5);
         }
     }
 
+    /// <summary> Start a new Semi-Automatic finger calibration: The DLL will decide when to add new points based on the parameters set. </summary>
+    /// <param name="calculateAsync"></param>
+    /// <param name="distinctDistance"></param>
+    /// <param name="steadyTime"></param>
+    /// <param name="steadyDistance"></param>
+    public void SemiAutoCalibrateFingers(bool calculateAsync = true, float distinctDistance = 15, float steadyTime = 1.5f, float steadyDistance = 2)
+    {
+        if (this.GloveReady())
+        {
+            CalibrationAlgorithm algorithm = new Circle2D(new bool[] { true, false, false, false, false });
+            this.glove.StartSemiAutoCalibration(algorithm, calculateAsync, distinctDistance, steadyTime, steadyDistance);
+        }
+    }
+
+    /// <summary> Collect a number of snapshots, then select the most likely ones and perform a calibration step. </summary>
+    /// <param name="processAsync"></param>
+    /// <param name="pointLimit"></param>
+    /// <param name="timeLimit"></param>
+    /// <param name="minPoints"></param>
+    public void AutoCalibrateFingers(bool processAsync = true, int pointLimit = 100, float timeLimit = 4, int minPoints = 3)
+    {
+        if (this.GloveReady())
+        {
+            CalibrationAlgorithm algorithm = new Circle2D(new bool[] { true, false, false, false, false });
+            this.glove.StartAutoCalibration(algorithm, processAsync, pointLimit, timeLimit, minPoints);
+        }
+    }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Haptic Feedback
