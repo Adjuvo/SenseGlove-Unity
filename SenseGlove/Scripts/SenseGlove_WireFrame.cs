@@ -73,6 +73,9 @@ public class SenseGlove_WireFrame : MonoBehaviour
     /// <summary> The Hand Positions for five fingers. The Positions and Rotations of each joint are applied to these objects. </summary>
     private GameObject[][] handPositions;
 
+    /// <summary> a connecting cylinder between the MCP joint of the thumb and that of the Index finger.  </summary>
+    //private GameObject mcpConnector;
+
     /// <summary> The offset between the trackedObject and the Wireframe Model. </summary>
     private Vector3 trackOffset = new Vector3(0, 0, 0);
     /// <summary> The rotation difference between the trackedObject and the Wireframe Model </summary>
@@ -86,12 +89,7 @@ public class SenseGlove_WireFrame : MonoBehaviour
     
     /// <summary> Used to ensure that the wrist is properly calibrated, a set time after setup completes. </summary>
     private float calibrationTime = 0, calibrationTimer = 0.5f;
-
-    /// <summary> used to force the Resize method during the next frame, as the Calibration requires a few ms to take effect.  </summary>
-    private bool shouldResize = false;
-
-    /// <summary> Used to keep the index MCP position of the WireFrame at the same location.  </summary>
-    private Vector3 dJoints = Vector3.zero, oldMCPPosition = Vector3.zero;
+    
 
     //------------------------------------------------------------------------------------------------------------------------------------
     // Unity / MonoDevelop
@@ -116,9 +114,11 @@ public class SenseGlove_WireFrame : MonoBehaviour
     private void TrackedGlove_OnCalibrationFinished(object source, CalibrationArgs args)
     {
         SenseGlove_Debugger.Log("Resizing Model.");
-        this.dJoints = args.jointPositions[1] - oldMCPPosition;
-        this.shouldResize = true;
-        //ShouldRescale is called because we cannot Get() transforms outside of the main thread.
+        //Debug.Log( "Old: " + SenseGlove_Util.ToString(args.oldJointPositions[1]) + ", New: " + SenseGlove_Util.ToString(args.newJointPositions[1]));
+        Vector3 dJoints = args.newJointPositions[1] - args.oldJointPositions[1];
+        this.RescaleHand(args.newFingerLengths);
+        this.handGroup.transform.localPosition = this.handGroup.transform.localPosition - dJoints;
+        this.gloveGroup.transform.localPosition = this.gloveGroup.transform.localPosition - dJoints;
     }
 
     private void TrackedGlove_OnGloveLoaded(object source, System.EventArgs args)
@@ -135,15 +135,6 @@ public class SenseGlove_WireFrame : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        //Rescaling - done here because it requires access to the children of the glovepositions, which cannot be done outside the main thread.
-        if (this.shouldResize && this.trackedGlove != null)
-        {
-            this.RescaleHand(this.trackedGlove.GetFingerLengths());
-            this.handGroup.transform.localPosition = this.handGroup.transform.localPosition - dJoints;
-            this.gloveGroup.transform.localPosition = this.gloveGroup.transform.localPosition - dJoints;
-            this.oldMCPPosition = this.trackedGlove.GloveData().handPositions[1][0];
-            this.shouldResize = false;
-        }
 
         if (this.setupComplete) { this.setupComplete = false; } //reset the setupCOmplete "Event" back to zero.
 
@@ -183,6 +174,33 @@ public class SenseGlove_WireFrame : MonoBehaviour
         if (trackedObject != null)
         {
 
+            GameObject main = null, follower = null;
+
+            if (this.anchor == AnchorPoint.ForeArm)
+            {
+                main = this.foreArm;
+                follower = this.wrist;
+            }
+            else if (this.anchor == AnchorPoint.Wrist)
+            {
+                main = this.wrist;
+                follower = this.foreArm;
+            }
+
+            if (main != null)
+            {
+                //follow the object to the best of our ability
+                main.transform.rotation = trackedObject.transform.rotation * trackRotation;
+                main.transform.position = trackedObject.transform.position + (main.transform.rotation * trackOffset);
+                //have the other component follow
+                if (follower != null)
+                {
+                    follower.transform.localPosition = main.transform.localPosition;
+                }
+            }
+
+            /*
+
             if (anchor == AnchorPoint.ForeArm && foreArm != null)
             {
                 //follow the object to the best of our ability
@@ -207,7 +225,7 @@ public class SenseGlove_WireFrame : MonoBehaviour
                     foreArm.transform.localPosition = wrist.transform.localPosition;
                 }
             }
-
+            */
         }
 
     }
@@ -292,7 +310,6 @@ public class SenseGlove_WireFrame : MonoBehaviour
     {
         if (data != null && !this.setupComplete)
         {
-            this.oldMCPPosition = data.handPositions[1][0]; //store the last mcp position
             if (handBase != null && handGroup != null)
             {
                 for (int i = 1; i < handGroup.transform.childCount; i++)
@@ -369,6 +386,28 @@ public class SenseGlove_WireFrame : MonoBehaviour
                             handPositions[f][i].SetActive(true);
                         }
                     }
+
+                    /*
+                    //setup mcp connector:
+                    this.mcpConnector = GameObject.Instantiate(handBase, this.handGroup.gameObject.transform);
+                    this.mcpConnector.name = "MCP connector";
+                    this.mcpConnector.transform.localPosition = this.handPositions[0][1].transform.localPosition;
+                    this.mcpConnector.transform.LookAt(this.handPositions[1][0].transform.position);
+                    if (this.mcpConnector.transform.childCount > 3)
+                    {
+                        Transform dX = this.mcpConnector.transform.GetChild(2);
+                        Destroy(this.mcpConnector.transform.GetChild(1).gameObject); //delete dy
+                        Destroy(this.mcpConnector.transform.GetChild(0).gameObject); //delete dz
+                        Destroy(this.mcpConnector.transform.GetChild(3).gameObject); //delete point
+
+                        float d = (this.handPositions[0][1].transform.position - this.handPositions[1][0].transform.position).magnitude;
+                        //dX.localScale = new Vector3(dX.localScale.x, d / 2.0f, dX.localScale.z);
+                        dX.localRotation = Quaternion.Euler( new Vector3(90, 0, 0) );
+                        dX.localScale = new Vector3(dX.localScale.x * 0.6f, 0, dX.localScale.z * 0.6f);
+                        dX.localPosition = new Vector3(0, 0, dX.localScale.y);
+                    }
+                    this.mcpConnector.SetActive(true);
+                    */
                 }
                 else
                 {
@@ -557,8 +596,27 @@ public class SenseGlove_WireFrame : MonoBehaviour
             }
 
             Debug.DrawLine(handPositions[0][1].transform.position, handPositions[1][0].transform.position);
-
+            UpdateConnector(data.handPositions[0][1], data.handPositions[1][0]);
         }
+    }
+
+    private void UpdateConnector(Vector3 thumbMCP, Vector3 indexMCP)
+    {
+        /*
+        //setup mcp connector:
+        this.mcpConnector.transform.localPosition = this.handPositions[0][1].transform.localPosition;
+        this.mcpConnector.transform.LookAt(this.handPositions[1][0].transform.position);
+
+        
+        if (this.mcpConnector.transform.childCount > 0)
+        {
+            Transform dX = this.mcpConnector.transform.GetChild(0);
+
+            float d = (thumbMCP - indexMCP).magnitude;
+            dX.localScale = new Vector3(dX.localScale.x, d / 2.0f, dX.localScale.z);
+            dX.localPosition = new Vector3(0, 0, dX.localScale.y);
+        }
+        */
     }
 
     /// <summary> 
@@ -568,7 +626,7 @@ public class SenseGlove_WireFrame : MonoBehaviour
     /// <param name="data"></param>
     private void UpdateWrist(SenseGlove_Data data)
     {
-        if (wrist != null && data != null)
+        if (wrist != null && data != null && this.anchor != AnchorPoint.Wrist)
         {
             wrist.transform.rotation = data.absoluteCalibratedWrist;
         }

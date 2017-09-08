@@ -63,7 +63,7 @@ public class SenseGlove_KeyBinds : MonoBehaviour
 
             if (Input.GetKeyDown(this.calibrateFingersKey))
             {
-                this.senseGlove.SemiAutoCalibrateFingers();
+                this.senseGlove.StartCalibration();
             }
 
             ///////

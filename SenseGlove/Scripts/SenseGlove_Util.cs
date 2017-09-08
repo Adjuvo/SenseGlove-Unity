@@ -51,7 +51,11 @@ public static class SenseGlove_Util
     /// <returns></returns>
     public static Vector3 ToUnityPosition(float[] pos)
     {
-        return new Vector3(pos[x], pos[z], pos[y]);
+        if (pos.Length > 2)
+        {
+            return new Vector3(pos[x], pos[z], pos[y]);
+        }
+        return Vector3.zero;
     }
 
     /// <summary>
@@ -61,12 +65,16 @@ public static class SenseGlove_Util
     /// <returns></returns>
     public static Vector3[] ToUnityPosition(float[][] pos)
     {
-        Vector3[] res = new Vector3[pos.Length];
-        for (int f=0; f<pos.Length;f++)
+        if (pos != null)
         {
-            res[f] = SenseGlove_Util.ToUnityPosition(pos[f]);
+            Vector3[] res = new Vector3[pos.Length];
+            for (int f = 0; f < pos.Length; f++)
+            {
+                res[f] = SenseGlove_Util.ToUnityPosition(pos[f]);
+            }
+            return res;
         }
-        return res;
+        return new Vector3[] { };
     }
 
     /// <summary> Convert from a unity vector3 to a float[3] used in the DLL. </summary>

@@ -20,6 +20,11 @@ public class SenseGlove_Touch : MonoBehaviour
     {
         
 	}
+
+    void Update()
+    {
+        
+    }
 	
 	void FixedUpdate ()
     {
@@ -33,7 +38,7 @@ public class SenseGlove_Touch : MonoBehaviour
         {
             if (!this.IsTouching(col.gameObject))
             {
-                
+                //touching a new object!
             }
             this.touchedObject = col.gameObject;
         }

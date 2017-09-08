@@ -13,7 +13,7 @@ public class GloveTester : MonoBehaviour
 
     public TextMesh debugText;
 
-    public float spd = 0.5f;
+    public float spd = 0.25f;
 
     public bool gloveActive = true;
     public bool handActive = true;
@@ -64,6 +64,25 @@ public class GloveTester : MonoBehaviour
             {
                 pos = new Vector3(pos.x, pos.y, pos.z - (spd * Time.deltaTime));
             }
+
+            if (Input.GetKey(KeyCode.Q))
+            {
+                pos = new Vector3(pos.x, pos.y + (spd * Time.deltaTime), pos.z);
+            }
+            else if (Input.GetKey(KeyCode.E))
+            {
+                pos = new Vector3(pos.x, pos.y - (spd * Time.deltaTime), pos.z);
+            }
+
+            if (Input.GetKey(KeyCode.A))
+            {
+                pos = new Vector3(pos.x, pos.y, pos.z + (spd * Time.deltaTime));
+            }
+            else if (Input.GetKey(KeyCode.D))
+            {
+                pos = new Vector3(pos.x, pos.y, pos.z - (spd * Time.deltaTime));
+            }
+
             Tracker.transform.position = pos;
         }
 
@@ -129,6 +148,7 @@ public class GloveTester : MonoBehaviour
             
         }
 
+        
         if (debugText != null && grabScript != null) 
         {
             //debugText.text = SenseGlove_Util.ToString(grabScript.GetVelocity());
@@ -148,6 +168,12 @@ public class GloveTester : MonoBehaviour
                 };
                 this.glove.CalculateJointPositions(handLengths);
             }
+
+            if (Input.GetKeyDown(KeyCode.Backspace))
+            {
+                this.glove.TestCalibration();
+            }
+
         }
 
     }

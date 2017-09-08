@@ -54,10 +54,25 @@ public class SenseGlove_Object : MonoBehaviour
     [Tooltip("Determine wheter or not the relative wrist orientation is constained to natural limits. ")]
     public bool limitWrist = true;
 
-
     /// <summary> Check for gestures within the DLL </summary>
     [Tooltip("NOT YET IMPLEMENTED - Gesture recognition")]
     private bool checkGestures = false;
+
+
+    /// <summary> Which algorithm is used to calculate the new finger lengths and/or joint positions. </summary>
+    /// <remarks> will be made public once we have more algorithms. </remarks>
+    [Tooltip("Which algorithm is used to calculate the new finger lengths and/or joint positions.")]
+    private Algorithm calibrationAlgorithm = Algorithm.PointsOnACircle2D;
+
+    /// <summary> The way that new datapoints are gathered for the calibration algorithm. </summary>
+    [Header("Calibration Settings")]
+    [Tooltip("The way that new datapoints are gathered for the calibration algorithm.")]
+    public CalibrationType calibrationMethod = CalibrationType.SemiAutomatic;
+
+    /// <summary> Whether or not the (complex) calucation is performed in a separate worker thread. </summary>
+    [Tooltip("Whether or not the (complex) calucation is performed in a separate worker thread.")]
+    public bool async = true;
+
 
     //--------------------------------------------------------------------------------------------------------------------------
     // Private attributes
@@ -69,6 +84,12 @@ public class SenseGlove_Object : MonoBehaviour
 
     /// <summary> GloveData converted to Unity variables. </summary>
     private SenseGlove_Data convertedGloveData;
+
+    /// <summary> The last fired calibration arguments. </summary>
+    private CalibrationArgs calibrationArguments;
+
+    /// <summary> Used ot fire the calibrationFinsihed event during the next lateUpdate. </summary>
+    private bool fireCalibration = false;
 
     /// <summary> Determines whether or not the wrist has been calibrated on startup. </summary>
     private bool calibratedWrist = false;
@@ -215,6 +236,8 @@ public class SenseGlove_Object : MonoBehaviour
             }
             else //glove != null && gloveReady!
             {
+                this.CheckCalibration();
+
                 //Update to the latest GloveData.
                 this.UpdateGloveData();
 
@@ -238,8 +261,13 @@ public class SenseGlove_Object : MonoBehaviour
     // Called at a fixed rate.
     void FixedUpdate()
     {
-        //move the UpdateGloveData() method here to give your SenseGlove a fixed update rate.
-        //this.UpdateGloveData();
+        if (this.GloveReady())
+        {
+            this.CheckCalibration();
+
+            //move the UpdateGloveData() method here to give your SenseGlove a fixed update rate.
+            //this.UpdateGloveData();
+        }
     }
 
     // OnApplicationQuit is called when the game shuts down.
@@ -583,13 +611,27 @@ public class SenseGlove_Object : MonoBehaviour
     /// <param name="args"></param>
     private void Glove_OnFingerCalibrationFinished(object source, FingerCalibrationArgs args)
     {
-        this.gloveData = glove.GetData(false); //retrieve the latest gloveData, which contains the new lengths.
-        this.convertedGloveData = new SenseGlove_Data(this.gloveData, this.glove.communicator.samplesPerSecond);
-        CalibrationArgs arguments = new CalibrationArgs(args, this.GetStartJointPositions());
-        SenseGlove_Debugger.Log("Internal Calibration has finished!");
-        this.CalibrationFinished(arguments);
+        //this.gloveData = glove.GetData(false); //retrieve the latest gloveData, which contains the new lengths.
+        //this.convertedGloveData = new SenseGlove_Data(this.gloveData, this.glove.communicator.samplesPerSecond);
+        this.calibrationArguments = new CalibrationArgs(args);
+        this.fireCalibration = true;
+        //SenseGlove_Debugger.Log("Internal Calibration has finished!");
+        //this.CalibrationFinished(arguments);
     }
 
+    /// <summary> Check whether or not to fire the calibrationFinished event during the main loop. </summary>
+    /// <remarks>Placed indside a seprate method so we can call it during both Update and LasteUpdate.</remarks>
+    private void CheckCalibration()
+    {
+        if (this.fireCalibration)
+        {
+            if (this.calibrationArguments != null)
+            {
+                this.CalibrationFinished(this.calibrationArguments);
+            }
+            this.fireCalibration = false;
+        }
+    }
 
     /// <summary> Reset the Calibration of the glove if, for instance, something went wrong. </summary>
     public void CancelCalibration()
@@ -603,6 +645,37 @@ public class SenseGlove_Object : MonoBehaviour
         }
     }
 
+    /// <summary> Start a new calibration, based on the </summary>
+    /// <param name="whichFingers"></param>
+    /// <returns></returns>
+    public bool StartCalibration(bool[] whichFingers = null)
+    {
+        if (this.GloveReady())
+        {
+            if (whichFingers == null) { whichFingers = new bool[] { false, true, true, true, true }; }
+
+            CalibrationAlgorithm algorithm = null;
+            switch (this.calibrationAlgorithm)
+            {
+                case Algorithm.PointsOnACircle2D: algorithm = new Circle2D(whichFingers); break;
+            }
+            if (algorithm != null)
+            {
+                CalibrationMethod method = null;
+                switch (this.calibrationMethod)
+                {
+                    case CalibrationType.Manual: method         = new ManualCalibration(algorithm, this.async); break;
+                    case CalibrationType.SemiAutomatic: method  = new SemiAutoCalibration(algorithm, this.async); break;
+                    case CalibrationType.Automatic: method      = new AutoCalibration(algorithm, this.async); break;
+                }
+                if (method != null)
+                {
+                    this.glove.StartCalibration(method);
+                }
+            }
+        }
+        return false;
+    }
 
     /// <summary> Initialize Manual Calibration of the chosen fingers and the chosen complexity </summary>
     /// <param name="whichFingers"></param>
@@ -682,18 +755,32 @@ public class SenseGlove_Object : MonoBehaviour
 
 
 
-    /*
-    private void TestCalibration()
+    
+    public void TestCalibration()
     {
         if (this.glove != null && this.gloveReady)
         {
-            //SenseGloveCs.Calibration.HappyHands_SemiAuto testCalibrator = new SenseGloveCs.Calibration.HappyHands_SemiAuto(true, 1, 20, true);
+            int[][][] angles = new int[3][][];
+            //fill with zeroes
+            for (int i=0; i<angles.Length; i++)
+            {
+                angles[i] = new int[5][];
+                for (int f=0; f<angles[i].Length; f++)
+                {
+                    angles[i][f] = new int[] { 0, 0, 0 };
+                }
+            }
+            angles[0][1] = new int[] { 0, 0, 0 };
+            angles[1][1] = new int[] { 1, 100, 90 };
+            angles[2][1] = new int[] { 80, 100, 80 };
 
-            CalibrationAlgorithm algorithm = new Circle2D(new bool[] { false, true, true, true, true });
-            this.glove.StartSemiAutoCalibration(algorithm);
+            CalibrationAlgorithm testAlgorithm = new ThreeGestures2D(new bool[] { false, true, true, true, true }, angles);
+            CalibrationMethod testMethod = new SemiAutoCalibration(testAlgorithm, true, 10, 2.0f, 5);
+
+            this.glove.StartCalibration(testMethod);
         }
     }
-    */
+    
 
 
     //------------------------------------------------------------------------------------------------------------------------------------
@@ -705,8 +792,9 @@ public class SenseGlove_Object : MonoBehaviour
     {
         if (this.GloveReady())
         {
+            SenseGlove_Debugger.Log("Calibrating Thumb");
             CalibrationAlgorithm algorithm = new Circle2D(new bool[] { true, false, false, false, false });
-            this.glove.StartSemiAutoCalibration(algorithm, true, 10, 1, 5);
+            this.glove.StartSemiAutoCalibration(algorithm, true, 10, 1f, 5);
         }
     }
 
@@ -802,33 +890,34 @@ public enum ConnectionMethod
     HardCoded
 }
 
+/// <summary>
+/// CalibrationArguments, containing both old an new finger lengths and joint positions.
+/// </summary>
 public class CalibrationArgs : System.EventArgs
 {
-    public float[][] newLengths;
+    /// <summary> The old phalange lengths, in mm, from thumb to pinky, from proximal to distal. </summary>
+    public float[][] oldFingerLengths;
 
-    public Vector3[] jointPositions;
+    /// <summary> The new phalange lengths, in mm, from thumb to pinky, from proximal to distal. </summary>
+    public float[][] newFingerLengths;
 
-    public CalibrationArgs(SenseGloveCs.FingerCalibrationArgs arguments, Vector3[] oldPos)
+    /// <summary> The old joint positions, in mm, relative to the common origin, from thumb to pinky, from proximal to distal. </summary>
+    public Vector3[] newJointPositions;
+
+    /// <summary> The new joint positions, in mm, relative to the common origin, from thumb to pinky, from proximal to distal. </summary>
+    public Vector3[] oldJointPositions;
+
+    /// <summary> The fingers that were altered / changed during this calibration sequence. </summary>
+    public bool[] whichFingers;
+
+    /// <summary> Convert a FingerCalibrationArgs, coming from the DLL, into the Unity-friendly CalibrationArgs. </summary>
+    /// <param name="arguments"></param>
+    public CalibrationArgs(SenseGloveCs.FingerCalibrationArgs arguments)
     {
-        newLengths = arguments.fingerLengths;
-        if (arguments.jointPositions != null)
-        {
-            jointPositions = new Vector3[arguments.jointPositions.Length];
-            for (int f = 0; f < arguments.jointPositions.Length; f++)
-            {
-                if (arguments.jointPositions[f].Length > 2)
-                {
-                    jointPositions[f] = SenseGlove_Util.ToUnityPosition(arguments.jointPositions[f]);
-                }
-                else
-                {
-                    jointPositions[f] = oldPos[f];
-                }
-            }
-        }
-        else
-        {
-            jointPositions = new Vector3[] { };
-        }
+        this.whichFingers = arguments.whichFingers;
+        this.oldFingerLengths = arguments.oldFingerLengths;
+        this.newFingerLengths = arguments.newFingerLengths;
+        this.oldJointPositions = SenseGlove_Util.ToUnityPosition(arguments.oldJointPositions);
+        this.newJointPositions = SenseGlove_Util.ToUnityPosition(arguments.newJointPositions);    
     }
 }

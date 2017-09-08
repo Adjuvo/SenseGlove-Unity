@@ -1,7 +1,29 @@
 # Changelog
 All notable changes to the SenseGlove Prefabs will be documented in this file.
 
-You are currently using version 0.13
+You are currently using version 0.14
+
+-------------------------------------------------------------------------------------------------------
+
+## [v0.14] - 2017-09-08
+Calibration Upgrades and Bug Fixes
+
+### Added
+-	oldJointPositions and oldLengths arguments have been added to the CalibrationArgs.
+-	whichFingers, a bool[5] argument added to CalibrationArgs, which indicates which of the 5 fingers were calibrated 
+-	Calibration Settings can now also be accessed via the inspector, and will be applied when the StartCalibration method is called.
+
+### Changed
+-	CalibrationArgs : Renamed jointPositions to newJointPositions.	
+-	SenseGlove_Object's OnCalibrationFinished event now fires during the next (Late)Update function, 
+	which allows one to access Unity Transform controls.	
+-	New internal method to convert from Quaternion to Euler angles, which make the handAngles more reliable.
+-	Internal calibration now autmatically assigns old values to fingers that were skipped during calibration. 
+
+### Fixed
+-	Bug where Unity would give an error when accessing Transform controls during the CalibrationFinishedEvent.
+-	Bug where calling the CalibrateThumb() function would actually calibrate the fingers instead.
+-	Bug where picking up objects with the SenseGlove_WireFrame anchor set to Wrist would misplace the object outside of the user's reach. 
 
 -------------------------------------------------------------------------------------------------------
 

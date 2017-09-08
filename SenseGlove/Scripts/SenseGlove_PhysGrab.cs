@@ -37,7 +37,7 @@ public class SenseGlove_PhysGrab : MonoBehaviour
 
     /// <summary> Determines if this script can send force feedback back to its SenseGlove. </summary>
     [Tooltip("Determines if this script can send force feedback back to its SenseGlove. ")]
-    public bool simpleForceFeedback = false;
+    public ForceFeedbackType ForceFeedback = ForceFeedbackType.None;
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // private variables.
@@ -76,14 +76,28 @@ public class SenseGlove_PhysGrab : MonoBehaviour
     private static float openTime = 0.2f;
 
     //-----------------------------------------------------------------------------------------------------------------------------------------
+    // Adv. Interaction Variables
+
+    public GameObject[] heldObjects = new GameObject[5];
+
+    //-----------------------------------------------------------------------------------------------------------------------------------------
+    // Force Feedback
+
+    /// <summary> Distance (in mm) between two colliders when the grab-interaction started. Used to determine the force level </summary>
+    private float[] grabDistances = new float[5] { -1, -1, -1, -1, -1 };
+    
+    /// <summary> The last sent motor levels of the SenseGlove. </summary>
+    private int[] motorLevels = new int[] { 0, 0, 0, 0, 0 };
+
+    //-----------------------------------------------------------------------------------------------------------------------------------------
     // Velocity / Dynamics
 
+    /// <summary> The grabReference's position during the last frame Update() </summary>
     private Vector3 lastPosition;
+    /// <summary> The xyz velocity of the grabreference, in m/s </summary>
     private Vector3 velocity = Vector3.zero;
 
-    /// <summary>
-    /// Update the dynamics (velocity, angular velocity) of the grabreference.
-    /// </summary>
+    /// <summary> Update the dynamics (velocity, angular velocity) of the grabreference. </summary>
     private void UpdateDynamics()
     {
         if (this.grabReference != null)
@@ -332,7 +346,6 @@ public class SenseGlove_PhysGrab : MonoBehaviour
     /// <returns> True if we can grab an object, false if we cannot. </returns>
     private GameObject CheckGrabObject()
     {
-        //return this.thumb.IsTouching(this.index.TouchObject());
         if (this.setupFinished) //setupFinished means we have at least one finger and a thumb.
         {
             //check if the fingers are not open.
@@ -356,8 +369,6 @@ public class SenseGlove_PhysGrab : MonoBehaviour
                     }
                 }
             }
-
-           // SenseGlove_Debugger.Log("Index isOpen is " + fingerOpen[1]);
 
             if (thumbTouches != null || palmTouches != null)
             {
@@ -389,6 +400,70 @@ public class SenseGlove_PhysGrab : MonoBehaviour
         }
         return null;
     }
+
+    public void CheckGrabObjects()
+    {
+        if (this.setupFinished)
+        {
+            bool[] fingersOpen = this.CheckFingersOpen();
+            GameObject tempObject = null;
+
+            //check the hand palm
+            GameObject palmTouches = this.handPalm != null ? this.handPalm.TouchObject() : null; 
+
+            //check the thumb
+            GameObject thumbTouches = null;
+            if (!fingersOpen[0])
+            {
+                for (int i = fingerColliders[0].Length; i-- > 0;)
+                {
+                    tempObject = fingerColliders[0][i].TouchObject();
+                    if (tempObject != null)
+                    {
+                        thumbTouches = tempObject;
+                        break; // we've found out what the thumb is holding. Break out of the for loop
+                    }
+                }
+            }
+
+            if (thumbTouches != null || palmTouches != null)
+            {
+                for (int f=1; f<this.fingerColliders.Length; f++)
+                {
+                    if (!fingersOpen[f]) //no use checking if the finger should be open anyway.
+                    {
+                        //GameObject fingerTouches = null;
+
+                        //for (int i = fingerColliders[f].Length; i-- > 0;)
+                        //{
+                        //    if (thumbFingerCollision && fingerColliders[f][i].IsTouching(thumbTouches))
+                        //    {
+                        //        fingerTouches = thumbTouches;
+                                
+                        //        break;
+                        //    }
+                        //    else if (fingerPalmCollision && fingerColliders[f][i].IsTouching(palmTouches))
+                        //    {
+                        //        //touching something new
+                        //        fingerTouches = palmTouches;
+                        //        break;
+                        //    }
+                        //}
+
+
+
+                    }
+
+
+                }
+                
+
+            }
+
+
+        }
+    }
+
 
     /// <summary>
     /// Check if the fingers are in the 'open' position (MCP-PIP-DIP joint angles +/- 0 deg) for a few ms,
@@ -425,17 +500,29 @@ public class SenseGlove_PhysGrab : MonoBehaviour
     /// </summary>
     public void CheckForceFeedback()
     {
-        if (this.simpleForceFeedback && this.trackedGlove != null && this.fingerColliders != null)
+        if (this.trackedGlove != null && this.fingerColliders != null)
         {
-            int[] commands = new int[5] { 0, 0, 0, 0, 0 };
-            for (int f=0; f<this.fingerColliders.Length; f++)
+            if (this.ForceFeedback == ForceFeedbackType.Simple)
             {
-                if (this.fingerColliders[f].Length > 0)
+                this.motorLevels = new int[5] { 0, 0, 0, 0, 0 };
+                for (int f = 0; f < this.fingerColliders.Length; f++)
                 {
-                    commands[f] = this.fingerColliders[f][this.fingerColliders[f].Length - 1].TouchObject() != null ? 255 : 0; 
+                    if (this.fingerColliders[f].Length > 0)
+                    {
+                        this.motorLevels[f] = this.fingerColliders[f][this.fingerColliders[f].Length - 1].TouchObject() != null ? 255 : 0;
+                    }
                 }
+                this.trackedGlove.SimpleBrakeCmd(this.motorLevels);
             }
-            this.trackedGlove.SimpleBrakeCmd(commands);
+            else if (this.ForceFeedback == ForceFeedbackType.MaterialBased)
+            {
+                this.motorLevels = new int[5] { 0, 0, 0, 0, 0 };
+                for (int f = 0; f<this.grabDistances.Length; f++)
+                {
+
+                }
+                this.trackedGlove.SimpleBrakeCmd(this.motorLevels);
+            }
         }
     }
 
@@ -523,4 +610,11 @@ public class SenseGlove_PhysGrab : MonoBehaviour
     }
 
 
+}
+
+public enum ForceFeedbackType
+{
+    None = 0,
+    Simple,
+    MaterialBased
 }

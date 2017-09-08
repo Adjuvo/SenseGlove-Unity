@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class HandUpdater : MonoBehaviour 
+public class SenseGlove_BasicHand : MonoBehaviour
 {
     public SenseGlove_Object trackedGlove;
 
@@ -10,9 +10,9 @@ public class HandUpdater : MonoBehaviour
 
     private Transform[][] handPositions;
 
-	// Use this for initialization
-	void Start () 
-	{
+    // Use this for initialization
+    void Start()
+    {
         this.DetectJoints(this.handBase);
         if (!this.trackedGlove)
         {
@@ -22,13 +22,19 @@ public class HandUpdater : MonoBehaviour
         if (this.trackedGlove)
         {
             this.trackedGlove.OnGloveLoaded += TrackedGlove_OnGloveLoaded;
+            this.trackedGlove.OnCalibrationFinished += TrackedGlove_OnCalibrationFinished;
         }
 
         if (this.GetComponent<SenseGlove_PhysGrab>() && this.handPositions != null)
         {
             this.SetupColliders();
         }
-	}
+    }
+
+    private void TrackedGlove_OnCalibrationFinished(object source, CalibrationArgs args)
+    {
+        this.RescaleHand(args.newFingerLengths);
+    }
 
     // Update is called once per frame
     void Update()
@@ -47,7 +53,7 @@ public class HandUpdater : MonoBehaviour
     public void DetectJoints(GameObject fingerBase)
     {
         handPositions = new Transform[5][];
-        for (int f=0; f<handPositions.Length && f<fingerBase.transform.childCount; f++)
+        for (int f = 0; f < handPositions.Length && f < fingerBase.transform.childCount; f++)
         {
             List<Transform> joints = new List<Transform>();
             Transform temp = fingerBase.transform.GetChild(f);
@@ -60,7 +66,7 @@ public class HandUpdater : MonoBehaviour
             }
 
             handPositions[f] = new Transform[joints.Count];
-            for (int i=0; i<joints.Count; i++)
+            for (int i = 0; i < joints.Count; i++)
             {
                 handPositions[f][i] = joints[i];
             }
@@ -90,18 +96,18 @@ public class HandUpdater : MonoBehaviour
         Debug.Log("Rescaling");
         if (this.handPositions != null && handLengths != null)
         {
-            for (int f=0; f<handPositions.Length && f < handLengths.Length; f++)
+            for (int f = 0; f < handPositions.Length && f < handLengths.Length; f++)
             {
                 if (handPositions[f] != null && handLengths[f] != null)
                 {
-                    for (int i=1; i<handPositions[f].Length && (i - 1) < handLengths[f].Length; i++)
+                    for (int i = 1; i < handPositions[f].Length && (i - 1) < handLengths[f].Length; i++)
                     {
-                        handPositions[f][i].localPosition = new Vector3(handLengths[f][i-1], 0, 0);
-                        if (handPositions[f][i-1].childCount > 1)
+                        handPositions[f][i].localPosition = new Vector3(handLengths[f][i - 1], 0, 0);
+                        if (handPositions[f][i - 1].childCount > 1)
                         {
                             Vector3 scale = handPositions[f][i - 1].GetChild(1).localScale;
-                            handPositions[f][i - 1].GetChild(1).localPosition = new Vector3(handLengths[f][i-1] / 2.0f, 0, 0);
-                            handPositions[f][i - 1].GetChild(1).localScale = new Vector3(scale.x, handLengths[f][i-1] / 2.0f, scale.z);
+                            handPositions[f][i - 1].GetChild(1).localPosition = new Vector3(handLengths[f][i - 1] / 2.0f, 0, 0);
+                            handPositions[f][i - 1].GetChild(1).localScale = new Vector3(scale.x, handLengths[f][i - 1] / 2.0f, scale.z);
                         }
                     }
                 }
@@ -135,5 +141,5 @@ public class HandUpdater : MonoBehaviour
             }
         }
     }
-    
+
 }
