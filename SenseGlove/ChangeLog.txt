@@ -1,9 +1,39 @@
 # Changelog
 All notable changes to the SenseGlove Prefabs will be documented in this file.
 
-You are currently using version 0.14
+You are currently using version 0.15
 
 -------------------------------------------------------------------------------------------------------
+
+## [v0.15] - 2017-10-09
+Grabscript, Hand Model and Force Feedback Overhaul.
+
+### Added
+-	"Number Of Sensors", "Current Calibration Step" and "Total Calibration Steps" variables for the SenseGlove_Data.
+-	SenseGlove_Grabscript class, a superclass for both Physics- and Gesture based grabscripts.
+-	SenseGlove_HandModel scrips; abstract script which should make it a lot easier to set up your own hand model.
+-	SenseGlove "Hologram" Hand Model, courtesy of The Virtual Dutch Men.
+-	SenseGlove_Feedback script, which determines the Sense Glove motor levels based on the desired colliders and force feedback type.
+-	SenseGlove_Material script, which is added to SenseGlove_Interactables to calculate the force feedback.
+-	SenseGlove_HandModel now takes the motor levels of the fingertip SenseGlove_Feedback scripts and sends these to the SenseGlove_Object. 
+-	SenseGlove_DropZone; detects (and optionally snaps) SenseGlove_Grabables in its area.
+-	SenseGlove_GrabZone; an Interactable which passes its class methods to connected Interactables (can be used for handles etc).
+-	SenseGlove_Drawer; an Interactable that moves along a specified axis and recieves interaction events from its 'handles', 
+	which can be one or multiple SenseGlove_GrabZones.
+-	SenseGlove_StaticObject, which cannot be interacted with, but provides force feedback only.
+
+### Changed
+-	The WireFrame "preview" model is now destroyed when the Sense Glove is connected, rather than on StartUp.
+-	SenseGlove_Detector now has an optional activationTime variable, which controls how long the glove should be inside the detector before the event fires. 
+	Set this variable to 0 to ignore it.
+-	ForceFeedback option for SenseGlove_Interactables, which determines whether or not they activate the SenseGlove_Feedback.
+-	SenseGlove_Physgrab now has a bunch of collider options that can be changed via the Inspector, making them easier to integrate into custom hand model(s).
+-	HandModel Folder now contains all scripts that have to do with virtual hand models, such as the SenseGlove_HandModel and SenseGlove_Wireframe script.
+-	It is now possible to pick up a SenseGlove_Grabable from another Grabscript if its "CanTransfer" property is set to true.
+
+
+-------------------------------------------------------------------------------------------------------
+
 
 ## [v0.14] - 2017-09-08
 Calibration Upgrades and Bug Fixes
@@ -25,7 +55,9 @@ Calibration Upgrades and Bug Fixes
 -	Bug where calling the CalibrateThumb() function would actually calibrate the fingers instead.
 -	Bug where picking up objects with the SenseGlove_WireFrame anchor set to Wrist would misplace the object outside of the user's reach. 
 
+
 -------------------------------------------------------------------------------------------------------
+
 
 ## [v0.13] - 2017-08-24
 Major Calibration Upgrades

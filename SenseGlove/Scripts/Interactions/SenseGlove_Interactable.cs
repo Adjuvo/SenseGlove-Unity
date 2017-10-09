@@ -14,64 +14,26 @@ public abstract class SenseGlove_Interactable : MonoBehaviour
     [Tooltip("Indicates if this object can be interacted with at this moment.")]
     public bool isInteractable = true;
 
+    /// <summary> Indicates that this Interactable can activate force feedback. </summary>
+    [Tooltip("Indicated if this objects activates force feedback on the Sense Glove.")]
+    public bool forceFeedback = false;
+
     /// <summary> A reference to the GrabScript that is currently interacting with this SenseGlove. </summary>
-    protected SenseGlove_PhysGrab _grabScript;
-
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Monobehaviour
-
-    // Awake runs before all objects have been setup.
-    void Awake() { this.HandleAwake(); }
-
-    // Use this for initialization
-    void Start () { this.HandleStart(); }
-
-	// Update is called once per frame
-	void Update () { this.HandleUpdate(); }
-
-    // FixedUpdate is called every time the physics are calculated, which can be adjusted in the Project Settings > Time.
-    void FixedUpdate() { this.HandleFixedUpdate(); }
-
-    // LateUpdate is also called once per frame, but only after all Update() functions have been processed.
-    void LateUpdate() { this.HandleLateUpdate(); }
-
-    // Called when the application shuts down.
-    void OnApplicationQuit() { this.HandleQuit(); }
-
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Monobehaviour wrappers (in order of execution). Virtual because not all are required.
-
-    /// <summary> Awake runs before all objects have been setup. </summary>
-    protected virtual void HandleAwake() { }
-
-    /// <summary> Use this for initialization. </summary>
-    protected virtual void HandleStart() { }
-
-    /// <summary> Update is called once per frame </summary>
-    protected virtual void HandleUpdate() { }
-
-    /// <summary> FixedUpdate is called every time the physics are calculated, which can be adjusted in the Project Settings > Time. </summary>
-    protected virtual void HandleFixedUpdate() { }
-
-    /// <summary> LateUpdate is also called once per frame, but only after all Update() functions have been processed. </summary>
-    protected virtual void HandleLateUpdate() { }
-
-    /// <summary> Called when the application shuts down. </summary>
-    protected virtual void HandleQuit() { }
+    protected SenseGlove_GrabScript _grabScript;
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Grabscript Methods
 
     /// <summary> Begin the interaction with this GrabScript </summary>
     /// <param name="grabScript"></param>
-    public abstract void BeginInteraction(SenseGlove_PhysGrab grabScript);
+    public abstract void BeginInteraction(SenseGlove_GrabScript grabScript);
 
     /// <summary> Called by the grabscript after it has updated. Ensures that the FollowObject always updates last. </summary>
-    public abstract void FollowInteraction();
+    public abstract void UpdateInteraction();
 
     /// <summary> (Manually) End the interaction with this GrabScript </summary>
     /// <param name="grabScript"></param>
-    public abstract void EndInteraction(SenseGlove_PhysGrab grabScript);
+    public abstract void EndInteraction(SenseGlove_GrabScript grabScript);
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Grabscript Methods
@@ -83,7 +45,7 @@ public abstract class SenseGlove_Interactable : MonoBehaviour
 
     /// <summary> Access the grabscript that is currently interacting with this object. </summary>
     /// <returns></returns>
-    public SenseGlove_PhysGrab GrabScript()
+    public SenseGlove_GrabScript GrabScript()
     {
         return this._grabScript;
     }
@@ -93,7 +55,7 @@ public abstract class SenseGlove_Interactable : MonoBehaviour
     /// </summary>
     /// <param name="grabScript"></param>
     /// <returns></returns>
-    public bool InteractingWith(SenseGlove_PhysGrab grabScript)
+    public bool InteractingWith(SenseGlove_GrabScript grabScript)
     {
         if (grabScript != null && this._grabScript != null)
         {

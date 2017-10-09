@@ -224,12 +224,14 @@ public class SenseGlove_Object : MonoBehaviour
                     if (oldFingerLengths != null) { this.SetFingerLengths(oldFingerLengths); } //re-apply old fingerlengths, if possible.
                     if (oldStartPositions != null) { this.SetStartJointPositions(oldStartPositions); } //re=apply joint positions, if possible.
 
-                    this.convertedGloveData = new SenseGlove_Data(this.gloveData, this.glove.communicator.samplesPerSecond);
+                    this.convertedGloveData = new SenseGlove_Data(this.gloveData, this.glove.communicator.samplesPerSecond, 
+                        this.glove.TotalCalibrationSteps(), this.glove.TotalCalibrationSteps());
                     this.SetupWrist();
                     this.calibratedWrist = false;
                     this.gloveReady = true;
                     if (runSetup)
                     {
+                        Debug.Log("Sense Glove " + this.convertedGloveData.deviceID + " is ready!");
                         this.GloveLoaded();  //raise the event!
                     }
                 }
@@ -274,8 +276,9 @@ public class SenseGlove_Object : MonoBehaviour
     void OnApplicationQuit()
     {
         this.CancelCalibration();
-        if (glove != null)
+        if (glove != null && glove.IsConnected())
         {
+            glove.SimpleBrakeCmd(0, 0, 0, 0, 0);
             glove.Disconnect();
             SenseGlove_Debugger.Log("Disconnected the SenseGlove on " + glove.communicator.Address());
         }
@@ -449,7 +452,8 @@ public class SenseGlove_Object : MonoBehaviour
             //Update to the latest GloveData.
             Quaternion lowerArm = this.foreArm != null ? this.foreArm.transform.rotation : Quaternion.identity;
             this.gloveData = this.glove.Update(this.updateTo, this.limitFingers, this.updateWrist, SenseGlove_Util.ToQuaternion(lowerArm), this.limitWrist, this.checkGestures);
-            this.convertedGloveData = new SenseGlove_Data(this.gloveData, this.glove.communicator.samplesPerSecond);
+            this.convertedGloveData = new SenseGlove_Data(this.gloveData, this.glove.communicator.samplesPerSecond,
+                this.glove.TotalCalibrationSteps(), this.glove.CurrentCalibrationStep());
         }
     }
 
@@ -469,7 +473,12 @@ public class SenseGlove_Object : MonoBehaviour
             int subVersion = int.Parse(gloveVersion[1]);
             if (mainVersion <= 2 && subVersion <= 19)
             {
-                if (ID.Contains("120101"))
+                if (ID.Contains("120206"))
+                {
+                    this.glove.gloveData.wrist.SetHardwareOrientation(Quaternions.FromEuler(Mathf.PI / 2.0f, 0, Mathf.PI)); //correction for glove 1
+                    SenseGlove_Debugger.Log("Firmware Version v2.19 or earlier. Adding Hardware Compensation");
+                }
+                else if (ID.Contains("120101"))
                 {
                     this.glove.gloveData.wrist.SetHardwareOrientation(Quaternions.FromEuler(Mathf.PI, 0, 0)); //correction for glove 1
                     SenseGlove_Debugger.Log("Firmware Version v2.19 or earlier. Adding Hardware Compensation");

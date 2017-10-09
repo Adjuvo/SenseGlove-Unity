@@ -3,9 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>
-/// A class to detect a SenseGlove based on its PhysGrab colliders
-/// </summary>
+/// <summary>A class to detect a SenseGlove based on its SenseGlove_Feedback colliders </summary>
 [RequireComponent(typeof(Collider), typeof(Rigidbody))]
 public class SenseGlove_Detector : MonoBehaviour 
 {
@@ -16,23 +14,25 @@ public class SenseGlove_Detector : MonoBehaviour
     [Tooltip("How many SenseGlove_Touch colliders can enter the Detector before the GloveDetected event is raised.")]
     public int activationThreshold = 1;
 
+    /// <summary> Optional: The time in seconds that the Sense Glove must be inside the detector for before the GloveDetected event is called. </summary>
+    [Tooltip("Optional: The time in seconds that the Sense Glove must be inside the detector for before the GloveDetected event is called. Set to 0 to ignore.")]
+    public float activationTime = 0;
+
     /// <summary> If set to true, the detector will not raise events if a second grabscript joins in.  </summary>
     [Tooltip("If set to true, the detector will not raise events if a second grabscript joins in.")]
     public bool singleGlove = false;
-
-    /// <summary> If set to true, the detector will only detect finger(tip) collision.  </summary>
-    [Tooltip("If set to true, the detector will only detect finger(tip) collision.")]
-    public bool ignorePalm = false;
-
 
     //--------------------------------------------------------------------------------------------------------------------------
     // Internal Properties.
 
     /// <summary> All of the grabscripts currently interacting with this detector, in order of appearance. </summary>
-    private List<SenseGlove_PhysGrab> detectedGloves = new List<SenseGlove_PhysGrab>();
+    private List<SenseGlove_HandModel> detectedGloves = new List<SenseGlove_HandModel>();
 
     /// <summary> The amount of SenseGlove_Touch colliders of each grabscript that are currently in the detection area </summary>
     private List<int> detectedColliders = new List<int>();
+
+    /// <summary> Used to keep track of the time that each glove have been inside this detector. </summary>
+    private List<float> detectionTimes = new List<float>();
 
     /// <summary> Used to determine if the activationtheshold had been reached before. Prevents the scipt from firing multiple times. </summary>
     private List<bool> eventFired = new List<bool>();
@@ -62,55 +62,68 @@ public class SenseGlove_Detector : MonoBehaviour
             myRigidbody.isKinematic = true;
         }
     }
-	
+
+    // Updates every frame, used to raise event(s).
+    void LateUpdate()
+    {
+        for (int i = 0; i < this.detectedGloves.Count; i++)
+        {
+            if (this.detectedColliders[i] >= this.activationThreshold)
+            {
+                this.detectionTimes[i] += Time.deltaTime;
+                if (this.detectionTimes[i] >= this.activationTime && !(eventFired[i]) && !(this.singleGlove && this.detectedGloves.Count > 1))
+                {
+                    this.OnGloveDetected(this.detectedGloves[i]);
+                    this.eventFired[i] = true;
+                }
+            }
+        }
+    }
 
     //--------------------------------------------------------------------------------------------------------------------------
     // Collision Detection
 
     void OnTriggerEnter(Collider col)
     {
-        SenseGlove_Touch touch = col.GetComponent<SenseGlove_Touch>();
-        if (touch && touch.GrabScript()) //needs to have a grabscript attached.
+        SenseGlove_Feedback touch = col.GetComponent<SenseGlove_Feedback>();
+        if (touch && touch.handModel) //needs to have a grabscript attached.
         {
-            int scriptIndex = this.GrabScriptIndex(touch.GrabScript());
-            if ( !(this.ignorePalm && GameObject.ReferenceEquals(touch.GrabScript().GetPalm(), touch)) )
-            {   //using the && operator, the comparison will not be made if this.ignorePalm is false.
+            int scriptIndex = this.HandModelIndex(touch.handModel);
 
-                //#1 - Check if it belongs to a new or existing detected glove.
-                if (scriptIndex < 0)
-                {
-                    //Debug.Log("New Grabscript entered.");
-                    this.AddGrabScript(touch.GrabScript());
-                    scriptIndex = this.detectedGloves.Count - 1;
-                }
-                else
-                {   
-                    //Debug.Log("Another collider for grabscript " + scriptIndex);
-                    this.detectedColliders[scriptIndex]++;
-                }
-
-                //#2 - Now that the correct grabscript arrays have been updates, lets check if we should raise an event.
-                if (this.detectedColliders[scriptIndex] == this.activationThreshold)
-                {
-                    //Debug.Log("ActivationThreshold Reached!");
-                    if ( !(eventFired[scriptIndex]) && !(this.singleGlove && this.detectedGloves.Count > 1) )
-                    {
-                        this.OnGloveDetected(this.detectedGloves[scriptIndex]);
-                        this.eventFired[scriptIndex] = true;
-                    }
-                }
-
+            //#1 - Check if it belongs to a new or existing detected glove.
+            if (scriptIndex < 0)
+            {
+                //Debug.Log("New Grabscript entered.");
+                this.AddEntry(touch.handModel);
+                scriptIndex = this.detectedGloves.Count - 1;
             }
+            else
+            {   
+                //Debug.Log("Another collider for grabscript " + scriptIndex);
+                this.detectedColliders[scriptIndex]++;
+            }
+            
+            //if no time constraint is set, raise the event immediately!
+            if (this.activationTime <= 0 && this.detectedColliders[scriptIndex] == this.activationThreshold)
+            {
+                //Debug.Log("ActivationThreshold Reached!");
+                if (!(eventFired[scriptIndex]) && !(this.singleGlove && this.detectedGloves.Count > 1))
+                {
+                    this.OnGloveDetected(this.detectedGloves[scriptIndex]);
+                    this.eventFired[scriptIndex] = true;
+                }
+            }
+
         }
     }
 
     void OnTriggerExit(Collider col)
     {
-        SenseGlove_Touch touch = col.GetComponent<SenseGlove_Touch>();
-        if (touch && touch.GrabScript()) //must have a grabscript attached.
+        SenseGlove_Feedback touch = col.GetComponent<SenseGlove_Feedback>();
+        if (touch && touch.handModel) //must have a grabscript attached.
         {
             //Debug.Log("Collider Exits");
-            int scriptIndex = this.GrabScriptIndex(touch.GrabScript());
+            int scriptIndex = this.HandModelIndex(touch.handModel);
             if (scriptIndex < 0)
             {
                 //Debug.Log("Something went wrong with " + this.gameObject.name);
@@ -127,7 +140,7 @@ public class SenseGlove_Detector : MonoBehaviour
                     {
                         this.OnGloveRemoved(this.detectedGloves[scriptIndex]);
                     }             
-                    this.RemoveGrabScript(scriptIndex);
+                    this.RemoveEntry(scriptIndex);
                 }
             }
         }
@@ -141,28 +154,30 @@ public class SenseGlove_Detector : MonoBehaviour
     /// </summary>
     /// <param name="grab"></param>
     /// <returns></returns>
-    private int GrabScriptIndex(SenseGlove_PhysGrab grab)
+    private int HandModelIndex(SenseGlove_HandModel model)
     {
         for (int i = 0; i < this.detectedGloves.Count; i++)
         {
-            if (GameObject.ReferenceEquals(grab, this.detectedGloves[i])) { return i; }
+            if (GameObject.ReferenceEquals(model, this.detectedGloves[i])) { return i; }
         }
         return -1;
     }
 
-    private void AddGrabScript(SenseGlove_PhysGrab grab)
+    private void AddEntry(SenseGlove_HandModel model)
     {
-        this.detectedGloves.Add(grab);
+        this.detectedGloves.Add(model);
+        this.detectionTimes.Add(0);
         this.detectedColliders.Add(1); //already add one.
         this.eventFired.Add(false);
     }
 
-    private void RemoveGrabScript(int scriptIndex)
+    private void RemoveEntry(int scriptIndex)
     {
         if (scriptIndex > -1 && scriptIndex < detectedGloves.Count)
         {
             this.detectedColliders.RemoveAt(scriptIndex);
             this.detectedGloves.RemoveAt(scriptIndex);
+            this.detectionTimes.RemoveAt(scriptIndex);
             this.eventFired.RemoveAt(scriptIndex);
         }
     }
@@ -175,11 +190,11 @@ public class SenseGlove_Detector : MonoBehaviour
     /// <summary> Fires when a new SenseGlove_Grabscript enters this detection zone. </summary>
     public event GloveDetectedEventHandler GloveDetected;
 
-    protected void OnGloveDetected(SenseGlove_PhysGrab grab)
+    protected void OnGloveDetected(SenseGlove_HandModel model)
     {
         if (GloveDetected != null)
         {
-            GloveDetected(this, new GloveDetectionArgs(grab));
+            GloveDetected(this, new GloveDetectionArgs(model));
         }
     }
 
@@ -187,15 +202,16 @@ public class SenseGlove_Detector : MonoBehaviour
     /// <summary>Fires when a SenseGlove_Grabscript exits this detection zone.  </summary>
     public event OnGloveRemovedEventHandler GloveRemoved;
 
-    protected void OnGloveRemoved(SenseGlove_PhysGrab grab)
+    protected void OnGloveRemoved(SenseGlove_HandModel model)
     {
         if (GloveRemoved != null)
         {
-            GloveRemoved(this, new GloveDetectionArgs(grab));
+            GloveRemoved(this, new GloveDetectionArgs(model));
         }
     }
 
-
+    /// <summary> Returns true if there is a Sense Glove contained within this collider. </summary>
+    /// <returns></returns>
     public bool ContainsSenseGlove()
     {
         return this.detectedGloves.Count > 0;
@@ -203,7 +219,7 @@ public class SenseGlove_Detector : MonoBehaviour
 
     /// <summary> Get a list of all gloves within this detection area. </summary>
     /// <returns></returns>
-    public SenseGlove_PhysGrab[] GlovesInside()
+    public SenseGlove_HandModel[] GlovesInside()
     {
         return this.detectedGloves.ToArray();
     }
@@ -214,13 +230,13 @@ public class SenseGlove_Detector : MonoBehaviour
 public class GloveDetectionArgs : System.EventArgs
 {
     /// <summary> The Grabscript that caused the event to fire. </summary>
-    public SenseGlove_PhysGrab grabScript;
+    public SenseGlove_HandModel handModel;
 
     /// <summary> Create a new instance of the SenseGlove Detection Arguments </summary>
     /// <param name="grab"></param>
-    public GloveDetectionArgs(SenseGlove_PhysGrab grab)
+    public GloveDetectionArgs(SenseGlove_HandModel model)
     {
-        this.grabScript = grab;
+        this.handModel = model;
     }
 
 }

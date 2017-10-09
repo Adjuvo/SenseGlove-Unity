@@ -30,6 +30,9 @@ public class SenseGlove_Data
     /// <summary> The angles between glove segments, as calculated by the firmware. Sorted by finger, from proximal to distal. </summary>
     public float[][] gloveValues;
 
+    /// <summary> Teh number of sensors on this Sense Glove.  </summary>
+    public int numberOfSensors;
+
     /// <summary> The raw x y z w values of the IMU within the SenseGlove. </summary>
     public float[] imuValues;
 
@@ -101,16 +104,25 @@ public class SenseGlove_Data
     /// <summary> The absolute wrist angles, corrected with foreArm calibration. </summary>
     public Quaternion absoluteCalibratedWrist;
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Calibration Variables
+
+    /// <summary> The current step of the calibration algorithm. </summary>
+    public int calibrationStep = -1;
+
+    /// <summary> The total number of steps of the calibration algorithm. </summary>
+    public int totalCalibrationSteps = 0;
+
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Constructor
 
-    
+
     /// <summary>
     /// Extract right-handed coordinate system data from the SenseGlove DLL and convert it into Unity values.
     /// </summary>
     /// <param name="data"></param>
-    public SenseGlove_Data(SenseGloveCs.GloveData data, int packets)
+    public SenseGlove_Data(SenseGloveCs.GloveData data, int packets, int totalCSteps, int currCStep)
     {
         if (data != null)
         {
@@ -124,6 +136,10 @@ public class SenseGlove_Data
             this.gloveValues = data.gloveValues;
             this.imuValues = data.imuValues;
             this.packetsPerSecond = packets;
+            this.numberOfSensors = data.numberOfSensors;
+
+            this.calibrationStep = currCStep;
+            this.totalCalibrationSteps = totalCSteps;
 
             this.absoluteCalibratedWrist = SenseGlove_Util.ToUnityQuaternion(data.wrist.QcalibratedAbs);
             this.absoluteWrist = SenseGlove_Util.ToUnityQuaternion(data.wrist.QwristAbs);

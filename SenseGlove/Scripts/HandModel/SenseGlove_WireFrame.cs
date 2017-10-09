@@ -106,9 +106,6 @@ public class SenseGlove_WireFrame : MonoBehaviour
     {
         trackedGlove.OnGloveLoaded += TrackedGlove_OnGloveLoaded;
         trackedGlove.OnCalibrationFinished += TrackedGlove_OnCalibrationFinished; ;
-        
-        //remove the preview models, if any are available
-        if (this.preview != null) { Destroy(this.preview); }
     }
 
     private void TrackedGlove_OnCalibrationFinished(object source, CalibrationArgs args)
@@ -130,6 +127,9 @@ public class SenseGlove_WireFrame : MonoBehaviour
         SetHand(true);      //show the hand by default.
         SetupGrabColliders();
         this.setupComplete = true;
+
+        //remove the preview models, if any are available
+        if (this.preview != null) { Destroy(this.preview); }
     }
 
     // Update is called once per frame
@@ -469,7 +469,6 @@ public class SenseGlove_WireFrame : MonoBehaviour
         this.StartTracking();
     }
 
-
     /// <summary>  If this WireFrame model has a grabscript, attach the appropriate colliders. </summary>
     private void SetupGrabColliders()
     {
@@ -480,16 +479,18 @@ public class SenseGlove_WireFrame : MonoBehaviour
             {
                 //attack capsule colliders to the fingers
                 SenseGlove_Debugger.Log("Grabscript detected! Attaching colliders.");
-                Collider[] tipColliders = new Collider[handPositions.Length];
-
+                List<List<Collider>> pickups = new List<List<Collider>>();
                 for (int f = 0; f < handPositions.Length; f++) //DEBUG : Only thumb & index
                 {
+                    List<Collider> fingerColliders = new List<Collider>();
                     GameObject fingerTip = this.handPositions[f][handPositions[f].Length - 1];
                     SphereCollider C = fingerTip.AddComponent<SphereCollider>();
-                    C.radius = fingerTip.transform.FindChild("Point").localScale.x / 1f;
-                    tipColliders[f] = C;
+                    C.radius = grabscript.pickupColliderSize; //determine collider size
+                    fingerColliders.Add(C);
+                    pickups.Add(fingerColliders);
                 }
-                grabscript.SetupColliders(tipColliders, this.palmCollider);
+                grabscript.Setup(pickups, this.palmCollider);
+
             }
             //else try other forms of grabscripts
         }
@@ -637,7 +638,7 @@ public class SenseGlove_WireFrame : MonoBehaviour
 
     /// <summary> Access the gloveReady event of the trackedGlove. </summary>
     /// <returns> True during the frame that the GloveReady is called. </returns>
-    [Obsolete("No longer used since this can be achieved by a SenseGlove_Object.")]
+    [Obsolete("No longer used since this can be achieved by acessing this script's trackedGlove.")]
     public bool GloveReady()
     {
         return trackedGlove != null && trackedGlove.GloveReady();
@@ -706,6 +707,10 @@ public class SenseGlove_WireFrame : MonoBehaviour
         if (handGroup != null)
         {
             handGroup.SetActive(active);
+        }
+        if (this.palmCollider != null)
+        {
+            this.palmCollider.gameObject.SetActive(active);
         }
     }
 

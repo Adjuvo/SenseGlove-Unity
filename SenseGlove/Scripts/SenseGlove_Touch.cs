@@ -7,59 +7,102 @@ using UnityEngine;
 public class SenseGlove_Touch : MonoBehaviour
 {
 
+    //--------------------------------------------------------------------------------------------------------------------------
+    // Publicly visible attributes
+
     [Tooltip("The collider used to determine which object is currently being touched")]
     public Collider touch;
 
     /// <summary> The object that is currently touched by this SenseGlove_Touch script. </summary>
-    private GameObject touchedObject;
+    [Tooltip("The object that is currently touched by this SenseGlove_Touch script.")]
+    public GameObject touchedObject;
 
     /// <summary> The grabscript using these colliders for its logic. </summary>
-    private SenseGlove_PhysGrab grabScript;
+    private SenseGlove_GrabScript grabScript;
+    
 
-    void Start ()
+    //--------------------------------------------------------------------------------------------------------------------------
+    // Get / Set attributes for Construction
+
+    /// <summary> Tell the SenseGlove_Touch that is is being used by the specified SenseGlove_PhysGrab. Copy its ForceFeedbackType. </summary>
+    /// <param name="parentScript"></param>
+    public void SetSourceScript(SenseGlove_GrabScript parentScript)
     {
-        
-	}
+        this.grabScript = parentScript;
+    }
 
+    /// <summary> Get a reference to the grabscript that this SenseGlove_Touch is attached to. </summary>
+    /// <returns></returns>
+    public SenseGlove_GrabScript GrabScript()
+    {
+        return this.grabScript;
+    }
+
+    //--------------------------------------------------------------------------------------------------------------------------
+    // Monobehaviour
+
+    //Colled when the application starts
+    void Start()
+    {
+        if (this.touch == null) { this.touch = this.GetComponent<Collider>(); }
+    }
+
+    // Called once per frame
     void Update()
     {
-        
+        this.touch.isTrigger = true;
     }
-	
-	void FixedUpdate ()
+
+    // Called during a physics update.
+    void FixedUpdate()
     {
         if (touch != null) { touch.isTrigger = true; } //enure the touch collider is always kinematic.
+
+        if (this.touchedObject != null && !this.touchedObject.activeInHierarchy)
+        {
+            Debug.Log("Object no longer exists. Releasing.");
+            this.touchedObject = null;
+        }
     }
 
+    //--------------------------------------------------------------------------------------------------------------------------
+    // Collision Detection / Force Feedback 
 
-    void OnTriggerStay(Collider col)
+    // Called when this object enters the collider of another object
+    void OnTriggerEnter(Collider col)
     {
-        if (col.GetComponent<SenseGlove_Interactable>() != null)
+        if (col.GetComponent<SenseGlove_Interactable>() != null && this.touchedObject == null)
         {
-            if (!this.IsTouching(col.gameObject))
-            {
-                //touching a new object!
-            }
+            //if (!this.IsTouching(col.gameObject))
+            //{
+            //    //touching a new object!
+            //}
             this.touchedObject = col.gameObject;
         }
     }
 
+    // Called every FixedUpdate while this collider is inside another collider.
+    void OnTriggerStay(Collider col)
+    {
+        //if (this.IsTouching(col.gameObject)) //Check if we're still on the same object?
+        //{
+            
+        //}
+    }
+
+    // Called when this object exits the collider of another object
     void OnTriggerExit(Collider col)
     {
-        if (this.touchedObject != null && this.IsTouching(col.gameObject))
+        if (this.IsTouching(col.gameObject))
         {
             this.touchedObject = null;
-            //if (col.gameObject.GetComponent<SenseGlove_Button>())
-            //{
-            //    col.GetComponent<SenseGlove_Interactable>().EndInteraction(null);
-            //}
-            //SenseGlove_Debugger.Log(this.name + " is no longer colliding with " + col.name);
         }
     }
 
-    /// <summary>
-    /// Check if this SenseGlove_Touch is touching object obj.
-    /// </summary>
+    //--------------------------------------------------------------------------------------------------------------------------
+    // Touch Logic
+
+    /// <summary> Check if this SenseGlove_Touch is touching object obj. </summary>
     /// <param name="obj"></param>
     public bool IsTouching(GameObject obj)
     {
@@ -74,24 +117,11 @@ public class SenseGlove_Touch : MonoBehaviour
         return false;
     }
 
-
+    /// <summary> Returns the object that this collider is touching. Usually to check if it is also touched by other colliders. </summary>
+    /// <returns></returns>
     public GameObject TouchObject()
     {
         return this.touchedObject;
-    }
-
-    /// <summary> Tell the SenseGlove_Touch that is is being used by the specified SenseGlove_PhysGrab </summary>
-    /// <param name="parentScript"></param>
-    public void SetSourceScript(SenseGlove_PhysGrab parentScript)
-    {
-        this.grabScript = parentScript;
-    }
-
-    /// <summary> Get a reference to the grabscript that this SenseGlove_Touch is attached to. </summary>
-    /// <returns></returns>
-    public SenseGlove_PhysGrab GrabScript()
-    {
-        return this.grabScript;
     }
 
 }

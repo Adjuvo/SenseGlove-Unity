@@ -3,29 +3,17 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-/*
- * Wishlist
- * ----------------------------
- * Hold Multiple Objects
- * Hold an object between fingertip and MCP joint
- * 
- */
 
 /// <summary>
 /// Physics-Based Grabbing using Colliders, without Parenting.
 /// </summary>
 [RequireComponent(typeof(SenseGlove_Object))]
-public class SenseGlove_PhysGrab : MonoBehaviour
+public class SenseGlove_PhysGrab : SenseGlove_GrabScript
 {
 
-    /// <summary> A SenseGlove_Object for gloveData related shenanigans. </summary>
-    [Tooltip("A SenseGlove_Object for gloveData related shenanigans. Automatically assigned.")]
-    public SenseGlove_Object trackedGlove;
-
-    /// <summary> When an object is picked up, this GameObject (Typically the wrist) is used as a reference for its movement / parent / fixedJoint. </summary>
-    [Header("Settings")]
-    [Tooltip("When an object is picked up, this GameObject (Typically the wrist) is used as a reference for its movement.")]
-    public GameObject grabReference;
+    /// <summary> The size of the pickup colliders, in mm. Used for Physics Based interactin through a SenseGlove_PhysGrab. </summary>
+    [Tooltip("The absolute radius of the pickup colliders, in m, assuming UNIFORM scaling. Used for Physics Based interaction through a SenseGlove_PhysGrab.")]
+    public float pickupColliderSize = 0.005f;
 
     /// <summary> Determines if the grabscript interacts with objects between the thumb and at least one finger. </summary>
     [Tooltip("Determine if the grabscript interacts with objects between the thumb and at least one finger.")]
@@ -33,32 +21,45 @@ public class SenseGlove_PhysGrab : MonoBehaviour
 
     /// <summary> Determines if the grabscript interacts with objects between the hand palm and at least one finger. </summary>
     [Tooltip("Determine if the grabscript interacts with objects between the hand palm and at least one finger.")]
-    public bool fingerPalmCollision = true;
+    public bool fingerPalmCollision = false;
 
-    /// <summary> Determines if this script can send force feedback back to its SenseGlove. </summary>
-    [Tooltip("Determines if this script can send force feedback back to its SenseGlove. ")]
-    public ForceFeedbackType ForceFeedback = ForceFeedbackType.None;
+    /// <summary> Determines if the grabscript interacts with objects between its fingertip and its mcp joint. </summary>
+    [Tooltip("Determines if the grabscript interacts with objects between its fingertip and its mcp joint.")]
+    public bool fingerMCPCollision = false;
+
+    /// <summary> (user defined) colliders used for pickup logic. </summary>
+    [Header("Grabscript Colliders")]
+    [Tooltip("The colliders that will be used for the thumb pickup logic.")]
+    public List<Collider> thumbColliders = new List<Collider>(1);
+
+    [Tooltip("The colliders that will be used for the index finger pickup logic.")]
+    public List<Collider> indexColliders = new List<Collider>(1);
+
+    [Tooltip("The colliders that will be used for the middle finger pickup logic.")]
+    public List<Collider> middleColliders = new List<Collider>(1);
+
+    [Tooltip("The colliders that will be used for the ring finger pickup logic.")]
+    public List<Collider> ringColliders = new List<Collider>(1);
+
+    [Tooltip("The colliders that will be used for the little finger pickup logic.")]
+    public List<Collider> pinkyColliders = new List<Collider>(1);
+
+
+    /// <summary>
+    /// The collider of the hand palm.
+    /// </summary>
+    public Collider palmCollider;
+
+    /// <summary>
+    /// The actual touchScripts used for grab logic.
+    /// </summary>
+    private SenseGlove_Touch[][] touchScripts = null;
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // private variables.
 
-    /// <summary> The colliders for each finger, which will be checked from distal to proximal. Those at index 0 are of the thumb. </summary>
-    private SenseGlove_Touch[][] fingerColliders;
-
     /// <summary> The collider of the handPalm </summary>
     private SenseGlove_Touch handPalm;
-
-    /// <summary> The GameObject that is being grabbed in between the colliders. </summary>
-    private GameObject objectToGrab;
-
-    /// <summary> Becomes true after the colliders have been succesfully assigned. </summary>
-    private bool setupFinished = false;
-
-    /// <summary> If this flag was false during the previous frame and we are picking up and object, then the GrabObject Function is called. </summary>
-    private bool canPickup = false;
-
-    /// <summary> Determines if we are currently holding an object, and if our GrabbedObject should follow us. </summary>
-    private bool holdingObject = false;
 
     /// <summary> If paused, the GrabScript will no longer raise events or grab objects untill the pauseTime has elapsed. </summary>
     private bool paused = false;
@@ -70,222 +71,70 @@ public class SenseGlove_PhysGrab : MonoBehaviour
     private float elapsedTime = 0;
 
     /// <summary> Timers to keep track of how long the finger has been open. </summary>
-    private float[] openTimers = new float[5];
+    protected float[] openTimers = new float[5];
 
     /// <summary> The time the fingers must be kept open for them to register as such. </summary>
-    private static float openTime = 0.2f;
+    protected static float openTime = 0.2f;
 
     //-----------------------------------------------------------------------------------------------------------------------------------------
     // Adv. Interaction Variables
 
-    public GameObject[] heldObjects = new GameObject[5];
+    /// <summary> The objects held by the five fingers </summary>
+    private GameObject[] heldObjects = new GameObject[5];
 
     //-----------------------------------------------------------------------------------------------------------------------------------------
     // Force Feedback
 
+    /// <summary> The distance between the thumb and the other fingers, used to check material properties. </summary>
+    private float[] interactionDistances = new float[] { 0, 0, 0, 0, 0 };
+
     /// <summary> Distance (in mm) between two colliders when the grab-interaction started. Used to determine the force level </summary>
     private float[] grabDistances = new float[5] { -1, -1, -1, -1, -1 };
+
     
-    /// <summary> The last sent motor levels of the SenseGlove. </summary>
-    private int[] motorLevels = new int[] { 0, 0, 0, 0, 0 };
-
-    //-----------------------------------------------------------------------------------------------------------------------------------------
-    // Velocity / Dynamics
-
-    /// <summary> The grabReference's position during the last frame Update() </summary>
-    private Vector3 lastPosition;
-    /// <summary> The xyz velocity of the grabreference, in m/s </summary>
-    private Vector3 velocity = Vector3.zero;
-
-    /// <summary> Update the dynamics (velocity, angular velocity) of the grabreference. </summary>
-    private void UpdateDynamics()
-    {
-        if (this.grabReference != null)
-        {
-            Vector3 currentPos = this.grabReference.transform.position;
-            this.velocity = (currentPos - lastPosition) / Time.deltaTime;
-            this.lastPosition = currentPos;
-        }
-    }
-
-
-    //----------------------------------------------------------------------------------------------------------------------------------------
-    // Setup / Activation / Cleanup methods. Called by outside script(s)
-
-
-    /// <summary> Setup with one collider per finger. </summary>
-    /// <param name="tipColliders"> Colliders : [thimbTip, indexTip, middleTip, ringTip, pinkyTip] </param>
-    public void SetupColliders(Collider[] tipColliders, Collider palmCollider = null)
-    {
-        if (tipColliders != null)
-        {
-            Collider[][] colliders = new Collider[tipColliders.Length][];
-            for (int f = 0; f < colliders.Length; f++)
-            {
-                colliders[f] = new Collider[] { tipColliders[f] };
-            }
-            SetupColliders(colliders, palmCollider);
-        }
-    }
-
-    /// <summary> Setup with multiple colliders for each finger. </summary>
-    /// <param name="colliders">Colliders [ [thumbColliders], [indexColliders], ..., [pinkyColliders] ]</param>
-    public void SetupColliders(Collider[][] colliders, Collider palmCollider = null)
-    {
-        bool palm = false;
-        if (palmCollider != null)
-        {
-            palmCollider.isTrigger = true;
-            this.handPalm = palmCollider.gameObject.AddComponent<SenseGlove_Touch>();
-            this.handPalm.SetSourceScript(this);
-            this.handPalm.touch = palmCollider;
-            palm = this.handPalm != null;
-        }
-
-        if (colliders != null)
-        {
-            this.CleanUpColliders(setupFinished); //dont clean up if we have set up before.
-
-            bool oneThumb = false;
-            bool oneFinger = false;
-
-            this.fingerColliders = new SenseGlove_Touch[5][];
-
-            for (int f = 0; f < colliders.Length && f < this.fingerColliders.Length; f++)
-            {
-                this.fingerColliders[f] = new SenseGlove_Touch[colliders[f].Length];
-                for (int i = 0; i < colliders[f].Length; i++)
-                {
-                    if (colliders[f][i] != null)
-                    {
-                        if (f == 0) { oneThumb = true; } //we have at least one thumb collider.
-                        else { oneFinger = true; } //we have at least one finger
-                        colliders[f][i].isTrigger = true;
-                        SenseGlove_Touch touchScript = colliders[f][i].gameObject.AddComponent<SenseGlove_Touch>();
-                        touchScript.touch = colliders[f][i];
-                        touchScript.SetSourceScript(this);
-                        this.fingerColliders[f][i] = touchScript;
-                    }
-                }
-            }
-            this.setupFinished = (oneThumb || palm) && oneFinger; //ensure there is at leas one finger.
-            if (!this.setupFinished)
-            {
-                SenseGlove_Debugger.Log("Setup failed; we require at least one finger and one thumb- or palm collider!");
-            }
-        }
-    }
-
-    /// <summary> Setup with one collider per finger, with predefined SenseGlove Scripts (mostly for internal use). </summary>
-    /// <param name="tipColliders"> Colliders : [thimbTip, indexTip, middleTip, ringTip, pinkyTip] </param>
-    public void SetupColliders(SenseGlove_Touch[] tipColliders, SenseGlove_Touch palmCollider = null)
-    {
-        if (tipColliders != null)
-        {
-            SenseGlove_Touch[][] colliders = new SenseGlove_Touch[tipColliders.Length][];
-            for (int f = 0; f < colliders.Length; f++)
-            {
-                colliders[f] = new SenseGlove_Touch[] { tipColliders[f] };
-            }
-            SetupColliders(colliders, palmCollider);
-        }
-    }
-
-    /// <summary> Setup with multiple colliders for each finger, with predefined SenseGlove Scripts (mostly for internal use). </summary>
-    /// <param name="colliders">Colliders [ [thumbColliders], [indexColliders], ..., [pinkyColliders] ]</param>
-    public void SetupColliders(SenseGlove_Touch[][] colliders, SenseGlove_Touch palmCollider = null)
-    {
-        bool palm = false;
-        if (palmCollider != null)
-        {
-            palmCollider.touch.isTrigger = true;
-            palmCollider.SetSourceScript(this);
-            this.handPalm = palmCollider;
-            palm = true;
-        }
-
-        if (colliders != null)
-        {
-            this.CleanUpColliders(setupFinished);
-
-            bool oneThumb = false;
-            bool oneFinger = false;
-
-            this.fingerColliders = new SenseGlove_Touch[5][];
-
-            for (int f = 0; f < colliders.Length && f < this.fingerColliders.Length; f++)
-            {
-                this.fingerColliders[f] = new SenseGlove_Touch[colliders[f].Length];
-                for (int i = 0; i < colliders[f].Length; i++)
-                {
-                    if (colliders[f][i] != null)
-                    {
-                        if (f == 0 && !oneThumb) { oneThumb = true; } //we have at least one thumb collider.
-                        else { oneFinger = true; } //we have at least one finger
-                        colliders[f][i].touch.isTrigger = true;
-                        colliders[f][i].SetSourceScript(this);
-                        this.fingerColliders[f][i] = colliders[f][i]; //TODO : Convert input to Collider[][] and add the SenseGlove.Collider here.
-                    }
-                }
-            }
-
-            this.setupFinished = (oneThumb || palm) && oneFinger; //ensure there is at leas one finger.
-            if (!this.setupFinished)
-            {
-                SenseGlove_Debugger.Log("Setup failed; we require at least one finger and one thumb- or palm collider!");
-            }
-        }
-    }
-
-    /// <summary>
-    /// Cleanup and remove the old finger Colliders and SenseGlove_Touch Scripts.
-    /// </summary>
-    /// <param name="removeColliders">Also destroy the colliders attached to the SenseGlove_Util scripts.</param>
-    void CleanUpColliders(bool removeColliders = true)
-    {
-        if (this.fingerColliders != null)
-        {
-            for (int f = 0; f < this.fingerColliders.Length; f++)
-            {
-                for (int i = 0; i < this.fingerColliders[f].Length; i++)
-                {
-                    Collider C = fingerColliders[f][i].touch;
-                    Destroy(fingerColliders[f][i]); //destroy the script itself, not the GameObject!
-                    if (removeColliders) { Destroy(C); }
-                }
-            }
-        }
-        //Dont remove the hand palm-there is only one of those...
-        //if (this.handPalm != null)
-        //{
-        //    Collider C = this.handPalm.touch;
-        //    Destroy(this.handPalm);
-        //    if (removeColliders) { Destroy(C); }
-        //}
-        this.setupFinished = false;
-    }
-
-
+    /// <summary> Set the pickup colliders to the specified radius, in mm. </summary>
+    /// <param name="newRadius"> The new radius, in mm, of the colliders. </param>
+    /// <returns></returns>
+    //public bool SetColliderRadius(float newRadius)
+    //{
+    //    if (this.setupFinished)
+    //    {
+    //        for (int f = 0; f < this.touchScripts.Length; f++)
+    //        {
+    //            for (int i = 0; i < this.touchScripts[f].Length; i++)
+    //            {
+    //                (((SphereCollider)this.touchScripts[f][i].touch)).radius = newRadius;
+    //            }
+    //        }
+    //    }
+    //    return false;
+    //}
+    
     //---------------------------------------------------------------------------------------------------------------------------------------------
     // MonoDevelop
 
     void Awake()
     {
-        if (this.trackedGlove == null)
+        if (this.senseGlove == null)
         {
-            this.trackedGlove = this.gameObject.GetComponent<SenseGlove_Object>();
+            this.senseGlove = this.gameObject.GetComponent<SenseGlove_Object>();
         }
         if (this.grabReference != null)
         {
             this.lastPosition = grabReference.transform.position;
         }
     }
-    
+
     void Start()
     {
-        if (this.trackedGlove == null)
+        if (!this.CanInteract())
         {
-            this.trackedGlove = this.GetComponent<SenseGlove_Object>();
+            SenseGlove_Debugger.Log("Warning: " + this.name + " is unable to pick up anything.");
+        }
+
+        if (this.senseGlove == null)
+        {
+            this.senseGlove = this.GetComponent<SenseGlove_Object>();
         }
     }
 
@@ -302,27 +151,32 @@ public class SenseGlove_PhysGrab : MonoBehaviour
 
         if (setupFinished)
         {
-            GameObject grabAble = this.CheckGrabObject();
-            if (grabAble != null && !this.paused)
+            GameObject[] grabbedObjects = this.CheckGrabObjects(); //check which objects can currenty be grabbed.
+
+            //we know what each finger is touching. Now check the interactions
+            for (int f = 0; f < this.heldObjects.Length && f < grabbedObjects.Length; f++)
             {
-                //if we can grab the object and not 
-                if (!canPickup && !holdingObject) //if we could not pickup the object before and are not holding anythign else, pick it up now!
+                if (grabbedObjects[f] != null && this.heldObjects[f] == null && !this.paused) // we can pick up a new object
                 {
-                    //SenseGlove_Debugger.Log("Grabbing an object");
-                    GrabObject(grabAble.GetComponent<SenseGlove_Interactable>());
+                    this.heldObjects[f] = grabbedObjects[f];
+                    this.grabDistances[f] = this.interactionDistances[f];
+                    if (!HeldByOther(f))
+                    {
+                       // Debug.Log("Pick Up " + grabbedObjects[f].name);
+                        this.heldObjects[f].GetComponent<SenseGlove_Interactable>().BeginInteraction(this);
+                    }
                 }
-                canPickup = true;
-            }
-            else
-            {
-                if (canPickup) //if we could pickup an object before...
+                else if (grabbedObjects[f] == null)
                 {
-                    //SenseGlove_Debugger.Log("Releasing an object");
-                    ReleaseObject();
-                    holdingObject = false;
+                    if (this.heldObjects[f] != null && !HeldByOther(f))
+                    {
+                       // Debug.Log("LETGO " + this.heldObjects[f].name);
+                        this.heldObjects[f].GetComponent<SenseGlove_Interactable>().EndInteraction(this);
+                    }
+                    this.grabDistances[f] = 0;
+                    this.interactionDistances[f] = 0;
+                    this.heldObjects[f] = null;
                 }
-                canPickup = false;
-                this.objectToGrab = null;
             }
         }
 
@@ -331,96 +185,80 @@ public class SenseGlove_PhysGrab : MonoBehaviour
     // Also called once per frame, but only after all Update() functions have been processed.
     void LateUpdate()
     {
-        if (this.objectToGrab != null)
+        for (int f = 0; f < heldObjects.Length; f++)
         {
-            this.objectToGrab.GetComponent<SenseGlove_Interactable>().FollowInteraction();
+            //follow interactions on all follow interaction
+            if (this.heldObjects[f] != null)
+            {
+                this.heldObjects[f].GetComponent<SenseGlove_Interactable>().UpdateInteraction();
+            }
         }
-        
     }
 
     //--------------------------------------------------------------------------------------------------------------------------------------
     // Grab / Touch Logic
 
-
-    /// <summary> Check if we can grab an object. If we can, update the ObjectToGrab and return true. </summary>
-    /// <returns> True if we can grab an object, false if we cannot. </returns>
-    private GameObject CheckGrabObject()
+    /*
+    /// <summary> Calculate the distances between the thumb, palm and MCP joints. </summary>
+    private void CalculateDistances()
     {
-        if (this.setupFinished) //setupFinished means we have at least one finger and a thumb.
+        if (this.touchScripts != null && this.touchScripts[0].Length > 0)
         {
-            //check if the fingers are not open.
-            bool[] fingerOpen = this.CheckFingersOpen();
-
-            //check what the thumb is holding, starting from the tip.
-            GameObject thumbTouches = null;
-            GameObject palmTouches = this.handPalm != null ? this.handPalm.TouchObject() : null;
-
-            GameObject tempObject;
-
-            if (!fingerOpen[0]) //no point in searhcing if the thumb should not be grabbing anything.
+            for (int f = 1; f < this.touchScripts.Length; f++)
             {
-                for (int i = fingerColliders[0].Length; i-- > 0;)
+                if (this.touchScripts[f].Length > 0)
                 {
-                    tempObject = fingerColliders[0][i].TouchObject();
-                    if (tempObject != null)
-                    {
-                        thumbTouches = tempObject;
-                        break; // we've found out what the thumb is holding. Break out of the for loop
-                    }
+                    this.thumbDistances[f] = (this.touchScripts[0][this.touchScripts[0].Length - 1].transform.position
+                        - this.touchScripts[f][this.touchScripts[f].Length - 1].transform.position).magnitude;
                 }
             }
-
-            if (thumbTouches != null || palmTouches != null)
-            {
-                if (handPalm.IsTouching(thumbTouches) && !fingerOpen[0] && fingerPalmCollision)
-                {
-                    return thumbTouches; //The hanpalm touches the same object as the thumb.
-                }
-
-                //check if any of the other colliders are touching the same thing
-                for (int f = 1; f < fingerColliders.Length; f++)
-                {
-                    if (!fingerOpen[f]) //no use checking if the finger should be open anyway.
-                    {
-                        for (int i = fingerColliders[f].Length; i-- > 0;)
-                        {
-                            if (thumbFingerCollision && fingerColliders[f][i].IsTouching(thumbTouches))
-                            {
-                                return thumbTouches;
-                            }
-                            else if (fingerPalmCollision && fingerColliders[f][i].IsTouching(palmTouches))
-                            {
-                                return palmTouches;
-                            }
-                        }
-                    }
-                }
-            }
-
         }
-        return null;
+    }
+    */
+
+    /// <summary> Check if the gameObject of a specific finger is not still being held by another finger. </summary>
+    /// <param name="obj"></param>
+    /// <param name="finger"></param>
+    /// <returns></returns>
+    private bool HeldByOther(int finger)
+    {
+        for (int f = 0; f < this.heldObjects.Length; f++)
+        {
+            if (f != finger && this.heldObjects[f] != null && GameObject.ReferenceEquals(this.heldObjects[finger], this.heldObjects[f]))
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
-    public void CheckGrabObjects()
+
+    /// <summary> Check which objects can be picked up by the Physics grab script. </summary>
+    /// <returns></returns>
+    public GameObject[] CheckGrabObjects()
     {
+        GameObject[] grabbedObjects = new GameObject[5];
+
         if (this.setupFinished)
         {
             bool[] fingersOpen = this.CheckFingersOpen();
             GameObject tempObject = null;
 
             //check the hand palm
-            GameObject palmTouches = this.handPalm != null ? this.handPalm.TouchObject() : null; 
+            GameObject palmTouches = this.handPalm != null ? this.handPalm.TouchObject() : null;
 
             //check the thumb
             GameObject thumbTouches = null;
+            int thumbIndex = -1;
             if (!fingersOpen[0])
             {
-                for (int i = fingerColliders[0].Length; i-- > 0;)
+                for (int i = touchScripts[0].Length; i-- > 0;)
                 {
-                    tempObject = fingerColliders[0][i].TouchObject();
+                    tempObject = touchScripts[0][i].TouchObject();
                     if (tempObject != null)
                     {
                         thumbTouches = tempObject;
+                        thumbIndex = i;
                         break; // we've found out what the thumb is holding. Break out of the for loop
                     }
                 }
@@ -428,40 +266,45 @@ public class SenseGlove_PhysGrab : MonoBehaviour
 
             if (thumbTouches != null || palmTouches != null)
             {
-                for (int f=1; f<this.fingerColliders.Length; f++)
+                for (int f = 0; f < this.touchScripts.Length; f++)
                 {
                     if (!fingersOpen[f]) //no use checking if the finger should be open anyway.
                     {
-                        //GameObject fingerTouches = null;
+                        for (int i = touchScripts[f].Length; i-- > 0;)
+                        {
+                            //thumb & other finger
+                            if (this.thumbFingerCollision && f != 0 && touchScripts[f][i].IsTouching(thumbTouches))
+                            {
+                                grabbedObjects[f] = thumbTouches;
+                                this.interactionDistances[f] = (touchScripts[f][i].transform.position - touchScripts[0][thumbIndex].transform.position).magnitude;
+                                break;
+                            }
+                            // any finger and the hand palm
+                            else if (this.fingerPalmCollision && touchScripts[f][i].IsTouching(palmTouches))
+                            {
+                                grabbedObjects[f] = palmTouches;
+                                this.interactionDistances[f] = (touchScripts[f][i].transform.position - this.handPalm.transform.position).magnitude;
+                                break;
+                            }
+                        }
 
-                        //for (int i = fingerColliders[f].Length; i-- > 0;)
-                        //{
-                        //    if (thumbFingerCollision && fingerColliders[f][i].IsTouching(thumbTouches))
-                        //    {
-                        //        fingerTouches = thumbTouches;
-                                
-                        //        break;
-                        //    }
-                        //    else if (fingerPalmCollision && fingerColliders[f][i].IsTouching(palmTouches))
-                        //    {
-                        //        //touching something new
-                        //        fingerTouches = palmTouches;
-                        //        break;
-                        //    }
-                        //}
-
-
+                        //we have not yet found an object, we have enough colliders and we have set the variable to true.
+                        if (this.fingerMCPCollision && grabbedObjects[f] == null && this.touchScripts[f].Length > 1
+                            && touchScripts[f][0].IsTouching( touchScripts[f][touchScripts[f].Length - 1].TouchObject()) )
+                        {
+                            grabbedObjects[f] = touchScripts[f][0].TouchObject();
+                            this.interactionDistances[f] = (touchScripts[f][0].transform.position - touchScripts[f][touchScripts[f].Length - 1].transform.position).magnitude;
+                        }
 
                     }
-
-
                 }
-                
 
             }
 
-
         }
+
+        return grabbedObjects;
+
     }
 
 
@@ -473,13 +316,13 @@ public class SenseGlove_PhysGrab : MonoBehaviour
     private bool[] CheckFingersOpen()
     {
         bool[] res = new bool[5];
-        if (this.trackedGlove != null && trackedGlove.GloveReady())
+        if (this.senseGlove != null && senseGlove.GloveReady())
         {
-            Vector3[][] angles = this.trackedGlove.GloveData().handAngles;
+            Vector3[][] angles = this.senseGlove.GloveData().handAngles;
             float minAngle = -15;
             res[0] = false; //ToDo - Check the thumb.
             res[res.Length - 1] = false; //prevent pinky interference.
-            for (int f=1; f<res.Length - 1; f++)
+            for (int f = 1; f < res.Length - 1; f++)
             {
                 if (angles[f][0].z > minAngle && angles[f][1].z > minAngle && angles[f][2].z > minAngle) //the fingers are open, but for how long?
                 {
@@ -496,125 +339,184 @@ public class SenseGlove_PhysGrab : MonoBehaviour
     }
 
     /// <summary>
-    /// Check if this SenseGlove_PhysGrab touches anything, and send force feedback commands.
-    /// </summary>
-    public void CheckForceFeedback()
-    {
-        if (this.trackedGlove != null && this.fingerColliders != null)
-        {
-            if (this.ForceFeedback == ForceFeedbackType.Simple)
-            {
-                this.motorLevels = new int[5] { 0, 0, 0, 0, 0 };
-                for (int f = 0; f < this.fingerColliders.Length; f++)
-                {
-                    if (this.fingerColliders[f].Length > 0)
-                    {
-                        this.motorLevels[f] = this.fingerColliders[f][this.fingerColliders[f].Length - 1].TouchObject() != null ? 255 : 0;
-                    }
-                }
-                this.trackedGlove.SimpleBrakeCmd(this.motorLevels);
-            }
-            else if (this.ForceFeedback == ForceFeedbackType.MaterialBased)
-            {
-                this.motorLevels = new int[5] { 0, 0, 0, 0, 0 };
-                for (int f = 0; f<this.grabDistances.Length; f++)
-                {
-
-                }
-                this.trackedGlove.SimpleBrakeCmd(this.motorLevels);
-            }
-        }
-    }
-
-
-    /// <summary> Calculate the relative starting orientation and position of the Object to be grabbed, then  </summary>
-    public void GrabObject(SenseGlove_Interactable obj)
-    {
-        if (obj != null)
-        {
-            obj.BeginInteraction(this);
-            this.objectToGrab = obj.gameObject;
-            holdingObject = true;
-        }
-    }
-
-    /// <summary> Release a GameObject and, if it has a RigidBody, throw it! </summary>
-    private void ReleaseObject()
-    {
-        if (this.holdingObject && this.objectToGrab != null)
-        {
-            this.objectToGrab.GetComponent<SenseGlove_Interactable>().EndInteraction(this);
-        }
-    }
-
-    /// <summary>
-    /// Throw a rigidbody, using the (angular) velocity of the grabReference.
-    /// </summary>
-    /// <param name="RB"></param>
-    [Obsolete("Will be removed due to the new GrabScript Handling")]
-    void TossObject(Rigidbody RB)
-    {
-        if (RB != null)
-        {
-            RB.useGravity = true;
-            RB.isKinematic = false;
-            RB.velocity = this.velocity;
-            RB.angularVelocity = new Vector3(0, 0, 0);
-        }
-    }
-
-    /// <summary>
-    /// Check if this script can interact with SenseGlove_Interactable objects.
-    /// </summary>
-    /// <returns></returns>
-    public bool CanPickup()
-    {
-        return this.thumbFingerCollision || this.fingerPalmCollision;
-    }
-
-    /// <summary>
     /// Manually force the SenseGlove_PhysGrab to drop whatever it is holding.
     /// </summary>
     /// <param name="time">The amount of time before the Grabscript can pick up objects again </param>
-    public void ManualRelease(float timeToReactivate = 1.0f)
+    public override void ManualRelease(float timeToReactivate = 1.0f)
     {
         this.paused = true;
         this.elapsedTime = 0;
         this.pauseTime = timeToReactivate;
 
-        ReleaseObject();
-        holdingObject = false;
-        this.objectToGrab = null;
+        //release all objects if possible.
+        if (this.setupFinished)
+        {
+            GameObject[] grabbedObjects = new GameObject[this.heldObjects.Length];
+            for (int f = 0; f < this.heldObjects.Length; f++)
+            {
+                if (this.heldObjects[f] != null)
+                {
+                    bool firedRelease = false;
+                    for (int i = 0; i < f; i++) //check if we have already fired the EndInteraction (heldobjects[f] already added in the grabbedObjects list)) 
+                    {
+                        if (grabbedObjects[i] != null && GameObject.ReferenceEquals(grabbedObjects[i], this.heldObjects[f]))
+                        {
+                            firedRelease = true;
+                            break;
+                        }
+                    }
+                    if (!firedRelease)
+                    {
+                        //Debug.Log("FORCE LET GO OF " + this.heldObjects[f].name);
+                        this.heldObjects[f].GetComponent<SenseGlove_Interactable>().EndInteraction(this);
+                    }
+                    grabbedObjects[f] = this.heldObjects[f];
+                }
+                heldObjects[f] = null;
+            }
+        }
+
     }
-
-
 
     //--------------------------------------------------------------------------------------------------------------------------------------
     // Get Functions for other scipts.
 
-
-    /// <summary>
-    /// Retrieve the Velocity of this GameObject
-    /// </summary>
+    /// <summary> Returns true if this grabscript;s settings allow it to interact with other objects. </summary>
     /// <returns></returns>
-    public Vector3 GetVelocity()
+    public override bool CanInteract()
     {
-        return this.velocity;
+        return this.thumbFingerCollision || this.fingerPalmCollision; 
     }
 
-    /// <summary> Retrieve the hand palm of this SenseGlove_touch </summary>
+    /// <summary> Return a list of GameObjects that this script is able to pick up. </summary>
     /// <returns></returns>
-    public SenseGlove_Touch GetPalm()
+    public override GameObject[] CanPickup()
+    {
+        List<GameObject> objects = new List<GameObject>();
+        for (int f=0; f<this.heldObjects.Length; f++)
+        {
+            bool newObject = true;
+            for (int i=0; i<f; i++)
+            {
+                if (GameObject.ReferenceEquals(this.heldObjects[f], this.heldObjects[i]))
+                {
+                    newObject = false;
+                    break;
+                }
+            }
+            if (newObject) { objects.Add(this.heldObjects[f]); }
+        }
+        return objects.ToArray();
+    }
+
+    /// <summary> Retrieve the hand palm touchscript of this grabScript. </summary>
+    /// <returns></returns>
+    public override SenseGlove_Touch GetPalm()
     {
         return this.handPalm;
     }
 
 
-}
+    //-------------------------------------------------------------------------------------------------------------------------------
+    //  Setup Methods.
+    
+    
+    /// <summary> Cleanup and remove the old finger Colliders and SenseGlove_Touch Scripts. </summary>
+    /// <param name="removeColliders">Also destroy the colliders attached to the SenseGlove_Util scripts.</param>
+    protected virtual void CleanUpColliders(bool removeColliders = true)
+    {
+        if (this.touchScripts != null)
+        {
+            for (int f = 0; f < this.touchScripts.Length; f++)
+            {
+                for (int i = 0; i < this.touchScripts[f].Length; i++)
+                {
+                    Collider C = touchScripts[f][i].touch;
+                    Destroy(touchScripts[f][i]); //destroy the script itself, not the GameObject!
+                    if (removeColliders) { Destroy(C); }
+                }
+            }
+        }
+        //the palm collider is not destroyed?
 
-public enum ForceFeedbackType
-{
-    None = 0,
-    Simple,
-    MaterialBased
+        this.setupFinished = false;
+    }
+
+    //internal
+    public override bool Setup()
+    {
+        List<List<Collider>> colliders = new List<List<Collider>>();
+        colliders.Add(this.thumbColliders);
+        colliders.Add(this.indexColliders);
+        colliders.Add(this.middleColliders);
+        colliders.Add(this.ringColliders);
+        colliders.Add(this.pinkyColliders);
+        return this.Setup(colliders, this.palmCollider);
+    }
+
+    //external
+    public bool Setup(List<List<Collider>> touchColliders, Collider palmCollider)
+    {
+        this.handPalm = this.GetTouchScript(palmCollider);
+        bool hasPalm = this.handPalm != null;
+
+        bool hasFinger = false, hasThumb = false;
+        if (touchColliders != null)
+        {
+            int n = touchColliders.Count > 5 ? 5 : touchColliders.Count;
+            this.touchScripts = new SenseGlove_Touch[n][];
+            for (int f = 0; f < this.touchScripts.Length; f++)
+            {
+                int colliderAmount = 0;
+                //count the amount of valid colliders
+                for (int i=0; i<touchColliders[f].Count; i++)
+                {
+                    if (touchColliders[f][i] != null) { colliderAmount++; }
+                }
+                
+                //Add only valid colliders!
+                this.touchScripts[f] = new SenseGlove_Touch[colliderAmount];
+                int colliderIndex = 0;
+                for (int i = 0; i < this.touchScripts[f].Length; i++)
+                {
+                    if (touchColliders[f][i] != null)
+                    {
+                        this.touchScripts[f][colliderIndex] = GetTouchScript(touchColliders[f][i]);
+                        if (f == 0 && this.touchScripts[f][i] != null) { hasThumb = true; }
+                        else if (this.touchScripts[f][i] != null) { hasFinger = true; }
+                        colliderIndex++;
+                    }
+                }
+            }
+
+        }
+
+        //TODO : Verify the correct Settings.
+        this.setupFinished = (hasThumb && hasFinger) || ((hasFinger || hasThumb) && hasPalm);
+        return this.setupFinished;
+    }
+
+    /// <summary>
+    /// Get the SenseGlove_Touch of a specified collider. If none is present, create a new one.
+    /// Then apply the desired settings. Returns null if the Collider is NULL.
+    /// </summary>
+    /// <param name="C"></param>
+    /// <returns></returns>
+    private SenseGlove_Touch GetTouchScript(Collider C)
+    {
+        if (C != null)
+        {
+            C.isTrigger = true;
+            SenseGlove_Touch script = C.gameObject.GetComponent<SenseGlove_Touch>();
+            if (script == null)
+            {
+                script = C.gameObject.AddComponent<SenseGlove_Touch>();
+            }
+            script.touch = C;
+            script.SetSourceScript(this);
+            return script;
+        }
+        return null;
+    }
+
 }

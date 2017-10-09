@@ -329,6 +329,18 @@
             <summary> Check whether or not the calibration calculations are running in the worker thread. </summary>
             <returns></returns>
         </member>
+        <member name="M:SenseGloveCs.Calibration.CalibrationMethod.CurrentCalibrationStep">
+            <summary>
+            Access the Algorithm's current calibration step.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.Calibration.CalibrationMethod.TotalCalibrationSteps">
+            <summary>
+            Access the Algorithm's total number of calibration steps.
+            </summary>
+            <returns></returns>
+        </member>
         <member name="M:SenseGloveCs.Calibration.CalibrationMethod.CleanUpThread">
             <summary> Clean up the calculation thread, if it is running. </summary>
         </member>
@@ -968,6 +980,9 @@
             The time that the SenseGlove has been on.
             </summary>
         </member>
+        <member name="F:SenseGloveCs.GloveData.numberOfSensors">
+            <summary> The amount of rotational sensors present in this glove. </summary>
+        </member>
         <member name="F:SenseGloveCs.GloveData.gloveValues">
             <summary>  The last received sensor values of the fingers  </summary>
         </member>
@@ -1110,13 +1125,13 @@
             <param name="isRight"></param>
             <returns></returns>
         </member>
-        <member name="M:SenseGloveCs.DefaultValues.HandStartPos(System.Boolean)">
+        <member name="M:SenseGloveCs.DefaultValues.HandStartPos(System.Boolean,System.Single[])">
             <summary>
             Retrieve the default Hand (Fingers and Thumb) starting positions
             </summary>
             <returns></returns>
         </member>
-        <member name="M:SenseGloveCs.DefaultValues.HandPositions(System.Boolean)">
+        <member name="M:SenseGloveCs.DefaultValues.HandPositions(System.Boolean,System.Single[])">
             <summary>
             Returns an array with the positions of each finger, with the default hand start positions as the first element of each finger.
             </summary>
@@ -1285,11 +1300,12 @@
             Basic Mapping of the twisting bit of the thumb. Will be moved to the HandKinematics Class later on.
             </summary>
         </member>
-        <member name="M:SenseGloveCs.SensorFormat.FingerInput(System.Single[])">
+        <member name="M:SenseGloveCs.SensorFormat.FingerInput(System.Single[],System.Single)">
             <summary>
             Convert a row of radian angles into the correct format for a SenseGlove Link of the finger
             </summary>
             <param name="sensorInput"></param>
+            <param name="gloveVer"></param>
             <returns></returns>
         </member>
         <member name="M:SenseGloveCs.SensorFormat.ThumbInput(System.Single[],System.Boolean,System.String)">
@@ -1301,7 +1317,7 @@
             <param name="ID"></param>
             <returns></returns>
         </member>
-        <member name="M:SenseGloveCs.SensorFormat.ToGloveAngles(System.Single[][],System.Boolean,System.String)">
+        <member name="M:SenseGloveCs.SensorFormat.ToGloveAngles(System.Single[][],System.Boolean,System.String,System.Single)">
             <summary>
             Put the sensorValues in their correct place, based on the number of inputs they have.
             </summary>
@@ -1960,6 +1976,13 @@
             <param name="checkGestures"></param>
             <returns></returns>
         </member>
+        <member name="M:SenseGloveCs.SenseGlove.UpdateWrist(System.Single[],System.Single[],System.Boolean)">
+            <summary> Manually update the wrist </summary>
+            <param name="imuValues"></param>
+            <param name="qLowerArm"></param>
+            <param name="limitWrist"></param>
+            <returns></returns>
+        </member>
         <member name="M:SenseGloveCs.SenseGlove.buzzMotorCmd(System.Boolean[],System.Single[],System.Int32[],System.Single[])">
             <summary>
             send cmds for the buzz motors
@@ -2055,6 +2078,18 @@
         </member>
         <member name="M:SenseGloveCs.SenseGlove.IsCalculating">
             <summary> Check if this glove is already calibrating. </summary>
+        </member>
+        <member name="M:SenseGloveCs.SenseGlove.CurrentCalibrationStep">
+            <summary>
+            Check the current calibration step. returns -1 if no calibration has started.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.SenseGlove.TotalCalibrationSteps">
+            <summary>
+            Check the total amount of calibration steps. Returns 0 if no calibration has started yet.
+            </summary>
+            <returns></returns>
         </member>
         <member name="M:SenseGloveCs.SenseGlove.FingerCalibrator_OnCalibrationFinished(System.Object,SenseGloveCs.FingerCalibrationArgs)">
             <summary> Apply the newly calculated fingerLengths and joint positions. </summary>
