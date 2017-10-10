@@ -12,8 +12,8 @@ public class SenseGlove_PhysGrab : SenseGlove_GrabScript
 {
 
     /// <summary> The size of the pickup colliders, in mm. Used for Physics Based interactin through a SenseGlove_PhysGrab. </summary>
-    [Tooltip("The absolute radius of the pickup colliders, in m, assuming UNIFORM scaling. Used for Physics Based interaction through a SenseGlove_PhysGrab.")]
-    public float pickupColliderSize = 0.005f;
+    //[Tooltip("The absolute radius of the pickup colliders, in m, assuming UNIFORM scaling. Used for Physics Based interaction through a SenseGlove_PhysGrab.")]
+    //public float pickupColliderSize = 0.005f;
 
     /// <summary> Determines if the grabscript interacts with objects between the thumb and at least one finger. </summary>
     [Tooltip("Determine if the grabscript interacts with objects between the thumb and at least one finger.")]
@@ -27,20 +27,24 @@ public class SenseGlove_PhysGrab : SenseGlove_GrabScript
     [Tooltip("Determines if the grabscript interacts with objects between its fingertip and its mcp joint.")]
     public bool fingerMCPCollision = false;
 
-    /// <summary> (user defined) colliders used for pickup logic. </summary>
+    /// <summary> The colliders that will be used for the thumb pickup logic.</summary>
     [Header("Grabscript Colliders")]
     [Tooltip("The colliders that will be used for the thumb pickup logic.")]
     public List<Collider> thumbColliders = new List<Collider>(1);
 
+    /// <summary> The colliders that will be used for the index finger pickup logic." </summary>
     [Tooltip("The colliders that will be used for the index finger pickup logic.")]
     public List<Collider> indexColliders = new List<Collider>(1);
 
+    /// <summary> The colliders that will be used for the middle finger pickup logic. </summary>
     [Tooltip("The colliders that will be used for the middle finger pickup logic.")]
     public List<Collider> middleColliders = new List<Collider>(1);
 
+    /// <summary> The colliders that will be used for the ring finger pickup logic. </summary>
     [Tooltip("The colliders that will be used for the ring finger pickup logic.")]
     public List<Collider> ringColliders = new List<Collider>(1);
 
+    /// <summary> The colliders that will be used for the little finger pickup logic. </summary>
     [Tooltip("The colliders that will be used for the little finger pickup logic.")]
     public List<Collider> pinkyColliders = new List<Collider>(1);
 
@@ -443,6 +447,9 @@ public class SenseGlove_PhysGrab : SenseGlove_GrabScript
     }
 
     //internal
+
+    /// <summary> Setup the colliders used for grab logic using the finger colliders assigned via the inspector. </summary>
+    /// <returns></returns>
     public override bool Setup()
     {
         List<List<Collider>> colliders = new List<List<Collider>>();
@@ -455,6 +462,11 @@ public class SenseGlove_PhysGrab : SenseGlove_GrabScript
     }
 
     //external
+
+    /// <summary> Setup the proper scripts and colliders via code. </summary>
+    /// <param name="touchColliders"></param>
+    /// <param name="palmCollider"></param>
+    /// <returns></returns>
     public bool Setup(List<List<Collider>> touchColliders, Collider palmCollider)
     {
         this.handPalm = this.GetTouchScript(palmCollider);

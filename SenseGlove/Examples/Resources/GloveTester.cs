@@ -171,7 +171,7 @@ public class GloveTester : MonoBehaviour
 
             if (Input.GetKeyDown(KeyCode.Backspace))
             {
-                this.glove.TestCalibration();
+           //     this.glove.TestCalibration();
             }
 
         }

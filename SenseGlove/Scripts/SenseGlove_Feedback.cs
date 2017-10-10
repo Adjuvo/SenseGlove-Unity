@@ -20,9 +20,6 @@ public class SenseGlove_Feedback : MonoBehaviour
     /// <summary> The grabscript using these colliders for its logic. </summary>
     public SenseGlove_HandModel handModel;
 
-    /// <summary> To be moved to its SenseGlove_Physgrab Script. </summary>
-    private ForceFeedbackType forceFeedback = ForceFeedbackType.None;
-
     /// <summary> The position of the collider the moment it entered a new object.  Used to determine collider normal. </summary>
     private Vector3 entryPos = Vector3.zero;
     /// <summary> A point of the collider of the touchedObject on the moment that collision was detected. Used to determine collider normal. </summary>
@@ -37,13 +34,21 @@ public class SenseGlove_Feedback : MonoBehaviour
     //--------------------------------------------------------------------------------------------------------------------------
     // Get / Set attributes for Construction
 
-    /// <summary> Set teh forcefeedbackType of this collider. </summary>
-    /// <param name="type"></param>
-    public void SetForceFeedback(ForceFeedbackType type)
-    {
-        this.forceFeedback = type;
-    }
 
+    /// <summary> Setup the Feedback Collider to use the chosen handmodel as a parent, using its force feedback type. </summary>
+    /// <param name="parentModel"></param>
+    public void Setup(SenseGlove_HandModel parentModel)
+    {
+        this.handModel = parentModel;
+
+        Rigidbody RB = this.gameObject.GetComponent<Rigidbody>();
+        if (RB == null)
+        {
+            RB = this.gameObject.AddComponent<Rigidbody>();
+        }
+        RB.isKinematic = true;
+        RB.useGravity = false;
+    }
 
     //--------------------------------------------------------------------------------------------------------------------------
     // Monobehaviour
@@ -75,37 +80,24 @@ public class SenseGlove_Feedback : MonoBehaviour
     }
 
 
-    public void Setup(SenseGlove_HandModel parentModel)
-    {
-        this.handModel = parentModel;
-
-        Rigidbody RB = this.gameObject.GetComponent<Rigidbody>();
-        if (RB == null)
-        {
-            RB = this.gameObject.AddComponent<Rigidbody>();
-        }
-        RB.isKinematic = true;
-        RB.useGravity = false;
-    }
-
     //--------------------------------------------------------------------------------------------------------------------------
     // Collision Detection / Force Feedback 
 
     // Called when this object enters the collider of another object
     void OnTriggerEnter(Collider col)
     {
+        SenseGlove_Material material = col.GetComponent<SenseGlove_Material>();
         SenseGlove_Interactable interactable = col.GetComponent<SenseGlove_Interactable>();
-        if (interactable != null && interactable.forceFeedback)
+        if (material || interactable)
         {
-            if (!this.IsTouching(col.gameObject))
-            {
-                //touching a new object!
-            }
+            //if (!this.IsTouching(col.gameObject))
+            //{
+            //    //touching a new object!
+            //}
             this.touchedObject = col.gameObject;
-            if (this.forceFeedback == ForceFeedbackType.Simple)
+            if (this.handModel.forceFeedback == ForceFeedbackType.Simple)
             {
-                SenseGlove_Material material = col.GetComponent<SenseGlove_Material>();
-                if (this.forceFeedback == ForceFeedbackType.Simple)
+                if (this.handModel.forceFeedback == ForceFeedbackType.Simple)
                 {
                     if (material)
                     {
@@ -117,14 +109,14 @@ public class SenseGlove_Feedback : MonoBehaviour
                     }
                 }
             }
-            else if (this.forceFeedback == ForceFeedbackType.MaterialBased)
+            else if (this.handModel.forceFeedback == ForceFeedbackType.MaterialBased)
             {
                 this.entryPos = this.touch.transform.position;
                 Vector3 closest = col.ClosestPoint(this.entryPos); //if something went wrong with ClosestPoint, it returns the entryPos.
                 if (!closest.Equals(this.entryPos)) { this.entryPoint = closest; }
                 else
                 {
-                    Debug.Log("WARNING: ClosestPoint == Origin, resulting in a DIV0 exception. Use an alterantive method?");
+                  //  Debug.Log("WARNING: ClosestPoint == Origin, resulting in a DIV0 exception. Use an alterantive method?");
                     this.entryPoint = closest;
                 }
                 this.motorLevel = 0; //still 0 since OP == EO
@@ -137,20 +129,24 @@ public class SenseGlove_Feedback : MonoBehaviour
     {
         if (this.IsTouching(col.gameObject)) //Check if we're still on the same object?
         {
+            //any object that we are touching has either an Interactable and/or a material
+
             //Calculate Motor Level
             SenseGlove_Material material = col.GetComponent<SenseGlove_Material>();
-            if (this.forceFeedback == ForceFeedbackType.Simple)
+            SenseGlove_Interactable interactable = col.GetComponent<SenseGlove_Interactable>();
+
+            if (this.handModel.forceFeedback == ForceFeedbackType.Simple)
             {
                 if (material)
                 {
                     this.motorLevel = material.passiveForce;
                 }
-                else
+                else if (interactable)
                 {
                     this.motorLevel = SenseGlove_Material.defaultPassiveForce;
                 }
             }
-            else if (this.forceFeedback == ForceFeedbackType.MaterialBased)
+            else if (this.handModel.forceFeedback == ForceFeedbackType.MaterialBased)
             {
                 //transform the position of the SenseGlove_Touch to the 
 
@@ -192,7 +188,7 @@ public class SenseGlove_Feedback : MonoBehaviour
                 {
                     this.motorLevel = material.CalculateForce(this.dist);
                 }
-                else
+                else if (interactable)
                 {
                     this.motorLevel = SenseGlove_Material.CalculateDefault(this.dist);
                 }

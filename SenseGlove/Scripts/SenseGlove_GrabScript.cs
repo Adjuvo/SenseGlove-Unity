@@ -11,6 +11,7 @@ public abstract class SenseGlove_GrabScript : MonoBehaviour
     [Tooltip("A SenseGlove_Object for gloveData related shenanigans. Automatically assigned.")]
     public SenseGlove_Object senseGlove;
 
+    /// <summary> The handModel connected to this GrabScript. </summary>
     public SenseGlove_HandModel handModel;
 
     /// <summary> When an object is picked up, this GameObject (Typically the wrist) is used as a reference for its movement / parent / fixedJoint. </summary>
@@ -80,6 +81,8 @@ public abstract class SenseGlove_GrabScript : MonoBehaviour
 
     // Internal
 
+    /// <summary> Run setup on this grabscript; creating and/or resizing the proper colliders etc. </summary>
+    /// <returns></returns>
     public abstract bool Setup();
 
     // External

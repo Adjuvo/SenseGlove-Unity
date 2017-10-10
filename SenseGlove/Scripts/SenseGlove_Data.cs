@@ -118,10 +118,11 @@ public class SenseGlove_Data
     // Constructor
 
 
-    /// <summary>
-    /// Extract right-handed coordinate system data from the SenseGlove DLL and convert it into Unity values.
-    /// </summary>
+    /// <summary> Extract right-handed coordinate system data from the SenseGlove DLL and convert it into Unity values. </summary>
     /// <param name="data"></param>
+    /// <param name="packets"></param>
+    /// <param name="totalCSteps"></param>
+    /// <param name="currCStep"></param>
     public SenseGlove_Data(SenseGloveCs.GloveData data, int packets, int totalCSteps, int currCStep)
     {
         if (data != null)

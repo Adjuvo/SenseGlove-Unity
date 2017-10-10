@@ -485,7 +485,7 @@ public class SenseGlove_WireFrame : MonoBehaviour
                     List<Collider> fingerColliders = new List<Collider>();
                     GameObject fingerTip = this.handPositions[f][handPositions[f].Length - 1];
                     SphereCollider C = fingerTip.AddComponent<SphereCollider>();
-                    C.radius = grabscript.pickupColliderSize; //determine collider size
+            //        C.radius = grabscript.pickupColliderSize; //determine collider size
                     fingerColliders.Add(C);
                     pickups.Add(fingerColliders);
                 }

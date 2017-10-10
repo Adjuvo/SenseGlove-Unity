@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary> A data struct that can be assinged to a SenseGlove_Interactable </summary>
+/// <summary> Material Properties that can be assinged to a GameObject </summary>
 public class SenseGlove_Material : MonoBehaviour
 {
     

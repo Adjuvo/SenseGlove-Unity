@@ -117,9 +117,15 @@ public class SenseGlove_Object : MonoBehaviour
     //--------------------------------------------------------------------------------------------------------------------------
     // Events
 
+    /// <summary> Event delegate for the GloveReady event. </summary>
+    /// <param name="source"></param>
+    /// <param name="args"></param>
     public delegate void GloveReadyEventHandler(object source, System.EventArgs args);
+
+    /// <summary> Occurs when the SenseGlove_Object has connected to the Sense Glove, and all glove-related data has been retrieved from the device. </summary>
     public event GloveReadyEventHandler OnGloveLoaded;
 
+    /// <summary> Used to call the OnGloveLoaded event. </summary>
     protected void GloveLoaded()
     {
         if (OnGloveLoaded != null)
@@ -129,9 +135,16 @@ public class SenseGlove_Object : MonoBehaviour
     }
 
 
+    /// <summary> Event delegate function for the CalibrateionFinished event. </summary>
+    /// <param name="source"></param>
+    /// <param name="args"></param>
     public delegate void CalibrationFinishedEventHandler(object source, CalibrationArgs args);
+
+    /// <summary> Occurs when the finger calibration is finished. Passes the new finger length and joint positions as arguments. </summary>
     public event CalibrationFinishedEventHandler OnCalibrationFinished;
 
+    /// <summary> Used to call the OnCalibrationFinished event. </summary>
+    /// <param name="calibrationArgs"></param>
     protected void CalibrationFinished(CalibrationArgs calibrationArgs)
     {
         if (OnCalibrationFinished != null)
@@ -762,9 +775,8 @@ public class SenseGlove_Object : MonoBehaviour
 
     }
 
-
-
-    
+    /// <summary> Test a specific Calibration Algorithm, </summary>
+    [Obsolete("Used for testing new calibration methods. Will be removed in v1.0.")]
     public void TestCalibration()
     {
         if (this.glove != null && this.gloveReady)
@@ -887,6 +899,7 @@ public class SenseGlove_Object : MonoBehaviour
 
 }
 
+
 public enum ConnectionMethod
 {
     /// <summary> Connect to the first unconnected SenseGlove on the system. </summary>
@@ -898,6 +911,7 @@ public enum ConnectionMethod
     /// <summary> Connect to a COM port that may or may not be a SenseGlove. </summary>
     HardCoded
 }
+
 
 /// <summary>
 /// CalibrationArguments, containing both old an new finger lengths and joint positions.

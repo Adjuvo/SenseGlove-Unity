@@ -176,13 +176,12 @@ public abstract class SenseGlove_HandModel : MonoBehaviour
                 }
                 feedbackCollider.touch = this.touchColliders[f];
                 feedbackCollider.Setup(this);
-                feedbackCollider.SetForceFeedback(this.forceFeedback);
                 this.feedbackScripts[f] = feedbackCollider;
             }
         }
     }
 
-    /// <summary> Collect the absolute angles of the fingers in their çalibration' pose, correct these with the current wrist orientation. </summary>
+    /// <summary> Collect the absolute angles of the fingers in their 'calibration' pose, correct these with the current wrist orientation. </summary>
     protected virtual void CollectCorrections() //virtual
     {
         if (this.fingerJoints != null && this.fingerJoints.Count > 0)

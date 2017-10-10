@@ -6,7 +6,7 @@ public class SenseGlove_Hologram : SenseGlove_HandModel
 {
     /// <summary> 
     /// Collect a proper (finger x joint) array, and assign it to this.fingerJoints(). Use the handRoot variable to help you iterate. 
-    /// For this HandModel, the actual rotation joints are hidden within 
+    /// For this HandModel, the actual rotation joints are hidden a few children deep from the handRoot.
     /// </summary>
     protected override void CollectFingerJoints()
     {

@@ -14,10 +14,6 @@ public abstract class SenseGlove_Interactable : MonoBehaviour
     [Tooltip("Indicates if this object can be interacted with at this moment.")]
     public bool isInteractable = true;
 
-    /// <summary> Indicates that this Interactable can activate force feedback. </summary>
-    [Tooltip("Indicated if this objects activates force feedback on the Sense Glove.")]
-    public bool forceFeedback = false;
-
     /// <summary> A reference to the GrabScript that is currently interacting with this SenseGlove. </summary>
     protected SenseGlove_GrabScript _grabScript;
 
