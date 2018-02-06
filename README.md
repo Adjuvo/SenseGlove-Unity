@@ -1,7 +1,7 @@
 # SenseGlove-Unity
 The latest stable Unity SDK for the SenseGlove.
 
-Current version is 0.15, released on the 9th of October 2017.
+Current version is 0.16, released on the 6th of Febuary 2018.
 
 ## Getting Started
 The first thing one should do is ensure that their Sense Glove is working.
