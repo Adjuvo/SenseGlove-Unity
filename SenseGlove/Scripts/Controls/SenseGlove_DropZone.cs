@@ -10,7 +10,11 @@ using UnityEngine;
 public class SenseGlove_DropZone : MonoBehaviour 
 {
     //--------------------------------------------------------------------------------------------------------------------------
-    // Public Properties (settings)
+    // Properties
+
+    #region Properties
+
+    //Public properties
 
     /// <summary> If set to true, the SenseGlove_Interactable(s) within the dropzone will no longer be interactable. </summary>
     [Tooltip("If set to true, the SenseGlove_Interactable(s) within the dropzone will no longer be interactable.")]
@@ -32,7 +36,6 @@ public class SenseGlove_DropZone : MonoBehaviour
     [Tooltip("The objects that should be inside this DropZone. Leave it empty to snap to all SenseGlove_Grabables.")]
     public List<SenseGlove_Grabable> objectsToGet = new List<SenseGlove_Grabable>();
 
-    //--------------------------------------------------------------------------------------------------------------------------
     // Private properties
 
     /// <summary> The list of objects currently inside this dropZone </summary>
@@ -44,8 +47,12 @@ public class SenseGlove_DropZone : MonoBehaviour
     /// <summary> The original properties of the RigidBodies that this DropZone contains </summary>
     private List<bool[]> RBprops = new List<bool[]>();
 
+    #endregion Properties
+
     //--------------------------------------------------------------------------------------------------------------------------
     // Monobehaviour
+
+    #region Monobehaviour
 
     //runs before anything else, used to validate settings
     void Awake()
@@ -114,8 +121,12 @@ public class SenseGlove_DropZone : MonoBehaviour
         }
     }
 
+    #endregion Monobehaviour
+
     //--------------------------------------------------------------------------------------------------------------------------
-    // Utility Methods
+    // Dropzone Logic
+
+    #region DropzoneLogic
 
     /// <summary> Check if a SenseGlove_Grabable is (already) inside this dropzone. </summary>
     /// <param name="obj"></param>
@@ -232,8 +243,11 @@ public class SenseGlove_DropZone : MonoBehaviour
         }
     }
 
+    
     //--------------------------------------------------------------------------------------------------------------------------
     // External Logic Methods
+
+    
 
     /// <summary> Get a list of all objects inside this DropZone. </summary>
     /// <returns></returns>
@@ -256,9 +270,13 @@ public class SenseGlove_DropZone : MonoBehaviour
         return this.objectsInside.Count == this.objectsToGet.Count;
     }
 
+    #endregion DropzoneLogic
+
 
     //--------------------------------------------------------------------------------------------------------------------------
     // Events
+
+    #region Events
 
 
     //ObjectDetected
@@ -287,6 +305,8 @@ public class SenseGlove_DropZone : MonoBehaviour
             ObjectRemoved(this, new DropZoneArgs(obj));
         }
     }
+
+    #endregion Events
 
 }
 

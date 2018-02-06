@@ -61,9 +61,18 @@ public static class SenseGlove_Manager
         return -1;
     }
 
+    
+
     //--------------------------------------------------------------------------------------------------------------------------------
     // Monobehaviour (if added to the scene)
 
-
-
+    /*
+    /// <summary> Retrieve the SenseGlove_Object script belonging to a sense glove with the chosed deviceID. </summary>
+    /// <param name="deviceID"></param>
+    /// <returns></returns>
+    public static SenseGlove_Object GetScript(string deviceID)
+    {
+        throw new System.NotImplementedException();
+    }
+    */
 }

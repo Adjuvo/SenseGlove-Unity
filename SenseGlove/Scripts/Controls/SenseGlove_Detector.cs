@@ -3,11 +3,15 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>A class to detect a SenseGlove based on its SenseGlove_Feedback colliders </summary>
+/// <summary>A class to detect a SenseGlove_HandModel based on its SenseGlove_Feedback colliders </summary>
 [RequireComponent(typeof(Collider), typeof(Rigidbody))]
 public class SenseGlove_Detector : MonoBehaviour 
 {
     //--------------------------------------------------------------------------------------------------------------------------
+    // Properties
+
+    #region Properties
+
     // Public Properties.
 
     /// <summary> How many SenseGlove_Touch colliders can enter the Detector before the GloveDetected event is raised. </summary>
@@ -22,7 +26,7 @@ public class SenseGlove_Detector : MonoBehaviour
     [Tooltip("If set to true, the detector will not raise events if a second grabscript joins in.")]
     public bool singleGlove = false;
 
-    //--------------------------------------------------------------------------------------------------------------------------
+
     // Internal Properties.
 
     /// <summary> All of the grabscripts currently interacting with this detector, in order of appearance. </summary>
@@ -42,8 +46,12 @@ public class SenseGlove_Detector : MonoBehaviour
     /// <summary> The rigidbody of this detection area. Assigned on StartUp </summary>
     private Rigidbody myRigidbody;
 
+    #endregion Properties
+
     //--------------------------------------------------------------------------------------------------------------------------
     // Monobehaviour
+
+    #region Monobehaviour
 
     // Use this for initialization
     void Start () 
@@ -80,8 +88,12 @@ public class SenseGlove_Detector : MonoBehaviour
         }
     }
 
+    #endregion Monobehaviour
+
     //--------------------------------------------------------------------------------------------------------------------------
     // Collision Detection
+
+    #region Collision
 
     void OnTriggerEnter(Collider col)
     {
@@ -146,12 +158,14 @@ public class SenseGlove_Detector : MonoBehaviour
         }
     }
 
-    //--------------------------------------------------------------------------------------------------------------------------
-    // Accessing Lists
+    #endregion Collision
 
-    /// <summary>
-    /// 
-    /// </summary>
+    //--------------------------------------------------------------------------------------------------------------------------
+    // Logic
+
+    #region Logic
+
+    /// <summary> Returns the index of the SenseGlove_Handmodel in this detector's detectedGloves. Returns -1 if it is not in the list. </summary>
     /// <param name="grab"></param>
     /// <returns></returns>
     private int HandModelIndex(SenseGlove_HandModel model)
@@ -163,6 +177,8 @@ public class SenseGlove_Detector : MonoBehaviour
         return -1;
     }
 
+    /// <summary> Add a newly detected SenseGlove to the list of detected gloves. </summary>
+    /// <param name="model"></param>
     private void AddEntry(SenseGlove_HandModel model)
     {
         this.detectedGloves.Add(model);
@@ -171,6 +187,8 @@ public class SenseGlove_Detector : MonoBehaviour
         this.eventFired.Add(false);
     }
 
+    /// <summary> Remove a handmodel at the specified index from the list of detected gloves. </summary>
+    /// <param name="scriptIndex"></param>
     private void RemoveEntry(int scriptIndex)
     {
         if (scriptIndex > -1 && scriptIndex < detectedGloves.Count)
@@ -183,8 +201,26 @@ public class SenseGlove_Detector : MonoBehaviour
     }
 
 
+    /// <summary> Returns true if there is a Sense Glove contained within this collider. </summary>
+    /// <returns></returns>
+    public bool ContainsSenseGlove()
+    {
+        return this.detectedGloves.Count > 0;
+    }
+
+    /// <summary> Get a list of all gloves within this detection area. </summary>
+    /// <returns></returns>
+    public SenseGlove_HandModel[] GlovesInside()
+    {
+        return this.detectedGloves.ToArray();
+    }
+
+    #endregion Logic
+
     //--------------------------------------------------------------------------------------------------------------------------
     // Events
+
+    #region Events
 
     public delegate void GloveDetectedEventHandler(object source, GloveDetectionArgs args);
     /// <summary> Fires when a new SenseGlove_Grabscript enters this detection zone. </summary>
@@ -210,19 +246,7 @@ public class SenseGlove_Detector : MonoBehaviour
         }
     }
 
-    /// <summary> Returns true if there is a Sense Glove contained within this collider. </summary>
-    /// <returns></returns>
-    public bool ContainsSenseGlove()
-    {
-        return this.detectedGloves.Count > 0;
-    }
-
-    /// <summary> Get a list of all gloves within this detection area. </summary>
-    /// <returns></returns>
-    public SenseGlove_HandModel[] GlovesInside()
-    {
-        return this.detectedGloves.ToArray();
-    }
+    #endregion Events
 
 }
 

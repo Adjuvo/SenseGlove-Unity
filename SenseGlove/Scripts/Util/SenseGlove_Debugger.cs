@@ -8,7 +8,11 @@ using SenseGloveCs;
 /// Utility Script that allows access to the internal debugger of the SenseGloveCs Library,
 /// and controls debug messages from the SenseGlove SDK specifically.
 /// </summary>
-public class SenseGlove_Debugger : MonoBehaviour {
+public class SenseGlove_Debugger : MonoBehaviour
+{
+    /// <summary> The level of debug messages that one will recieve from the DLL. </summary>
+    [Tooltip("The level of debug messages that one will recieve from the DLL. <")]
+    public DebugLevel debugLevel = SenseGloveCs.Debugger.defaultDebugLvl;
 
     /// <summary> Enables or disables debug messages from the SenseGloveCs.dll. </summary>
     [Tooltip("Enables or disables debug messages from the SenseGloveCs.dll.")]
@@ -30,6 +34,7 @@ public class SenseGlove_Debugger : MonoBehaviour {
     {
         Debugger.storeMessages = true;
         SenseGlove_Debugger.unityEnabled_S = this.unityEnabled;
+        SenseGloveCs.Debugger.debugLevel = this.debugLevel;
 	}
 	
     void LateUpdate()
@@ -48,6 +53,13 @@ public class SenseGlove_Debugger : MonoBehaviour {
         {
             SenseGlove_Debugger.unityEnabled_S = this.unityEnabled;
         }
+
+        //Update the internal debug level
+        if (SenseGloveCs.Debugger.debugLevel != this.debugLevel)
+        {
+            SenseGloveCs.Debugger.debugLevel = this.debugLevel;
+        }
+
     }
 
     /// <summary>  Write a message to the SenseGlove_Debugger. </summary>

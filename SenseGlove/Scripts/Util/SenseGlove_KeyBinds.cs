@@ -33,6 +33,10 @@ public class SenseGlove_KeyBinds : MonoBehaviour
     [Tooltip("The key to enter the next step of the finger calibration.")]
     public KeyCode manualCalibrationKey = KeyCode.RightShift;
 
+    /// <summary> The Key to reset the finger lengths back to their original sizes. </summary>
+    [Tooltip("The Key to reset the finger lengths back to their original sizes.")]
+    public KeyCode resetFingerLengthsKey = KeyCode.I;
+
     /// <summary> The key which forces the grabScript to drop any object it is currently holding. </summary>
     [Tooltip("The key which forces the grabScript to drop any object it is currently holding.")]
     public KeyCode releaseObjectKey = KeyCode.E;
@@ -86,7 +90,15 @@ public class SenseGlove_KeyBinds : MonoBehaviour
             {
                 this.senseGlove.CalibrateThumb();
             }
-        
+
+            /////////
+
+            if (Input.GetKeyDown(this.resetFingerLengthsKey))
+            {
+                Debug.Log("Reset Fingers");
+                this.senseGlove.ResetFingers();
+            }
+            
         }	
 
         if (grabScript != null)

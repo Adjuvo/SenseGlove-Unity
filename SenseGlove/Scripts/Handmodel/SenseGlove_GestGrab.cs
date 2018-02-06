@@ -24,6 +24,16 @@ public class SenseGlove_GestGrab : SenseGlove_GrabScript
         return null; //there is no palm collider for this Gesture-Based Script.
     }
 
+    public override bool IsGrabbing()
+    {
+        throw new NotImplementedException();
+    }
+
+    public override bool IsTouching()
+    {
+        throw new NotImplementedException();
+    }
+
     public override void ManualRelease(float timeToReactivate = 1)
     {
         throw new NotImplementedException();

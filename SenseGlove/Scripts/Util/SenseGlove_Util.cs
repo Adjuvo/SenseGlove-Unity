@@ -142,6 +142,39 @@ public static class SenseGlove_Util
         euler = SenseGloveCs.Values.Degrees(euler);
         return new Vector3(-euler[x], -euler[z], -euler[y]);
     }
+    
+    /// <summary> Normalize an angle (in degrees) such that it is within the -180...180 range. </summary>
+    /// <param name="angle"></param>
+    /// <returns></returns>
+    public static float NormalizeAngle(float angle)
+    {
+        float N = angle % 360; //convert angle to a value between 0...359
+        //Convert it to a -180 ... 180 notation
+        if (N <= -180)
+        {
+            N += 360;
+        }
+        else if (N > 180)
+        {
+            N -= 360;
+        }
+        return N;
+    }
+
+   
+
+    public static Vector3 CalculateAngularVelocity(Quaternion currentRot, Quaternion previousRot)
+    {
+        Quaternion dQ = currentRot * Quaternion.Inverse(previousRot);
+        Vector3 dE = dQ.eulerAngles;
+        Vector3 res = new Vector3
+        (
+            SenseGlove_Util.NormalizeAngle(dE.x),
+            SenseGlove_Util.NormalizeAngle(dE.y),
+            SenseGlove_Util.NormalizeAngle(dE.z)
+        );
+        return (res * Mathf.Deg2Rad) / Time.deltaTime; //convert from deg to rad / sec
+    }
 
 
 }

@@ -19,9 +19,13 @@ public abstract class SenseGlove_GrabScript : MonoBehaviour
     [Tooltip("When an object is picked up, this GameObject (Typically the wrist) is used as a reference for its movement.")]
     public GameObject grabReference;
 
-    /// <summary> The way that the object(s) will be picked up by this GrabScript. </summary>
-    [Tooltip("The way that the object(s) will be picked up by this GrabScript.")]
-    public GrabType pickupMethod = GrabType.Follow;
+    public Rigidbody grabAnchor;
+
+    private FixedJoint anchorJoint;
+
+    private float breakForce = 1500;
+
+    public bool checkStability = false;
 
     //-----------------------------------------------------------------------------------------------------------------------------------------
     // Interaction Variables
@@ -31,8 +35,23 @@ public abstract class SenseGlove_GrabScript : MonoBehaviour
 
     /// <summary> The grabReference's position during the last frame Update() </summary>
     protected Vector3 lastPosition;
+
+    /// <summary> The grabReference's rotation during the last frame Update() </summary>
+    protected Quaternion lastRotation;
+
     /// <summary> The xyz velocity of the grabreference, in m/s </summary>
     protected Vector3 velocity = Vector3.zero;
+
+    /// <summary> Angilar velocity in rad/sec </summary>
+    protected Vector3 angularVelocity = Vector3.zero;
+
+    /// <summary> Whether there is consistent tracking on the grabreference (with regards to the positional tracking messing up) </summary>
+    protected bool isStable = true;
+
+    /// <summary> If the glove's velocity reaches above this number, the tracking is considered unstable. </summary>
+    protected float velocityThreshold = 5;
+
+    protected float angleVelocityThreshold = 25;
 
     //-----------------------------------------------------------------------------------------------------------------------------------------
     // Dynamics Methods
@@ -45,8 +64,28 @@ public abstract class SenseGlove_GrabScript : MonoBehaviour
         {
             Vector3 currentPos = this.grabReference.transform.position;
             this.velocity = (currentPos - lastPosition) / Time.deltaTime;
+
+            Quaternion currentRot = this.grabReference.transform.rotation;
+            this.angularVelocity = SenseGlove_Util.CalculateAngularVelocity(currentRot, this.lastRotation);
+
+            if (this.checkStability)
+            {
+                this.isStable = (this.velocity.magnitude <= this.velocityThreshold || angularVelocity.magnitude <= this.angleVelocityThreshold); 
+            }
+            else
+            {
+                this.isStable = true;
+            }
             this.lastPosition = currentPos;
+            this.lastRotation = currentRot;
         }
+    }
+
+    /// <summary> Manually set this grabscript to be stable, but only if the grabscript itself considers it stable as well </summary>
+    /// <param name="stable"></param>
+    public void SetStable(bool stable)
+    {
+        this.isStable = stable;
     }
 
     /// <summary> Retrieve the Velocity of this GameObject </summary>
@@ -54,6 +93,11 @@ public abstract class SenseGlove_GrabScript : MonoBehaviour
     public Vector3 GetVelocity()
     {
         return this.velocity;
+    }
+
+    public Vector3 GetAngularVelocity()
+    {
+        return this.angularVelocity;
     }
 
     //-----------------------------------------------------------------------------------------------------------------------------------------
@@ -75,7 +119,6 @@ public abstract class SenseGlove_GrabScript : MonoBehaviour
         }
     }
 
-
     //-----------------------------------------------------------------------------------------------------------------------------------------
     // Grabscript Methods
 
@@ -91,7 +134,7 @@ public abstract class SenseGlove_GrabScript : MonoBehaviour
     /// <param name="time">The amount of time before the Grabscript can pick up objects again </param>
     public abstract void ManualRelease(float timeToReactivate = 1.0f);
 
-    /// <summary> Returns true if this grabscript;s settings allow it to interact with other objects. </summary>
+    /// <summary> Returns true if this grabscript can currently pickup an object </summary>
     /// <returns></returns>
     public abstract bool CanInteract();
 
@@ -103,33 +146,34 @@ public abstract class SenseGlove_GrabScript : MonoBehaviour
     /// <summary> Retrieve the hand palm touchscript of this grabScript. </summary>
     /// <returns></returns>
     public abstract SenseGlove_Touch GetPalm();
+    
+    /// <summary> Connect a rigidbody to this scripts grabAnchor </summary>
+    /// <param name="physicsBody"></param>
+    public virtual void ConnectJoint(Rigidbody physicsBody)
+    {
+        this.anchorJoint = this.grabAnchor.gameObject.AddComponent<FixedJoint>();
+        this.anchorJoint.breakForce = this.breakForce;
+        this.anchorJoint.connectedBody = physicsBody;
+    }
+
+    /// <summary> Break the physics connection to this scripts grabAnchor  </summary>
+    public virtual void BreakJoint()
+    {
+        if (this.anchorJoint != null)
+        {
+            GameObject.Destroy(this.anchorJoint);
+        }
+    }
+
+    /// <summary> Returns true if this grabscript is currently holding an object </summary>
+    public abstract bool IsGrabbing();
+
+    /// <summary>
+    /// Returns true if the grabscript is touching an object
+    /// </summary>
+    /// <returns></returns>
+    public abstract bool IsTouching();
 
 }
 
 
-
-//-----------------------------------------------------------------------------------------------------------------------------------------
-// Enumerators
-
-
-/// <summary> The way in which this Grabscript picks up SenseGlove_Interactable objects. </summary>
-public enum GrabType
-{
-    /// <summary> The grabbed object's transform follows that of the GrabReference through world coordinates. Does not interfere with VRTK scripts. </summary>
-    Follow = 0,
-    /// <summary> A FixedJoint is created between the grabbed object and the GrabReference, which stops it from passing through rigidbodies. </summary>
-    FixedJoint,
-    /// <summary> The object becomes a child of the Grabreference. Its original parent is restored upon release. </summary>
-    Parent
-}
-
-/// <summary> The way that the Force-Feedback is calculated. </summary>
-public enum ForceFeedbackType
-{
-    /// <summary> No Force feedback is calculated for this SenseGlove. </summary>
-    None = 0,
-    /// <summary> On/Off style force feedback using the Material's 'passive force'  </summary>
-    Simple,
-    /// <summary> Force feedback is calculated based on how far the fingers have collided within the object. </summary>
-    MaterialBased
-}

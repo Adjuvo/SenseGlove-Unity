@@ -5,18 +5,24 @@ using SenseGloveCs;
 using SenseGloveCs.Calibration;
 using System;
 
-/// <summary>
-/// A SenseGlove object with Unity Wrappers and other fun stuff! Used by applications that depend on the SenseGlove.
-/// This Script is responsible for ensuring a stable connection between Unity and the SenseGlove using the SenseGloveCs DLL.
+/// <summary> 
+/// Responsible for ensuring a stable connection between Unity and the SenseGlove using the SenseGloveCs DLL.
+/// Contains wrapper functions for motor controls and access to up-to-date SenseGlove_Data
 /// </summary>
 public class SenseGlove_Object : MonoBehaviour
 {
     //--------------------------------------------------------------------------------------------------------------------------
-    // Publicly visible attributes
+    // Properties
 
-    /// <summary>Determines if this SenseGlove_Object will attempt to connect on startup, or wait until the RetryConnection method is called.</summary>
+    #region Properties
+
+    //--------------------------------------------------------------------------------------------------------------------------
+    // Public properties - May be assigned via the inspector
+
+    /// <summary>Determines if this SenseGlove_Object will connect on startup, or wait until the RetryConnection method is called.</summary>
     [Header("Communication Settings")]
-    [Tooltip("Determines if this SenseGlove_Object will attempt to connect on startup, or wait until the RetryConnection method is called.")]
+
+    [Tooltip("Determines if this SenseGlove_Object will connect on startup, or wait until the RetryConnection method is called.")]
     public bool connectOnStartUp = true;
     
     /// <summary> The logic used to connect to this SenseGlove. </summary>
@@ -34,6 +40,7 @@ public class SenseGlove_Object : MonoBehaviour
 
     /// <summary> Determines up to which level the Kinematics of the glove are Updated. </summary>
     [Header("Hand Model Settings")]
+
     [Tooltip("Determines up to which level the Kinematic Model is updated. Setting it to a lower level increases performance.")]
     public UpdateLevel updateTo = UpdateLevel.HandPositions;
 
@@ -45,6 +52,9 @@ public class SenseGlove_Object : MonoBehaviour
     [Tooltip("(Optional) The GameObject representing a foreArm. The wrist can be calibrated to align with its X-axis.")]
     public GameObject foreArm;
 
+    /// <summary> The method that is used to solve the kinematics of the Hand, standard set to Inverse Kinematics. </summary>
+    [Tooltip("The method that is used to solve the kinematics of the hand, standard set to Inverse Kinematics.")]
+    public SolveType solver = SolveType.Kinematic3D;
 
     /// <summary> Determine whether the fingers are contrained within natural limits. </summary>
     [Tooltip("Determines whether the fingers are contrained within natural limits.")]
@@ -72,6 +82,7 @@ public class SenseGlove_Object : MonoBehaviour
     /// <summary> Whether or not the (complex) calucation is performed in a separate worker thread. </summary>
     [Tooltip("Whether or not the (complex) calucation is performed in a separate worker thread.")]
     public bool async = true;
+
 
 
     //--------------------------------------------------------------------------------------------------------------------------
@@ -114,8 +125,18 @@ public class SenseGlove_Object : MonoBehaviour
     /// <summary> Ensures we send a debug message only once. </summary>
     private bool canReport = true;
 
+    /// <summary> Original (hard-coded) lengths of the Sense Glove </summary>
+    private float[][] originalLengths;
+
+    /// <summary> Original (hard-coded) joint positions of the Sense Glove </summary>
+    private float[][] originalJoints;
+
+    #endregion Properties
+
     //--------------------------------------------------------------------------------------------------------------------------
     // Events
+
+    #region Events
 
     /// <summary> Event delegate for the GloveReady event. </summary>
     /// <param name="source"></param>
@@ -133,7 +154,6 @@ public class SenseGlove_Object : MonoBehaviour
             OnGloveLoaded(this, null);
         }
     }
-
 
     /// <summary> Event delegate function for the CalibrateionFinished event. </summary>
     /// <param name="source"></param>
@@ -153,9 +173,12 @@ public class SenseGlove_Object : MonoBehaviour
         }
     }
 
+    #endregion Events
 
     //------------------------------------------------------------------------------------------------------------------------------------
     // Unity / MonoDevelop
+
+    #region MonoDevelop
 
     // Use this for initialization
     void Start()
@@ -191,6 +214,7 @@ public class SenseGlove_Object : MonoBehaviour
                     if (myGlove != null) //The glove matches our parameters!
                     {
                         this.glove = myGlove;
+                        SenseGlove_Manager.SetUsed(this.glove.GetData(false).deviceID, true);
                         this.glove.OnFingerCalibrationFinished += Glove_OnFingerCalibrationFinished;
                     } 
                     else
@@ -244,6 +268,8 @@ public class SenseGlove_Object : MonoBehaviour
                     this.gloveReady = true;
                     if (runSetup)
                     {
+                        this.originalLengths = this.gloveData.handModel.GetFingerLengths();
+                        this.originalJoints = this.gloveData.handModel.GetJointPositions();
                         Debug.Log("Sense Glove " + this.convertedGloveData.deviceID + " is ready!");
                         this.GloveLoaded();  //raise the event!
                     }
@@ -298,8 +324,12 @@ public class SenseGlove_Object : MonoBehaviour
         SenseGloveCs.DeviceScanner.CleanUp();
     }
 
+    #endregion MonoDevelop
+
     //------------------------------------------------------------------------------------------------------------------------------------
     // Communication methods.
+
+    #region Communication
 
     /// <summary>
     /// Extract a SenseGlove matching the parameters of this SenseGlove_Object from a list retieved by the SenseGloveCs.DeviceScanner.
@@ -426,8 +456,12 @@ public class SenseGlove_Object : MonoBehaviour
         return false;
     }
 
+    #endregion Communication
+
     //------------------------------------------------------------------------------------------------------------------------------------
-    // Wrapper methods
+    // Data Retrieval
+
+    #region Data
 
     /// <summary>
     /// Retrieve the UNCONVERTED GloveData from this SenseGlove. Use GetData instead if you wish to access Unity-friendly data.
@@ -464,15 +498,16 @@ public class SenseGlove_Object : MonoBehaviour
         {
             //Update to the latest GloveData.
             Quaternion lowerArm = this.foreArm != null ? this.foreArm.transform.rotation : Quaternion.identity;
-            this.gloveData = this.glove.Update(this.updateTo, this.limitFingers, this.updateWrist, SenseGlove_Util.ToQuaternion(lowerArm), this.limitWrist, this.checkGestures);
+            this.gloveData = this.glove.Update(this.updateTo, this.solver, this.limitFingers, this.updateWrist, SenseGlove_Util.ToQuaternion(lowerArm), this.limitWrist, this.checkGestures);
             this.convertedGloveData = new SenseGlove_Data(this.gloveData, this.glove.communicator.samplesPerSecond,
                 this.glove.TotalCalibrationSteps(), this.glove.CurrentCalibrationStep());
         }
     }
 
-    //------------------------------------------------------------------------------------------------------------------------------------
-    // Hardware compensation methods.
+    #endregion Data
 
+    //------------------------------------------------------------------------------------------------------------------------------------
+    // Hardware compensation methods - for older firmware versions only
 
     /// <summary> Manually assign IMU Correction for old firmware versions. </summary>
     public void SetupWrist()
@@ -480,6 +515,13 @@ public class SenseGlove_Object : MonoBehaviour
         if (this.glove != null && this.glove.gloveData.dataLoaded)
         {
             string ID = this.gloveData.deviceID;
+
+            if (ID.Contains("220102"))
+            {
+                this.glove.gloveData.wrist.SetHardwareOrientation(Quaternions.FromEuler(Mathf.PI, 0, Mathf.PI / 2.0f)); //correction for glove 1
+                SenseGlove_Debugger.Log("Red Glove Compensation");
+            }
+
             string[] gloveVersion = this.gloveData.firmwareVersion.Split('.');
             if (gloveVersion[0][0] == 'v') { gloveVersion[0] = gloveVersion[0].Substring(1); } //if there is a v in front of it, remove this.
             int mainVersion = int.Parse(gloveVersion[0]);
@@ -509,10 +551,27 @@ public class SenseGlove_Object : MonoBehaviour
             }
         }
     }
-    
+
 
     //------------------------------------------------------------------------------------------------------------------------------------
     // Manual Calibration methods
+
+    #region Calibration
+
+    /// <summary> Check whether or not this SenseGlove_Object is currently collecting calibration data. </summary>
+    /// <returns></returns>
+    public bool IsCalibrating()
+    {
+        return this.calibrating;
+    }
+
+    /// <summary> Reset all finger lengths to their original sizes and positions to their original positions. </summary>
+    public void ResetFingers()
+    {
+        this.SetFingerLengths(this.originalLengths);
+        this.SetStartJointPositions(this.originalJoints);
+        this.fireCalibration = true;
+    }
 
 
     /// <summary>
@@ -522,9 +581,10 @@ public class SenseGlove_Object : MonoBehaviour
     /// <param name="newFingerLengths"></param>
     public void SetFingerLengths(float[][] newFingerLengths)
     {
-        if (this.glove != null)
+        if (this.glove != null && newFingerLengths != null)
         {
             this.glove.SetHandLengths(newFingerLengths);
+            this.fireCalibration = true;
         }
     }
 
@@ -562,9 +622,10 @@ public class SenseGlove_Object : MonoBehaviour
     /// <returns></returns>
     public void SetStartJointPositions(float[][] positions)
     {
-        if (this.glove != null)
+        if (this.glove != null && positions != null)
         {
             this.glove.SetJointPositions(positions);
+            this.fireCalibration = true;
         }
     }
 
@@ -577,9 +638,38 @@ public class SenseGlove_Object : MonoBehaviour
         if (this.glove != null)
         {
             this.glove.SetJointPositions(SenseGlove_Util.ToPosition(positions));
+            this.fireCalibration = true;
         }
     }
 
+    /// <summary> Retrieve the compensation (in mm) from the thimble to the fingertip </summary>
+    /// <returns></returns>
+    public Vector3[] GetThimbleComp()
+    {
+        if (this.glove != null)
+        {
+            return SenseGlove_Util.ToUnityPosition(this.glove.GetThimbleComp());
+        }
+
+        return new Vector3[5]
+        {
+            Vector3.zero,
+            Vector3.zero,
+            Vector3.zero,
+            Vector3.zero,
+            Vector3.zero,
+        };
+    }
+
+    /// <summary> Manually set the compensation (in mm) from the thimble to the fingertip </summary>
+    /// <param name="newCompensations"></param>
+    public void SetThimbleComp(Vector3[] newCompensations)
+    {
+        if (this.glove != null)
+        {
+            this.glove.SetThimbleComp(SenseGlove_Util.ToPosition(newCompensations));
+        }
+    }
 
     /// <summary> Calculate the Joint positions based on a known set of finger lengths. </summary>
     /// <remarks> Use this to (re)calculate the joint positions after loading the finger lengths. </remarks>
@@ -589,6 +679,7 @@ public class SenseGlove_Object : MonoBehaviour
         if (this.glove != null && this.gloveReady)
         {
             this.glove.CalculateJointPositions(fingerLengths);
+            this.fireCalibration = true;
         }
     }
 
@@ -623,6 +714,7 @@ public class SenseGlove_Object : MonoBehaviour
         return false;
     }
 
+    
 
     //------------------------------------------------------------------------------------------------------------------------------------
     // Manual Calibration Steps
@@ -650,6 +742,7 @@ public class SenseGlove_Object : MonoBehaviour
             if (this.calibrationArguments != null)
             {
                 this.CalibrationFinished(this.calibrationArguments);
+                this.calibrating = false;
             }
             this.fireCalibration = false;
         }
@@ -667,7 +760,7 @@ public class SenseGlove_Object : MonoBehaviour
         }
     }
 
-    /// <summary> Start a new calibration, based on the </summary>
+    /// <summary> Start a new calibration, based on the parameters set via the inspector. </summary>
     /// <param name="whichFingers"></param>
     /// <returns></returns>
     public bool StartCalibration(bool[] whichFingers = null)
@@ -687,12 +780,13 @@ public class SenseGlove_Object : MonoBehaviour
                 switch (this.calibrationMethod)
                 {
                     case CalibrationType.Manual: method         = new ManualCalibration(algorithm, this.async); break;
-                    case CalibrationType.SemiAutomatic: method  = new SemiAutoCalibration(algorithm, this.async); break;
+                    case CalibrationType.SemiAutomatic: method  = new SemiAutoCalibration(algorithm, this.async, 12, 0.6f, 5); break;
                     case CalibrationType.Automatic: method      = new AutoCalibration(algorithm, this.async); break;
                 }
                 if (method != null)
                 {
                     this.glove.StartCalibration(method);
+                    this.calibrating = true;
                 }
             }
         }
@@ -710,6 +804,7 @@ public class SenseGlove_Object : MonoBehaviour
             CalibrationAlgorithm algorithm = new Circle2D(whichFingers, calibrateLengths, calibrateJoints);
             CalibrationMethod method = new ManualCalibration(algorithm);
             this.glove.StartCalibration(method);
+            this.calibrating = true;
         }
         return false;
     }
@@ -799,14 +894,16 @@ public class SenseGlove_Object : MonoBehaviour
             CalibrationMethod testMethod = new SemiAutoCalibration(testAlgorithm, true, 10, 2.0f, 5);
 
             this.glove.StartCalibration(testMethod);
+            this.calibrating = true;
         }
     }
-    
+
 
 
     //------------------------------------------------------------------------------------------------------------------------------------
     // (Semi)Automatic Calibration Steps
 
+    #region AutoCalibration
 
     /// <summary> Start a semi-automatic calibration of the thumb, using thumb abduction. </summary>
     public void CalibrateThumb()
@@ -816,6 +913,7 @@ public class SenseGlove_Object : MonoBehaviour
             SenseGlove_Debugger.Log("Calibrating Thumb");
             CalibrationAlgorithm algorithm = new Circle2D(new bool[] { true, false, false, false, false });
             this.glove.StartSemiAutoCalibration(algorithm, true, 10, 1f, 5);
+            this.calibrating = true;
         }
     }
 
@@ -830,6 +928,7 @@ public class SenseGlove_Object : MonoBehaviour
         {
             CalibrationAlgorithm algorithm = new Circle2D(new bool[] { true, false, false, false, false });
             this.glove.StartSemiAutoCalibration(algorithm, calculateAsync, distinctDistance, steadyTime, steadyDistance);
+            this.calibrating = true;
         }
     }
 
@@ -844,13 +943,18 @@ public class SenseGlove_Object : MonoBehaviour
         {
             CalibrationAlgorithm algorithm = new Circle2D(new bool[] { true, false, false, false, false });
             this.glove.StartAutoCalibration(algorithm, processAsync, pointLimit, timeLimit, minPoints);
+            this.calibrating = true;
         }
     }
 
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Haptic Feedback
+    #endregion AutoCalibration
 
+    #endregion Calibration
 
+    //------------------------------------------------------------------------------------------------------------------------------------
+    // (Haptic) Feedback
+
+    #region Feedback
 
     /// <summary>
     /// Verify if this SenseGlove has a particular functionality (buzz motors, haptic feedback, etc)
@@ -873,9 +977,10 @@ public class SenseGlove_Object : MonoBehaviour
     /// <returns></returns>
     public bool SimpleBrakeCmd(int[] commands)
     {
-        if (this.glove != null)
+        if (this.glove != null && this.glove.IsConnected())
         {
             return this.glove.SimpleBrakeCmd(commands);
+            //return this.glove.ByteBrake(commands);
         }
         return false;
     }
@@ -896,6 +1001,42 @@ public class SenseGlove_Object : MonoBehaviour
 
 
 
+
+    /// <summary> Send haptic commands to the buzzmotors, if these are present on the Sense Glove. </summary>
+    /// <param name="fingers">  Which of the fingers to send this command to [thumb, index, middle, ring, pinky]  </param>
+    /// <param name="magnitudes"> The magnitude [0 .. 1.0f] of the buzz motor, where 1.0f represents 100% of its strength. </param>
+    /// <param name="patterns"> The Buzzmotor patterns </param>
+    /// <param name="durations">The time (in seconds) it takes to complete the pattern [0.0f ...10.0f] </param>
+    /// <returns>True is the command was sucessfully sent.</returns>
+    public bool BuzzCmd(bool[] fingers, float[] magnitudes, float[] durations = null, BuzzMotorPattern[] patterns = null)
+    {
+        if (this.glove != null && this.glove.IsConnected())
+        {
+            if (patterns == null) { patterns = new BuzzMotorPattern[5] { BuzzMotorPattern.Constant, BuzzMotorPattern.Constant, BuzzMotorPattern.Constant, BuzzMotorPattern.Constant, BuzzMotorPattern.Constant }; }
+            if (durations == null) { durations = new float[5] { 0.1f, 0.1f, 0.1f, 0.1f, 0.1f }; }
+            return this.glove.BuzzMotorCmd(fingers, patterns, magnitudes, durations);
+        }
+        return false;
+    }
+
+
+    /// <summary> Send a simple Buzz Motor command to the Sense Glove, applying the desired parameters to each finger. </summary>
+    /// <param name="fingers">  Which of the fingers to send this command to [thumb, index, middle, ring, pinky] </param>
+    /// <param name="pattern">  The Buzzmotor pattern </param>
+    /// <param name="magnitude">The magnitude [0 .. 1.0f] of the buzz motor, where 1.0f represents 100% of its strength. </param>
+    /// <param name="duration"> The time (in seconds) it takes to complete the pattern [0.0f ...10.0f] </param>
+    /// <returns></returns>
+    public bool SimpleBuzzCmd(bool[] fingers, float magnitude = 1.0f, BuzzMotorPattern pattern = BuzzMotorPattern.Constant,  float duration = 0.1f)
+    {
+        if (this.glove != null && this.glove.IsConnected())
+        {
+            return this.glove.SimpleBuzzCmd(fingers, pattern, magnitude, duration);
+        }
+        return false;
+    }
+
+
+    #endregion Feedback
 
 }
 

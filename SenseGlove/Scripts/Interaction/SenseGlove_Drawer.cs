@@ -6,8 +6,9 @@ using UnityEngine;
 public class SenseGlove_Drawer : SenseGlove_Interactable
 {
     /// <summary> The movement axis along which the SenseGlove_Drawer slides. </summary>
+    [Header("Drawer Options")]
     [Tooltip("The movement axis along which the SenseGlove_Drawer slides. Change this GameObject's rotation to match your desired direction.")]
-    public DrawerAxis moveDirection = DrawerAxis.X;
+    public MovementAxis moveDirection = MovementAxis.X;
 
     /// <summary> The handles connected to this drawer. </summary>
     [Tooltip("The handles connected to this drawer. Ensures that its grab events are recieved.")]
@@ -39,13 +40,10 @@ public class SenseGlove_Drawer : SenseGlove_Interactable
     private Vector3 grabOffset = Vector3.zero;
     //private Quaternion grabRotation = Quaternion.identity;
 
-    private Vector3 originalPos = Vector3.zero;
-    private Quaternion originalRot = Quaternion.identity;
-
     /// <summary> The movement axis of this drawer, corrected by distance. Will always be normalized (size is 1) </summary>
     private Vector3 moveAxis;
 
-    private DrawerAxis actualMoveDirection = DrawerAxis.X;
+    private MovementAxis actualMoveDirection = MovementAxis.X;
 
     void Awake()
     {
@@ -79,7 +77,7 @@ public class SenseGlove_Drawer : SenseGlove_Interactable
 
     }
 
-    public override void BeginInteraction(SenseGlove_GrabScript grabScript)
+    public override void BeginInteraction(SenseGlove_GrabScript grabScript, bool fromExternal = false)
     {
         //Debug.Log("Handle.BeginInteraction"); 
         if (!InteractingWith(grabScript)) //never interact twice with the same grabscript before EndInteraction is called.
@@ -109,7 +107,7 @@ public class SenseGlove_Drawer : SenseGlove_Interactable
         }
     }
 
-    public override void EndInteraction(SenseGlove_GrabScript grabScript)
+    public override void EndInteraction(SenseGlove_GrabScript grabScript, bool fromExternal = false)
     {
         //Debug.Log("Handle.EndInteraction");
         if (InteractingWith(grabScript)) //only do the proper endInteraction if the EndInteraction comes from the script currently holding it.
@@ -132,10 +130,7 @@ public class SenseGlove_Drawer : SenseGlove_Interactable
         }
     }
 
-    public override void ResetObject()
-    {
-        //Debug.Log("Handle.ResetObject");
-    }
+   
 
     public override void UpdateInteraction()
     {
@@ -203,9 +198,9 @@ public class SenseGlove_Drawer : SenseGlove_Interactable
     {
         switch (this.moveDirection)
         {
-            case DrawerAxis.X: return new Vector3(1, 0, 0);
-            case DrawerAxis.Y: return new Vector3(0, 1, 0);
-            case DrawerAxis.Z: return new Vector3(0, 0, 1);
+            case MovementAxis.X: return new Vector3(1, 0, 0);
+            case MovementAxis.Y: return new Vector3(0, 1, 0);
+            case MovementAxis.Z: return new Vector3(0, 0, 1);
         }
         return new Vector3(1, 0, 0); //will probably never get here unless one messes with the DrawerAxis variable(s)
     }
@@ -277,7 +272,7 @@ public class SenseGlove_Drawer : SenseGlove_Interactable
     /// Set the axis of this drawer; the cleanest way of doing so.
     /// </summary>
     /// <param name="newAxis"></param>
-    public void SetMoveAxis(DrawerAxis newAxis)
+    public void SetMoveAxis(MovementAxis newAxis)
     {
         this.actualMoveDirection = newAxis;
         this.moveAxis = (this.originalRot * this.MoveAxis()).normalized;
@@ -299,11 +294,21 @@ public class SenseGlove_Drawer : SenseGlove_Interactable
         return (this.transform.position - this.originalPos).magnitude <= 0;
     }
 
+    public override void SaveTransform()
+    {
+        this.originalPos = this.transform.position;
+    }
+
+    public override void ResetObject()
+    {
+        this.transform.position = this.originalPos;
+    }
+
 }
 
 
 /// <summary> The axis around which the drawer is moved. </summary>
-public enum DrawerAxis
+public enum MovementAxis
 {
     X = 0,
     Y = 1,

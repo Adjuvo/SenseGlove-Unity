@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary> A SenseGlove_HandModel of which the finger joints can be assigned via the inspector. </summary>
+/// <summary> A SenseGlove_HandModel where the finger joints can be assigned via the inspector. </summary>
 public class SenseGlove_VirtualHand : SenseGlove_HandModel
 {
     /// <summary> The joint transforms of the thumb. </summary>
@@ -37,4 +37,5 @@ public class SenseGlove_VirtualHand : SenseGlove_HandModel
         this.fingerJoints.Add(this.ringFingerJoints);
         this.fingerJoints.Add(this.pinkyJoints);
     }
+
 }

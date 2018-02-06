@@ -9,19 +9,20 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
     //--------------------------------------------------------------------------------------------------------------------------
     // Attributes
 
+    /// <summary> The way that the object(s) will be picked up by this GrabScript. </summary>
+    [Header("Grabable Options")]
+    [Tooltip("The way that the object(s) will be picked up by this GrabScript.")]
+    public GrabType pickupMethod = GrabType.Parent;
+
     /// <summary> Whether or not this object can be picked up from the Sense Glove by another Grabscript. </summary>
     [Tooltip("Whether or not this object can be picked up from the Sense Glove by another Grabscript.")]
     public bool canTransfer = true;
 
+    /// <summary> The transform that is grabbed as part of this object. Useful when dealing with a grabable that is a child of another grabable. </summary>
+    public Transform pickupReference;
+
     /// <summary> The gameObject used as a reference for the Grabable's transform updates. </summary>
     private GameObject grabReference;
-
-    //Reset Functionality 
-        
-    /// <summary> The original position of the SenseGlove_Grabable, used to reset its position. </summary>
-    private Vector3 originalPos = Vector3.zero;
-    /// <summary> The original rotation of the SenseGlove_Grabable, used to reset its rotation. </summary>
-    private Quaternion originalRot = Quaternion.identity;
 
     //Folllow GrabType Variables
     
@@ -35,6 +36,8 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
     private Transform originalParent;
 
     //PhysicsJoint GrabType Variables
+
+    private Joint connection;
 
     //Object RigidBody Variables
 
@@ -79,11 +82,23 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
     //--------------------------------------------------------------------------------------------------------------------------
     // Monobehaviour
 
+    void Awake()
+    {
+        this.CheckPickupRef();
+        this.SaveTransform();
+    }
+
+    public void CheckPickupRef()
+    {
+        if (this.pickupReference == null)
+        {
+            this.pickupReference = this.transform;
+        }
+    }
+
     void Start()
     {
-        this.originalPos = this.transform.position;
-        this.originalRot = this.transform.rotation;
-        if (!this.physicsBody) { this.physicsBody = this.gameObject.GetComponent<Rigidbody>(); }
+        if (!this.physicsBody) { this.physicsBody = this.pickupReference.GetComponent<Rigidbody>(); }
 
         //Verify the kinematic variables
         if (this.physicsBody)
@@ -101,51 +116,71 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
     //--------------------------------------------------------------------------------------------------------------------------
     // Class methods
 
-    public override void BeginInteraction(SenseGlove_GrabScript grabScript)
+    public override void BeginInteraction(SenseGlove_GrabScript grabScript, bool fromExternal = false)
     {
         if (this.isInteractable) //never interact twice with the same grabscript before EndInteraction is called.
         {
-            bool grabbedByOther = this.IsGrabbed() && !InteractingWith(grabScript);
+          //  Debug.Log("Begin Interaction");
 
-            if (!this.IsGrabbed() || (grabbedByOther && this.canTransfer))
+            bool alreadyBeingHeld = this.InteractingWith(grabScript);
+            
+            if (!alreadyBeingHeld)
             {
-                if (this._grabScript && this._grabScript.pickupMethod == GrabType.Parent)
-                {   //if we were patented before
-                    this.transform.parent = this.originalParent;
-                }
-
-                this.grabReference = grabScript.grabReference;
-                this._grabScript = grabScript;
-
-                if (this._grabScript.pickupMethod == GrabType.Follow)
-                {
-                    //Quaternion.Inverse(QT) * (vT - vO);
-                    this.grabOffset = Quaternion.Inverse(this.grabReference.transform.rotation) * (this.grabReference.transform.position - this.transform.position);
-
-                    //Quaternion.Inverse(QT) * (Qo);
-                    this.grabRotation = Quaternion.Inverse(this.grabReference.transform.rotation) * this.transform.rotation;
-                }
-                else if (this._grabScript.pickupMethod == GrabType.Parent)
-                {
-                    this.originalParent = this.gameObject.transform.parent;
-                    this.transform.parent = this.grabReference.transform;
-                }
-
+                //always record the properties of the object in case we switch pickupTypes mid-Play for some reason.
+                this.originalParent = this.pickupReference.parent;
                 if (this.physicsBody)
                 {
-                    if (!grabbedByOther)
-                    {
-                        this.wasKinematic = this.physicsBody.isKinematic;
-                        this.usedGravity = this.physicsBody.useGravity;
-                    }
+                    this.wasKinematic = this.physicsBody.isKinematic;
+                    this.usedGravity = this.physicsBody.useGravity;
+                }
+            }
 
-                    this.physicsBody.useGravity = false;
-                    this.physicsBody.isKinematic = true;
+            //if the object was actually grabbed.
+            if (!alreadyBeingHeld || (alreadyBeingHeld && this.canTransfer))
+            {
+                this.grabReference = grabScript.grabReference;
+                this._grabScript = grabScript;
+                
+                //Apply proper pickup 
+                if (this.pickupMethod == GrabType.Parent)
+                {
+                    this.pickupReference.parent = grabScript.grabReference.transform;
+                }
+                else if (this.pickupMethod == GrabType.Follow)
+                {
+                    //Quaternion.Inverse(QT) * (vT - vO);
+                    this.grabOffset = Quaternion.Inverse(this.grabReference.transform.rotation) * (this.grabReference.transform.position - this.pickupReference.position);
+
+                    //Quaternion.Inverse(QT) * (Qo);
+                    this.grabRotation = Quaternion.Inverse(this.grabReference.transform.rotation) * this.pickupReference.rotation;
+                }
+                else if (this.pickupMethod != GrabType.FixedJoint)
+                {
+                    if (this.physicsBody)
+                    {
+                        grabScript.ConnectJoint(this.physicsBody);
+                    }
+                    else
+                    {
+                        SenseGlove_Debugger.Log("Using a FixedJoint connection required a Rigidbody.");
+                    }
+                }
+                
+
+                //apply physicsBody settings.
+                if (this.physicsBody)
+                {
                     this.physicsBody.velocity = new Vector3(0, 0, 0);
                     this.physicsBody.angularVelocity = new Vector3(0, 0, 0);
+                    if (this.pickupMethod != GrabType.FixedJoint)
+                    {
+                        this.physicsBody.useGravity = false;
+                        this.physicsBody.isKinematic = true;
+                    }
                 }
-                OnPickedUp();
+                this.OnPickedUp();
             }
+           
         }
     }
 
@@ -153,56 +188,70 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
     {
         if (this.grabReference != null)
         {
-            if (this._grabScript.pickupMethod == GrabType.Follow)
+            if (this.pickupMethod == GrabType.Follow)
             {
-                this.transform.rotation = this.grabReference.transform.rotation * this.grabRotation;
-                this.transform.position = this.grabReference.transform.position - (this.grabReference.transform.rotation * grabOffset);
+                this.pickupReference.rotation = this.grabReference.transform.rotation * this.grabRotation;
+                this.pickupReference.position = this.grabReference.transform.position - (this.grabReference.transform.rotation * grabOffset);
             }
         }
     }
+
+
 
     public void EndInteraction()
     {
         this.EndInteraction(this._grabScript);
     }
 
-    public override void EndInteraction(SenseGlove_GrabScript grabScript)
-    {
-        if (InteractingWith(grabScript)) //only do the proper endInteraction if the EndInteraction comes from the script currently holding it.
-        {
-            if (this.originalParent != null)
-            {
-                this.transform.parent = this.originalParent;
-            }
-            if (grabScript != null)
-            {
-                //if we're not being held by this same grabscript a.k.a. we've been passed on to another one...
 
+
+    public override void EndInteraction(SenseGlove_GrabScript grabScript, bool fromExternal = false)
+    {
+      //  Debug.Log("End Interaction");
+
+        if (this.InteractingWith(grabScript))
+        {
+
+            if (this.IsInteracting())
+            {   //break every possible instance that could connect this interactable to the grabscript.
+                this._grabScript.BreakJoint();
+                this.pickupReference.parent = this.originalParent;
                 if (this.physicsBody != null)
                 {
                     this.physicsBody.useGravity = this.usedGravity;
                     this.physicsBody.isKinematic = this.wasKinematic;
-                    this.physicsBody.velocity = grabScript.GetVelocity();
-                    //this.physicsBody.angularVelocity = ???
+                    if (grabScript != null)
+                    {
+                        this.physicsBody.velocity = grabScript.GetVelocity();
+                        this.physicsBody.angularVelocity = grabScript.GetAngularVelocity();
+                    }
                 }
             }
-            OnReleased();
-            this.grabReference = null;
+
+            if (this.physicsBody)
+            {
+                this.physicsBody.velocity = grabScript.GetVelocity();
+            }
+
+            this.OnReleased();
+
             this._grabScript = null;
-            this.originalParent = null;
+            this.grabReference = null;
         }
     }
 
     public override void ResetObject()
     {
+        this.CheckPickupRef();
         if (this.originalParent)
         {
-            this.transform.parent = originalParent;
+            this.pickupReference.parent = originalParent;
             this.originalParent = null;
         }
         
-        this.transform.position = this.originalPos;
-        this.transform.rotation = this.originalRot;
+        this.pickupReference.position = this.originalPos;
+        this.pickupReference.rotation = this.originalRot;
+
         if (this.physicsBody)
         {
             this.physicsBody.velocity = Vector3.zero;
@@ -211,7 +260,15 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
             this.physicsBody.useGravity = this.usedGravity;
         }
     }
- 
+
+
+    public override void SaveTransform()
+    {
+        this.CheckPickupRef();
+        this.originalPos = this.pickupReference.transform.position;
+        this.originalRot = this.pickupReference.transform.rotation;
+    }
+
     //----------------------------------------------------------------------------------------------------------------------------------
     // Utility Methods
 

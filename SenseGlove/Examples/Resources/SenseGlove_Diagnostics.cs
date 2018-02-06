@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Text;
 using UnityEngine;
 
 public class SenseGlove_Diagnostics : MonoBehaviour
@@ -13,6 +14,15 @@ public class SenseGlove_Diagnostics : MonoBehaviour
 
     /// <summary> Debug text within the scene to output to. </summary>
     public TextMesh debugText;
+
+    private bool cycleFFB = false;
+    private int step = 0;
+
+    public KeyCode cycleFFBKey = KeyCode.Return;
+
+    public KeyCode cycleFingerFFBKey = KeyCode.Space;
+
+    private int currentFinger = -1;
 
 	// Use this for initialization
 	void Start ()
@@ -31,7 +41,7 @@ public class SenseGlove_Diagnostics : MonoBehaviour
 
     private void TrackedGlove_OnGloveLoaded(object source, System.EventArgs args)
     {
-        SetText("");
+        SetText("Press " + this.cycleFFBKey.ToString() + " to cycle Force Feedback");
     }
 
     // Update is called once per frame
@@ -53,14 +63,71 @@ public class SenseGlove_Diagnostics : MonoBehaviour
             //    + unityEuler.ToString() + "\t\t-\t\t" + Xunity.ToString() + "\r\n"
             //    + DLLconv.ToString() + "\t\t-\t\t" + Xdll.ToString() );
 
-            float[][] sensors = this.trackedGlove.GloveData().gloveValues;
-            string msg = "GloveAngles:\r\n";
-            for (int i=0; i<sensors.Length; i++)
-            {
-                msg += SenseGlove_Util.ToString( SenseGloveCs.Values.Degrees( sensors[i] ) ) + "\r\n";
-            }
-            SetText("");
+            //float[][] sensors = this.trackedGlove.GloveData().gloveValues;
+            //string msg = "GloveAngles:\r\n";
+            //for (int i=0; i<sensors.Length; i++)
+            //{
+            //    msg += SenseGlove_Util.ToString( SenseGloveCs.Values.Degrees( sensors[i] ) ) + "\r\n";
+            //}
+            //SetText("");
 
+            if (cycleFFB)
+            {
+                step++;
+                if (step > 255)
+                {
+                    this.cycleFFB = false;
+                    //SetText("Force Feedback at Maximum");
+                }
+                else
+                {
+                    SetText("Cycling : " + this.step + " / 255");
+                    this.trackedGlove.SimpleBrakeCmd(step, step, step, step, step);
+                }
+            }
+            else if (Input.GetKeyDown(this.cycleFingerFFBKey)) //toggle each individually,
+            {
+                int[] breaks = new int[5];
+                this.currentFinger++;
+               
+                if (this.currentFinger > 4)
+                {
+                    this.currentFinger = -1;
+                    SetText("Press " + this.cycleFFBKey.ToString() + " to cycle Force Feedback.");
+                }
+                else
+                {
+                    breaks[currentFinger] = 255;
+                    string ml = "00000";
+                    StringBuilder sb = new StringBuilder(ml);
+                    sb[currentFinger] = '1';
+                    ml = sb.ToString();
+                    SetText("[" + ml + "]");
+                }
+                this.trackedGlove.SimpleBrakeCmd(breaks);
+            }
+
+
+            if (Input.GetKeyDown(KeyCode.Return) && currentFinger < 0)
+            {
+                if (this.step > 255)
+                {
+                    this.step = 0;
+                    this.trackedGlove.SimpleBrakeCmd(0, 0, 0, 0, 0);
+                    SetText("Press " + this.cycleFFBKey.ToString() + " to cycle Force Feedback");
+                }
+                else if (this.step > 0)
+                {
+                    this.step = 254;
+                }
+                else
+                {
+                    this.CycleForceFeedback();
+                }
+               
+            }
+
+            
 
         }
 
@@ -86,4 +153,12 @@ public class SenseGlove_Diagnostics : MonoBehaviour
             this.trackedGlove.OnGloveLoaded -= TrackedGlove_OnGloveLoaded;
         }
     }
+
+    public void CycleForceFeedback(float cycleDuration = 0.5f)
+    {
+        cycleFFB = true;
+        step = 0;
+        trackedGlove.SimpleBrakeCmd(step, step, step, step, step);
+    }
+
 }

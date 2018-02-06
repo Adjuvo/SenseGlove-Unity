@@ -2,13 +2,14 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary> Uses predictive colliders to detect force feedback level(s) based on material properties. </summary> 
+/// <summary> Uses (predictive) colliders to detect force feedback level(s) based on material properties. </summary> 
 [RequireComponent(typeof(SphereCollider))]
 public class SenseGlove_Feedback : MonoBehaviour
 {
-
     //--------------------------------------------------------------------------------------------------------------------------
-    // Publicly visible attributes
+    // Properties
+
+    #region Properties   
 
     [Tooltip("The collider used to determine which object is currently being touched")]
     public SphereCollider touch;
@@ -21,7 +22,7 @@ public class SenseGlove_Feedback : MonoBehaviour
     public SenseGlove_HandModel handModel;
 
     /// <summary> The position of the collider the moment it entered a new object.  Used to determine collider normal. </summary>
-    private Vector3 entryPos = Vector3.zero;
+    private Vector3 entryOrigin = Vector3.zero;
     /// <summary> A point of the collider of the touchedObject on the moment that collision was detected. Used to determine collider normal. </summary>
     private Vector3 entryPoint = Vector3.zero;
 
@@ -31,15 +32,24 @@ public class SenseGlove_Feedback : MonoBehaviour
     /// <summary> The force-feedback level as determined by the material properties of the object we are touching. </summary>
     public int motorLevel = 0;
 
+    public float buzzLevel = 0;
+
+    /// <summary> The (finger) index of this feedback script in its appropriate handmodel [0...4] [Thumb...Pinky] </summary>
+    private int scriptIndex = -1;
+
+    #endregion Properties
+
     //--------------------------------------------------------------------------------------------------------------------------
     // Get / Set attributes for Construction
 
+    #region Setup
 
     /// <summary> Setup the Feedback Collider to use the chosen handmodel as a parent, using its force feedback type. </summary>
     /// <param name="parentModel"></param>
-    public void Setup(SenseGlove_HandModel parentModel)
+    public void Setup(SenseGlove_HandModel parentModel, int index)
     {
         this.handModel = parentModel;
+        this.scriptIndex = index;
 
         Rigidbody RB = this.gameObject.GetComponent<Rigidbody>();
         if (RB == null)
@@ -50,8 +60,27 @@ public class SenseGlove_Feedback : MonoBehaviour
         RB.useGravity = false;
     }
 
+    /// <summary> Set the scriptIndex of this feedback_script. Reserved for parentModel </summary>
+    /// <param name="newIndex"></param>
+    public void SetIndex(int newIndex)
+    {
+        this.scriptIndex = newIndex;
+    }
+
+    /// <summary>
+    /// Retrieve the index of this script, allowing one to determine which finger it belongs to.
+    /// </summary>
+    public int GetIndex()
+    {
+        return this.scriptIndex;
+    }
+
+    #endregion Setup
+
     //--------------------------------------------------------------------------------------------------------------------------
     // Monobehaviour
+
+    #region MonoBehaviour
 
     //Colled when the application starts
     void Start()
@@ -69,7 +98,7 @@ public class SenseGlove_Feedback : MonoBehaviour
     // Called during a physics update.
     void FixedUpdate()
     {
-        if (touch != null) { touch.isTrigger = true; } //enure the touch collider is always kinematic.
+        if (touch != null) { touch.isTrigger = true; } //ensure the touch collider is always kinematic.
 
         if (this.touchedObject != null && !this.touchedObject.activeInHierarchy)
         {
@@ -79,21 +108,22 @@ public class SenseGlove_Feedback : MonoBehaviour
         }
     }
 
+    #endregion MonoDevelop
 
     //--------------------------------------------------------------------------------------------------------------------------
     // Collision Detection / Force Feedback 
 
+    #region Collision
+
     // Called when this object enters the collider of another object
     void OnTriggerEnter(Collider col)
     {
+       
         SenseGlove_Material material = col.GetComponent<SenseGlove_Material>();
         SenseGlove_Interactable interactable = col.GetComponent<SenseGlove_Interactable>();
         if (material || interactable)
         {
-            //if (!this.IsTouching(col.gameObject))
-            //{
-            //    //touching a new object!
-            //}
+            // Debug.Log("Touching " + col.name + "; material = " + (material != null) + ", interactable = " + (interactable != null));
             this.touchedObject = col.gameObject;
             if (this.handModel.forceFeedback == ForceFeedbackType.Simple)
             {
@@ -101,7 +131,7 @@ public class SenseGlove_Feedback : MonoBehaviour
                 {
                     if (material)
                     {
-                        this.motorLevel = material.passiveForce;
+                        this.motorLevel = material.maxForce;
                     }
                     else
                     {
@@ -111,15 +141,17 @@ public class SenseGlove_Feedback : MonoBehaviour
             }
             else if (this.handModel.forceFeedback == ForceFeedbackType.MaterialBased)
             {
-                this.entryPos = this.touch.transform.position;
-                Vector3 closest = col.ClosestPoint(this.entryPos); //if something went wrong with ClosestPoint, it returns the entryPos.
-                if (!closest.Equals(this.entryPos)) { this.entryPoint = closest; }
-                else
-                {
-                  //  Debug.Log("WARNING: ClosestPoint == Origin, resulting in a DIV0 exception. Use an alterantive method?");
-                    this.entryPoint = closest;
-                }
+                this.FindForceDirection(col);
                 this.motorLevel = 0; //still 0 since OP == EO
+            }
+
+            if (material)
+            {
+                this.buzzLevel = material.CalculateHaptics();
+            }
+            else //an interactable without any material assigned
+            {
+                this.buzzLevel = SenseGlove_Material.d_BuzzMagn;
             }
         }
     }
@@ -139,7 +171,7 @@ public class SenseGlove_Feedback : MonoBehaviour
             {
                 if (material)
                 {
-                    this.motorLevel = material.passiveForce;
+                    this.motorLevel = material.maxForce;
                 }
                 else if (interactable)
                 {
@@ -148,51 +180,14 @@ public class SenseGlove_Feedback : MonoBehaviour
             }
             else if (this.handModel.forceFeedback == ForceFeedbackType.MaterialBased)
             {
-                //transform the position of the SenseGlove_Touch to the 
-
-                //O touch point when it was created
-                //E touch point on the collider
-                //P current finger position
-
-                Vector3 OE = this.entryPoint - this.entryPos;
-                Vector3 OP = this.transform.position - this.entryPos;
-
-                Debug.DrawLine(this.entryPos, this.transform.position);
-                Debug.DrawLine(this.entryPos, this.entryPoint);
-
-
-                if (OE.magnitude == 0) // If OE.magnitude is 0, then something went wrong with Collider.ClosestPoint, which returns O.
+                if (this.entryPoint.Equals(this.entryOrigin))
                 {
-                    //check if we are outside of the collider now...
-                    Vector3 thisPos = this.transform.position;
-                    Vector3 clostest = col.ClosestPoint(thisPos);
-                    if (!thisPos.Equals(clostest))
-                    {
-                        this.entryPoint = clostest;
-                        this.entryPos = thisPos;
-                    }
-                    return; //try again next frame
-                }
-
-                if (OP.magnitude == 0) // If OP.magnitude is 0, then then 0 == P, meaning we are back onto the entry position. in that case this.dist = 0.
-                {
-                    this.dist = 0;
+                    this.FindForceDirection(col); //only during FixedUpdate will the collider have a new position for us to check.
                 }
                 else
                 {
-                    float cos = Vector3.Dot(OE, OP) / (OE.magnitude * OP.magnitude); ;
-                    this.dist = OP.magnitude * cos;
+                    this.CalculateMaterialBased(col.gameObject, material, interactable);
                 }
-
-                if (material)
-                {
-                    this.motorLevel = material.CalculateForce(this.dist);
-                }
-                else if (interactable)
-                {
-                    this.motorLevel = SenseGlove_Material.CalculateDefault(this.dist);
-                }
-
             }
         }
     }
@@ -202,14 +197,89 @@ public class SenseGlove_Feedback : MonoBehaviour
     {
         if (this.touchedObject != null && this.IsTouching(col.gameObject))
         {
+            SenseGlove_Material material = this.touchedObject.GetComponent<SenseGlove_Material>();
+            if (material != null) {  material.ResetMesh(); }
             this.touchedObject = null;
             this.motorLevel = 0;
+            this.buzzLevel = 0;
             this.dist = 0;
         }
     }
 
+    #endregion Collision
+
+    //--------------------------------------------------------------------------------------------------------------------------
+    // Feedback Logic
+
+    #region Feedback
+
+    private void FindForceDirection(Collider col)
+    {
+        //collect the absolute coordinates
+        Vector3 Oa = this.transform.position;
+        Vector3 Ea = col.ClosestPoint(Oa); //if something went wrong with ClosestPoint, it returns the entryPos.
+
+        //transform these to the objects local space.
+        this.entryOrigin = col.gameObject.transform.InverseTransformPoint(Oa);
+        this.entryPoint = col.gameObject.transform.InverseTransformPoint(Ea);
+
+        this.dist = 0;
+    }
+
+    /// <summary> Calculate the force feedback levels based on material properties. </summary>
+    /// <param name="col"></param>
+    /// <remarks>Placed in a separate method so that one can control when it is called in Unity's execution order.</remarks>
+    private void CalculateMaterialBased(GameObject obj, SenseGlove_Material material, SenseGlove_Interactable interactable, bool showLines = false)
+    {
+        Vector3 O = obj.transform.TransformPoint(this.entryOrigin);  //O origin of collider on touch
+        Vector3 E = obj.transform.TransformPoint(this.entryPoint);   //E point where the collider touched the object
+        Vector3 P = this.transform.position;                         //P current collider position
+
+        if (showLines)
+        {
+            Debug.DrawLine(O, E);
+            Debug.DrawLine(O, P);
+        }
+
+        Vector3 OE = (E - O).normalized;
+        Vector3 OP = P - O;
+
+        if (OP.magnitude > 0 && OE.magnitude > 0)
+        {
+            float cos = Vector3.Dot(OE, OP) / (/*OE.magnitude */ OP.magnitude); //removed OE.magnitude since it is normalized now.
+            this.dist = OP.magnitude * cos;
+        }
+        else
+        {
+            this.dist = 0;
+        }
+
+        //we have calculated the distance, now for the material (if any is present)
+        if (material != null)
+        {
+            this.motorLevel = material.CalculateForce(this.dist, this.scriptIndex);
+            if (dist > 0)
+            {
+                Vector3 deformPoint = this.transform.position;
+                if (dist > material.maxDisplacement)
+                {
+                    deformPoint = O + (OE * material.maxDisplacement);
+                }
+                material.AddDeformation(-OE, deformPoint, this.dist);
+            }
+        }
+        else if (interactable != null)
+        {
+            this.motorLevel = SenseGlove_Material.CalculateDefault(this.dist);
+        }        
+    }
+
+    #endregion Feedback
+
     //--------------------------------------------------------------------------------------------------------------------------
     // Touch Logic
+
+    #region Touch
 
     /// <summary> Check if this SenseGlove_Touch is touching object obj. </summary>
     /// <param name="obj"></param>
@@ -218,9 +288,6 @@ public class SenseGlove_Feedback : MonoBehaviour
         if (this.touchedObject != null && obj != null)
         {
             bool t = GameObject.ReferenceEquals(this.touchedObject, obj);
-            //return this.touchedObject.Equals(obj);
-            //return this.touchedObject == obj;
-            //SenseGlove_Debugger.Log("The thumb is touching " + touchedObject.name + " and Index is touching " + obj.name + ". Equals = " + t);
             return t;
         }
         return false;
@@ -232,5 +299,7 @@ public class SenseGlove_Feedback : MonoBehaviour
     {
         return this.touchedObject;
     }
+
+    #endregion Touch
 
 }

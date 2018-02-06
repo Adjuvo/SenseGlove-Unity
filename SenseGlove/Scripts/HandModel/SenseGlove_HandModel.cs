@@ -2,9 +2,18 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary> A Generic Script that can be extended to work with most hand models. It requires the developer to assign the correct transforms. </summary>
+/// <summary> 
+/// A Generic Script that can be extended to work with most hand models. 
+/// It requires the developer to assign the correct transforms for each joint. 
+/// All of its methods can be overrided to create custom solutions.
+/// </summary>
 public abstract class SenseGlove_HandModel : MonoBehaviour
 {
+    //-----------------------------------------------------------------------------------------------------------------------------------------
+    // Properties Variables
+
+    #region Properties
+
     //-----------------------------------------------------------------------------------------------------------------------------------------
     // Public Variables
 
@@ -23,7 +32,11 @@ public abstract class SenseGlove_HandModel : MonoBehaviour
 
     /// <summary> Determines which type of force feedback to use for this model. </summary>
     [Tooltip("Determines which type of force feedback to use for this model.")]
-    public ForceFeedbackType forceFeedback = ForceFeedbackType.None;
+    public ForceFeedbackType forceFeedback = ForceFeedbackType.MaterialBased;
+
+    /// <summary> Whether or not to resize the fingers after calibration completes. </summary>
+    [Tooltip("Whether or not to resize the fingers after calibration completes.")]
+    public bool resizeFingers = false;
 
     /// <summary> The GameObject representing the Forearm. </summary>
     [Header("Model Components")]
@@ -37,15 +50,22 @@ public abstract class SenseGlove_HandModel : MonoBehaviour
     /// <summary> The GameObject on which the fingers are connected. Can be used to collect the finger joints. </summary>
     [Tooltip("The GameObject on which the fingers are connected. Can be used to collect the finger joints.")]
     public Transform handRoot;
-    
-    /// <summary> The last sent motor levels of the SenseGlove. </summary>
-    [Header("Force Feedback Components")]
-    [Tooltip("The determined motor levels of the SenseGlove.")]
-    protected int[] motorLevels = new int[] { 0, 0, 0, 0, 0 };
+
+
 
     /// <summary>The touch colliders in this hand model, that are used to create force Feedback.</summary>
+    [Header("Force Feedback Components")]
     [Tooltip("The touch colliders in this hand model, which are used to create force Feedback.")]
     public List<SphereCollider> touchColliders = new List<SphereCollider>();
+
+    /// <summary> The last sent motor levels of the SenseGlove. </summary>
+    [Tooltip("The determined motor levels of the SenseGlove.")]
+    public int[] motorLevels = new int[5] { 0, 0, 0, 0, 0 };
+
+    /// <summary> Debug the motor levels </summary>
+    [Tooltip("Text apprears on the touchColliders, showing the current motor level.")]
+    public bool debugMotorLevels = false;
+
 
     /// <summary> The force feedback scripts with which to determine fore feedback. </summary>
     protected SenseGlove_Feedback[] feedbackScripts;
@@ -65,8 +85,18 @@ public abstract class SenseGlove_HandModel : MonoBehaviour
     /// <summary> Offset between the wrist and lower arm, used when updating the wrist transfrom. </summary>
     protected Quaternion wristCorrection = Quaternion.identity;
 
+    /// <summary> A container for the motor level debug texts to easily toggle it on/off. </summary>
+    protected GameObject debugGroup;
+
+    /// <summary> Show the motor levels as determine by the feedback colliders on the fingers. </summary>
+    protected TextMesh[] debugText;
+
+    #endregion Properties
+
     //-----------------------------------------------------------------------------------------------------------------------------------------
     // Monobehaviour
+
+    #region Monobehaviour
 
     //As soon as the model awakens, only once.
     void Awake()
@@ -99,17 +129,30 @@ public abstract class SenseGlove_HandModel : MonoBehaviour
     {
         if (this.senseGlove != null && this.senseGlove.GloveReady())
         {
+           // this.senseGlove.GetSenseGlove().communicator.queueCommands = true;
+
             this.UpdateWrist(this.senseGlove.GloveData());
 
-            if (this.updateFingers)
-            {
+            if (this.updateFingers &&  !(this.senseGlove != null && this.senseGlove.solver == SolveType.Custom) )
+            {   //in case of a custom solver, the model waits for an external UpdateHand call
                 this.UpdateHand(this.senseGlove.GloveData());
             }
         }
-
-        this.UpdateForceFeedback();
-
     }
+
+    //called at the end of all Update functions
+    void LateUpdate()
+    {
+        if (this.senseGlove != null && this.senseGlove.GloveReady())
+        {
+            this.UpdateForceFeedback();
+            this.UpdateDebugText();
+            this.UpdateHapticFeedback();
+            //this.senseGlove.GetSenseGlove().communicator.FlushCommands();
+        }
+    }
+
+    #endregion Monobehaviour
 
     //-----------------------------------------------------------------------------------------------------------------------------------------
     // Glove Events
@@ -128,6 +171,7 @@ public abstract class SenseGlove_HandModel : MonoBehaviour
         {
             this.CollectCorrections();
         }
+        this.SetupDebugText();
     }
 
     /// <summary> Call the ResizeFingers function. </summary>
@@ -135,14 +179,19 @@ public abstract class SenseGlove_HandModel : MonoBehaviour
     /// <param name="args"></param>
     private void SenseGlove_OnCalibrationFinished(object source, CalibrationArgs args)
     {
-        //no resizing for now...
+        if (this.resizeFingers)
+        {
+            this.ResizeHand(args.newFingerLengths);
+        }
     }
 
     //-----------------------------------------------------------------------------------------------------------------------------------------
     // Setup Methods
 
+    #region Setup
+
     /// <summary> Collect a proper (finger x joint) array, and assign it to this.fingerJoints(). Use the handRoot variable to help you iterate. </summary>
-    protected abstract void CollectFingerJoints(); //Abstract
+    protected abstract void CollectFingerJoints(); 
 
     /// <summary> Setup a grabScript if one is attached to this handModel. </summary>
     protected virtual void SetupGrabScript()
@@ -175,14 +224,14 @@ public abstract class SenseGlove_HandModel : MonoBehaviour
                     feedbackCollider = this.touchColliders[f].gameObject.AddComponent<SenseGlove_Feedback>();
                 }
                 feedbackCollider.touch = this.touchColliders[f];
-                feedbackCollider.Setup(this);
+                feedbackCollider.Setup(this, f);
                 this.feedbackScripts[f] = feedbackCollider;
             }
         }
     }
 
     /// <summary> Collect the absolute angles of the fingers in their 'calibration' pose, correct these with the current wrist orientation. </summary>
-    protected virtual void CollectCorrections() //virtual
+    protected virtual void CollectCorrections() 
     {
         if (this.fingerJoints != null && this.fingerJoints.Count > 0)
         {
@@ -205,17 +254,55 @@ public abstract class SenseGlove_HandModel : MonoBehaviour
         this.wristCorrection = Quaternion.Inverse(this.foreArmTransfrom.rotation) * this.wristTransfrom.rotation;
     }
 
+    /// <summary> Setup the debug texts for the motor levels </summary>
+    protected virtual void SetupDebugText()
+    {
+        if (this.touchColliders != null)
+        {
+            //creating a new group to house the debug text
+            this.debugGroup = new GameObject("DebugContainer");
+
+            int scale = this.senseGlove.GloveData().isRight ? -1 : 1;
+
+            int n = this.touchColliders.Count > 5 ? 5 : this.touchColliders.Count;
+            this.debugText = new TextMesh[n];
+            for (int f = 0; f < n; f++)
+            {
+                GameObject meshObject = new GameObject("MotorLevel_" + f);
+                meshObject.transform.parent = this.debugGroup.transform;
+
+                TextMesh newMesh = meshObject.AddComponent<TextMesh>();
+                newMesh.alignment = TextAlignment.Center;
+                newMesh.anchor = TextAnchor.MiddleCenter;
+
+                newMesh.text = "000";
+                newMesh.fontSize = 50;
+                newMesh.transform.localScale = new Vector3(scale, 1, 1);
+
+                this.debugText[f] = newMesh;
+            }
+
+            this.debugGroup.transform.localScale = new Vector3(0.002f, 0.002f, 0.002f); //done before assigning parent, so not it is world scale.
+            this.debugGroup.transform.parent = this.transform;
+            this.debugGroup.transform.localPosition = Vector3.zero;
+
+            this.debugGroup.SetActive(this.debugMotorLevels);
+        }
+    }
+
+    #endregion Setup
 
     //-----------------------------------------------------------------------------------------------------------------------------------------
     // Update Methods
-    
+
+    #region Update
 
     /// <summary> 
     /// Update the (absolute) finger orientations, which move realtive to the (absolute) wrist transform. 
     /// Note: This method is called after UpdateWrist() is called. 
     /// </summary>
     /// <param name="data"></param>
-    protected virtual void UpdateHand(SenseGlove_Data data)
+    public virtual void UpdateHand(SenseGlove_Data data)
     {
         if (data.dataLoaded)
         {
@@ -229,7 +316,6 @@ public abstract class SenseGlove_HandModel : MonoBehaviour
             }
         }
     }
-
 
     /// <summary> 
     /// Update the (absolute) wrist orientation, which moves realtive to the (absolute) lower arm transform. 
@@ -266,4 +352,109 @@ public abstract class SenseGlove_HandModel : MonoBehaviour
         }
     }
 
+    /// <summary> Collect the haptic feedback commands from the feedback colliders and send these to the Sense Glove. </summary>
+    public virtual void UpdateHapticFeedback()
+    {
+        
+        bool[] fingers = new bool[5];       //all false
+        float[] magnitudes = new float[5];  //all 0
+
+        bool atLeastOne = false;
+        for (int f=0; f<this.feedbackScripts.Length; f++)
+        {
+            if (this.feedbackScripts[f].buzzLevel > 0)
+            {
+                atLeastOne = true;
+                fingers[f] = true;
+                magnitudes[f] = this.feedbackScripts[f].buzzLevel;
+                this.feedbackScripts[f].buzzLevel = 0; //prevent sending it again.
+            }
+        }
+
+        if (atLeastOne)
+        {
+             this.senseGlove.BuzzCmd(fingers, magnitudes); //advanced controls
+            //this.senseGlove.GetSenseGlove().SimpleBuzzCmd(magnitudes); //simple controls
+            
+           // Debug.Log(SenseGlove_Util.ToString(magnitudes));
+        }
+        
+        /*
+        float[] magnitudes = new float[5];
+        bool atLeastOne = false;
+        for (int f=0; f<this.feedbackScripts.Length && f < magnitudes.Length; f++)
+        {
+            if (this.feedbackScripts[f].buzzLevel > 0)
+            {
+                atLeastOne = true;
+                magnitudes[f] = this.feedbackScripts[f].buzzLevel;
+                this.feedbackScripts[f].buzzLevel = 0; //only pulse once
+            }
+        }
+
+        if (atLeastOne)
+        {
+           //Debug.Log(SenseGlove_Util.ToString(magnitudes));
+           this.senseGlove.GetSenseGlove().SimpleBuzzCmd(magnitudes);
+        }
+        */
+    }
+
+    /// <summary> Update the motor level texts and se them to the appropriate position. </summary>
+    protected virtual void UpdateDebugText()
+    {
+        if (this.debugMotorLevels)
+        {
+            if (!this.debugGroup.activeInHierarchy) { this.debugGroup.SetActive(true); }
+            
+            for (int f = 0; f < this.debugText.Length; f++)
+            {
+                this.debugText[f].transform.position = this.touchColliders[f].transform.position;
+                this.debugText[f].text = "" + this.motorLevels[f];
+            }
+        }
+        else if (this.debugGroup.activeInHierarchy)
+        {
+            this.debugGroup.SetActive(false);
+        }
+    }
+
+    /// <summary> Resize the finger lengths of this hand model to reflect that of the current user. </summary>
+    /// <param name="newLengths"></param>
+    public virtual void ResizeHand(float[][] newLengths)
+    {
+        //return the hand to a position where the handAngles are 0
+
+
+        //
+        for (int f=0; f<newLengths.Length; f++)
+        {
+            if (newLengths.Length > f && newLengths[f].Length > this.fingerJoints[f].Count)
+            {
+                Vector3 MCP = this.fingerJoints[f][0].position;
+                Vector3 P = MCP; // struct
+                for (int i=1; i<this.fingerJoints[f].Count; i++)
+                {
+                    P = MCP + new Vector3(newLengths[f][i], 0, 0);
+                    this.fingerJoints[f][i].position = P;
+                }
+            }
+        }
+
+        //reset the hand back to a normal position
+    }
+
+    #endregion Update
+
+}
+
+/// <summary> The way that the Force-Feedback is calculated. </summary>
+public enum ForceFeedbackType
+{
+    /// <summary> No Force feedback is calculated for this SenseGlove. </summary>
+    None = 0,
+    /// <summary> On/Off style force feedback using the Material's 'passive force'  </summary>
+    Simple,
+    /// <summary> Force feedback is calculated based on how far the fingers have collided within the object. </summary>
+    MaterialBased
 }
