@@ -13,10 +13,7 @@ public class SwapObjects : MonoBehaviour
     public TextMesh objectText;
 
     public TextMesh instrText;
-
-
-
-
+    
     private KeyCode nextObjKey = KeyCode.D;
 
     private KeyCode prevObjKey = KeyCode.A;

@@ -183,8 +183,7 @@ public class SenseGlove_Object : MonoBehaviour
     // Use this for initialization
     void Start()
     {
-        SenseGloveCs.DeviceScanner.pingTime = 200;
-        SenseGloveCs.DeviceScanner.scanDelay = 500;
+        
         if (this.connectOnStartUp)
         {
             RetryConnection();
@@ -386,7 +385,12 @@ public class SenseGlove_Object : MonoBehaviour
         this.Disconnect();
         if (this.connectionMethod != ConnectionMethod.HardCoded)
         {
-            if (!SenseGloveCs.DeviceScanner.IsScanning()) { SenseGloveCs.DeviceScanner.StartScanning(true); }
+            if (!SenseGloveCs.DeviceScanner.IsScanning())
+            {
+                SenseGloveCs.DeviceScanner.pingTime = 200;
+                SenseGloveCs.DeviceScanner.scanDelay = 500;
+                SenseGloveCs.DeviceScanner.StartScanning(true);
+            }
         }
         else //we're dealing with a custom connection!
         {
@@ -510,7 +514,7 @@ public class SenseGlove_Object : MonoBehaviour
     // Hardware compensation methods - for older firmware versions only
 
     /// <summary> Manually assign IMU Correction for old firmware versions. </summary>
-    public void SetupWrist()
+    private void SetupWrist()
     {
         if (this.glove != null && this.glove.gloveData.dataLoaded)
         {
@@ -684,7 +688,7 @@ public class SenseGlove_Object : MonoBehaviour
     }
 
     /// <summary>
-    /// Calibrate the Wrist, based on the orientatio of the foreArm.
+    /// Calibrate the Wrist, based on the orientation of the foreArm.
     /// </summary>
     /// <returns></returns>
     public bool CalibrateWrist()

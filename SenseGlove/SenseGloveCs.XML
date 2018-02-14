@@ -674,7 +674,7 @@
         <member name="F:SenseGloveCs.Kinematics.InterpolationSet_IMU.myAngles">
             <summary> Contains the interpolation values, from [Finger][IntAngles_IMU] </summary>
         </member>
-        <member name="M:SenseGloveCs.Kinematics.InterpolationSet_IMU.#ctor">
+        <member name="M:SenseGloveCs.Kinematics.InterpolationSet_IMU.#ctor(System.Boolean)">
             <summary> Create a default set of interpolation angles. </summary>
         </member>
         <member name="M:SenseGloveCs.Kinematics.InterpolationSet_IMU.#ctor(SenseGloveCs.Kinematics.InterpolationValue[][])">
@@ -3494,17 +3494,11 @@
         <member name="T:SolveType">
             <summary> Determines how the hand angles and -positions are calculated. </summary>
         </member>
-        <member name="F:SolveType.Legacy">
-            <summary> the "old method" of calculating angles (w/o quaternions) </summary>
-        </member>
         <member name="F:SolveType.Kinematic3D">
             <summary> Solve the handAngles through Inverse Kinematics in 3D space. </summary>
         </member>
         <member name="F:SolveType.Kinematics3D_Experimental">
             <summary> An experimental 3D Kinematics setup, without guaranteed results. </summary>
-        </member>
-        <member name="F:SolveType.InterpolateSensors">
-            <summary> Make a linear interpolation of each joint based on the sensor angles. </summary>
         </member>
         <member name="F:SolveType.InterpolateAsIMU">
             <summary> Treat the thimble as an IMU and calculate the joint angles accordingly. </summary>

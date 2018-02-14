@@ -22,7 +22,13 @@ public class SenseGlove_Diagnostics : MonoBehaviour
 
     public KeyCode cycleFingerFFBKey = KeyCode.Space;
 
+    public KeyCode cycleFingerBuzzKey = KeyCode.B;
+
     private int currentFinger = -1;
+
+    public bool brakeToggle = false;
+
+    public bool buzzToggle = false;
 
 	// Use this for initialization
 	void Start ()
@@ -49,28 +55,6 @@ public class SenseGlove_Diagnostics : MonoBehaviour
     {
         if (this.trackedGlove && this.trackedGlove.GloveReady())
         {
-            //this.SetText(this.trackedGlove.GloveData().packetsPerSecond.ToString());
-            //Quaternion Qwrist = trackedGlove.GloveData().relativeWrist;
-            //Vector3 unityEuler = Qwrist.eulerAngles;
-            //float[] DLLeuler = SenseGloveCs.Quaternions.ToEuler(SenseGlove_Util.ToQuaternion(Qwrist));
-            //Vector3 DLLconv = SenseGlove_Util.ToUnityEuler(DLLeuler);
-
-
-            //Vector3 Xunity = Qwrist * new Vector3(1, 0, 0);
-            //Vector3 Xdll = SenseGlove_Util.ToUnityPosition( SenseGloveCs.Quaternions.Rotate(new float[] { 1, 0, 0 }, SenseGlove_Util.ToQuaternion(Qwrist)) );
-
-            //this.SetText("Converted " + Qwrist.ToString() + "\r\n" 
-            //    + unityEuler.ToString() + "\t\t-\t\t" + Xunity.ToString() + "\r\n"
-            //    + DLLconv.ToString() + "\t\t-\t\t" + Xdll.ToString() );
-
-            //float[][] sensors = this.trackedGlove.GloveData().gloveValues;
-            //string msg = "GloveAngles:\r\n";
-            //for (int i=0; i<sensors.Length; i++)
-            //{
-            //    msg += SenseGlove_Util.ToString( SenseGloveCs.Values.Degrees( sensors[i] ) ) + "\r\n";
-            //}
-            //SetText("");
-
             if (cycleFFB)
             {
                 step++;
@@ -87,16 +71,27 @@ public class SenseGlove_Diagnostics : MonoBehaviour
             }
             else if (Input.GetKeyDown(this.cycleFingerFFBKey)) //toggle each individually,
             {
+                //cancel buzz cmds.
+                if (this.buzzToggle)
+                {
+                    this.trackedGlove.SimpleBuzzCmd(new bool[5] { true, true, true, true, true }, 0);
+                    this.buzzToggle = false;
+                    this.currentFinger = -1;
+                }
+
+
                 int[] breaks = new int[5];
                 this.currentFinger++;
                
                 if (this.currentFinger > 4)
                 {
                     this.currentFinger = -1;
+                    this.brakeToggle = false;
                     SetText("Press " + this.cycleFFBKey.ToString() + " to cycle Force Feedback.");
                 }
                 else
                 {
+                    this.brakeToggle = true;
                     breaks[currentFinger] = 255;
                     string ml = "00000";
                     StringBuilder sb = new StringBuilder(ml);
@@ -105,6 +100,43 @@ public class SenseGlove_Diagnostics : MonoBehaviour
                     SetText("[" + ml + "]");
                 }
                 this.trackedGlove.SimpleBrakeCmd(breaks);
+            }
+            else if (Input.GetKeyDown(this.cycleFingerBuzzKey))
+            {
+                //cancel ffb cmds
+                if (this.brakeToggle)
+                {
+                    this.trackedGlove.SimpleBrakeCmd(new int[0]); //send 0, 0, 0, 0, 0.
+                    this.brakeToggle = false;
+                    this.currentFinger = -1;
+                }
+
+                float mag = 0;
+                bool[] fingers = new bool[5];
+                float t = 0.75f;
+
+                this.currentFinger++;
+
+                if (this.currentFinger > 4)
+                {
+                    fingers = new bool[5] { true, true, true, true, true }; //send to all fingers.
+                    t = 0;
+                    this.currentFinger = -1;
+                    this.buzzToggle = false;
+                    SetText("Press " + this.cycleFFBKey.ToString() + " to cycle Force Feedback.");
+                }
+                else
+                {
+                    this.buzzToggle = true;
+                    mag = 1.0f;
+                    fingers[currentFinger] = true;
+                    string ml = "00000";
+                    StringBuilder sb = new StringBuilder(ml);
+                    sb[currentFinger] = '1';
+                    ml = sb.ToString();
+                    SetText("[" + ml + "]");
+                }
+                this.trackedGlove.SimpleBuzzCmd(fingers, mag, SenseGloveCs.BuzzMotorPattern.Constant, t);
             }
 
 

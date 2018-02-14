@@ -25,7 +25,7 @@ public class SenseGlove_Breakable : MonoBehaviour
     private SenseGlove_Material wholeMaterial;
     private SenseGlove_Material brokenMaterial;
 
-    /// <summary> Check if this object is currently broken </summary>
+    /// <summary> Returns true if the wholeObject is currently in its broken state. </summary>
     /// <returns></returns>
     public bool IsBroken()
     {

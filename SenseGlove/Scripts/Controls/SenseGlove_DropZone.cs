@@ -36,6 +36,9 @@ public class SenseGlove_DropZone : MonoBehaviour
     [Tooltip("The objects that should be inside this DropZone. Leave it empty to snap to all SenseGlove_Grabables.")]
     public List<SenseGlove_Grabable> objectsToGet = new List<SenseGlove_Grabable>();
 
+    /// <summary> An object that represent a highlighter for the snapzone. </summary>
+    public GameObject highLighter;
+
     // Private properties
 
     /// <summary> The list of objects currently inside this dropZone </summary>
@@ -57,8 +60,6 @@ public class SenseGlove_DropZone : MonoBehaviour
     //runs before anything else, used to validate settings
     void Awake()
     {
-        if (this.takeFromHand) { this.snapToMe = this.takeFromHand; } //if we take things from the hand, we should also snap (otherwise you're just dropping stuff.)
-
         for (int i=0; i<this.objectsToGet.Count;) //objectsToGet that are null should be removed.
         {
             if (this.objectsToGet[i] == null)

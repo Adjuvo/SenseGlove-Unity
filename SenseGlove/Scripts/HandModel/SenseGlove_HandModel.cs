@@ -47,12 +47,6 @@ public abstract class SenseGlove_HandModel : MonoBehaviour
     [Tooltip("The GameObject representing the Wrist, moves relative to the foreArm.")]
     public Transform wristTransfrom;
 
-    /// <summary> The GameObject on which the fingers are connected. Can be used to collect the finger joints. </summary>
-    [Tooltip("The GameObject on which the fingers are connected. Can be used to collect the finger joints.")]
-    public Transform handRoot;
-
-
-
     /// <summary>The touch colliders in this hand model, that are used to create force Feedback.</summary>
     [Header("Force Feedback Components")]
     [Tooltip("The touch colliders in this hand model, which are used to create force Feedback.")]
@@ -101,11 +95,7 @@ public abstract class SenseGlove_HandModel : MonoBehaviour
     //As soon as the model awakens, only once.
     void Awake()
     {
-        this.CollectFingerJoints();
-        this.CollectCorrections();
         
-        this.SetupGrabScript();
-        this.SetupFeedbackColliders();
     }
 
     // Use this for initialization
@@ -115,13 +105,18 @@ public abstract class SenseGlove_HandModel : MonoBehaviour
         {
             senseGlove = this.GetComponent<SenseGlove_Object>();
         }
-
         if (senseGlove != null)
         {
             if (senseGlove.foreArm == null) { senseGlove.foreArm = this.foreArmTransfrom.gameObject; }
             senseGlove.OnGloveLoaded += SenseGlove_OnGloveLoaded;
             senseGlove.OnCalibrationFinished += SenseGlove_OnCalibrationFinished;
         }
+
+        this.CollectFingerJoints();
+        this.CollectCorrections();
+
+        this.SetupGrabScript();
+        this.SetupFeedbackColliders();
     }
 
     // Update is called once per frame
@@ -160,7 +155,7 @@ public abstract class SenseGlove_HandModel : MonoBehaviour
     /// <summary> Utility method when the Sense Glove finishes loading. Determine left / right, for example. </summary>
     /// <param name="source"></param>
     /// <param name="args"></param>
-    private void SenseGlove_OnGloveLoaded(object source, System.EventArgs args)
+    protected virtual void SenseGlove_OnGloveLoaded(object source, System.EventArgs args)
     {
         //If no joints or corrections were added yet, retry.
         if (this.fingerJoints.Count == 0)
@@ -177,7 +172,7 @@ public abstract class SenseGlove_HandModel : MonoBehaviour
     /// <summary> Call the ResizeFingers function. </summary>
     /// <param name="source"></param>
     /// <param name="args"></param>
-    private void SenseGlove_OnCalibrationFinished(object source, CalibrationArgs args)
+    protected virtual void SenseGlove_OnCalibrationFinished(object source, CalibrationArgs args)
     {
         if (this.resizeFingers)
         {
@@ -413,7 +408,7 @@ public abstract class SenseGlove_HandModel : MonoBehaviour
                 this.debugText[f].text = "" + this.motorLevels[f];
             }
         }
-        else if (this.debugGroup.activeInHierarchy)
+        else if (this.debugGroup != null && this.debugGroup.activeInHierarchy)
         {
             this.debugGroup.SetActive(false);
         }

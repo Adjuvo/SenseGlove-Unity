@@ -437,7 +437,7 @@ public class SenseGlove_PhysGrab : SenseGlove_GrabScript
     private readonly int maxDIPFlexion = -70;
     private readonly int maxDIPExtension = 0;
 
-    /// <summary> Check whether or not the user is intending to pick up any of the  </summary>
+    /// <summary> Check whether or not the user is intending to pick up any of the Interactables. </summary>
     public bool[] CheckGestures()
     {
         bool[] res = new bool[5] { true, true, true, true, true };

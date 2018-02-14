@@ -186,7 +186,7 @@ public class SenseGlove_Feedback : MonoBehaviour
                 }
                 else
                 {
-                    this.CalculateMaterialBased(col.gameObject, material, interactable);
+                    this.CalculateMaterialBased(col.gameObject, material, interactable, true);
                 }
             }
         }

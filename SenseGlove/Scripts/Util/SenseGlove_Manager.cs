@@ -2,16 +2,23 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+using SenseGloveCs;
+
 /// <summary>
 /// Yet another utility class, this one keeps track of all your connected SenseGlove(s).
 /// </summary>
-public static class SenseGlove_Manager
+public class SenseGlove_Manager : MonoBehaviour
 {
     //--------------------------------------------------------------------------------------------------------------------------------
     // Private Variables
 
     /// <summary> List of all devices that are already connected to something. </summary>
     private static List<string> connectedIDs = new List<string>();
+
+  //  /// <summary> Contains a list of SenseGlove_Objects that are active in the Scene. </summary>
+  //  private static List<SenseGlove_Object> activeObjects = new List<SenseGlove_Object>();
+
+    private static List<SenseGlove> connectedGloves = new List<SenseGlove>();
 
     //--------------------------------------------------------------------------------------------------------------------------------
     // Glove Management
@@ -61,18 +68,44 @@ public static class SenseGlove_Manager
         return -1;
     }
 
-    
+    public static bool GloveAvailable()
+    {
+        return SenseGlove_Manager.connectedGloves.Count > 0;
+    }
+
+    public static int GlovesAvailable()
+    {
+        return SenseGlove_Manager.connectedGloves.Count;
+    }
 
     //--------------------------------------------------------------------------------------------------------------------------------
     // Monobehaviour (if added to the scene)
 
-    /*
-    /// <summary> Retrieve the SenseGlove_Object script belonging to a sense glove with the chosed deviceID. </summary>
-    /// <param name="deviceID"></param>
-    /// <returns></returns>
-    public static SenseGlove_Object GetScript(string deviceID)
+    
+    ///// <summary> Retrieve the SenseGlove_Object script belonging to a sense glove with the chosen deviceID. Returns null if there is no script using it. </summary>
+    ///// <param name="deviceID"></param>
+    ///// <returns></returns>
+    //public static SenseGlove_Object GetScript(string deviceID)
+    //{
+    //    throw new System.NotImplementedException();
+    //}
+   
+    public void Start()
     {
-        throw new System.NotImplementedException();
+        if (!DeviceScanner.IsScanning())
+        {
+            SenseGloveCs.DeviceScanner.pingTime = 200;
+            SenseGloveCs.DeviceScanner.scanDelay = 500;
+            DeviceScanner.StartScanning(true);
+        }
     }
-    */
+
+    public void Update()
+    {
+
+
+
+
+    }
+
 }

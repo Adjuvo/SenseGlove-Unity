@@ -78,6 +78,17 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
         }
     }
 
+    public delegate void ResetEventHandler(object source, EventArgs args);
+    /// <summary> Fires when this Grabable is released. </summary>
+    public event ResetEventHandler ObjectReset;
+
+    protected void OnObjectReset()
+    {
+        if (ObjectReset != null)
+        {
+            ObjectReset(this, null);
+        }
+    }
 
     //--------------------------------------------------------------------------------------------------------------------------
     // Monobehaviour
@@ -116,14 +127,24 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
     //--------------------------------------------------------------------------------------------------------------------------
     // Class methods
 
+    public void SetCollision(bool active)
+    {
+        if (this.physicsBody)
+        {
+            this.physicsBody.detectCollisions = active;
+        }
+    }
+
     public override void BeginInteraction(SenseGlove_GrabScript grabScript, bool fromExternal = false)
     {
         if (this.isInteractable) //never interact twice with the same grabscript before EndInteraction is called.
         {
-          //  Debug.Log("Begin Interaction");
+           // Debug.Log("Begin Interaction with " + grabScript.name);
 
-            bool alreadyBeingHeld = this.InteractingWith(grabScript);
-            
+            bool alreadyBeingHeld = this.IsInteracting();
+
+           // Debug.Log("alreadyHeld = " + alreadyBeingHeld);
+
             if (!alreadyBeingHeld)
             {
                 //always record the properties of the object in case we switch pickupTypes mid-Play for some reason.
@@ -154,16 +175,9 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
                     //Quaternion.Inverse(QT) * (Qo);
                     this.grabRotation = Quaternion.Inverse(this.grabReference.transform.rotation) * this.pickupReference.rotation;
                 }
-                else if (this.pickupMethod != GrabType.FixedJoint)
+                else if (this.pickupMethod == GrabType.FixedJoint)
                 {
-                    if (this.physicsBody)
-                    {
-                        grabScript.ConnectJoint(this.physicsBody);
-                    }
-                    else
-                    {
-                        SenseGlove_Debugger.Log("Using a FixedJoint connection required a Rigidbody.");
-                    }
+                    this.ConnectJoint(grabScript.grabAnchor);
                 }
                 
 
@@ -200,22 +214,25 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
 
     public void EndInteraction()
     {
-        this.EndInteraction(this._grabScript);
+        this.EndInteraction(this._grabScript, true);
     }
 
 
 
     public override void EndInteraction(SenseGlove_GrabScript grabScript, bool fromExternal = false)
     {
-      //  Debug.Log("End Interaction");
+        //Debug.Log("End Interaction with " + grabScript.name);
 
-        if (this.InteractingWith(grabScript))
+        if (this.InteractingWith(grabScript) || fromExternal)
         {
 
             if (this.IsInteracting())
             {   //break every possible instance that could connect this interactable to the grabscript.
                 this._grabScript.BreakJoint();
                 this.pickupReference.parent = this.originalParent;
+
+                this.BreakJoint();
+
                 if (this.physicsBody != null)
                 {
                     this.physicsBody.useGravity = this.usedGravity;
@@ -228,11 +245,6 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
                 }
             }
 
-            if (this.physicsBody)
-            {
-                this.physicsBody.velocity = grabScript.GetVelocity();
-            }
-
             this.OnReleased();
 
             this._grabScript = null;
@@ -242,12 +254,15 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
 
     public override void ResetObject()
     {
+        this.OnObjectReset();
         this.CheckPickupRef();
         if (this.originalParent)
         {
             this.pickupReference.parent = originalParent;
             this.originalParent = null;
         }
+
+        this.BreakJoint();
         
         this.pickupReference.position = this.originalPos;
         this.pickupReference.rotation = this.originalRot;
@@ -261,6 +276,46 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
         }
     }
 
+    /// <summary> Stop the grabable from rotatin / flying away. </summary>
+    public void ZeroVelocity()
+    {
+        if (this.physicsBody)
+        {
+            this.physicsBody.velocity = Vector3.zero;
+            this.physicsBody.angularVelocity = Vector3.zero;
+        }
+    }
+
+    public void ConnectJoint(Rigidbody other)
+    {
+        if (other != null)
+        {
+            if (this.physicsBody)
+            {
+                this.connection = this.physicsBody.gameObject.AddComponent<FixedJoint>();
+                this.connection.connectedBody = other;
+                this.connection.enableCollision = false;
+                this.connection.breakForce = 1000f;
+            }
+            else
+            {
+                SenseGlove_Debugger.Log("Using a FixedJoint connection requires a Rigidbody.");
+            }
+        }
+        else
+        {
+            Debug.Log("No rigidbody to connect to " + other.name);
+        }
+    }
+
+    public void BreakJoint()
+    {
+        if (this.connection != null)
+        {
+            GameObject.Destroy(this.connection);
+            this.connection = null;
+        }
+    }
 
     public override void SaveTransform()
     {
