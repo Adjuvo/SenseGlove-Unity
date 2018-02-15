@@ -89,11 +89,7 @@ public class GloveTester : MonoBehaviour
 
         if (wireframe != null)
         {
-            if (wireframe.SetupComplete())
-            {
-                gloveActive = false;
-                wireframe.SetGlove(gloveActive);
-            }
+            
 
 
             if (UnityEngine.Input.GetKeyDown(KeyCode.G))

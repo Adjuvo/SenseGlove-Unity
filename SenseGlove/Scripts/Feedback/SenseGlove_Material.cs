@@ -287,6 +287,11 @@ public class SenseGlove_Material : MonoBehaviour
     /// <remarks>Placed in a separate function so one can re-collect data on the fly.</remarks>
     public void CollectMeshData()
     {
+        if (this.meshFilter == null)
+        {
+            this.meshFilter = this.GetComponent<MeshFilter>();
+        }
+        
         if (this.meshFilter != null)
         {
             this.myMesh = this.meshFilter.mesh;

@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class SenseGlove_WireFrameModel : SenseGlove_HandModel
+public class SenseGlove_WireFrame : SenseGlove_HandModel
 {
     [Header("Wireframe Components")]
 
@@ -128,7 +128,7 @@ public class SenseGlove_WireFrameModel : SenseGlove_HandModel
                     for (int f = 0; f < handPos.Length; f++)
                     {
                         List<Transform> joints = new List<Transform>();
-                        
+
                         for (int i = 0; i < handPos[f].Length; i++)
                         {
                             GameObject handPosition = GameObject.Instantiate(phalangeModel, this.handBase.transform);
@@ -236,7 +236,7 @@ public class SenseGlove_WireFrameModel : SenseGlove_HandModel
             }
         }
 
-        
+
     }
 
     /// <summary> Resizes the (white) cylinders that connect to the hand.  </summary>
