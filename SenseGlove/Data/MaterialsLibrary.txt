@@ -1,0 +1,20 @@
+# Steel
+maxForce	100
+forceDist	0
+yieldDist	-
+hapticMagn	0
+hapticDur	0
+
+# Rubber
+maxForce	60
+forceDist	0.3
+yieldDist	-
+hapticMagn	60
+hapticDur	200
+ 
+# Egg
+maxForce	90
+forceDist	0.1
+yieldDist	0.02
+hapticMagn	0
+hapticDur	0

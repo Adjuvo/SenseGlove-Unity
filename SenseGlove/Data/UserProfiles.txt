@@ -1,0 +1,10 @@
+@lastProfiles
+120400	Default
+240101	Default
+@profiles
+#	Default
+Thumb	40	20	25
+Index	30	25	20
+Middle	30	25	20
+Ring	30	25	20
+Little	25	20	20
