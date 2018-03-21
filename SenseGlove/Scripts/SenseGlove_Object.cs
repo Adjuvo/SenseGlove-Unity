@@ -887,34 +887,6 @@ public class SenseGlove_Object : MonoBehaviour
 
     }
 
-    /// <summary> Test a specific Calibration Algorithm, </summary>
-    [Obsolete("Used for testing new calibration methods. Will be removed in v1.0.")]
-    public void TestCalibration()
-    {
-        if (this.glove != null && this.gloveReady)
-        {
-            int[][][] angles = new int[3][][];
-            //fill with zeroes
-            for (int i=0; i<angles.Length; i++)
-            {
-                angles[i] = new int[5][];
-                for (int f=0; f<angles[i].Length; f++)
-                {
-                    angles[i][f] = new int[] { 0, 0, 0 };
-                }
-            }
-            angles[0][1] = new int[] { 0, 0, 0 };
-            angles[1][1] = new int[] { 1, 100, 90 };
-            angles[2][1] = new int[] { 80, 100, 80 };
-
-            CalibrationAlgorithm testAlgorithm = new ThreeGestures2D(new bool[] { false, true, true, true, true }, angles);
-            CalibrationMethod testMethod = new SemiAutoCalibration(testAlgorithm, true, 10, 2.0f, 5);
-
-            this.glove.StartCalibration(testMethod);
-            this.calibrating = true;
-        }
-    }
-
 
 
     //------------------------------------------------------------------------------------------------------------------------------------
@@ -988,10 +960,10 @@ public class SenseGlove_Object : MonoBehaviour
     }
 
     /// <summary>
-    /// Send a simple brake PWM command to the SenseGlove.
+    /// Tell the Sense Glove to set its brakes at the desired magnitude [0..100%] for each finger until it recieves a new command.
     /// </summary>
     /// <param name="commands"></param>
-    /// <returns></returns>
+    /// <returns>Returns true if the command has been succesfully sent.</returns>
     public bool SendBrakeCmd(int[] commands)
     {
         if (this.glove != null && this.glove.IsConnected())
@@ -1004,26 +976,26 @@ public class SenseGlove_Object : MonoBehaviour
 
 
     /// <summary>
-    /// Send a simple brake PWM command to the SenseGlove.
+    /// Tell the Sense Glove to set its brakes at the desired magnitude [0..100%] for each finger until it recieves a new command.
     /// </summary>
     /// <param name="thumbCmd"></param>
     /// <param name="indexCmd"></param>
     /// <param name="middleCmd"></param>
     /// <param name="ringCmd"></param>
     /// <param name="pinkyCmd"></param>
-    /// <returns></returns>
+    /// <returns>Returns true if the command has been succesfully sent.</returns>
     public bool SendBrakeCmd(int thumbCmd, int indexCmd, int middleCmd, int ringCmd, int pinkyCmd)
     {
         return this.SendBrakeCmd(new int[] { thumbCmd, indexCmd, middleCmd, ringCmd, pinkyCmd });
     }
 
-    /// <summary>  Stop all brakes on this SenseGlove_Object </summary>
+    /// <summary> Release all brakes of the SenseGlove. </summary>
     public void StopBrakes()
     {
         SendBrakeCmd(0, 0, 0, 0, 0);
     }
 
-    /// <summary> Send BuzzMotor commands to specific fingers. </summary>
+    /// <summary> Send a simple constant buzzMotor command that will vibrate for the default amount of time (400ms) </summary>
     /// <param name="thumb"></param>
     /// <param name="index"></param>
     /// <param name="middle"></param>

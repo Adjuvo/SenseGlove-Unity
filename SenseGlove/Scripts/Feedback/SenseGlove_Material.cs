@@ -20,6 +20,7 @@ public enum VirtualMaterial
 
 /// <summary> A class that contains material properties for a virtual objects, which can be customized, hard-coded or loaded during runtime. </summary>
 [HelpURL("https://github.com/Adjuvo/SenseGlove-Unity/wiki/SenseGlove_Material")]
+[DisallowMultipleComponent]
 public class SenseGlove_Material : MonoBehaviour
 {
     //----------------------------------------------------------------------------------
@@ -36,12 +37,15 @@ public class SenseGlove_Material : MonoBehaviour
     //---------------------------------------------------------------------
     //  Database options, used when loading from custom libraries
 
-    /// <summary> The TextAsset containing materialData. </summary>
+    /// <summary> 
+    /// Path to the material database, relative to the project- or _Data folder. 
+    /// Leave it empty to use the default library file: "SenseGlove/Data/MaterialsLibrary.txt"
+    /// </summary>
     public string materialDataBase = "";
 
     private static readonly string baseFileName = "SenseGlove/Data/MaterialsLibrary.txt";
 
-    /// <summary> The name of the material to retrieve from the Material Database. </summary>
+    /// <summary> The name of the material to retrieve from the Material Database (case-insensitive). </summary>
     public string materialName = "";
 
     //---------------------------------------------------------------------
@@ -64,7 +68,7 @@ public class SenseGlove_Material : MonoBehaviour
     /// <summary> Whether or not the material should give any haptic feedback through the buzzMotors. </summary>
     public bool hapticFeedback = false;
 
-    /// <summary> The magnitude of the haptic pulse </summary>
+    /// <summary> The magnitude of the haptic pulse [0..100%] </summary>
     public int hapticMagnitude = 100;
 
     /// <summary> (maximum) duration in ms of the haptic pulse </summary>
@@ -158,7 +162,7 @@ public class SenseGlove_Material : MonoBehaviour
         return this.isBroken;
     }
 
-    /// <summary> Unbreak the material </summary>
+    /// <summary> Unbreak the material, allowing it to give feedback and raise the break event again. </summary>
     public void UnBreak()
     {
         this.isBroken = false;
@@ -251,7 +255,7 @@ public class SenseGlove_Material : MonoBehaviour
         }
     }
 
-    /// <summary> Load the hard-coded material properties of a material </summary>
+    /// <summary> Load the hard-coded properties of the material </summary>
     /// <param name="ofMaterial"></param>
     public void LoadMaterialProps(VirtualMaterial ofMaterial)
     {
@@ -307,7 +311,7 @@ public class SenseGlove_Material : MonoBehaviour
     // Events
 
     public delegate void MaterialBreaksEventHandler(object source, System.EventArgs args);
-    /// <summary> Fires when this Grabable is released. </summary>
+    /// <summary> Fires when the material breaks under the conditions set through the Material Properties. </summary>
     public event MaterialBreaksEventHandler MaterialBreaks;
 
     protected void OnMaterialBreak()

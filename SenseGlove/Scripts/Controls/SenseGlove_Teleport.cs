@@ -4,7 +4,7 @@ using UnityEngine;
 
 using SenseGloveCs;
 
-/// <summary> Attach this object to the Sense Glove to allow it to teleport around the room. </summary>
+/// <summary> Attach this object to the Sense Glove to allow it to teleport around a room. </summary>
 public class SenseGlove_Teleport : MonoBehaviour
 {
 
@@ -55,9 +55,9 @@ public class SenseGlove_Teleport : MonoBehaviour
     [Tooltip("Whether or not the cameraRig can move in the y-direction.")]
     public bool ignoreY = false;
 
-    /// <summary> The color of the laser / indicator </summary>
+    /// <summary> The color of the pointer / indicator </summary>
     [Header("Display Options (Optional)")]
-    [Tooltip("The color of the laser / indicator ")]
+    [Tooltip("The color of the pointer / indicator ")]
     public Color indicatorColor = Color.green;
 
     /// <summary> An optional GameObject that appears (in the hand) to indicate that teleportation is active. </summary>
@@ -89,16 +89,16 @@ public class SenseGlove_Teleport : MonoBehaviour
     /// <summary> Timer to activate the laser </summary>
     private float activateTimer = 0; //uses isactivated
 
-    /// <summary> Time (seconds) before the laser activates </summary>
-    public static readonly float activationTime = .2f;
+    /// <summary> Time (seconds) that the user must point with the index finger before the pointer activates. </summary>
+    public static float activationTime = .2f;
 
 
 
     /// <summary> Timer to teleport. </summary>
     private float teleportTimer = 0;
 
-    /// <summary> Time (seconds) before the teleportation activates. </summary>
-    public static readonly float teleportTime = 0f;
+    /// <summary> Time (seconds) that the user must press with their thumb before the teleportation activates. </summary>
+    public static float teleportTime = 0f;
 
     /// <summary> Indicates that the user has teleported using the fingerDetector. </summary>
     private bool hasTeleported = false;
@@ -117,7 +117,7 @@ public class SenseGlove_Teleport : MonoBehaviour
     #region Utility
 
     /// <summary> Create new Pointer objects based on the chosen style. </summary>
-    public void CreatePointer()
+    protected void CreatePointer()
     {
         Material ptrMaterial = new Material(Shader.Find("Unlit/Color"));
         ptrMaterial.SetColor("_Color", indicatorColor);
@@ -241,7 +241,7 @@ public class SenseGlove_Teleport : MonoBehaviour
         return false;
     }
 
-    /// <summary> Teleport to the desired endPointTracker,  </summary>
+    /// <summary> Teleport to the position of the endPointTracker, but only if it is active on a valid position. </summary>
     public void Teleport()
     {
         if (this.IsActive() && this.endPointTracker.activeInHierarchy)
@@ -282,7 +282,7 @@ public class SenseGlove_Teleport : MonoBehaviour
         }
     }
 
-    /// <summary> Returns true if we should teleport. </summary>
+    /// <summary> Returns true if the laser should activate. </summary>
     /// <returns></returns>
     public virtual bool ShouldActivate()
     {

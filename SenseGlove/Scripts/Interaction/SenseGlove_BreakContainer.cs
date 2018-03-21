@@ -99,7 +99,7 @@ public class SenseGlove_BreakContainer : SenseGlove_Breakable
     }
 
     /// <summary> Spawns the Shards when the container breaks. </summary>
-    public void SpawnShards()
+    protected void SpawnShards()
     {
         for (int i = 0; i < this.brokenShards.Length; i++)
         {
@@ -110,7 +110,7 @@ public class SenseGlove_BreakContainer : SenseGlove_Breakable
     }
 
     /// <summary> Put all the shards back to their original (local) transform. </summary>
-    public void ResetShards()
+    protected void ResetShards()
     {
         for (int i = 0; i < this.brokenShards.Length; i++)
         {

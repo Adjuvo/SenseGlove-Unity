@@ -281,7 +281,7 @@ public class SenseGlove_Feedback : MonoBehaviour
     /// <returns></returns>
     public bool CanBuzz() { return this.buzzLevel > 0 && this.buzzTime > 0; }
 
-    /// <summary> Reset the haptic feedback of this collider, preventing us from sending the command twice. </summary>
+    /// <summary> Reset the haptic feedback of this collider, preventing us from sending buzz commands twice. </summary>
     public void ResetHaptics()
     {
         this.buzzLevel = 0;
@@ -294,6 +294,15 @@ public class SenseGlove_Feedback : MonoBehaviour
     // Touch Logic
 
     #region Touch
+
+    /// <summary>
+    /// Check if this SenseGlove_Touch is touching a valid GameObject
+    /// </summary>
+    /// <returns></returns>
+    public bool IsTouching()
+    {
+        return this.TouchObject() != null;
+    }
 
     /// <summary> Check if this SenseGlove_Touch is touching object obj. </summary>
     /// <param name="obj"></param>

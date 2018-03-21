@@ -13,6 +13,7 @@ public class SenseGlove_MeshDeform : MonoBehaviour
 
     #region Properties
 
+   
     /// <summary> Will be used to extract the Mesh variable without exposing it to other classes. </summary>
     [Tooltip("The filter used to extract the mesh of the object to deform.")]
     public MeshFilter meshFilter;
@@ -22,7 +23,7 @@ public class SenseGlove_MeshDeform : MonoBehaviour
     public DisplaceType displaceType = DisplaceType.Plane;
 
     /// <summary> The Maximum that a vertex can displace from its original position </summary>
-    [Tooltip("The Maximum that a vertex can displace from its original position")]
+    [Tooltip("The Maximum that a vertex can displace from its original position, in m.")]
     public float maxDisplacement = 0.01f;
 
 
@@ -47,6 +48,10 @@ public class SenseGlove_MeshDeform : MonoBehaviour
 
     /// <summary> The queue of deformations that will be aplied during the next update frame. </summary>
     private List<Deformation> deformationQueue = new List<Deformation>();
+
+    /// <summary> Used to enable/disable the mesh deformation. </summary>
+    private bool deforms = true;
+
 
     #endregion Properties
 
@@ -87,9 +92,21 @@ public class SenseGlove_MeshDeform : MonoBehaviour
 
     #region MeshDeformation
 
+    /// <summary> Enable / Disable mesh deformation of this script. Default set to true. </summary>
+    /// <param name="meshDeforms"></param>
+    void SetDeform(bool meshDeforms)
+    {
+        if (this.deforms)
+        {
+            this.ResetMesh();
+        }
+        this.deforms = meshDeforms;
+    }
+
+
     /// <summary> Collect the Mesh Data and find its unique vertices. </summary>
     /// <remarks>Placed in a separate function so one can re-analyze the mesh data on the fly.</remarks>
-    void CollectMeshData()
+    private void CollectMeshData()
     {
         if (this.meshFilter == null)
         {
@@ -261,7 +278,7 @@ public class SenseGlove_MeshDeform : MonoBehaviour
     /// <summary> Actually deform the mesh </summary>
     /// <param name="absEntryVector"></param>
     /// <param name="absDeformPoint"></param>
-    public void DeformMesh(Vector3 absEntryVector, Vector3 absDeformPoint)
+    private void DeformMesh(Vector3 absEntryVector, Vector3 absDeformPoint)
     {
         if (displaceType == DisplaceType.Plane)
         {

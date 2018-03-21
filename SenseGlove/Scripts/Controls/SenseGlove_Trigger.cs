@@ -37,7 +37,7 @@ public class SenseGlove_Trigger : SenseGlove_Detector
     /// <summary> Which fingers to apply the Haptic feedback to </summary>
     public bool[] whichFingers = new bool[5] { true, false, false, false, false };
 
-    /// <summary> If set to true, the effects are continuous while the glove is running. </summary>
+    /// <summary> If set to true, the haptic feedback is continuous while the glove is inside the trigger </summary>
     public bool loop = false;
 
     //------------------------------------------------------------------------------------------------------
@@ -104,6 +104,10 @@ public class SenseGlove_Trigger : SenseGlove_Detector
         }
     }
 
+    /// <summary>
+    /// Start / Stop the particleffect
+    /// </summary>
+    /// <param name="play"></param>
     public void SetParticles(bool play)
     {
         if (this.particlesToPlay != null)
@@ -113,6 +117,10 @@ public class SenseGlove_Trigger : SenseGlove_Detector
         }
     }
 
+    /// <summary>
+    /// Enable/disable the "effectToShow" Gameobject
+    /// </summary>
+    /// <param name="active"></param>
     public void SetEffectObject(bool active)
     {
         if (this.effectToShow != null)
@@ -121,6 +129,10 @@ public class SenseGlove_Trigger : SenseGlove_Detector
         }
     }
 
+    /// <summary>
+    /// Fire the haptic feedback pulse or loop.
+    /// </summary>
+    /// <param name="stopAll"></param>
     private void FireHapticFeedback(bool stopAll = false)
     {
         for (int i = 0; i < this.eventFired.Count; i++)
@@ -202,16 +214,16 @@ public class SenseGloveTriggerEditor : SenseGloveDetectorEditor
 
     protected SerializedProperty _fingers, _magn, _dur;
 
-    private static readonly GUIContent l_particles  = new GUIContent("Particles To Play\t", "");
-    private static readonly GUIContent l_audio      = new GUIContent("Audio To Play\t", "");
-    private static readonly GUIContent l_effectObj  = new GUIContent("Effect To Show\t", "");
+    private static readonly GUIContent l_particles  = new GUIContent("Particles To Play\t", "Particle effects that are shown when the glove is detected.");
+    private static readonly GUIContent l_audio      = new GUIContent("Audio To Play\t", "(Optional) Audio to play if the glove is detected");
+    private static readonly GUIContent l_effectObj  = new GUIContent("Effect To Show\t", "(group of) game objects to show when the glove is detected.");
 
-    private static readonly GUIContent l_hapticFB   = new GUIContent("Haptic Feedback\t", "");
-    private static readonly GUIContent l_fingers = new GUIContent("Which Fingers\t", "");
-    private static readonly GUIContent l_magn = new GUIContent("Magnitude [%]\t", "");
-    private static readonly GUIContent l_dur = new GUIContent("Duration [ms]\t", "");
+    private static readonly GUIContent l_hapticFB   = new GUIContent("Haptic Feedback\t", "(Optional) tells the glove to give haptic feedback ");
+    private static readonly GUIContent l_fingers = new GUIContent("Which Fingers\t", "Which fingers to apply the Haptic feedback to");
+    private static readonly GUIContent l_magn = new GUIContent("Magnitude [%]\t", " The magnitude of the haptic Feedback [0..100%]");
+    private static readonly GUIContent l_dur = new GUIContent("Duration [ms]\t", "The duration of a haptic feedback pulse.");
 
-    private static readonly GUIContent l_loop       = new GUIContent("Loop\t", "");
+    private static readonly GUIContent l_loop       = new GUIContent("Loop\t", "If set to true, the haptic feedback is continuous while the glove is inside the trigger");
 
     /// <summary> 
     /// Runs once when the script's inspector is opened. 

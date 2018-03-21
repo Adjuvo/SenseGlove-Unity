@@ -25,7 +25,7 @@ public class SenseGlove_Profile : MonoBehaviour
     //--------------------------------------------------------------------------------------
     //  Profile / Class Methods
 
-    /// <summary> Apply a user profile to this SenseGlove_Object. If this user exists within the database, apply their hand profile. </summary>
+    /// <summary> If this user exists within the database, apply their hand profile to this SenseGlove_Object. </summary>
     /// <param name="userName"></param>
     public void SetProfile(string name)
     {

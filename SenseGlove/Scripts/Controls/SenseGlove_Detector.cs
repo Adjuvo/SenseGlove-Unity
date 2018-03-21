@@ -28,23 +28,23 @@ public class SenseGlove_Detector : MonoBehaviour
     [Tooltip("How many SenseGlove_Feedback colliders can enter the Detector before the GloveDetected event is raised.")]
     public int activationThreshold = 1;
 
-    /// <summary> Whether or not this detector is activated by a thumb </summary>
+    /// <summary> Whether or not this detector is activated by a thumb when detecting specific fingers only.</summary>
     [Tooltip("Whether or not this detector is activated by a thumb")]
     public bool detectThumb = true;
 
-    /// <summary> Whether or not this detector is activated by an index finger </summary>
+    /// <summary> Whether or not this detector is activated by an index finger when detecting specific fingers only. </summary>
     [Tooltip("Whether or not this detector is activated by an index finger")]
     public bool detectIndex = true;
 
-    /// <summary> Whether or not this detector is activated by a middle finger </summary>
+    /// <summary> Whether or not this detector is activated by a middle finger when detecting specific fingers only. </summary>
     [Tooltip("Whether or not this detector is activated by a middle finger")]
     public bool detectMiddle = true;
 
-    /// <summary> Whether or not this detector is activated by a ring finger </summary>
+    /// <summary> Whether or not this detector is activated by a ring finger when detecting specific fingers only.</summary>
     [Tooltip("Whether or not this detector is activated by a ring finger")]
     public bool detectRing = true;
 
-    /// <summary> Whether or not this detector is activated by a pinky finger </summary>
+    /// <summary> Whether or not this detector is activated by a pinky finger when detecting specific fingers only. </summary>
     [Tooltip("Whether or not this detector is activated by a pinky finger")]
     public bool detectPinky = true;
 
@@ -338,6 +338,23 @@ public class SenseGlove_Detector : MonoBehaviour
 }
 
 
+/// <summary> EventArgs fired when a glove is detected in or removed from a SenseGlove_Detector. </summary>
+public class GloveDetectionArgs : System.EventArgs
+{
+    /// <summary> The Grabscript that caused the event to fire. </summary>
+    public SenseGlove_HandModel handModel;
+
+    /// <summary> Create a new instance of the SenseGlove Detection Arguments </summary>
+    /// <param name="grab"></param>
+    public GloveDetectionArgs(SenseGlove_HandModel model)
+    {
+        this.handModel = model;
+    }
+
+}
+
+
+
 namespace Util
 {
     /// <summary> How a Sense Glove is detected through its Feedback scripts. </summary>
@@ -345,22 +362,6 @@ namespace Util
     {
         AnyFinger = 0,
         SpecificFingers
-    }
-
-
-    /// <summary> EventArgs fired when a glove is detected in or removed from a SenseGlove_Detector. </summary>
-    public class GloveDetectionArgs : System.EventArgs
-    {
-        /// <summary> The Grabscript that caused the event to fire. </summary>
-        public SenseGlove_HandModel handModel;
-
-        /// <summary> Create a new instance of the SenseGlove Detection Arguments </summary>
-        /// <param name="grab"></param>
-        public GloveDetectionArgs(SenseGlove_HandModel model)
-        {
-            this.handModel = model;
-        }
-
     }
 
 }
@@ -388,11 +389,11 @@ public class SenseGloveDetectorEditor : Editor
     private static readonly GUIContent l_detectType       = new GUIContent("Detection Type\t", "The method for detection: General Colliders or Specific fingers.");
     private static readonly GUIContent l_activationThresh = new GUIContent("Activation Threshold\t", " How many SenseGlove_Feedback colliders must enter the Detector before the GloveDetected event is raised.");
 
-    private static readonly GUIContent l_detectThumb    = new GUIContent("Detects Thumb\t", "Whether or not this detector is activated by a thumb");
-    private static readonly GUIContent l_detectIndex    = new GUIContent("Detects Index\t", "Whether or not this detector is activated by an index finger");
-    private static readonly GUIContent l_detectMiddle   = new GUIContent("Detects Middle\t", "Whether or not this detector is activated by a middle finger");
-    private static readonly GUIContent l_detectRing     = new GUIContent("Detects Ring\t", "Whether or not this detector is activated by a ring finger");
-    private static readonly GUIContent l_detectPinky    = new GUIContent("Detects Pinky\t", "Whether or not this detector is activated by a pinky finger");
+    private static readonly GUIContent l_detectThumb    = new GUIContent("Detects Thumb\t", "Whether or not this detector is activated by a thumb when detecting specific fingers only.");
+    private static readonly GUIContent l_detectIndex    = new GUIContent("Detects Index\t", "Whether or not this detector is activated by an index finger when detecting specific fingers only.");
+    private static readonly GUIContent l_detectMiddle   = new GUIContent("Detects Middle\t", "Whether or not this detector is activated by a middle finger when detecting specific fingers only.");
+    private static readonly GUIContent l_detectRing     = new GUIContent("Detects Ring\t", "Whether or not this detector is activated by a ring finger when detecting specific fingers only.");
+    private static readonly GUIContent l_detectPinky    = new GUIContent("Detects Pinky\t", "Whether or not this detector is activated by a pinky finger when detecting specific fingers only.");
 
     private static readonly GUIContent l_activationTime = new GUIContent("Activation Time\t", "Optional: The time in seconds that the Sense Glove must be inside the detector for before the GloveDetected event is called");
     private static readonly GUIContent l_singleGlove    = new GUIContent("Single Glove\t", " If set to true, the detector will not raise additional events if a second handModel joins in.");
