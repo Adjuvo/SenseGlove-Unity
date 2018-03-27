@@ -422,5 +422,9 @@ public enum GrabType
     /// <summary> A FixedJoint is created between the grabbed object and the GrabReference, which stops it from passing through rigidbodies. </summary>
     FixedJoint,
     /// <summary> The object becomes a child of the Grabreference. Its original parent is restored upon release. </summary>
-    Parent
+    Parent,
+    // /// <summary> The object snaps to the GrabReference  </summary>
+    //SnapToGrabRef,
+    // /// <summary> The object snaps to the GrabReference, but smoothly moves toward it.  </summary>
+    //SmoothSnapToGrabRef
 }

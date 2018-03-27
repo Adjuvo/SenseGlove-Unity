@@ -360,6 +360,7 @@ public abstract class SenseGlove_HandModel : MonoBehaviour
                     fingers[f] = true;
                     magnitudes[f] = this.feedbackScripts[f].BuzzLevel();
                     durations[f] = this.feedbackScripts[f].BuzzTime();
+
                     this.feedbackScripts[f].ResetHaptics();
                 }
             }
@@ -368,7 +369,7 @@ public abstract class SenseGlove_HandModel : MonoBehaviour
         {
              this.senseGlove.SendBuzzCmd(fingers, durations, magnitudes); //advanced controls
             //this.senseGlove.GetSenseGlove().SimpleBuzzCmd(magnitudes); //simple controls
-            
+            //Debug.Log("Sent " + SenseGlove_Util.ToString(magnitudes) + " + " + SenseGlove_Util.ToString(durations));
            // SenseGlove_Debugger.Log(SenseGlove_Util.ToString(magnitudes));
         }
     }

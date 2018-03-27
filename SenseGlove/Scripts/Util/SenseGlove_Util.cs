@@ -41,6 +41,20 @@ public static class SenseGlove_Util
         return res + "]";
     }
 
+    /// <summary> Convert an int[] to a string with a greater precision that it default Unity(?) method. </summary>
+    /// <param name="V"></param>
+    /// <returns></returns>
+    public static string ToString(int[] V)
+    {
+        string res = "[";
+        for (int i = 0; i < V.Length; i++)
+        {
+            res += V[i];
+            if (i < V.Length - 1) { res += ", "; }
+        }
+        return res + "]";
+    }
+
     #endregion ToString
 
     //-------------------------------------------------------------------------------------------------------------------------

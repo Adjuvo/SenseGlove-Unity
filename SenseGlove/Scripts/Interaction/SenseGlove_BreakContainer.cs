@@ -34,6 +34,7 @@ public class SenseGlove_BreakContainer : SenseGlove_Breakable
     {
         if (shardContainer != null)
         {
+            this.shardContainer.SetActive(true);
             this.brokenShards = new GameObject[this.shardContainer.transform.childCount];
             this.shardPositions = new Vector3[brokenShards.Length];
             this.shardRotations = new Quaternion[brokenShards.Length];
@@ -55,6 +56,8 @@ public class SenseGlove_BreakContainer : SenseGlove_Breakable
 
         if (this.contentsContainer != null)
         {
+            this.contentsContainer.SetActive(true);
+
             this.contents = new SenseGlove_Interactable[this.contentsContainer.transform.childCount];
             this.contentPositions = new Vector3[contents.Length];
             this.contentRotations = new Quaternion[contents.Length];
@@ -64,17 +67,15 @@ public class SenseGlove_BreakContainer : SenseGlove_Breakable
                 this.contentRotations[i] = this.contents[i].transform.localRotation;
                 this.contentPositions[i] = this.contents[i].transform.localPosition;
             }
-            this.SetContents(false, this.contentsContainer.transform);
+            this.ResetContents();
         }
     }
 
     /// <summary> Called when the breakable material of the wholeObject is broken </summary>
     public override void Break()
     {
-        this.SetContents(true, null);
-
         base.Break();
-
+        this.SpawnContents();
         this.SpawnShards();
     }
 
@@ -82,12 +83,8 @@ public class SenseGlove_BreakContainer : SenseGlove_Breakable
     public override void UnBreak()
     {
         this.ResetShards();
+        this.ResetContents();
         base.UnBreak();
-        if (this.contentsContainer != null)
-        {
-            //this.contentsContainer.transform.position = this.wholeObject.transform.position;
-            this.SetContents(false, this.contentsContainer.transform);
-        }
     }
 
     /// <summary> Called when the object should be reset. </summary>
@@ -122,10 +119,32 @@ public class SenseGlove_BreakContainer : SenseGlove_Breakable
         }
     }
 
+    /// <summary> Spawns Contents when the container breaks </summary>
+    protected void SpawnContents()
+    {
+        for (int i = 0; i < this.contents.Length; i++)
+        {
+            this.contents[i].transform.parent = null;
+        }
+        SetContents(true);
+    }
+
+    /// <summary> Resets the contents back to their original (local) transforms. </summary>
+    protected void ResetContents()
+    {
+        SetContents(false);
+        for (int i = 0; i < this.contents.Length; i++)
+        {
+            this.contents[i].transform.parent = this.contentsContainer.transform;
+            this.contents[i].transform.localPosition = this.contentPositions[i];
+            this.contents[i].transform.localRotation = this.contentRotations[i];
+        }
+    }
+
     /// <summary> Set the contents within the container. </summary>
     /// <param name="active"></param>
     /// <param name="newParent"></param>
-    private void SetContents(bool active, Transform newParent)
+    private void SetContents(bool active)
     {
         for (int i = 0; i < this.contents.Length; i++)
         {
@@ -135,10 +154,7 @@ public class SenseGlove_BreakContainer : SenseGlove_Breakable
             {
                 cols[j].isTrigger = !active;
             }
-            this.contents[i].gameObject.transform.parent = newParent;
             SetRB(this.contents[i].gameObject, active, !active);
-            this.contents[i].transform.localPosition = this.contentPositions[i];
-            this.contents[i].transform.localRotation = this.contentRotations[i];
         }
     }
 

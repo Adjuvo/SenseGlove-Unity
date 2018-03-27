@@ -128,31 +128,33 @@ public class SenseGlove_Feedback : MonoBehaviour
     // Called when this object enters the collider of another object
     void OnTriggerEnter(Collider col)
     {
-       
-        SenseGlove_Material material = col.GetComponent<SenseGlove_Material>();
-        SenseGlove_Interactable interactable = col.GetComponent<SenseGlove_Interactable>();
-        if (material || interactable)
+        if (this.touchedObject == null)
         {
-            // SenseGlove_Debugger.Log("Touching " + col.name + "; material = " + (material != null) + ", interactable = " + (interactable != null));
-            this.touchedObject = col.gameObject;
-            this.touchedScript = interactable;
-            this.touchedMaterial = material;
-            this.touchedDeform = col.GetComponent<SenseGlove_MeshDeform>();
+            SenseGlove_Material material = col.GetComponent<SenseGlove_Material>();
+            SenseGlove_Interactable interactable = col.GetComponent<SenseGlove_Interactable>();
+            if (material || interactable)
+            {
+                // SenseGlove_Debugger.Log("Touching " + col.name + "; material = " + (material != null) + ", interactable = " + (interactable != null));
+                this.touchedObject = col.gameObject;
+                this.touchedScript = interactable;
+                this.touchedMaterial = material;
+                this.touchedDeform = col.GetComponent<SenseGlove_MeshDeform>();
 
-            if (this.handModel.forceFeedback == ForceFeedbackType.Simple && material)
-            {
-                this.motorLevel = material.maxForce;
-            }
-            else if (this.handModel.forceFeedback == ForceFeedbackType.MaterialBased)
-            {
-                this.FindForceDirection(col);
-                this.motorLevel = 0; //still 0 since OP == EO
-            }
+                if (this.handModel.forceFeedback == ForceFeedbackType.Simple && material)
+                {
+                    this.motorLevel = material.maxForce;
+                }
+                else if (this.handModel.forceFeedback == ForceFeedbackType.MaterialBased)
+                {
+                    this.FindForceDirection(col);
+                    this.motorLevel = 0; //still 0 since OP == EO
+                }
 
-            if (material && material.hapticFeedback)
-            {
-                this.buzzLevel = material.hapticMagnitude;
-                this.buzzTime = material.hapticDuration;
+                if (material && material.hapticFeedback)
+                {
+                    this.buzzLevel = material.hapticMagnitude;
+                    this.buzzTime = material.hapticDuration;
+                }
             }
         }
     }
@@ -271,7 +273,7 @@ public class SenseGlove_Feedback : MonoBehaviour
 
     /// <summary> Returns the buzzmotor level as indicated by the material that we are currently touching. </summary>
     /// <returns></returns>
-    public int BuzzLevel() { return this.motorLevel; }
+    public int BuzzLevel() { return this.buzzLevel; }
 
     /// <summary> Returns the time (in ms) that the buzzMotor will virbate for. </summary>
     /// <returns></returns>
