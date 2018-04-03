@@ -47,9 +47,9 @@ public class SenseGlove_Teleport : MonoBehaviour
     [Tooltip("The way that the teleport position is calculated ")]
     public Util.PointerOption pointerStyle = Util.PointerOption.StraightLine;
 
-    /// <summary> The maximum distance (in m) that the user can teleport in one go. </summary>
-    [Tooltip("The maximum distance (in m) that the user can teleport in one go.")]
-    private float maxDistance = 10; //private since it has not been implemented yet.
+    ///// <summary> The maximum distance (in m) that the user can teleport in one go. </summary>
+    //[Tooltip("The maximum distance (in m) that the user can teleport in one go.")]
+    //private float maxDistance = 10; //private since it has not been implemented yet.
 
     /// <summary> Whether or not the cameraRig can move in the y-direction. </summary>
     [Tooltip("Whether or not the cameraRig can move in the y-direction.")]
