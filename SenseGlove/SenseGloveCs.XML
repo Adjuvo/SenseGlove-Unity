@@ -671,6 +671,177 @@
         <member name="F:SenseGloveCs.DebugLevel.lv9_ReadThreadDebug">
             <summary> Used to (unit) test the readthread of communicator(s). </summary>
         </member>
+        <member name="T:SenseGloveCs.Util.InterpolationSet_IMUGlove">
+            <summary> A set of joint angle interpolations used to create  </summary>
+        </member>
+        <member name="F:SenseGloveCs.Util.InterpolationSet_IMUGlove.myAngles">
+            <summary> Contains the interpolation values, from [Finger][IntAngles_IMU] </summary>
+        </member>
+        <member name="M:SenseGloveCs.Util.InterpolationSet_IMUGlove.#ctor(System.Boolean)">
+            <summary> Create a default set of interpolation angles. </summary>
+        </member>
+        <member name="M:SenseGloveCs.Util.InterpolationSet_IMUGlove.#ctor(SenseGloveCs.Kinematics.InterpolationValue[][])">
+            <summary> Create a new Interpolation Set </summary>
+            <param name="angles"></param>
+        </member>
+        <member name="M:SenseGloveCs.Util.InterpolationSet_IMUGlove.Basic">
+            <summary> Retrieve a basic [0, 1, 0, 1] interpolation set that can be edited. Note; this is not the default set. Use InterpolationSet() for that. </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.Util.InterpolationSet_IMUGlove.GetAngle(System.Single,System.Boolean,SenseGloveCs.Finger,SenseGloveCs.Kinematics.IntAngles_IMU_Finger)">
+            <summary> Interpolate over a specific set of angles of the fingers </summary>
+            <param name="x"></param>
+            <param name="applyLimits"></param>
+            <param name="finger"></param>
+            <param name="angle"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.Util.InterpolationSet_IMUGlove.GetThumbAngle(System.Single,System.Boolean,SenseGloveCs.Kinematics.IntAngles_IMU_Thumb)">
+            <summary>  Get a specific set of angles from the thumb  </summary>
+            <param name="x"></param>
+            <param name="applyLimits"></param>
+            <param name="angle"></param>
+            <returns></returns>
+        </member>
+        <member name="T:SenseGloveCs.Util.DeviceInfo">
+            <summary>
+            Utility class used to determine IODevice Versions and/or Functionalities etc.
+            </summary>
+        </member>
+        <member name="M:SenseGloveCs.Util.DeviceInfo.GetGloveFunctionality(System.Int32)">
+            <summary>
+            Based on an integer value, determine which functionalities this IODevice has.
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.Util.DeviceInfo.GetDeviceType(System.String)">
+            <summary>
+            Based on an integer value, determine which device type this IODevice is.
+            </summary>
+            <param name="deviceID"></param>
+            <returns></returns>
+        </member>
+        <member name="T:SenseGloveCs.Util.SimpleGloveData">
+            <summary>  </summary>
+        </member>
+        <member name="F:SenseGloveCs.Util.SimpleGloveData.isRight">
+            <summary> Whether this glove is left or right. </summary>
+        </member>
+        <member name="F:SenseGloveCs.Util.SimpleGloveData.gloveVersion">
+            <summary> The glove version (as string) </summary>
+        </member>
+        <member name="F:SenseGloveCs.Util.SimpleGloveData.parsedGloveVersion">
+            <summary> The glove version (as a float) </summary>
+        </member>
+        <member name="F:SenseGloveCs.Util.SimpleGloveData.functionalities">
+            <summary> The functions of this glove </summary>
+        </member>
+        <member name="F:SenseGloveCs.Util.SimpleGloveData.interpolation">
+            <summary> The IMU interpolation values of this SimpleSenseGlove. </summary>
+        </member>
+        <member name="F:SenseGloveCs.Util.SimpleGloveData.fingers">
+            <summary> The values of the IMU sensors. </summary>
+        </member>
+        <member name="F:SenseGloveCs.Util.SimpleGloveData.rawWrist">
+            <summary> Raw IMU values of the wrist </summary>
+        </member>
+        <member name="F:SenseGloveCs.Util.SimpleGloveData.wrist">
+            <summary> The quaternion orientation of the wrist. </summary>
+        </member>
+        <member name="F:SenseGloveCs.Util.SimpleGloveData.imuAngles">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="F:SenseGloveCs.Util.SimpleGloveData.handAngles">
+            <summary> The (euler) angles of the hand. </summary>
+        </member>
+        <member name="F:SenseGloveCs.Util.SimpleGloveData.handRotations">
+            <summary> Absolute Quaternion Orientations </summary>
+        </member>
+        <member name="M:SenseGloveCs.Util.SimpleGloveData.#ctor">
+            <summary> Create a new SimpleGloveData block. </summary>
+        </member>
+        <member name="M:SenseGloveCs.Util.SimpleGloveData.ParseConstants(System.String)">
+            <summary> Parse and apply constants. </summary>
+            <param name="c"></param>
+        </member>
+        <member name="M:SenseGloveCs.Util.SimpleGloveData.ParseSensorStream(System.String[])">
+            <summary>
+            Parse a sensor string as recieved from the Communicator.
+            </summary>
+            <param name="s"></param>
+        </member>
+        <member name="M:SenseGloveCs.Util.SimpleGloveData.Update(System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.Single[])">
+            <summary> Update the mathematical model of this Simple Sense Glove. </summary>
+            <param name="updateFingers"></param>
+            <param name="limitFingers"></param>
+            <param name="updateWrist"></param>
+            <param name="limitWrist"></param>
+            <param name="qLowerArm"></param>
+        </member>
+        <member name="M:SenseGloveCs.Util.SimpleGloveData.ToInterpolatable(System.Single[])">
+            <summary> Convert an (imu) rotation to values (roll/pitch/yaw) that can be interpolated. </summary>
+            <param name="qThimble"></param>
+            <returns></returns>
+        </member>
+        <member name="T:SenseGloveCs.Util.SimpleSenseGlove">
+            <summary> A SenseGlove using IMU's  </summary>
+        </member>
+        <member name="F:SenseGloveCs.Util.SimpleSenseGlove.simpleData">
+            <summary> The data of the Simple Sense Glove </summary>
+        </member>
+        <member name="M:SenseGloveCs.Util.SimpleSenseGlove.#ctor">
+            <summary> Create a new Simple Sense Glove </summary>
+        </member>
+        <member name="M:SenseGloveCs.Util.SimpleSenseGlove.#ctor(SenseGloveCs.Communicator)">
+            <summary> Create a new instance of the SimpleSenseGlove,  </summary>
+            <param name="source"></param>
+        </member>
+        <member name="M:SenseGloveCs.Util.SimpleSenseGlove.Finalize">
+            <summary> Disconnect when the object is destoryed. </summary>
+        </member>
+        <member name="M:SenseGloveCs.Util.SimpleSenseGlove.IsReady">
+            <summary> Check whether or not this glove has loaded all of its variables. </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.Util.SimpleSenseGlove.GetData(System.Boolean)">
+            <summary> Retrieve the Glove Data. </summary>
+            <param name="recalculate"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.Util.SimpleSenseGlove.Update(System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.Single[])">
+            <summary>
+            Update and retrieve the SimpleSenseGlove.
+            </summary>
+            <param name="updateFingers"></param>
+            <param name="limitFingers"></param>
+            <param name="updateWrist"></param>
+            <param name="limitWrist"></param>
+            <param name="qLowerArm"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.Util.SimpleSenseGlove.ParseConstants(System.String)">
+            <summary> Parse the constants from this glove. </summary>
+            <param name="C"></param>
+        </member>
+        <member name="M:SenseGloveCs.Util.SimpleSenseGlove.ParseMetaData(System.String)">
+            <summary> Parse the glove's metadata. </summary>
+            <param name="M"></param>
+        </member>
+        <member name="M:SenseGloveCs.Util.SimpleSenseGlove.Calibrate(System.Single[],System.Single[][])">
+            <summary>
+            Calibrate the Sense Glove.
+            </summary>
+            <param name="calibrationPose"></param>
+            <param name="qLowerArm"></param>
+        </member>
+        <member name="M:SenseGloveCs.Util.SimpleSenseGlove.CalibrationPose(System.Boolean)">
+            <summary> Retrieve quaternions to calibrate the finger positions. </summary>
+            <param name="isRight"></param>
+            <returns></returns>
+        </member>
         <member name="T:SenseGloveCs.BuzzCommand">
             <summary> Contains BuzzMotor Commands and a timer to fire on an elapsed command. </summary>
         </member>
@@ -1204,7 +1375,7 @@
             </summary>
         </member>
         <member name="F:SenseGloveCs.Diagnostics.ExitCodes.None">
-            <summary> No error occured. Everything is fine. </summary>
+            <summary> No error occured. Manual or automatic disconnect. Everything is fine. </summary>
         </member>
         <member name="F:SenseGloveCs.Diagnostics.ExitCodes.Comm_BufferOverload">
             <summary> The SenseGlove is sending data too fast for the Readthread to keep up. </summary>
@@ -1214,6 +1385,9 @@
         </member>
         <member name="F:SenseGloveCs.Diagnostics.ExitCodes.Comm_UnhandledEx">
             <summary> Exited because an unhandled exception occured in the readthread. </summary>
+        </member>
+        <member name="F:SenseGloveCs.Diagnostics.ExitCodes.Comm_TimeOut">
+            <summary> TimeOutException occured. </summary>
         </member>
         <member name="F:SenseGloveCs.Diagnostics.ExitCodes.Comm_PortClosed">
             <summary> The Port is closed, and we were not sending anything. </summary>
@@ -1811,134 +1985,6 @@
             <param name="bodyPart"></param>
             <param name="quaternion"></param>
         </member>
-        <member name="T:SenseGloveCs.Util.DeviceInfo">
-            <summary>
-            Utility class used to determine IODevice Versions and/or Functionalities etc.
-            </summary>
-        </member>
-        <member name="M:SenseGloveCs.Util.DeviceInfo.GetGloveFunctionality(System.Int32)">
-            <summary>
-            Based on an integer value, determine which functionalities this IODevice has.
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:SenseGloveCs.Util.DeviceInfo.GetDeviceType(System.String)">
-            <summary>
-            Based on an integer value, determine which device type this IODevice is.
-            </summary>
-            <param name="deviceID"></param>
-            <returns></returns>
-        </member>
-        <member name="T:SenseGloveCs.Util.SimpleGloveData">
-            <summary>  </summary>
-        </member>
-        <member name="F:SenseGloveCs.Util.SimpleGloveData.isRight">
-            <summary> Whether this glove is left or right. </summary>
-        </member>
-        <member name="F:SenseGloveCs.Util.SimpleGloveData.gloveVersion">
-            <summary> The glove version (as string) </summary>
-        </member>
-        <member name="F:SenseGloveCs.Util.SimpleGloveData.parsedGloveVersion">
-            <summary> The glove version (as a float) </summary>
-        </member>
-        <member name="F:SenseGloveCs.Util.SimpleGloveData.functionalities">
-            <summary> The functions of this glove </summary>
-        </member>
-        <member name="F:SenseGloveCs.Util.SimpleGloveData.interpolation">
-            <summary> The IMU interpolation values of this SimpleSenseGlove. </summary>
-        </member>
-        <member name="F:SenseGloveCs.Util.SimpleGloveData.fingers">
-            <summary> The values of the IMU sensors. </summary>
-        </member>
-        <member name="F:SenseGloveCs.Util.SimpleGloveData.rawWrist">
-            <summary> Raw IMU values of the wrist </summary>
-        </member>
-        <member name="F:SenseGloveCs.Util.SimpleGloveData.wrist">
-            <summary> The quaternion orientation of the wrist. </summary>
-        </member>
-        <member name="F:SenseGloveCs.Util.SimpleGloveData.handAngles">
-            <summary> The (euler) angles of the hand. </summary>
-        </member>
-        <member name="M:SenseGloveCs.Util.SimpleGloveData.#ctor">
-            <summary> Create a new SimpleGloveData block. </summary>
-        </member>
-        <member name="M:SenseGloveCs.Util.SimpleGloveData.ParseConstants(System.String)">
-            <summary> Parse and apply constants. </summary>
-            <param name="c"></param>
-        </member>
-        <member name="M:SenseGloveCs.Util.SimpleGloveData.ParseSensorStream(System.String[])">
-            <summary>
-            Parse a sensor string as recieved from the Communicator.
-            </summary>
-            <param name="s"></param>
-        </member>
-        <member name="M:SenseGloveCs.Util.SimpleGloveData.Update(System.Boolean,System.Boolean,System.Boolean,System.Boolean)">
-            <summary> Update the mathematical model of this Simple Sense Glove. </summary>
-            <param name="updateFingers"></param>
-            <param name="limitFingers"></param>
-            <param name="updateWrist"></param>
-            <param name="limitWrist"></param>
-        </member>
-        <member name="M:SenseGloveCs.Util.SimpleGloveData.ToInterpolatable(System.Single[])">
-            <summary> Convert an (imu) rotation to values (roll/pitch/yaw) that can be interpolated. </summary>
-            <param name="qThimble"></param>
-            <returns></returns>
-        </member>
-        <member name="T:SenseGloveCs.Util.SimpleSenseGlove">
-            <summary> A SenseGlove using IMU's  </summary>
-        </member>
-        <member name="F:SenseGloveCs.Util.SimpleSenseGlove.simpleData">
-            <summary> The data of the Simple Sense Glove </summary>
-        </member>
-        <member name="M:SenseGloveCs.Util.SimpleSenseGlove.#ctor">
-            <summary> Create a new Simple Sense Glove </summary>
-        </member>
-        <member name="M:SenseGloveCs.Util.SimpleSenseGlove.#ctor(SenseGloveCs.Communicator)">
-            <summary> Create a new instance of the SimpleSenseGlove,  </summary>
-            <param name="source"></param>
-        </member>
-        <member name="M:SenseGloveCs.Util.SimpleSenseGlove.Finalize">
-            <summary> Disconnect when the object is destoryed. </summary>
-        </member>
-        <member name="M:SenseGloveCs.Util.SimpleSenseGlove.IsReady">
-            <summary> Check whether or not this glove has loaded all of its variables. </summary>
-            <returns></returns>
-        </member>
-        <member name="M:SenseGloveCs.Util.SimpleSenseGlove.GetData(System.Boolean)">
-            <summary> Retrieve the Glove Data. </summary>
-            <param name="recalculate"></param>
-            <returns></returns>
-        </member>
-        <member name="M:SenseGloveCs.Util.SimpleSenseGlove.Update(System.Boolean,System.Boolean,System.Boolean,System.Boolean)">
-            <summary>
-            Update and retrieve the SimpleSenseGlove.
-            </summary>
-            <param name="updateFingers"></param>
-            <param name="limitFingers"></param>
-            <param name="updateWrist"></param>
-            <param name="limitWrist"></param>
-            <returns></returns>
-        </member>
-        <member name="M:SenseGloveCs.Util.SimpleSenseGlove.ParseConstants(System.String)">
-            <summary> Parse the constants from this glove. </summary>
-            <param name="C"></param>
-        </member>
-        <member name="M:SenseGloveCs.Util.SimpleSenseGlove.ParseMetaData(System.String)">
-            <summary> Parse the glove's metadata. </summary>
-            <param name="M"></param>
-        </member>
-        <member name="M:SenseGloveCs.Util.SimpleSenseGlove.Calibrate(System.Single[][])">
-            <summary>
-            Calibrate the Sense Glove.
-            </summary>
-            <param name="calibrationPose"></param>
-        </member>
-        <member name="M:SenseGloveCs.Util.SimpleSenseGlove.CalibrationPose(System.Boolean)">
-            <summary> Retrieve quaternions to calibrate the finger positions. </summary>
-            <param name="isRight"></param>
-            <returns></returns>
-        </member>
         <member name="T:SenseGloveCs.Finger">
             <summary>
             Enumerator used to ease shifing / implementation of the kinematic variables.
@@ -2269,6 +2315,10 @@
         <member name="F:SenseGloveCs.DeviceScanner.pingTime">
             <summary> The time (in ms) an IODevice has to respond with its ID and DeviceType. </summary>
         </member>
+        <member name="M:SenseGloveCs.DeviceScanner.DevicesFound">
+            <summary> Retieve the number of devices found by the DeviceScanner. </summary>
+            <returns></returns>
+        </member>
         <member name="M:SenseGloveCs.DeviceScanner.StartScanning">
             <summary>
             Reset the DeviceScanner and start looking for IODevices
@@ -2565,14 +2615,15 @@
             <param name="gloveVer"></param>
             <returns></returns>
         </member>
+        <member name="M:SenseGloveCs.HandKinematics.NormalizeAngles(System.Single[][]@)">
+            <summary>
+            Normalize angles into proper 
+            </summary>
+            <param name="rawAngles"></param>
+        </member>
         <member name="M:SenseGloveCs.HandKinematics.EstimateThumbTwist(System.Single)">
             <summary> Estimate the thumb twist based on the abduction / adduction </summary>
             <param name="abd"></param>
-            <returns></returns>
-        </member>
-        <member name="M:SenseGloveCs.HandKinematics.GetInterpolationAngles(System.Int32)">
-            <summary> Retrieve the proper Interpolation angles. </summary>
-            <param name="f"></param>
             <returns></returns>
         </member>
         <member name="M:SenseGloveCs.HandKinematics.Update(System.Single[][][],System.Boolean[],SolveType,SenseGloveCs.UpdateLevel,System.Boolean)">
@@ -2779,14 +2830,6 @@
             </summary>
             <param name="source"></param>
         </member>
-        <member name="M:SenseGloveCs.SenseGlove.SetupBuzzMotors">
-            <summary> Set up the buzz motor thread and commands. </summary>
-        </member>
-        <member name="M:SenseGloveCs.SenseGlove.ProcessBuzzCmds(System.Object,System.Timers.ElapsedEventArgs)">
-            <summary> Ensure the proper buzzmotor commands are sent.</summary>
-            <param name="sender"></param>
-            <param name="e"></param>
-        </member>
         <member name="M:SenseGloveCs.SenseGlove.Finalize">
             <summary>
             SenseGlove Destructor.
@@ -2809,6 +2852,14 @@
             </summary>
             <param name="pnpDeviceID"></param>
             <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.SenseGlove.SetupBuzzMotors">
+            <summary> Set up the buzz motor thread and commands. </summary>
+        </member>
+        <member name="M:SenseGloveCs.SenseGlove.ProcessBuzzCmds(System.Object,System.Timers.ElapsedEventArgs)">
+            <summary> Ensure the proper buzzmotor commands are sent.</summary>
+            <param name="sender"></param>
+            <param name="e"></param>
         </member>
         <member name="M:SenseGloveCs.SenseGlove.SendBuzzMotorCmd(System.Boolean[],System.Int32[],System.Int32[],SenseGloveCs.BuzzMotorPattern[])">
             <summary> Send Buzzmotor patterns, magnitudes and durations to each finger. </summary>
@@ -2856,6 +2907,19 @@
         </member>
         <member name="M:SenseGloveCs.SenseGlove.StopBrakes">
             <summary> Stop the SenseGlove from exerting any force feedback. </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.SenseGlove.SendBrakeBuzz(System.String,System.String)">
+            <summary>
+            Having recieved a buzz-motor or brake command; send both!
+            Automatically assigns the last brake / buzz commands.
+            </summary>
+            <param name="brakeCmd"></param>
+            <param name="buzzCmd"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.SenseGlove.StopFeedback">
+            <summary> Stop both the buzz motors and the force feedback </summary>
             <returns></returns>
         </member>
         <member name="M:SenseGloveCs.SenseGlove.IsRight">
@@ -3187,6 +3251,11 @@
             Test Command Queue for Bytes
             </summary>
         </member>
+        <member name="M:SenseGloveCs.SerialCommunicator.GetPorts(System.Boolean)">
+            <summary> Retrieve a list of serial ports that are connected to this system. </summary>
+            <param name="withCorrection">Whether or not to add corrections for older .NET versions. </param>
+            <returns></returns>
+        </member>
         <member name="M:SenseGloveCs.SerialCommunicator.#ctor(System.String)">
             <summary>
             Create a new USBCommunicator on the specified COMPort;
@@ -3299,6 +3368,12 @@
         <member name="F:SenseGloveCs.Values.degToRad">
             <summary> Conversion factor from degrees to radians </summary>
         </member>
+        <member name="F:SenseGloveCs.Values.Pi_2">
+            <summary> A Math.Pi / 2 float representation. </summary>
+        </member>
+        <member name="F:SenseGloveCs.Values._2Pi">
+            <summary> Math.Pi * 2 float representation. </summary>
+        </member>
         <member name="M:SenseGloveCs.Values.ToPolynomal(System.Single,System.Single,System.Single,System.Single)">
             <summary> Convert a linear interpolation to a polynomal notation </summary>
             <param name="x0"></param>
@@ -3386,6 +3461,16 @@
         <member name="M:SenseGloveCs.Values.NormalizeAngle(System.Single)">
             <summary> Scale an angle [in Rad] back to the -Pi ... Pi range, which is better to aplly limits to </summary>
             <param name="angle"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.Values.NormalizeAngle(System.Single,System.Single,System.Single)">
+            <summary>
+            Normalize an angle in between two values. If it exceeds either value, it is increased, decreased by 2Pi.
+            Used mainly for sensor mapping.
+            </summary>
+            <param name="angle"></param>
+            <param name="minAngle"></param>
+            <param name="maxAngle"></param>
             <returns></returns>
         </member>
         <member name="M:SenseGloveCs.Values.NormalizeAngle(System.Single[])">

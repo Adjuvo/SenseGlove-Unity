@@ -341,6 +341,10 @@ public class SenseGlove_Teleport : MonoBehaviour
     // Use this for initialization
     void Start ()
     {
+        if (this.senseGlove != null)
+        {
+            this.grabScript = this.senseGlove.gameObject.GetComponent<SenseGlove_GrabScript>();
+        }
         CreatePointer();
         SetPointer(false);
         SetHighlights(false);

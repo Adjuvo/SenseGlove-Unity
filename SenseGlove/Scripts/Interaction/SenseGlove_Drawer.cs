@@ -225,7 +225,7 @@ public class SenseGlove_Drawer : SenseGlove_Interactable
     /// <returns></returns>
     public Vector3 MoveAxis()
     {
-        switch (this.moveDirection)
+        switch (this.actualMoveDirection)
         {
             case MovementAxis.X: return new Vector3(1, 0, 0);
             case MovementAxis.Y: return new Vector3(0, 1, 0);
@@ -267,6 +267,7 @@ public class SenseGlove_Drawer : SenseGlove_Interactable
     /// <param name="newAxis"></param>
     public void SetMoveAxis(MovementAxis newAxis)
     {
+        this.moveDirection = newAxis;
         this.actualMoveDirection = newAxis;
         this.moveAxis = (this.originalRot * this.MoveAxis()).normalized;
     }

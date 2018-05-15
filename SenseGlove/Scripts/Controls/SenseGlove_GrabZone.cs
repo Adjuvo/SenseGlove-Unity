@@ -67,9 +67,12 @@ public class SenseGlove_GrabZone : SenseGlove_Interactable
     /// <param name="grabScript"></param>
     public override void BeginInteraction(SenseGlove_GrabScript grabScript, bool fromExternal = false)
     {
-        for (int i = 0; i < this.connectedTo.Count; i++)
+        if (this.isInteractable)
         {
-            this.connectedTo[i].BeginInteraction(grabScript, true);
+            for (int i = 0; i < this.connectedTo.Count; i++)
+            {
+                this.connectedTo[i].BeginInteraction(grabScript, true);
+            }
         }
     }
 
@@ -79,9 +82,12 @@ public class SenseGlove_GrabZone : SenseGlove_Interactable
     /// <param name="grabScript"></param>
     public override void EndInteraction(SenseGlove_GrabScript grabScript, bool fromExternal = false)
     {
-        for (int i = 0; i < this.connectedTo.Count; i++)
+        if (this.isInteractable)
         {
-            this.connectedTo[i].EndInteraction(grabScript, true);
+            for (int i = 0; i < this.connectedTo.Count; i++)
+            {
+                this.connectedTo[i].EndInteraction(grabScript, true);
+            }
         }
     }
 
@@ -91,9 +97,12 @@ public class SenseGlove_GrabZone : SenseGlove_Interactable
     /// </summary>
     public override void UpdateInteraction()
     {
-        for (int i = 0; i < this.connectedTo.Count; i++)
+        if (this.isInteractable)
         {
-            this.connectedTo[i].UpdateInteraction();
+            for (int i = 0; i < this.connectedTo.Count; i++)
+            {
+                this.connectedTo[i].UpdateInteraction();
+            }
         }
     }
 

@@ -15,7 +15,7 @@ public class SenseGlove_PhysGrab : SenseGlove_GrabScript
 
     /// <summary> If set to true, we check the intention of the user to determine if we can interact with objects. </summary>
     [Tooltip("If set to true, we check the intention of the user to determine if we can interact with objects.")]
-    public bool checkIntention = false;
+    public CheckIntention checkIntention = CheckIntention.Off;
 
     /// <summary> The colliders that will be used for the thumb pickup logic.</summary>
     [Header("Grabscript Colliders")]
@@ -57,6 +57,7 @@ public class SenseGlove_PhysGrab : SenseGlove_GrabScript
     [Tooltip("Whether of not the fingers have the intention of grabbing an object ")]
     public bool[] wantsGrab = new bool[5] { true, true, true, true, true };
 
+    private float[] dipAngles = new float[5];
 
     //-----------------------------------------------------------------------------------------------------------------------------------
     // Private Variables
@@ -217,6 +218,19 @@ public class SenseGlove_PhysGrab : SenseGlove_GrabScript
         this.heldObjects.Clear();
     }
 
+
+    /// <summary> Clear all touched objects by the touchScripts. </summary>
+    public override void ClearHeldObjects()
+    {
+        for (int f=0; f<this.touchScripts[f].Length; f++)
+        {
+            for (int i=0; i<this.touchScripts[f].Length; i++)
+            {
+                this.touchScripts[f][i].ClearTouchedObjects();
+            }
+        }
+    }
+
     #endregion ClassMethods
 
     //-----------------------------------------------------------------------------------------------------------------------------------
@@ -358,7 +372,7 @@ public class SenseGlove_PhysGrab : SenseGlove_GrabScript
         //End interaction with objects that are in the heldObjects but not in the grabables.
         for (int i = 0; i < this.heldObjects.Count;)
         {
-            if (!this.IsInside(heldObjects[i], grabables))
+            if (!this.IsInside(heldObjects[i], grabables) && this.heldObjects[i].CanEndInteraction())
             {
                // Debug.Log("Ending interaction with " + heldObjects[i].name + " because we are no longer touching it.");
                 this.heldObjects[i].EndInteraction(this);
@@ -388,10 +402,11 @@ public class SenseGlove_PhysGrab : SenseGlove_GrabScript
         List<SenseGlove_Interactable> grabables = new List<SenseGlove_Interactable>();
 
         SenseGlove_Touch thumbTouches = null;
-        if (this.wantsGrab[0]) { thumbTouches = GetTouch(0); } //only if the thumb is used for grabbing
+        //if (this.wantsGrab[0]) { thumbTouches = GetTouch(0); } //only if the thumb is used for grabbing
+        thumbTouches = GetTouch(0); //the fingers can still override a thumb.wantsGrab()
 
-        //The thumb and hand palm are touching the same object
-        if (thumbTouches != null && this.handPalm != null && thumbTouches.IsTouching(handPalm.TouchObject()))
+        //The thumb and hand palm are touching the same object, and the thumb wants to grab something.
+        if (thumbTouches != null && this.handPalm != null && wantsGrab[0] && thumbTouches.IsTouching(handPalm.TouchObject()))
         {
             if (thumbTouches.TouchedScript().fingerPalm) { grabables.Add(thumbTouches.TouchedScript()); }
         }
@@ -434,35 +449,51 @@ public class SenseGlove_PhysGrab : SenseGlove_GrabScript
     }
 
     /// <summary> Test Variable </summary>
-    private readonly int maxDIPFlexion = -70;
+    protected readonly int maxDIPFlexion = -70;
     /// <summary> Test Variable </summary>
-    private readonly int maxDIPExtension = 0;
+    protected readonly int maxDIPExtension = -10;
 
     /// <summary> Check whether or not the user is intending to pick up any of the Interactables. </summary>
     public bool[] CheckGestures()
     {
         bool[] res = new bool[5] { true, true, true, true, true };
-
-        if (this.senseGlove != null && this.senseGlove.GloveReady())
+        if (this.checkIntention != CheckIntention.Off)
         {
-            if (this.checkIntention)
+            if (this.senseGlove != null && this.senseGlove.GloveReady())
             {
-                //in Unity, the HandAngles are positive (extension) and negative (flexion), both in degrees.
-                Vector3[][] handAngles = this.senseGlove.GloveData().handAngles;
+                bool[] D = new bool[5] { true, true, true, true, true };
 
-                //thumb
-                res[0] = handAngles[0][2].z >= -70 && handAngles[0][2].z <= 8;
-            
-                //fingers
-                for (int f = 1; f < 5; f++)
+                //collect the relative flexion angles of the fingers.
+                SenseGlove_Data data = this.senseGlove.GloveData();
+                float[] relDipFlexions = new float[5];
+                for (int f=0; f<5; f++)
                 {
-                    res[f] = handAngles[f][2].z >= maxDIPFlexion && handAngles[f][2].z <= maxDIPExtension;
+                    relDipFlexions[f] = data.handAngles[f][2].z;
                 }
+                dipAngles = relDipFlexions;
+
+                if (this.checkIntention >= CheckIntention.Static)
+                {
+                    //in Unity, the HandAngles are positive (extension) and negative (flexion), both in degrees.
+                    //thumb
+                    res[0] = relDipFlexions[0] >= -70 && relDipFlexions[0] <= -17.5f;
+                    for (int f=1; f<4; f++)
+                    {
+                        res[f] = relDipFlexions[f] >= maxDIPFlexion && relDipFlexions[f] <= maxDIPExtension;
+                    }
+                    res[4] = relDipFlexions[4] >= maxDIPFlexion && relDipFlexions[4] <= maxDIPExtension - 5;
+                }
+                //also perform a dynamic analysis
+                //if (this.checkIntention >= CheckIntention.Dynamic)
+                //{
+
+                //}
+                
             }
-        }
-        else
-        {
-            res = new bool[5] { false, false, false, false, false };
+            else
+            {
+                res = new bool[5] { false, false, false, false, false };
+            }
         }
         return res;
     }
@@ -480,7 +511,7 @@ public class SenseGlove_PhysGrab : SenseGlove_GrabScript
     /// <param name="obj"></param>
     /// <param name="list"></param>
     /// <returns></returns>
-    private bool IsInside(SenseGlove_Interactable obj, List<SenseGlove_Interactable> list)
+    protected bool IsInside(SenseGlove_Interactable obj, List<SenseGlove_Interactable> list)
     {
         for (int i = 0; i < list.Count; i++)
         {
@@ -504,4 +535,12 @@ public enum PickupDebug
     Off = 0,
     AlwaysOn,
     ToggleOnTouch
+}
+
+/// <summary> The way in which the grabscript check for grab / release intention </summary>
+public enum CheckIntention
+{
+    Off = 0,
+    Static,
+    //Dynamic
 }

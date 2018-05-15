@@ -1,7 +1,29 @@
 # Changelog
 All notable changes to the SenseGlove Prefabs will be documented in this file.
 
-You are currently using version 0.18
+You are currently using version 0.19
+
+## [v0.19] - 2018-05-15
+Debugging and VR components
+
+### Added
+-	SenseGlove_Dial; a new script that allows one to manipulate a rotating dial button, with appropriate parameters.  
+
+### Changed
+-	SenseGlove_Dropzone: Removed several debug messages and added an optional highlighter object.
+-	SenseGlove_GrabZone: Only passes on events if this script is designated as interactable.
+-	SenseGlove_Teleport: Now automatically checks for grabscripts attached to its SenseGlove_HandModel
+-	SenseGlove_Grabscript: Added ClearHeldObjects() function, to force the grabscript (and its components) to forget about any touched / grabbed objects.
+-	SenseGlove_PhysGrab: Refined the CheckIntention option, which is now more reliable. A distinction is made between no Intention checking or static intention checking, with the possibility of adding dynamic checking later.
+-	SenseGlove_Touch: Now has refrences to the SenseGlove_Interactable script of the object it is touching.
+-	SenseGlove_Grabable: Added more variables to assist with Physics joint connections. Also added a new "Attach" mechanic, which allows the objects to snap to the hand in a defined position.
+- 	SenseGlove_Object: OnGloveUnloaded event, which fires when the object's Disconnect() function is called. Useful for cleaning up resources.
+-	DLL: Support for communication with the 1st dev kits PCBs, as well as a way to prevent sensor values to always stay within their alloted range [-2Pi ... +2Pi].
+
+### Fixed
+-	A bug in the SenseGlove_Drawer where switching the moveDirection mid-game would cause it return the wrong Vector.
+-	A temporary fix to pick up objects using PhysicsJoint connections with out mirrored left hand model.
+
 
 -------------------------------------------------------------------------------------------------------
 

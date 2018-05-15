@@ -9,7 +9,7 @@ public class ApplyCorrectHand : MonoBehaviour
     private GameObject leftHandModel, rightHandModel;
 
     public KeyCode swapHandsKey = KeyCode.Return;
-    private SolveType currSolv;
+    //private SolveType currSolv;
 
     public KeyCode switchSolver = KeyCode.S;
     private bool leftReady = false, rightReady = false;

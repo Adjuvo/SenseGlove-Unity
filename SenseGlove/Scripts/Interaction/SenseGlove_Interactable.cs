@@ -93,6 +93,12 @@ public abstract class SenseGlove_Interactable : MonoBehaviour
         return this._grabScript != null;
     }
     
+    /// <summary> Whether or not this object wants interaction to end. </summary>
+    /// <returns></returns>
+    public virtual bool CanEndInteraction()
+    {
+        return true;
+    }
 
 }
 

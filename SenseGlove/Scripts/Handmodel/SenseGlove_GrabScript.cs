@@ -172,6 +172,9 @@ public abstract class SenseGlove_GrabScript : MonoBehaviour
     /// <returns></returns>
     public abstract bool IsTouching();
 
+    /// <summary> Remove any references to held objects, restoring the GrabScript as though it has not touched anything yet. </summary>
+    public abstract void ClearHeldObjects();
+
     #endregion GrabMethods
 
 }

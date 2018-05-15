@@ -43,7 +43,7 @@ public class SenseGlove_Hinge : SenseGlove_Interactable
     private GameObject grabReference;
 
     /// <summary> The offset  </summary>
-    private Vector3 grabOffset;
+    //private Vector3 grabOffset;
 
     /// <summary> The offset angle between the grabreference and the hinge (handle) </summary>
     private float offsetAngle = 0;

@@ -19,6 +19,9 @@ public class SenseGlove_Touch : MonoBehaviour
     [Tooltip("The object that is currently touched by this SenseGlove_Touch script.")]
     public GameObject touchedObject;
 
+    /// <summary> Script of touched object </summary>
+    private SenseGlove_Interactable touchedScript;
+
     /// <summary> The grabscript using these colliders for its logic. Only PhysGrab uses these. </summary>
     private SenseGlove_GrabScript grabScript;
     
@@ -73,11 +76,12 @@ public class SenseGlove_Touch : MonoBehaviour
     {
         if (touch != null) { touch.isTrigger = true; } //enure the touch collider is always kinematic.
 
-        if (this.touchedObject != null && !this.touchedObject.activeInHierarchy)
+        if ( (this.touchedObject != null && !this.touchedObject.activeInHierarchy) || (this.touchedScript != null && !this.touchedScript.isInteractable) )
         {
             //SenseGlove_Debugger.Log("Object no longer exists. Releasing.");
             this.SetDebug(false);
             this.touchedObject = null;
+            this.touchedScript = null;
         }
 
         //check debug logic
@@ -111,13 +115,15 @@ public class SenseGlove_Touch : MonoBehaviour
     // Called when this object enters the collider of another object
     void OnTriggerEnter(Collider col)
     {
-        if (col.GetComponent<SenseGlove_Interactable>() != null && this.touchedObject == null)
+        SenseGlove_Interactable interact = col.GetComponent<SenseGlove_Interactable>();
+        if (interact != null && this.touchedObject == null)
         {
             //if (!this.IsTouching(col.gameObject))
             //{
             //    //touching a new object!
             //}
             this.touchedObject = col.gameObject;
+            this.touchedScript = interact;
             if (this.debugLvl == PickupDebug.ToggleOnTouch) { this.SetDebug(true); }
         }
     }
@@ -133,6 +139,7 @@ public class SenseGlove_Touch : MonoBehaviour
         if (this.IsTouching(col.gameObject))
         {
             this.touchedObject = null;
+            this.touchedScript = null;
             if (this.debugLvl == PickupDebug.ToggleOnTouch) { this.SetDebug(false); }
         }
     }
@@ -198,6 +205,12 @@ public class SenseGlove_Touch : MonoBehaviour
             return this.touchedObject.GetComponent<SenseGlove_Interactable>();
         }
         return null;
+    }
+
+    /// <summary> Clear the object currntly touched by this script </summary>
+    public void ClearTouchedObjects()
+    {
+        this.touchedObject = null;
     }
 
     #endregion TouchLogic

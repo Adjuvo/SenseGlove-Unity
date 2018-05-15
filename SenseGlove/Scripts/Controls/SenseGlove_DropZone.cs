@@ -80,10 +80,10 @@ public class SenseGlove_DropZone : MonoBehaviour
         if (grabable && (!grabable.IsGrabbed() || this.takeFromHand))
         {   
             int index = this.ListIndex(grabable);
-            SenseGlove_Debugger.Log("Detected an Object with listIndex of " + index);
+            //SenseGlove_Debugger.Log("Detected an Object with listIndex of " + index);
             if (index < 0) //its a new object, even if it has multiple colliders.
             {
-                SenseGlove_Debugger.Log("A new object!");
+               // SenseGlove_Debugger.Log("A new object!");
                 if (this.objectsToGet.Count <= 0 || this.IsTarget(grabable)) //either we require multiple objects or it is one of the goal objects.
                 {
                     this.AddObject(grabable);
@@ -103,7 +103,7 @@ public class SenseGlove_DropZone : MonoBehaviour
             {
                 if (this.objectsToGet.Count <= 0 || this.IsTarget(grabable))
                 {
-                    SenseGlove_Debugger.Log("A new object inside the dropZone!");
+                    //SenseGlove_Debugger.Log("A new object inside the dropZone!");
                     this.AddObject(grabable);   
                 }
             }
@@ -117,7 +117,7 @@ public class SenseGlove_DropZone : MonoBehaviour
         if (grabable)
         {
             int index = this.ListIndex(grabable);
-            SenseGlove_Debugger.Log("Object with index " + index + " is leaving this dropzone");
+            //SenseGlove_Debugger.Log("Object with index " + index + " is leaving this dropzone");
             this.RemoveObject(index);
             
         }
@@ -273,6 +273,18 @@ public class SenseGlove_DropZone : MonoBehaviour
     }
 
     #endregion DropzoneLogic
+
+    /// <summary>
+    /// Enable / Disable the highlighter(s) of this dropzone.
+    /// </summary>
+    /// <param name="active"></param>
+    public void SetHighLight(bool active)
+    {
+        if (this.highLighter != null)
+        {
+            this.highLighter.SetActive(active);
+        }
+    }
 
 
     //--------------------------------------------------------------------------------------------------------------------------

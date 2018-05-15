@@ -16,6 +16,11 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
     [Tooltip("The way that this object is be picked up by a GrabScript.")]
     public GrabType pickupMethod = GrabType.Parent;
 
+    public AttachType attachMethod = AttachType.Default;
+
+    /// <summary> The object to snap to. </summary>
+    public Transform snapReference;
+
     /// <summary> Whether or not this object can be picked up by another Grabscript while it is being held. </summary>
     [Tooltip("Whether or not this object can be picked up from the Sense Glove by another Grabscript.")]
     public bool canTransfer = true;
@@ -24,22 +29,22 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
     public Transform pickupReference;
 
     /// <summary> The gameObject used as a reference for the Grabable's transform updates. </summary>
-    private GameObject grabReference;
+    protected GameObject grabReference;
 
     //Folllow GrabType Variables
     
     /// <summary> The xyz offset of this Grabable's transform to the grabReference, on the moment it was picked up. </summary>
-    private Vector3 grabOffset = Vector3.zero;
+    protected Vector3 grabOffset = Vector3.zero;
     /// <summary> The quaternion offset of this Grabable's transform to the grabReference, on the moment it was picked up.  </summary>
-    private Quaternion grabRotation = Quaternion.identity;
+    protected Quaternion grabRotation = Quaternion.identity;
 
     //Parent GrabType Variables
 
-    private Transform originalParent;
+    protected Transform originalParent;
 
     //PhysicsJoint GrabType Variables
 
-    private Joint connection;
+    protected Joint connection;
 
     //Object RigidBody Variables
 
@@ -48,9 +53,9 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
     public Rigidbody physicsBody;
 
     /// <summary> Whether this grabable's physicsBody was kinematic before it was picked up. </summary>
-    private bool wasKinematic;
+    protected bool wasKinematic;
     /// <summary> Whether this grabable's physicsBody was used gravity before it was picked up. </summary>
-    private bool usedGravity;
+    protected bool usedGravity;
 
     #endregion Properties
 
@@ -115,6 +120,10 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
         {
             this.pickupReference = this.transform;
         }
+        if (this.snapReference == null)
+        {
+            this.snapReference = this.transform;
+        }
     }
 
     void Start()
@@ -168,9 +177,29 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
             //if the object was actually grabbed.
             if (!alreadyBeingHeld || (alreadyBeingHeld && this.canTransfer))
             {
+                //todo release?
+
                 this.grabReference = grabScript.grabReference;
                 this._grabScript = grabScript;
                 
+                if (this.attachMethod != AttachType.Default && this.snapReference != null)
+                {
+                    if (this.attachMethod == AttachType.SnapToAnchor)
+                    {
+                        //match orientation: x axis of ref is aligned with the x axis of the glove.
+
+                        int RL = this._grabScript.senseGlove != null && !this._grabScript.senseGlove.GloveData().isRight ? 1 : -1;
+                        this.pickupReference.rotation = this.grabReference.transform.rotation * Quaternion.Euler(-90*RL, 0, 0);
+
+                        Vector3 dRS = this.pickupReference.position - this.snapReference.position;
+
+                        this.pickupReference.transform.position = this.grabReference.transform.position + dRS;
+
+                    }
+               
+                }
+
+
                 //Apply proper pickup 
                 if (this.pickupMethod == GrabType.Parent)
                 {
@@ -347,7 +376,7 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
     /// <summary> Connect this Grabable's rigidBody to another using a FixedJoint </summary>
     /// <param name="other"></param>
     /// <returns>True, if the connection was sucesfully made.</returns>
-    public bool ConnectJoint(Rigidbody other, float breakForce = 1000)
+    public bool ConnectJoint(Rigidbody other, float breakForce = 4000)
     {
         if (other != null)
         {
@@ -422,9 +451,16 @@ public enum GrabType
     /// <summary> A FixedJoint is created between the grabbed object and the GrabReference, which stops it from passing through rigidbodies. </summary>
     FixedJoint,
     /// <summary> The object becomes a child of the Grabreference. Its original parent is restored upon release. </summary>
-    Parent,
-    // /// <summary> The object snaps to the GrabReference  </summary>
-    //SnapToGrabRef,
-    // /// <summary> The object snaps to the GrabReference, but smoothly moves toward it.  </summary>
-    //SmoothSnapToGrabRef
+    Parent
+}
+
+/// <summary> The way that this SenseGlove_Grabable attaches to a GrabScript that tries to pick it up. </summary>
+public enum AttachType
+{
+    /// <summary> Default. The object keeps its current position. </summary>
+    Default = 0,
+    /// <summary> The object snaps to the Grabscript in a predefined position and orientation; useful for tools etc. </summary>
+    SnapToAnchor,
+    // /// <summary> (BETA) Same as SnapToAnchor; but the object reaches its desired destination with a smooth animation. </summary>
+    // FlowToAnchor
 }

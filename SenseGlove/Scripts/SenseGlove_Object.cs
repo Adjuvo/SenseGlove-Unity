@@ -155,6 +155,23 @@ public class SenseGlove_Object : MonoBehaviour
         }
     }
 
+    /// <summary> Event delegate for the GloveReady event. </summary>
+    /// <param name="source"></param>
+    /// <param name="args"></param>
+    public delegate void GloveUnloadEventHandler(object source, System.EventArgs args);
+
+    /// <summary> Occurs when the SenseGlove_Object has connected to the Sense Glove, and all glove-related data has been retrieved from the device. </summary>
+    public event GloveReadyEventHandler OnGloveUnloaded;
+
+    /// <summary> Used to call the OnGloveLoaded event. </summary>
+    protected void GloveUnloaded()
+    {
+        if (OnGloveUnloaded != null)
+        {
+            OnGloveUnloaded(this, null);
+        }
+    }
+
     /// <summary> Event delegate function for the CalibrateionFinished event. </summary>
     /// <param name="source"></param>
     /// <param name="args"></param>
@@ -255,6 +272,7 @@ public class SenseGlove_Object : MonoBehaviour
                     }
                     
                     this.gloveData = this.glove.GetData(false); //get the latest data without calculating anything.
+                    this.rightHand = this.gloveData.isRight; //so that users can use this variable during setup.
 
                     if (oldFingerLengths != null) { this.SetFingerLengths(oldFingerLengths); } //re-apply old fingerlengths, if possible.
                     if (oldStartPositions != null) { this.SetStartJointPositions(oldStartPositions); } //re=apply joint positions, if possible.
@@ -371,6 +389,7 @@ public class SenseGlove_Object : MonoBehaviour
         if (this.gloveData != null)
         {
             SenseGlove_Manager.SetUsed(this.gloveData.deviceID, false);
+            this.GloveUnloaded(); //raise event
         }
         this.glove = null; //The DeviceScanner will still keep them, specifically their communicator, in memory.
         this.standBy = true;
