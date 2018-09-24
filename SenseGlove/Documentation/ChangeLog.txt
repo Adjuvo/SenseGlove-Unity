@@ -1,10 +1,42 @@
 # Changelog
 All notable changes to the SenseGlove Prefabs will be documented in this file.
 
-You are currently using version 0.19
+You are currently using version 0.20
+
+## [v0.20] - 2018-09-24
+New Kinematics and Calibration, DK1 compatibility.
+This is one of the last versions of the SDK before v1.0. A few scripts will need to be re-worked in order to increase readability and maintance.
+
+### Added
+-	SenseGlove_AR Prefab and SenseGlove_ARGlove Script, that controls only the fingertip positions based on the glove hardware.
+	It allows one to create force feedback with the Sense Glove without the need for a Virtual Hand Model or -Calibration.
+-	SenseGlove_PhysDebug; a visual debugger for the SenseGlove_PhysGrab script. 
+	It was once built into the SenseGlove_Physgrab, but is now a more intuitive script on its own.
+-	Examples/ShowAngles script, which shows the calculated handAngles of the thumb and index finger.
+-	GloveCalibrationArguments now contains two copys of convertedGloveData; one before, one after calibration.
+	
+
+### Changed
+-	SenseGlove_Touch no longer creates its own debug colliders; these have been moved to the SenseGlove_PhysDebug Script
+-	A minor tweak to the intention checking of the SenseGlove_Physgrab script.
+-	The SenseGlove_Physgrab no longer has any of its debugMode or DebugColliderColor properties; these have been moved to the SenseGlove_PhysDebug script
+-	SolveType enumerator has been renamed to Solver, and the 'experimental' kinematics options have been removed untill they are re-validated.
+-	StartCalibration function now takes two arguments; A CalibrateVariable, indicating what to calibrate, and a CollectionMethod, which indicated how the points are collected.
+-	Output GloveData of the DLL has a more easy to read format. The SenseGlove_Data of the SDk remains unchanged (for now).
+-	Most of the SenseGlove_Interactable and _Grabable methods, especially the Monobehaviour, have been marked as 'virtual', making them overrideable.
+-	SenseGlove_Grabable has additional methods, which are called during the Awake() method.
+
+
+### Fixed
+-	A bug where the default solver was set to Custom; which meant the handModel would not Update.
+-	Bug where the WireFrame prefab was not properly exported, creating a missing prefab error.
+
+
+-------------------------------------------------------------------------------------------------------
+
 
 ## [v0.19] - 2018-05-15
-Debugging and VR components
+Bug and interactables fixes
 
 ### Added
 -	SenseGlove_Dial; a new script that allows one to manipulate a rotating dial button, with appropriate parameters.  

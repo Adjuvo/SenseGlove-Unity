@@ -1,6 +1,6 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
+using SenseGloveMats;
 
 /// <summary>
 /// A class that can hook itself up to a SenseGlove_Interactable or material, and deform its mesh.
@@ -13,9 +13,10 @@ public class SenseGlove_MeshDeform : MonoBehaviour
 
     #region Properties
 
-   
+
     /// <summary> Will be used to extract the Mesh variable without exposing it to other classes. </summary>
-    [Tooltip("The filter used to extract the mesh of the object to deform.")]
+    /// <remarks> If no Mesh Filter is assigned via the inspector, the script will attempt to retrieve one from the GameObject it is attached to.</remarks>
+    [Tooltip("The filter used to extract the mesh of the object to deform.  If no Mesh Filter is assigned via the inspector, the script will attempt to retrieve one from the GameObject it is attached to.")]
     public MeshFilter meshFilter;
 
     /// <summary> Determines how the Vertices respond to the collider(s) </summary>
@@ -29,28 +30,28 @@ public class SenseGlove_MeshDeform : MonoBehaviour
 
 
     /// <summary> The actual Mesh to manipulate. </summary>
-    private Mesh myMesh;
+    protected Mesh myMesh;
 
     /// <summary> The original vertices of the mesh, used for Deformation Logic </summary>
-    private Vector3[] verts;
+    protected Vector3[] verts;
 
     /// <summary> The deformed mesh vertices, which are used to update the Mesh </summary>
-    private Vector3[] deformVerts;
+    protected Vector3[] deformVerts;
 
     /// <summary> Indicated that the Mesh should be defroming. No need to recalculate unless they are being touched by a Feedback Collider. </summary>
-    private bool atRest = true;
+    protected bool atRest = true;
 
     /// <summary> The indices (in myMesh.vertices) that represent points that may be shared with others. </summary>
-    private int[] uniqueVertices;
+    protected int[] uniqueVertices;
 
     /// <summary> The points shared by the Vertices at each indes of uniqueVertices. </summary>
-    private int[][] sameVertices;
+    protected int[][] sameVertices;
 
     /// <summary> The queue of deformations that will be aplied during the next update frame. </summary>
-    private List<Deformation> deformationQueue = new List<Deformation>();
+    protected List<Deformation> deformationQueue = new List<Deformation>();
 
     /// <summary> Used to enable/disable the mesh deformation. </summary>
-    private bool deforms = true;
+    protected bool deforms = true;
 
 
     #endregion Properties
@@ -94,7 +95,7 @@ public class SenseGlove_MeshDeform : MonoBehaviour
 
     /// <summary> Enable / Disable mesh deformation of this script. Default set to true. </summary>
     /// <param name="meshDeforms"></param>
-    void SetDeform(bool meshDeforms)
+    protected void SetDeform(bool meshDeforms)
     {
         if (this.deforms)
         {
@@ -106,7 +107,7 @@ public class SenseGlove_MeshDeform : MonoBehaviour
 
     /// <summary> Collect the Mesh Data and find its unique vertices. </summary>
     /// <remarks>Placed in a separate function so one can re-analyze the mesh data on the fly.</remarks>
-    private void CollectMeshData()
+    protected void CollectMeshData()
     {
         if (this.meshFilter == null)
         {
@@ -192,7 +193,7 @@ public class SenseGlove_MeshDeform : MonoBehaviour
     }
 
     /// <summary> Add a deformation to calculate at the end of the fixedUpdate function. </summary>
-    /// /// <param name="absEntryVector"></param>
+    /// <param name="absEntryVector"></param>
     /// <param name="absDeformPoint"></param>
     public void AddDeformation(Vector3 absEntryVector, Vector3 absDeformPoint, float dist)
     {
@@ -231,7 +232,7 @@ public class SenseGlove_MeshDeform : MonoBehaviour
     /// <param name="absEntryVector"></param>
     /// <param name="absDeformPoint"></param>
     /// <param name="dist"></param>
-    private void AddDeform(Vector3 absEntryVector, Vector3 absDeformPoint, float dist)
+    protected void AddDeform(Vector3 absEntryVector, Vector3 absDeformPoint, float dist)
     {
         //ensure that the deformPoint is not max dist away from the entryvector (?)
         this.deformationQueue.Add(new Deformation(absEntryVector, absDeformPoint, dist));
@@ -239,7 +240,7 @@ public class SenseGlove_MeshDeform : MonoBehaviour
 
     /// <summary> Remove a deformation from the queue </summary>
     /// <param name="index"></param>
-    private void RemoveDeform(int index)
+    protected void RemoveDeform(int index)
     {
         if (index >= 0 && index < this.deformationQueue.Count)
         {
@@ -248,14 +249,14 @@ public class SenseGlove_MeshDeform : MonoBehaviour
     }
 
     /// <summary> Clear the list of deforms after everything;s been applied. </summary>
-    private void ClearDeformations()
+    protected void ClearDeformations()
     {
         this.deformationQueue.Clear();
     }
 
     /// <summary> Reset all (unique) vertices. </summary>
     /// <param name="resetAll">Set to true to reset all points, set to false to reset only the uniqueVertices (saves time)</param>
-    private void ResetPoints(bool resetAll)
+    protected void ResetPoints(bool resetAll)
     {
         if (resetAll)
         {
@@ -278,7 +279,7 @@ public class SenseGlove_MeshDeform : MonoBehaviour
     /// <summary> Actually deform the mesh </summary>
     /// <param name="absEntryVector"></param>
     /// <param name="absDeformPoint"></param>
-    private void DeformMesh(Vector3 absEntryVector, Vector3 absDeformPoint)
+    protected void DeformMesh(Vector3 absEntryVector, Vector3 absDeformPoint)
     {
         if (displaceType == DisplaceType.Plane)
         {
@@ -328,7 +329,7 @@ public class SenseGlove_MeshDeform : MonoBehaviour
     /// <summary> Update a vertex in the uniqueVertices array, and its associated sameVertices. </summary>
     /// <param name="i"></param>
     /// <param name="newPos"></param>
-    private void UpdatePoint(int uniqueVertIndex, Vector3 newPos)
+    protected void UpdatePoint(int uniqueVertIndex, Vector3 newPos)
     {
         this.deformVerts[this.uniqueVertices[uniqueVertIndex]] = newPos;
         for (int i = 0; i < this.sameVertices[uniqueVertIndex].Length; i++)
@@ -341,7 +342,7 @@ public class SenseGlove_MeshDeform : MonoBehaviour
 
 
     /// <summary> Apply all deformation in the Queue </summary>
-    private void UpdateMesh()
+    protected void UpdateMesh()
     {
         if (this.myMesh && !this.atRest)
         {
@@ -380,33 +381,39 @@ public class SenseGlove_MeshDeform : MonoBehaviour
 
 }
 
-/// <summary> The method by which the mesh will be displaced. </summary>
-public enum DisplaceType
+namespace SenseGloveMats //so these classes are not in the main namespace.
 {
-    Plane = 0
-}
 
-/// <summary> Contains all variables needed to perform Deformations, and to evaluate two deformations. </summary>
-public struct Deformation
-{
-    /// <summary> The absolute entry vector of the Deformation </summary>
-    public Vector3 absEntryVector;
-
-    /// <summary> The (current) absulute position of the deformation. </summary>
-    public Vector3 absDeformPosition;
-
-    /// <summary> How far the abdDeformPosition is from the  </summary>
-    public float distance;
-
-    /// <summary> Create a new Deformation data package. </summary>
-    /// <param name="absEntryVect"></param>
-    /// <param name="absPosition"></param>
-    /// <param name="dist"></param>
-    public Deformation(Vector3 absEntryVect, Vector3 absDefPosition, float dist)
+    /// <summary> The method by which the mesh will be displaced using the SenseGlove_Feedback entry vector. </summary>
+    public enum DisplaceType
     {
-        this.absEntryVector = absEntryVect;
-        this.absDeformPosition = absDefPosition;
-        this.distance = dist;
+        /// <summary> Squashed the vertices as though they are pressed against a glass window. </summary>
+        Plane = 0
+    }
+
+    /// <summary> Contains all variables needed to perform Deformations, and to evaluate two deformations. </summary>
+    public struct Deformation
+    {
+        /// <summary> The absolute entry vector of the Deformation </summary>
+        public Vector3 absEntryVector;
+
+        /// <summary> The (current) absulute position of the deformation. </summary>
+        public Vector3 absDeformPosition;
+
+        /// <summary> How far the abdDeformPosition is from the entry point </summary>
+        public float distance;
+
+        /// <summary> Create a new Deformation data struct. </summary>
+        /// <param name="absEntryVect"></param>
+        /// <param name="absPosition"></param>
+        /// <param name="dist"></param>
+        public Deformation(Vector3 absEntryVect, Vector3 absDefPosition, float dist)
+        {
+            this.absEntryVector = absEntryVect;
+            this.absDeformPosition = absDefPosition;
+            this.distance = dist;
+        }
+
     }
 
 }

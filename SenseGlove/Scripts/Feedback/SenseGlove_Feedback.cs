@@ -16,13 +16,21 @@ public class SenseGlove_Feedback : MonoBehaviour
 
     /// <summary> The object that is currently touched by this SenseGlove_Touch script. </summary>
     [Tooltip("The object that is currently touched by this SenseGlove_Touch script.")]
-    public GameObject touchedObject;
+    protected GameObject touchedObject;
 
+    /// <summary> The Material of the last touched object. If set to null, it may have been deleted. </summary>
     private SenseGlove_Material touchedMaterial;
+    
+    /// <summary> The Mesh Deform of the last touched object, if available. Used to deform an object based on its SenseGlove-Material Properties. </summary>
     private SenseGlove_MeshDeform touchedDeform;
-    private SenseGlove_Interactable touchedScript;
+    
+   // /// <summary> The SenseGlove_Interactable script of the last touched object, if any. </summary>
+   // private SenseGlove_Interactable touchedScript;
 
-    /// <summary> The grabscript using these colliders for its logic. </summary>
+    /// <summary> The Collider of the last touched object. Used to check if its been disabled. </summary>
+    private Collider touchedCollider;
+
+    /// <summary> The hand model using these colliders for its logic. </summary>
     public SenseGlove_HandModel handModel;
 
     /// <summary> The position of the collider the moment it entered a new object.  Used to determine collider normal. </summary>
@@ -108,13 +116,9 @@ public class SenseGlove_Feedback : MonoBehaviour
     {
         if (touch != null) { touch.isTrigger = true; } //ensure the touch collider is always kinematic.
 
-        if (this.touchedObject != null && !this.touchedObject.activeInHierarchy)
+        if (this.TouchDisabled()) //also disable if the collider has been disabled, which some of the 
         {
-            this.touchedObject = null;
-            this.touchedMaterial = null;
-            this.touchedDeform = null;
-            this.motorLevel = 0;
-            this.dist = 0;
+            this.Detach();
         }
     }
 
@@ -125,21 +129,32 @@ public class SenseGlove_Feedback : MonoBehaviour
 
     #region Collision
 
+    protected bool TouchDisabled()
+    {
+        return this.touchedObject == null
+            || (this.touchedObject != null && !this.touchedObject.activeInHierarchy)
+                || (this.touchedCollider != null && !this.touchedCollider.enabled);
+    }
+
+
     // Called when this object enters the collider of another object
     void OnTriggerEnter(Collider col)
     {
         if (this.touchedObject == null)
         {
             SenseGlove_Material material = col.GetComponent<SenseGlove_Material>();
-            SenseGlove_Interactable interactable = col.GetComponent<SenseGlove_Interactable>();
-            if (material || interactable)
+            if (material)
             {
                 // SenseGlove_Debugger.Log("Touching " + col.name + "; material = " + (material != null) + ", interactable = " + (interactable != null));
-                this.touchedObject = col.gameObject;
-                this.touchedScript = interactable;
-                this.touchedMaterial = material;
-                this.touchedDeform = col.GetComponent<SenseGlove_MeshDeform>();
+                //SenseGlove_Interactable interactable = col.GetComponent<SenseGlove_Interactable>();
 
+                //this.touchedObject = col.gameObject;
+                //this.touchedScript = interactable;
+                //this.touchedMaterial = material;
+                //this.touchedDeform = col.GetComponent<SenseGlove_MeshDeform>();
+
+                this.Attach(material);
+                
                 if (this.handModel.forceFeedback == ForceFeedbackType.Simple && material)
                 {
                     this.motorLevel = material.maxForce;
@@ -149,7 +164,6 @@ public class SenseGlove_Feedback : MonoBehaviour
                     this.FindForceDirection(col);
                     this.motorLevel = 0; //still 0 since OP == EO
                 }
-
                 if (material && material.hapticFeedback)
                 {
                     this.buzzLevel = material.hapticMagnitude;
@@ -162,6 +176,8 @@ public class SenseGlove_Feedback : MonoBehaviour
     // Called every FixedUpdate while this collider is inside another collider.
     void OnTriggerStay(Collider col)
     {
+        //No forther checks if (myObj == 0, because it interferes with the entry vector...
+
         if (this.IsTouching(col.gameObject)) //Check if we're still on the same object?
         {
             //any object that we are touching has either an Interactable and/or a material
@@ -182,7 +198,7 @@ public class SenseGlove_Feedback : MonoBehaviour
                 }
                 else
                 {
-                    this.CalculateMaterialBased(col.gameObject, this.touchedMaterial, this.touchedScript, true);
+                    this.CalculateMaterialBased(col.gameObject, this.touchedMaterial, true);
                 }
             }
         }
@@ -193,13 +209,41 @@ public class SenseGlove_Feedback : MonoBehaviour
     {
         if (this.touchedObject != null && this.IsTouching(col.gameObject))
         {
-            if (this.touchedDeform != null) { this.touchedDeform.ResetMesh(); }
-            this.touchedObject = null;
-            this.motorLevel = 0;
-            this.buzzLevel = 0;
-            this.dist = 0;
+            this.Detach();
         }
     }
+
+    /// <summary> Attach a material script to this feedback script. </summary>
+    /// <param name="material"></param>
+    public void Attach(SenseGlove_Material material)
+    {
+        this.touchedMaterial = material;
+        this.touchedObject = material.gameObject;
+        //this.touchedScript = this.touchedObject.GetComponent<SenseGlove_Interactable>();
+        this.touchedDeform = this.touchedObject.GetComponent<SenseGlove_MeshDeform>();
+
+        Collider[] cols = this.touchedObject.GetComponents<Collider>();
+        if (cols.Length > 0)
+        {
+            this.touchedCollider = cols[0]; //one of the colliders as a refrence. Assumed that if one of them is disabled, all of the are.
+        }
+    }
+
+    /// <summary> Detach the connected bject and its force feedback </summary>
+    public void Detach()
+    {
+        if (this.touchedDeform != null) { this.touchedDeform.ResetMesh(); }
+
+        this.touchedObject = null;
+        this.touchedMaterial = null;
+        this.touchedDeform = null;
+        this.touchedCollider = null;
+
+        this.motorLevel = 0;
+        this.buzzLevel = 0;
+        this.dist = 0;
+    }
+
 
     #endregion Collision
 
@@ -224,7 +268,7 @@ public class SenseGlove_Feedback : MonoBehaviour
     /// <summary> Calculate the force feedback levels based on material properties. </summary>
     /// <param name="col"></param>
     /// <remarks>Placed in a separate method so that one can control when it is called in Unity's execution order.</remarks>
-    private void CalculateMaterialBased(GameObject obj, SenseGlove_Material material, SenseGlove_Interactable interactable, bool showLines = false)
+    private void CalculateMaterialBased(GameObject obj, SenseGlove_Material material, bool showLines = false)
     {
         Vector3 O = obj.transform.TransformPoint(this.entryOrigin);  //O origin of collider on touch
         Vector3 E = obj.transform.TransformPoint(this.entryPoint);   //E point where the collider touched the object
@@ -289,6 +333,7 @@ public class SenseGlove_Feedback : MonoBehaviour
         this.buzzLevel = 0;
         this.buzzTime = 0;
     }
+
 
     #endregion Feedback
 

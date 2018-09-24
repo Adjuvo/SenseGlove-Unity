@@ -12,7 +12,7 @@ namespace SenseGloveMats
         /// <summary> The maximum force that this material can put on the Sense Glove. </summary>
         public int maxForce;
 
-        /// <summary> Teh distance [m] where the maximum force has been reached. Setting it to 0 will instantly send maxForce on touch </summary>
+        /// <summary> The distance [m] where the maximum force has been reached. Setting it to 0 will instantly send maxForce on touch </summary>
         public float maxForceDist;
 
         /// <summary> The distance [m] at which the material breaks. </summary>
@@ -21,7 +21,7 @@ namespace SenseGloveMats
         /// <summary> The magnitude [0..100%] of the buzz motor pulse </summary>
         public int hapticForce;
 
-        /// <summary>  </summary>
+        /// <summary> The duration of the Haptic Feedback, in miliseconds </summary>
         public int hapticDur;
 
         /// <summary> Convert a SenseGlove_Material into a MaterialProps, which can be passed between scripts or stored later on. </summary>
@@ -120,7 +120,7 @@ namespace SenseGloveMats
     
 
     /// <summary> Used to parse enties within material databases. </summary>
-    public enum MatProp
+    internal enum MatProp
     {
         Name,
         maxForce,
@@ -207,6 +207,9 @@ namespace SenseGloveMats
             return MaterialProps.Default();
         }
 
+        /// <summary> Add a material with specified properties tot he internal memory </summary>
+        /// <param name="matName"></param>
+        /// <param name="props"></param>
         private static void AddMaterial(string matName, MaterialProps props)
         {
             MaterialProps exist;
@@ -219,7 +222,7 @@ namespace SenseGloveMats
         /// <summary> Check if a materials library has been loaded yet. </summary>
         /// <param name="libName"></param>
         /// <returns></returns>
-        public static bool IsLoaded(string libName)
+        private static bool IsLoaded(string libName)
         {
             return LibIndex(libName) > -1;
         }
@@ -237,7 +240,7 @@ namespace SenseGloveMats
         }
 
         /// <summary> Clear all existing material libraries. </summary>
-        private static void ClearLibraries()
+        public static void ClearLibraries()
         {
             materials.Clear();
             libraryNames.Clear();

@@ -16,7 +16,8 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
     [Tooltip("The way that this object is be picked up by a GrabScript.")]
     public GrabType pickupMethod = GrabType.Parent;
 
-    public AttachType attachMethod = AttachType.Default;
+    /// <summary> The way this object connects itself to the grabscript it is holding. WIP. </summary>
+    protected AttachType attachMethod = AttachType.Default;
 
     /// <summary> The object to snap to. </summary>
     public Transform snapReference;
@@ -104,48 +105,6 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
     #endregion Events
 
     //--------------------------------------------------------------------------------------------------------------------------
-    // Monobehaviour
-
-    #region Monobehaviour
-
-    void Awake()
-    {
-        this.CheckPickupRef();
-        this.SaveTransform();
-    }
-
-    public void CheckPickupRef()
-    {
-        if (this.pickupReference == null)
-        {
-            this.pickupReference = this.transform;
-        }
-        if (this.snapReference == null)
-        {
-            this.snapReference = this.transform;
-        }
-    }
-
-    void Start()
-    {
-        if (!this.physicsBody) { this.physicsBody = this.pickupReference.GetComponent<Rigidbody>(); }
-
-        //Verify the kinematic variables
-        if (this.physicsBody)
-        {
-            this.wasKinematic = this.physicsBody.isKinematic;
-            this.usedGravity = this.physicsBody.useGravity;
-        }
-    }
-
-    void Update()
-    {
-        if (!this.isInteractable && this.grabReference != null) { this.EndInteraction(null); } //end the interaction if the object is no longer interactable with.
-    }
-
-    #endregion Monobehaviour
-
-    //--------------------------------------------------------------------------------------------------------------------------
     // Class methods
 
     #region ClassMethods
@@ -188,7 +147,7 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
                     {
                         //match orientation: x axis of ref is aligned with the x axis of the glove.
 
-                        int RL = this._grabScript.senseGlove != null && !this._grabScript.senseGlove.GloveData().isRight ? 1 : -1;
+                        int RL = this._grabScript.senseGlove != null && !(this._grabScript.senseGlove.GloveData().gloveSide == GloveSide.RightHand) ? 1 : -1;
                         this.pickupReference.rotation = this.grabReference.transform.rotation * Quaternion.Euler(-90*RL, 0, 0);
 
                         Vector3 dRS = this.pickupReference.position - this.snapReference.position;
@@ -283,13 +242,6 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
             this.grabReference = null;
         }
     }
-    
-
-    /// <summary> Force any grabscript that is holding this object to let go and call the EndInteraction method. </summary>
-    public void EndInteraction()
-    {
-        this.EndInteraction(this._grabScript, true);
-    }
 
 
     /// <summary> Save this object's position and orientation, in case the ResetObject function is called. </summary>
@@ -308,7 +260,6 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
         if (this.originalParent)
         {
             this.pickupReference.parent = originalParent;
-            this.originalParent = null;
         }
 
         this.BreakJoint();
@@ -335,15 +286,17 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
     }
 
 
-
     #endregion ClassMethods
+
+
+
 
     //----------------------------------------------------------------------------------------------------------------------------------
     // Utility Methods
 
     #region Utility
 
-        
+
     /// <summary>
     /// Set the original parent of this object, before it was picked up by the GrabScript.
     /// </summary>
@@ -437,8 +390,55 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
         }
     }
 
+    /// <summary> Check the PickupReference of this Grabable </summary>
+    public virtual void CheckPickupRef()
+    {
+        if (this.pickupReference == null)
+        {
+            this.pickupReference = this.transform;
+        }
+        if (this.snapReference == null)
+        {
+            this.snapReference = this.transform;
+        }
+    }
+
+    /// <summary> Store the BigidBody parameters of this Grabable </summary>
+    public virtual void SaveRBParameters()
+    {
+        if (!this.physicsBody) { this.physicsBody = this.pickupReference.GetComponent<Rigidbody>(); }
+
+        //Verify the kinematic variables
+        if (this.physicsBody)
+        {
+            this.wasKinematic = this.physicsBody.isKinematic;
+            this.usedGravity = this.physicsBody.useGravity;
+        }
+    }
 
     #endregion Utility
+
+
+    //--------------------------------------------------------------------------------------------------------------------------
+    // Monobehaviour
+
+    #region Monobehaviour
+
+    protected void Awake()
+    {
+        this.CheckPickupRef();
+        this.SaveRBParameters();
+        this.SaveTransform();
+    }
+
+    protected void Update()
+    {
+        if (!this.isInteractable && this.grabReference != null) { this.EndInteraction(null); } //end the interaction if the object is no longer interactable with.
+    }
+
+    #endregion Monobehaviour
+
+
 }
 
 

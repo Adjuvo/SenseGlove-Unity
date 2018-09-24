@@ -60,6 +60,8 @@ public abstract class SenseGlove_HandModel : MonoBehaviour
     [Tooltip("Text apprears on the touchColliders, showing the current motor level.")]
     public bool debugMotorLevels = false;
 
+    //-----------------------------------------------------------------------------------------------------------------------------------------
+    // Internal Variables.
 
     /// <summary> The force feedback scripts with which to determine fore feedback. </summary>
     protected SenseGlove_Feedback[] feedbackScripts;
@@ -67,8 +69,6 @@ public abstract class SenseGlove_HandModel : MonoBehaviour
     /// <summary> Optional grabscript connected to this hand model </summary>
     protected SenseGlove_GrabScript grabScript;
 
-    //-----------------------------------------------------------------------------------------------------------------------------------------
-    // Internal Variables.
 
     /// <summary> The list of finger joint transforms, used to manipulate the angles. Assigned in the CollectFingerJoints() function. </summary>
     protected List<List<Transform>> fingerJoints = new List<List<Transform>>();
@@ -120,7 +120,7 @@ public abstract class SenseGlove_HandModel : MonoBehaviour
         {
             this.UpdateWrist(this.senseGlove.GloveData());
 
-            if (this.updateFingers &&  !(this.senseGlove != null && this.senseGlove.solver == SolveType.Custom) )
+            if (this.updateFingers &&  !(this.senseGlove != null && this.senseGlove.solver == SenseGloveCs.Solver.Custom) )
             {   //in case of a custom solver, the model waits for an external UpdateHand call
                 this.UpdateHand(this.senseGlove.GloveData());
             }
@@ -163,11 +163,11 @@ public abstract class SenseGlove_HandModel : MonoBehaviour
     /// <summary> Call the ResizeFingers function. </summary>
     /// <param name="source"></param>
     /// <param name="args"></param>
-    protected virtual void SenseGlove_OnCalibrationFinished(object source, CalibrationArgs args)
+    protected virtual void SenseGlove_OnCalibrationFinished(object source, GloveCalibrationArgs args)
     {
         if (this.resizeFingers)
         {
-            this.ResizeHand(args.newFingerLengths);
+            this.ResizeHand(args.newData.GetFingerLengths());
         }
     }
 
@@ -251,7 +251,7 @@ public abstract class SenseGlove_HandModel : MonoBehaviour
             //creating a new group to house the debug text
             this.debugGroup = new GameObject("DebugContainer");
 
-            int scale = this.senseGlove.GloveData().isRight ? -1 : 1;
+            int scale = this.senseGlove.GloveData().gloveSide == GloveSide.RightHand ? -1 : 1;
 
             int n = this.touchColliders.Count > 5 ? 5 : this.touchColliders.Count;
             this.debugText = new TextMesh[n];
@@ -311,7 +311,7 @@ public abstract class SenseGlove_HandModel : MonoBehaviour
     /// Note: This method is called before UpdateFingers() is called.  
     /// </summary>
     /// <param name="data"></param>
-    protected virtual void UpdateWrist(SenseGlove_Data data)
+    public virtual void UpdateWrist(SenseGlove_Data data)
     {
         if (this.updateWrist && data.dataLoaded)
         {
@@ -323,73 +323,6 @@ public abstract class SenseGlove_HandModel : MonoBehaviour
         else
         {
             this.wristTransfrom.rotation = this.wristCorrection * this.foreArmTransfrom.rotation;
-        }
-    }
-
-    /// <summary> Collect force feedback levels from the feedbackScripts and send these to the Sense Glove. </summary>
-    protected virtual void UpdateForceFeedback()
-    {
-        this.motorLevels = new int[5] { 0, 0, 0, 0, 0 };
-        if (this.forceFeedback != ForceFeedbackType.None && this.feedbackScripts != null)
-        {
-            //for now, fingertips only
-            for (int f = 0; f < this.feedbackScripts.Length; f++)
-            {
-                this.motorLevels[f] = this.feedbackScripts[f].BrakeLevel();
-            }
-            this.senseGlove.SendBrakeCmd(this.motorLevels);
-        }
-    }
-
-    /// <summary> Collect the haptic feedback commands from the feedback colliders and send these to the Sense Glove. </summary>
-    public virtual void UpdateHapticFeedback()
-    {
-        
-        bool[] fingers = new bool[5];       //all false
-        int[] magnitudes = new int[5];  //all 0
-        int[] durations = new int[5];
-
-        bool atLeastOne = false;
-        if (this.feedbackScripts != null)
-        {
-            for (int f = 0; f < this.feedbackScripts.Length; f++)
-            {
-                if (this.feedbackScripts[f].CanBuzz())
-                {
-                    atLeastOne = true;
-                    fingers[f] = true;
-                    magnitudes[f] = this.feedbackScripts[f].BuzzLevel();
-                    durations[f] = this.feedbackScripts[f].BuzzTime();
-
-                    this.feedbackScripts[f].ResetHaptics();
-                }
-            }
-        }
-        if (atLeastOne)
-        {
-             this.senseGlove.SendBuzzCmd(fingers, durations, magnitudes); //advanced controls
-            //this.senseGlove.GetSenseGlove().SimpleBuzzCmd(magnitudes); //simple controls
-            //Debug.Log("Sent " + SenseGlove_Util.ToString(magnitudes) + " + " + SenseGlove_Util.ToString(durations));
-           // SenseGlove_Debugger.Log(SenseGlove_Util.ToString(magnitudes));
-        }
-    }
-
-    /// <summary> Update the motor level texts and se them to the appropriate position. </summary>
-    protected virtual void UpdateDebugText()
-    {
-        if (this.debugMotorLevels)
-        {
-            if (!this.debugGroup.activeInHierarchy) { this.debugGroup.SetActive(true); }
-            
-            for (int f = 0; f < this.debugText.Length; f++)
-            {
-                this.debugText[f].transform.position = this.touchColliders[f].transform.position;
-                this.debugText[f].text = "" + this.motorLevels[f];
-            }
-        }
-        else if (this.debugGroup != null && this.debugGroup.activeInHierarchy)
-        {
-            this.debugGroup.SetActive(false);
         }
     }
 
@@ -419,6 +352,94 @@ public abstract class SenseGlove_HandModel : MonoBehaviour
     }
 
     #endregion Update
+
+
+    //-----------------------------------------------------------------------------------------------------------------------------------------
+    // Feedback Methods
+
+    #region Feedback
+
+
+    /// <summary> Collect force feedback levels from the feedbackScripts and send these to the Sense Glove. </summary>
+    protected virtual void UpdateForceFeedback()
+    {
+        this.motorLevels = new int[5] { 0, 0, 0, 0, 0 };
+        if (this.forceFeedback != ForceFeedbackType.None && this.feedbackScripts != null)
+        {
+            //for now, fingertips only
+            for (int f = 0; f < this.feedbackScripts.Length; f++)
+            {
+                this.motorLevels[f] = this.feedbackScripts[f].BrakeLevel();
+            }
+            this.senseGlove.SendBrakeCmd(this.motorLevels);
+        }
+    }
+
+    /// <summary> Collect the haptic feedback commands from the feedback colliders and send these to the Sense Glove. </summary>
+    protected virtual void UpdateHapticFeedback()
+    {
+
+        bool[] fingers = new bool[5];       //all false
+        int[] magnitudes = new int[5];  //all 0
+        int[] durations = new int[5];
+
+        bool atLeastOne = false;
+        if (this.feedbackScripts != null)
+        {
+            for (int f = 0; f < this.feedbackScripts.Length; f++)
+            {
+                if (this.feedbackScripts[f].CanBuzz())
+                {
+                    atLeastOne = true;
+                    fingers[f] = true;
+                    magnitudes[f] = this.feedbackScripts[f].BuzzLevel();
+                    durations[f] = this.feedbackScripts[f].BuzzTime();
+
+                    this.feedbackScripts[f].ResetHaptics();
+                }
+            }
+        }
+        if (atLeastOne)
+        {
+            this.senseGlove.SendBuzzCmd(fingers, durations, magnitudes); //advanced controls
+                                                                         //this.senseGlove.GetSenseGlove().SimpleBuzzCmd(magnitudes); //simple controls
+                                                                         //Debug.Log("Sent " + SenseGlove_Util.ToString(magnitudes) + " + " + SenseGlove_Util.ToString(durations));
+                                                                         // SenseGlove_Debugger.Log(SenseGlove_Util.ToString(magnitudes));
+        }
+    }
+
+    /// <summary> Update the motor level texts and se them to the appropriate position. </summary>
+    protected virtual void UpdateDebugText()
+    {
+        if (this.debugMotorLevels)
+        {
+            if (!this.debugGroup.activeInHierarchy) { this.debugGroup.SetActive(true); }
+
+            for (int f = 0; f < this.debugText.Length; f++)
+            {
+                this.debugText[f].transform.position = this.touchColliders[f].transform.position;
+                this.debugText[f].text = "" + this.motorLevels[f];
+            }
+        }
+        else if (this.debugGroup != null && this.debugGroup.activeInHierarchy)
+        {
+            this.debugGroup.SetActive(false);
+        }
+    }
+
+    public void ClearFeedback()
+    {
+        if (this.feedbackScripts != null)
+        {
+            for (int i=0; i<this.feedbackScripts.Length; i++)
+            {
+                this.feedbackScripts[i].Detach();
+            }
+        }
+    }
+
+    #endregion Feedback
+
 
 }
 

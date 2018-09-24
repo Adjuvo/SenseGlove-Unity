@@ -9,7 +9,8 @@ namespace Util
     public static class FileIO
     {
         
-        /// <summary> Attempt to save to file. </summary>
+        /// <summary> Attempt to save a string[] to a filename within a desired directory. Returns true if succesful. </summary>
+        /// <remarks> Directory is added as a separate variable so we can more easily check for its existence. </remarks>
         /// <param name="dir"></param>
         /// <param name="fileName"></param>
         /// <param name="lines"></param>
@@ -45,7 +46,7 @@ namespace Util
             return false;
         }
 
-        /// <summary> Attempt to read all lines from a file. </summary>
+        /// <summary> Attempt to read all lines from a file and place them in the string[]. Returns true if succesful. If unable to open the file, the string[] will be empty.</summary>
         /// <param name="path"></param>
         /// <param name="lines"></param>
         /// <returns></returns>

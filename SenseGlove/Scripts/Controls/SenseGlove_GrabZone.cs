@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary> Acts as wrapper for Handles or other simple UI elements. Basically triggers the Begin, Follow and End interaction on external objects.</summary>
+/// <summary> Creates a zone that extends its SenseGlove_Interactable methods to other objects, essentially creating a handle for (multiple) other Interactables.</summary>
 public class SenseGlove_GrabZone : SenseGlove_Interactable
 {
     /// <summary> The Interactables that this Grabzone is connected to.  </summary>
@@ -24,7 +24,7 @@ public class SenseGlove_GrabZone : SenseGlove_Interactable
         }
     }
 
-    /// <summary> Connect a new Interactable to this GrabZone. </summary>
+    /// <summary> Connect a new Interactable to this GrabZone. Returns true if succesful.</summary>
     /// <param name="obj"></param>
     /// <returns></returns>
     public bool ConnectTo(SenseGlove_Interactable obj)

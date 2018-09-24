@@ -62,11 +62,11 @@ public class SenseGlove_Teleport : MonoBehaviour
 
     /// <summary> An optional GameObject that appears (in the hand) to indicate that teleportation is active. </summary>
     [Tooltip("An optional GameObject that appears (for example in the hand) to indicate that teleportation is active.")]
-    public GameObject activeIndicator;
+    public Renderer activeIndicator;
 
     /// <summary> Highlighters that are set to active while the teleporter is online. </summary>
     [Tooltip("Highlighters (to aid navigation) that are set to active while the pointer is active.")]
-    public List<GameObject> teleportHighlights = new List<GameObject>();
+    public List<Renderer> teleportHighlights = new List<Renderer>();
 
     //----------------------------------------------------------------------------------------------------------------------------------
     // Private Properties
@@ -161,7 +161,7 @@ public class SenseGlove_Teleport : MonoBehaviour
         }
         if (this.activeIndicator != null)
         {
-            this.activeIndicator.SetActive(active);
+            this.activeIndicator.enabled = active;
         }
     }
 
@@ -171,7 +171,7 @@ public class SenseGlove_Teleport : MonoBehaviour
     {
         for (int i = 0; i < this.teleportHighlights.Count; i++)
         {
-            this.teleportHighlights[i].SetActive(active);
+            this.teleportHighlights[i].enabled = active;
         }
     }
 

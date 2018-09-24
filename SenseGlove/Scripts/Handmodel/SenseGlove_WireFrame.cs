@@ -37,6 +37,15 @@ public class SenseGlove_WireFrame : SenseGlove_HandModel
     [Tooltip("A group of models that represent a preview of the hand, which will be deleted upon the glove connecting.")]
     public GameObject previewGroup;
 
+    /// <summary> Key Code to manually toggle hand model rendering. </summary>
+    [Tooltip("Key Code to manually toggle hand model rendering.")]
+    public KeyCode toggleHandKey = KeyCode.None;
+
+    /// <summary> Key Code to manually toggle glove model rendering. </summary>
+    [Tooltip("Key Code to manually toggle glove model rendering.")]
+    public KeyCode toggleGloveKey = KeyCode.None;
+
+
     //  Private Properties
 
     /// <summary> Do not run the setups more than once. </summary>
@@ -228,7 +237,7 @@ public class SenseGlove_WireFrame : SenseGlove_HandModel
 
         this.SetupFingers(data);
         this.SetupGlove(data);
-        this.SetupHandPalm(data.isRight);
+        this.SetupHandPalm(data.gloveSide == GloveSide.RightHand);
 
         this.setupComplete = true;
         this.resizeFingers = true;
@@ -272,6 +281,17 @@ public class SenseGlove_WireFrame : SenseGlove_HandModel
         }
 
 
+        if (Input.GetKeyDown(this.toggleGloveKey))
+        {
+            //Debug.Log("Toggling G");
+            this.SetGlove(this.gloveBase != null && !this.gloveBase.activeInHierarchy);
+        }
+        if (Input.GetKeyDown(this.toggleHandKey))
+        {
+            //Debug.Log("Toggling H");
+            this.SetHand(this.handBase != null && !this.handBase.activeInHierarchy);
+        }
+
     }
 
     /// <summary> Resizes the (white) cylinders that connect to the hand.  </summary>
@@ -292,10 +312,10 @@ public class SenseGlove_WireFrame : SenseGlove_HandModel
         }
     }
 
-    protected override void SenseGlove_OnCalibrationFinished(object source, CalibrationArgs args)
+    protected override void SenseGlove_OnCalibrationFinished(object source, GloveCalibrationArgs args)
     {
         //resize so that the index finger position remains on the same place
-        Vector3 dIndex = args.newJointPositions[1] - args.oldJointPositions[1];
+        Vector3 dIndex = args.newData.handPositions[1][0] - args.oldData.handPositions[1][0];
         this.handBase.transform.localPosition = this.handBase.transform.localPosition - dIndex;
         this.gloveBase.transform.localPosition = this.gloveBase.transform.localPosition - dIndex;
 
@@ -315,6 +335,7 @@ public class SenseGlove_WireFrame : SenseGlove_HandModel
         {
             if (gloveBase != null)
             {
+                //Debug.Log("Setting Glove Base to " + active);
                 gloveBase.SetActive(active);
             }
         }
@@ -336,6 +357,6 @@ public class SenseGlove_WireFrame : SenseGlove_HandModel
             }
         }
     }
-
+    
 
 }

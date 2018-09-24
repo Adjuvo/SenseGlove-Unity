@@ -135,7 +135,7 @@ public class SenseGlove_Dial : SenseGlove_Interactable
 
 
 
-    /// <summary> Retrieve a Vector3 representation of this dial's rotation axis. </summary>
+    /// <summary> Retrieve a Vector3 representation of this dial's local rotation axis. </summary>
     /// <param name="axis"></param>
     /// <returns></returns>
     public static Vector3 GetAxis(MovementAxis axis)

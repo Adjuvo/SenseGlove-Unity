@@ -17,7 +17,7 @@ public class SenseGlove_FingerDetector : MonoBehaviour
 
     /// <summary> A highlight that can be turned on / off </summary>
     [Tooltip("A highlight object that can be turned on or off.")]
-    public GameObject highLight;
+    public Renderer highLight;
 
     /// <summary> Keeps track of how many of each feedback colliders are within this object. </summary>
     private int[] finger = new int[5] { 0, 0, 0, 0, 0 };
@@ -191,7 +191,7 @@ public class SenseGlove_FingerDetector : MonoBehaviour
     {
         if (this.highLight != null)
         {
-            this.highLight.SetActive(active);
+            this.highLight.enabled = active;
         }
     }
 

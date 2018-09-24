@@ -5,7 +5,11 @@ using UnityEngine;
 /// <summary> A SenseGlove_Breakable that contains objects and optionally spawns shards of itself upon breaking. </summary>
 public class SenseGlove_BreakContainer : SenseGlove_Breakable
 {
+    //----------------------------------------------------------------------------------------------------
+    // Properties
+
     /// <summary> Contains the GameObjects that represent the shards of the broken object. </summary>
+    [Header("Container Components")]
     [Tooltip("Contains the GameObjects that represent the shards of the broken object.")]
     public GameObject shardContainer;
 
@@ -13,45 +17,48 @@ public class SenseGlove_BreakContainer : SenseGlove_Breakable
     [Tooltip(" Contains SenseGlove_Interactable objects that will be released upon the container breaking.")]
     public GameObject contentsContainer;
 
+    /// <summary> Determines if the contents are placed back into the container when the object is unbroken. </summary>
+    [Tooltip("Determines if the contents are placed back into the container when the object is unbroken.")]
+    public bool unbreakWithContents = false;
+
     /// <summary> All GameObjects within the shardsContainer. Will be spawned at the time of breaking.  </summary>
-    private GameObject[] brokenShards = new GameObject[0];
+    protected GameObject[] brokenShards = new GameObject[0];
 
     /// <summary> All SenseGlove_Interactables within the container. Will be set to interactable at the time of breaking. </summary>
-    private SenseGlove_Interactable[] contents = new SenseGlove_Interactable[0];
+    protected SenseGlove_Interactable[] contents = new SenseGlove_Interactable[0];
 
     /// <summary> The localRotations of the shards, applied on a reset. </summary>
-    private Quaternion[] contentRotations;
+    protected Quaternion[] contentRotations;
     /// <summary> The localPositions of the shards, applied on reset. </summary>
-    private Vector3[] contentPositions;
+    protected Vector3[] contentPositions;
 
     /// <summary> The localRotations of the shards, applied on a reset. </summary>
-    private Quaternion[] shardRotations;
+    protected Quaternion[] shardRotations;
     /// <summary> The localPositions of the shards, applied on reset. </summary>
-    private Vector3[] shardPositions;
+    protected Vector3[] shardPositions;
+
+    //----------------------------------------------------------------------------------------------------
+    // Monobehaviour
 
     //Collect object data before wakeup.
-    private void Awake()
+    protected virtual void Awake()
     {
         if (shardContainer != null)
         {
             this.shardContainer.SetActive(true);
+
             this.brokenShards = new GameObject[this.shardContainer.transform.childCount];
             this.shardPositions = new Vector3[brokenShards.Length];
             this.shardRotations = new Quaternion[brokenShards.Length];
             for (int i = 0; i < this.brokenShards.Length; i++)
             {
                 this.brokenShards[i] = this.shardContainer.transform.GetChild(i).gameObject;
+                SetRB(this.brokenShards[i], false, true);
                 this.shardRotations[i] = this.brokenShards[i].transform.localRotation;
                 this.shardPositions[i] = this.brokenShards[i].transform.localPosition;
-                SetRB(this.brokenShards[i], false, true);
-
                 this.brokenShards[i].SetActive(false);
             }
             this.ResetShards();
-        }
-        else
-        {
-            this.brokenShards = new GameObject[0];
         }
 
         if (this.contentsContainer != null)
@@ -64,6 +71,9 @@ public class SenseGlove_BreakContainer : SenseGlove_Breakable
             for (int i = 0; i < this.contents.Length; i++)
             {
                 this.contents[i] = this.contentsContainer.transform.GetChild(i).GetComponent<SenseGlove_Interactable>();
+                SetRB(this.contents[i].gameObject, false, true);
+
+
                 this.contentRotations[i] = this.contents[i].transform.localRotation;
                 this.contentPositions[i] = this.contents[i].transform.localPosition;
             }
@@ -71,10 +81,14 @@ public class SenseGlove_BreakContainer : SenseGlove_Breakable
         }
     }
 
+    //----------------------------------------------------------------------------------------------------
+    // Class Methods
+
     /// <summary> Called when the breakable material of the wholeObject is broken </summary>
     public override void Break()
     {
-        base.Break();
+        base.Break(); //make sure it boke first
+
         this.SpawnContents();
         this.SpawnShards();
     }
@@ -83,17 +97,24 @@ public class SenseGlove_BreakContainer : SenseGlove_Breakable
     public override void UnBreak()
     {
         this.ResetShards();
-        this.ResetContents();
+
+        if (this.unbreakWithContents)
+            this.ResetContents();
+
         base.UnBreak();
     }
 
-    /// <summary> Called when the object should be reset. </summary>
+    /// <summary> This always resets contents, while Unbreak (called within ResetObjects) does not reset the contents. </summary>
     public override void ResetObject()
     {
-       // this.SetContents(false, this.contentsContainer.transform);
-       // this.ResetShards();
-        base.ResetObject(); //unbreak is called here
+        base.ResetObject();
+
+        if (!this.unbreakWithContents) //reset the contents if we have not already.
+            this.ResetContents();
     }
+
+    //----------------------------------------------------------------------------------------------------
+    // Content Methods
 
     /// <summary> Spawns the Shards when the container breaks. </summary>
     protected void SpawnShards()
@@ -102,7 +123,7 @@ public class SenseGlove_BreakContainer : SenseGlove_Breakable
         {
             this.brokenShards[i].transform.parent = null;
             SetRB(this.brokenShards[i], true, false);
-            this.brokenShards[i].SetActive(true);
+            this.brokenShards[i].SetActive(true); //let them do their thing
         }
     }
 
@@ -111,60 +132,51 @@ public class SenseGlove_BreakContainer : SenseGlove_Breakable
     {
         for (int i = 0; i < this.brokenShards.Length; i++)
         {
-            SetRB(this.brokenShards[i], false, true);
-            this.brokenShards[i].transform.parent = this.shardContainer.transform;
-            this.brokenShards[i].transform.localPosition = this.shardPositions[i];
+            this.brokenShards[i].SetActive(false); //now turn them off.
+            SetRB(this.brokenShards[i], false, true); //stops them from moving
+            this.brokenShards[i].transform.parent = this.shardContainer.transform; //reset parent
+            this.brokenShards[i].transform.localPosition = this.shardPositions[i]; //and local position / rotation
             this.brokenShards[i].transform.localRotation = this.shardRotations[i];
-            this.brokenShards[i].SetActive(false);
         }
     }
 
     /// <summary> Spawns Contents when the container breaks </summary>
+    /// <remarks> The contents have been visible all along, they just havent been active. </remarks>
     protected void SpawnContents()
     {
         for (int i = 0; i < this.contents.Length; i++)
         {
             this.contents[i].transform.parent = null;
+            SetRB(this.contents[i].gameObject, true, false);
+            SetColliders(this.contents[i].gameObject, false);
         }
-        SetContents(true);
     }
 
     /// <summary> Resets the contents back to their original (local) transforms. </summary>
     protected void ResetContents()
     {
-        SetContents(false);
         for (int i = 0; i < this.contents.Length; i++)
         {
+            SetColliders(this.contents[i].gameObject, true);
+            SetRB(this.contents[i].gameObject, false, true);
+            
             this.contents[i].transform.parent = this.contentsContainer.transform;
             this.contents[i].transform.localPosition = this.contentPositions[i];
             this.contents[i].transform.localRotation = this.contentRotations[i];
         }
     }
 
-    /// <summary> Set the contents within the container. </summary>
-    /// <param name="active"></param>
-    /// <param name="newParent"></param>
-    private void SetContents(bool active)
-    {
-        for (int i = 0; i < this.contents.Length; i++)
-        {
-            this.contents[i].isInteractable = active;
-            Collider[] cols = this.contents[i].GetComponents<Collider>(); //todo: make this part of the Interactable class?
-            for (int j = 0; j < cols.Length; j++)
-            {
-                cols[j].isTrigger = !active;
-            }
-            SetRB(this.contents[i].gameObject, active, !active);
-        }
-    }
 
-    /// <summary> Set the Rigidbody options of a particular gameObject. </summary>
+    //------------------------------------------------------------------------------------------------------------
+    // Static Methods
+    
+    /// <summary> Set the Rigidbody options of a particular gameObject, if the object has any. </summary>
     /// <param name="Obj"></param>
     /// <param name="gravity"></param>
     /// <param name="kinematic"></param>
-    public void SetRB(GameObject Obj, bool gravity, bool kinematic)
+    protected static void SetRB(GameObject obj, bool gravity, bool kinematic)
     {
-        Rigidbody BR = Obj.GetComponent<Rigidbody>();
+        Rigidbody BR = obj.GetComponent<Rigidbody>();
         if (BR != null)
         {
             BR.useGravity = gravity;
@@ -172,6 +184,17 @@ public class SenseGlove_BreakContainer : SenseGlove_Breakable
         }
     }
 
+    /// <summary> Set the Collider options of a particular GameObject, if the object has any.  </summary>
+    /// <param name="obj"></param>
+    /// <param name="trigger"></param>
+    protected static void SetColliders(GameObject obj, bool trigger)
+    {
+        Collider[] colliders = obj.GetComponents<Collider>();
+        for (int i=0; i<colliders.Length; i++)
+        {
+            colliders[i].isTrigger = trigger;
+        }
+    }
 
 
 }

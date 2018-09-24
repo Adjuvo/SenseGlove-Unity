@@ -5,7 +5,6 @@ using UnityEngine;
 /// <summary> A Gameobject that despawns an objects once its material breaks, and optionally replaces it with a 'broken' version. </summary>
 public class SenseGlove_Breakable : MonoBehaviour
 {
-
     //--------------------------------------------------------------------------------------------
     // Properties
 
@@ -28,12 +27,13 @@ public class SenseGlove_Breakable : MonoBehaviour
     public AudioSource breakSound;
 
     /// <summary> Determines if the Breakable resets back to the whole object after the desired timeframe. </summary>
-    [Tooltip("Determines if the Breakable resets back to the whole object after the desired timeframe.")]
-    public bool resets = false;
+    [Header("Reset Options")]
+    [Tooltip("Determines how the Breakable resets back to the whole object after the desired timeframe.")]
+    public SenseGloveUtils.UnbreakType unbreakMethod = SenseGloveUtils.UnbreakType.None;
 
-    /// <summary> The time after which the breakable resets, if resets is set to true. </summary>
-    [Tooltip("The time after which the breakable resets, if resets is set to true.")]
-    public float resetAfter = 1.0f;
+    /// <summary> The time after which the breakable checks if it needs to reset. </summary>
+    [Tooltip("The time after which the breakable checks if it needs to reset..")]
+    public float checkTime = 1.0f;
 
     /// <summary> Timer to keep track of when this object resets. </summary>
     private float resetTime = 0;
@@ -52,52 +52,13 @@ public class SenseGlove_Breakable : MonoBehaviour
     
 
     //--------------------------------------------------------------------------------------------
-    // Monobehaviour 
-
-    #region Monobehaviour
-
-    // Use this for initialization
-    void Start()
-    {
-        this.wholeDeform = this.wholeObject.GetComponent<SenseGlove_MeshDeform>();
-        this.wholeMaterial = this.wholeObject.GetComponent<SenseGlove_Material>();
-        this.wholeMaterial.MaterialBreaks += WholeMaterial_MaterialBreaks;
-        this.wholeObject.SaveTransform();
-
-        if (this.brokenObject)
-        {
-            this.brokenDeform = this.brokenObject.GetComponent<SenseGlove_MeshDeform>();
-            this.brokenMaterial = this.brokenObject.GetComponent<SenseGlove_Material>();
-            this.brokenObject.SaveTransform();
-        }
-        
-        this.UnBreak();
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        if (this.resets && this.IsBroken())
-        {
-            if (this.resetTime < this.resetAfter)
-            {
-                this.resetTime += Time.deltaTime;
-            }
-            else
-            {
-                this.UnBreak();
-            }
-        }
-    }
-
-    #endregion Monobehaviour
-
-
-    //--------------------------------------------------------------------------------------------
     // Break Logic
 
     #region BreakLogic
-
+    
+    /// <summary> Fired when the associated material breaks. </summary>
+    /// <param name="source"></param>
+    /// <param name="args"></param>
     private void WholeMaterial_MaterialBreaks(object source, System.EventArgs args)
     {
         this.Break();
@@ -112,11 +73,11 @@ public class SenseGlove_Breakable : MonoBehaviour
     }
 
 
-    /// <summary> Break the object: Hide the whole object, show the broken one and play the particle effect(s) </summary>
+    /// <summary> Break the object: Hide the whole object, optionally show the broken one and play the particle effect(s) </summary>
     public virtual void Break()
     {
         SenseGlove_Interactable senseScript = this.wholeObject.GetComponent<SenseGlove_Interactable>();
-        if (senseScript) { senseScript.EndInteraction(senseScript.GrabScript()); }
+        if (senseScript) { senseScript.EndInteraction(); }
 
         if (this.wholeDeform)
         {
@@ -143,29 +104,30 @@ public class SenseGlove_Breakable : MonoBehaviour
             this.breakSound.Play();
         }
 
-        if (this.resets)
-        {
-            this.resetTime = 0;
-        }
+        this.resetTime = 0;
+        
+        this.OnObjectBreaks();
     }
 
-    /// <summary> Reset the object to before its broken state. </summary>
+    /// <summary> Reset the object to before its unbroken state, at the same location of the current broken object. </summary>
     public virtual void UnBreak()
     {
         //remove the broken object if we have one.
         if (this.brokenObject != null)
         {
-            SenseGlove_Interactable senseScript = this.brokenObject.GetComponent<SenseGlove_Interactable>();
-            if (senseScript) { senseScript.EndInteraction(senseScript.GrabScript()); }
+            this.brokenObject.EndInteraction();
             this.brokenObject.gameObject.SetActive(false);
+
             if (this.brokenMaterial)
             {
                 this.brokenMaterial.UnBreak();
             }
+
             if (this.brokenDeform)
             {
                 this.brokenDeform.ResetMesh();
             }
+
             //Debug.Log("WholeObject is now on the position of the broken object");
             this.wholeObject.transform.position = this.brokenObject.transform.position;
             this.wholeObject.transform.rotation = this.brokenObject.transform.rotation;
@@ -184,33 +146,138 @@ public class SenseGlove_Breakable : MonoBehaviour
 
         //unbreak the whole object
         if (this.wholeMaterial) { this.wholeMaterial.UnBreak(); }
+
         this.wholeObject.gameObject.SetActive(true);
 
         this.resetTime = 0;
+
+        this.OnObjectUnBreaks();
     }
 
     /// <summary> Reset this objects position and materials. </summary>
     public virtual void ResetObject()
     {
-        SenseGlove_Interactable senseScript = this.wholeObject.GetComponent<SenseGlove_Interactable>(); //TODO: Move this to init.
-        if (senseScript != null)
-        {
-            senseScript.EndInteraction(senseScript.GrabScript());
-            senseScript.ResetObject();
-        }
+        this.UnBreak(); //every parameter is reset; the whole material is now on the position of the broken one (if a broken one exists).
 
-        if (this.brokenObject != null)
+        this.wholeObject.ResetObject();
+        if (this.brokenObject)
         {
-            senseScript = this.brokenObject.GetComponent<SenseGlove_Interactable>();
-            if (senseScript != null)
+            this.brokenObject.ResetObject();
+        }
+    }
+
+    /// <summary> Check if this objects needs to be reset, depending on the state and unbreakMethod </summary>
+    public virtual void CheckUnbreak()
+    {
+        if (this.unbreakMethod != SenseGloveUtils.UnbreakType.None && this.IsBroken())
+        {
+            if (this.resetTime < this.checkTime)
             {
-                senseScript.EndInteraction(senseScript.GrabScript());
-                senseScript.ResetObject();
+                this.resetTime += Time.deltaTime;
+            }
+            else //after the ResetTime elapses, the object
+            {
+                if (this.unbreakMethod == SenseGloveUtils.UnbreakType.Reset)
+                    this.ResetObject();
+                else if (this.unbreakMethod == SenseGloveUtils.UnbreakType.Unbreak)
+                    this.UnBreak();
+
+                this.resetTime = 0;
             }
         }
-        this.UnBreak();
     }
 
     #endregion BreakLogic;
 
+
+    //--------------------------------------------------------------------------------------------
+    // Monobehaviour 
+
+    #region Monobehaviour
+
+    // Use this for initialization
+    void Start()
+    {
+        this.wholeDeform = this.wholeObject.GetComponent<SenseGlove_MeshDeform>();
+        this.wholeMaterial = this.wholeObject.GetComponent<SenseGlove_Material>();
+        this.wholeMaterial.MaterialBreaks += WholeMaterial_MaterialBreaks;
+        this.wholeObject.SaveTransform();
+
+        if (this.brokenObject)
+        {
+            this.brokenDeform = this.brokenObject.GetComponent<SenseGlove_MeshDeform>();
+            this.brokenMaterial = this.brokenObject.GetComponent<SenseGlove_Material>();
+            this.brokenObject.SaveTransform();
+        }
+
+        this.UnBreak();
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        this.CheckUnbreak();
+    }
+
+    #endregion Monobehaviour
+
+
+    //--------------------------------------------------------------------------------------------
+    // Events
+
+    #region Events
+
+    /// <summary> Event delegate for the ObjectBreaks EventHandler </summary>
+    /// <param name="source"></param>
+    /// <param name="args"></param>
+    public delegate void ObjectBrokenEventHandler(object source, System.EventArgs args);
+
+    /// <summary> Fires when this objects Break() function has been called. </summary>
+    public event ObjectBrokenEventHandler ObjectBreaks;
+
+    /// <summary> Calls the ObjectBreaks event handler. </summary>
+    protected void OnObjectBreaks()
+    {
+        if (ObjectBreaks != null)
+        {
+            ObjectBreaks(this, null);
+        }
+    }
+
+
+    /// <summary> Event delegate for the ObjectUnBreaks EventHandler </summary>
+    /// <param name="source"></param>
+    /// <param name="args"></param>
+    public delegate void ObjectUnBrokenEventHandler(object source, System.EventArgs args);
+
+    /// <summary> Fires when this objects UnBreak() function has been called. </summary>
+    public event ObjectUnBrokenEventHandler ObjectUnBreaks;
+
+    /// <summary> Calls the ObjectUnBreaks event handler. </summary>
+    protected void OnObjectUnBreaks()
+    {
+        if (ObjectUnBreaks != null)
+        {
+            ObjectUnBreaks(this, null);
+        }
+    }
+
+    #endregion Events
+
 }
+
+
+namespace SenseGloveUtils
+{
+    /// <summary> How the object will respond after it breaks. </summary>
+    public enum UnbreakType
+    {
+        /// <summary> The object stays broken, and does nothing. Default value.  </summary>
+        None = 0,
+        /// <summary> The object unbreaks after the timer elapses. </summary>
+        Unbreak,
+        /// <summary> The object fully resets after the timer elapsed. </summary>
+        Reset
+    }
+}
+

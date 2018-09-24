@@ -6,7 +6,7 @@ using UnityEngine;
 /// <remarks> TODO: Have a separate, decent model for the left hand. </remarks>
 public class CompensateLeft : MonoBehaviour
 {
-    /// <summary>  </summary>
+    /// <summary> The negatively scaled object that this object follows. </summary>
     public GameObject grabReference;
 	
     public void AttachToRef()

@@ -4,6 +4,7 @@ using UnityEngine;
 
 //TODO: Allow users to pick snapped objects back up when takeFromHand is enabled.
 //TODO: Apply the correct properties to the Grabable when the grabscript picks them up again (subscribe to OnPickedUp events?)
+//TODO: Fire events when the objects have been inside the zone for X amounts of seconds.
 
 /// <summary> Detects SenseGlove_Interactables and snaps them to the desired transform. </summary>
 [RequireComponent(typeof(Collider))]
@@ -145,9 +146,7 @@ public class SenseGlove_DropZone : MonoBehaviour
         return -1;
     }
 
-    /// <summary>
-    /// Check if this SenseGlove_Object is one of the "goal" objects;
-    /// </summary>
+    /// <summary> Check if this SenseGlove_Object is one of the "goal" objects; </summary>
     /// <param name="obj"></param>
     /// <returns>The index of obj in the objectsToGet list. -1 if it does not exist inside this list.</returns>
     public bool IsTarget(SenseGlove_Grabable obj)
@@ -201,7 +200,7 @@ public class SenseGlove_DropZone : MonoBehaviour
 
         this.RBprops.Add(props);
         this.objectsInside.Add(obj);
-        obj.isInteractable = !this.disableInteration; //enable / disable interactions.
+        obj.SetInteractable(!this.disableInteration); //enable / disable interactions.
         this.OnObjectDetected(obj);
 
     }
@@ -240,7 +239,7 @@ public class SenseGlove_DropZone : MonoBehaviour
             this.RBprops.RemoveAt(objectIndex);
             this.originalParent.RemoveAt(objectIndex);
 
-            obj.isInteractable = true; //now the function can also be used to force removal of the object.
+            obj.SetInteractable(true); //now the function can also be used to force removal of the object.
             this.OnObjectRemoved(obj);
         }
     }
@@ -295,7 +294,7 @@ public class SenseGlove_DropZone : MonoBehaviour
 
     //ObjectDetected
     public delegate void ObjectDetectedEventHandler(object source, DropZoneArgs args);
-    /// <summary> Fires when a new SenseGlove_Grabable enters this detection zone. </summary>
+    /// <summary> Fires when one of the desired SenseGlove_Grabable objects is detected. </summary>
     public event ObjectDetectedEventHandler ObjectDetected;
 
     protected void OnObjectDetected(SenseGlove_Grabable obj)
@@ -309,7 +308,7 @@ public class SenseGlove_DropZone : MonoBehaviour
 
     //ObjectRemoved
     public delegate void ObjectRemovedEventHandler(object source, DropZoneArgs args);
-    /// <summary> Fires when a new SenseGlove_Grabable is removed from this detection zone. </summary>
+    /// <summary> Fires when one of the SenseGlove_Grabables that was detected earlier is removed. </summary>
     public event ObjectDetectedEventHandler ObjectRemoved;
 
     protected void OnObjectRemoved(SenseGlove_Grabable obj)

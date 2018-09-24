@@ -5,7 +5,6 @@ using UnityEngine;
 
 
 /// <summary> Physics-Based Grabbing using colliders rather than gestures, with options to make this method more intuitive. </summary>
-[RequireComponent(typeof(SenseGlove_Object))]
 public class SenseGlove_PhysGrab : SenseGlove_GrabScript
 {
     //-----------------------------------------------------------------------------------------------------------------------------------
@@ -44,20 +43,16 @@ public class SenseGlove_PhysGrab : SenseGlove_GrabScript
 
     //Debug Settings
 
-    /// <summary> Method to debug the SenseGlove_Touch scripts that are connected to this GrabScript </summary>
-    [Header("Debug")]
-    [Tooltip("Method to debug the SenseGlove_Touch scripts that are connected to this GrabScript")]
-    public PickupDebug debugMode = PickupDebug.Off;
-
-    /// <summary> The color of the debug colliders </summary>
-    [Tooltip("The color of the debug colliders.")]
-    public Color debugColliderColor = Color.green;
-
     /// <summary> Whether of not this finger has the intention of grabbing an object </summary>
     [Tooltip("Whether of not the fingers have the intention of grabbing an object ")]
     public bool[] wantsGrab = new bool[5] { true, true, true, true, true };
 
-    private float[] dipAngles = new float[5];
+
+    /// <summary>
+    /// It is used!!
+    /// </summary>
+    [SerializeField]
+    private float[] dipAngles = new float[5] { 0, 0, 0, 0, 0 };
 
     //-----------------------------------------------------------------------------------------------------------------------------------
     // Private Variables
@@ -68,17 +63,6 @@ public class SenseGlove_PhysGrab : SenseGlove_GrabScript
     /// <summary> The collider of the handPalm </summary>
     private SenseGlove_Touch handPalm;
 
-    /// <summary> If paused, the GrabScript will no longer raise events or grab objects untill the pauseTime has elapsed. </summary>
-    private bool paused = false;
-
-    /// <summary> The time [s] that needs to elapse before the GrabScript can pick up another object. </summary>
-    private float pauseTime = 1.0f;
-
-    /// <summary> The amount of time that has elpased since the Manual Release function was called. </summary>
-    private float elapsedTime = 0;
-
-    /// <summary> The object(s) that are being held by this script. </summary>
-    private List<SenseGlove_Interactable> heldObjects = new List<SenseGlove_Interactable>(2);
 
     #endregion Properties
 
@@ -87,60 +71,7 @@ public class SenseGlove_PhysGrab : SenseGlove_GrabScript
 
     #region Monobehaviour
 
-    //Load Resources before Start() function is called
-    void Awake()
-    {
-        if (this.senseGlove == null)
-        {
-            this.senseGlove = this.gameObject.GetComponent<SenseGlove_Object>();
-        }
-        if (this.grabReference != null)
-        {
-            this.lastPosition = grabReference.transform.position;
-        }
-    }
-
-    //Runs once after Awake
-    void Start()
-    {
-        if (this.senseGlove == null)
-        {
-            this.senseGlove = this.GetComponent<SenseGlove_Object>();
-        }
-    }
-
-    //Runs once every frame
-    void Update()
-    {
-        this.UpdateDynamics();
-        
-        if (this.setupFinished)
-        {
-            if (this.paused)
-            {
-                if (this.elapsedTime < this.pauseTime) { this.elapsedTime += Time.deltaTime; }
-                else { this.paused = false; }
-            }
-            else
-            {
-                this.wantsGrab = this.CheckGestures();
-                this.CheckGrab();
-            }
-        }
-    }
-
-    //runs after all trasforms have been updated
-    void LateUpdate()
-    {
-        for (int f = 0; f < heldObjects.Count; f++)
-        {
-            //follow interactions on all follow interaction
-            if (this.heldObjects[f] != null)
-            {
-                this.heldObjects[f].GetComponent<SenseGlove_Interactable>().UpdateInteraction();
-            }
-        }
-    }
+    
 
     #endregion Monobehaviour
 
@@ -181,26 +112,7 @@ public class SenseGlove_PhysGrab : SenseGlove_GrabScript
         return false;
     }
 
-
-    /// <summary> Return a list of objects that this pickup script is currently interacting with. </summary>
-    /// <returns></returns>
-    public override GameObject[] CanPickup()
-    {
-        GameObject[] objects = new GameObject[this.heldObjects.Count];
-        for (int i = 0; i < this.heldObjects.Count; i++)
-        {
-            objects[i] = this.heldObjects[i].gameObject;
-        }
-        return objects;
-    }
-
-    /// <summary> Retrieve the Palm collider of this PhysGrab Script. </summary>
-    /// <returns></returns>
-    public override SenseGlove_Touch GetPalm()
-    {
-        return this.handPalm;
-    }
-
+    
     /// <summary> Manually release (all) objects that this SenseGlove_physgrab is interacting with. </summary>
     /// <param name="timeToReactivate">(Optional) time (in seconds) before the SenseGlove_Physgrab can start picking up objects again.</param>
     public override void ManualRelease(float timeToReactivate = 1)
@@ -210,12 +122,7 @@ public class SenseGlove_PhysGrab : SenseGlove_GrabScript
         this.elapsedTime = 0;
         this.pauseTime = timeToReactivate;
 
-        //release all objects
-        for (int i = 0; i < this.heldObjects.Count; i++)
-        {
-            this.heldObjects[i].EndInteraction(this);
-        }
-        this.heldObjects.Clear();
+        base.ManualRelease(timeToReactivate);
     }
 
 
@@ -231,6 +138,13 @@ public class SenseGlove_PhysGrab : SenseGlove_GrabScript
         }
     }
 
+    /// <summary> Update this GrabScript's logic. </summary>
+    public override void UpdateGrabScript()
+    {
+        this.wantsGrab = this.CheckGestures();
+        this.CheckGrab();
+    }
+
     #endregion ClassMethods
 
     //-----------------------------------------------------------------------------------------------------------------------------------
@@ -242,13 +156,17 @@ public class SenseGlove_PhysGrab : SenseGlove_GrabScript
     /// <returns></returns>
     public override bool Setup()
     {
-        List<List<Collider>> colliders = new List<List<Collider>>();
-        colliders.Add(this.thumbColliders);
-        colliders.Add(this.indexColliders);
-        colliders.Add(this.middleColliders);
-        colliders.Add(this.ringColliders);
-        colliders.Add(this.pinkyColliders);
-        return this.Setup(colliders, this.palmCollider);
+        if (!this.setupFinished)
+        {
+            List<List<Collider>> colliders = new List<List<Collider>>();
+            colliders.Add(this.thumbColliders);
+            colliders.Add(this.indexColliders);
+            colliders.Add(this.middleColliders);
+            colliders.Add(this.ringColliders);
+            colliders.Add(this.pinkyColliders);
+            return this.Setup(colliders, this.palmCollider);
+        }
+        else return this.setupFinished;
     }
 
 
@@ -258,7 +176,7 @@ public class SenseGlove_PhysGrab : SenseGlove_GrabScript
     /// <returns></returns>
     public bool Setup(List<List<Collider>> touchColliders, Collider palmCollider)
     {
-        this.handPalm = this.GetTouchScript(palmCollider);
+        this.handPalm = SenseGlove_GrabScript.GetTouchScript(palmCollider, this);
         bool hasPalm = this.handPalm != null;
 
         bool hasFinger = false, hasThumb = false;
@@ -282,7 +200,7 @@ public class SenseGlove_PhysGrab : SenseGlove_GrabScript
                 {
                     if (touchColliders[f][i] != null)
                     {
-                        this.touchScripts[f][colliderIndex] = GetTouchScript(touchColliders[f][i]);
+                        this.touchScripts[f][colliderIndex] = SenseGlove_GrabScript.GetTouchScript(touchColliders[f][i], this);
                         if (f == 0 && this.touchScripts[f][i] != null) { hasThumb = true; }
                         else if (this.touchScripts[f][i] != null) { hasFinger = true; }
                         colliderIndex++;
@@ -297,39 +215,12 @@ public class SenseGlove_PhysGrab : SenseGlove_GrabScript
         return this.setupFinished;
     }
 
-    /// <summary>
-    /// Get the SenseGlove_Touch of a specified collider. If none is present, create a new one.
-    /// Then apply the desired settings. Returns null if no collider exists.
-    /// </summary>
-    /// <param name="C"></param>
+
+    /// <summary> Check if this SenseGlove_PhysGrab script is ready to go. </summary>
     /// <returns></returns>
-    private SenseGlove_Touch GetTouchScript(Collider C)
+    public bool SetupComplete()
     {
-        if (C != null)
-        {
-            C.isTrigger = true;
-            SenseGlove_Touch script = C.gameObject.GetComponent<SenseGlove_Touch>();
-            if (script == null)
-            {
-                script = C.gameObject.AddComponent<SenseGlove_Touch>();
-            }
-            script.touch = C;
-            script.SetSourceScript(this);
-            script.CreateDebugObject(this.debugColliderColor);
-            script.SetDebugLevel(this.debugMode);
-
-            //also add a rigidbody
-            Rigidbody RB = C.gameObject.GetComponent<Rigidbody>();
-            if (RB == null)
-            {
-                RB = C.gameObject.AddComponent<Rigidbody>();
-            }
-            RB.useGravity = false;
-            RB.isKinematic = true;
-
-            return script;
-        }
-        return null;
+        return this.touchScripts != null;
     }
 
 
@@ -372,7 +263,7 @@ public class SenseGlove_PhysGrab : SenseGlove_GrabScript
         //End interaction with objects that are in the heldObjects but not in the grabables.
         for (int i = 0; i < this.heldObjects.Count;)
         {
-            if (!this.IsInside(heldObjects[i], grabables) && this.heldObjects[i].CanEndInteraction())
+            if (!this.IsInside(heldObjects[i], grabables) && this.WantsRelease(heldObjects[i]))
             {
                // Debug.Log("Ending interaction with " + heldObjects[i].name + " because we are no longer touching it.");
                 this.heldObjects[i].EndInteraction(this);
@@ -395,18 +286,33 @@ public class SenseGlove_PhysGrab : SenseGlove_GrabScript
         }
     }
 
+    /// <summary> This script can also check via simple gestures. </summary>
+    /// <param name="obj"></param>
+    /// <returns></returns>
+    protected override bool WantsRelease(SenseGlove_Interactable obj)
+    {
+        if (obj.CanInteract()) //separate if statement to catch more releaseMethods.
+        {
+            if (obj.releaseMethod == ReleaseMethod.MustOpenHand)
+            {
+                return (!wantsGrab[1] && !wantsGrab[2]);
+            }
+        }
+        return base.WantsRelease(obj);
+    }
+
+
     /// <summary> Retrieve a list of all objects that CAN be grabbed this frame </summary>
     /// <returns></returns>
-    public List<SenseGlove_Interactable> GetGrabObjects()
+    protected List<SenseGlove_Interactable> GetGrabObjects()
     {
         List<SenseGlove_Interactable> grabables = new List<SenseGlove_Interactable>();
 
         SenseGlove_Touch thumbTouches = null;
-        //if (this.wantsGrab[0]) { thumbTouches = GetTouch(0); } //only if the thumb is used for grabbing
         thumbTouches = GetTouch(0); //the fingers can still override a thumb.wantsGrab()
 
         //The thumb and hand palm are touching the same object, and the thumb wants to grab something.
-        if (thumbTouches != null && this.handPalm != null && wantsGrab[0] && thumbTouches.IsTouching(handPalm.TouchObject()))
+        if (wantsGrab[0] && thumbTouches != null && this.handPalm != null && thumbTouches.IsTouching(handPalm.TouchObject()))
         {
             if (thumbTouches.TouchedScript().fingerPalm) { grabables.Add(thumbTouches.TouchedScript()); }
         }
@@ -439,7 +345,7 @@ public class SenseGlove_PhysGrab : SenseGlove_GrabScript
     /// <summary> Get the first SenseGlove_Touch script of a finger that is touching an object, otherwise return null </summary>
     /// <param name="finger"></param>
     /// <returns></returns>
-    public SenseGlove_Touch GetTouch(int finger)
+    protected SenseGlove_Touch GetTouch(int finger)
     {
         for (int i = touchScripts[finger].Length; i-- > 0;) //checked from fingertip to MCP joint
         {
@@ -454,14 +360,14 @@ public class SenseGlove_PhysGrab : SenseGlove_GrabScript
     protected readonly int maxDIPExtension = -10;
 
     /// <summary> Check whether or not the user is intending to pick up any of the Interactables. </summary>
-    public bool[] CheckGestures()
+    protected bool[] CheckGestures()
     {
         bool[] res = new bool[5] { true, true, true, true, true };
         if (this.checkIntention != CheckIntention.Off)
         {
             if (this.senseGlove != null && this.senseGlove.GloveReady())
             {
-                bool[] D = new bool[5] { true, true, true, true, true };
+                //bool[] D = new bool[5] { true, true, true, true, true };
 
                 //collect the relative flexion angles of the fingers.
                 SenseGlove_Data data = this.senseGlove.GloveData();
@@ -470,20 +376,20 @@ public class SenseGlove_PhysGrab : SenseGlove_GrabScript
                 {
                     relDipFlexions[f] = data.handAngles[f][2].z;
                 }
-                dipAngles = relDipFlexions;
+                this.dipAngles = relDipFlexions;
 
                 if (this.checkIntention >= CheckIntention.Static)
                 {
                     //in Unity, the HandAngles are positive (extension) and negative (flexion), both in degrees.
                     //thumb
-                    res[0] = relDipFlexions[0] >= -70 && relDipFlexions[0] <= -17.5f;
+                    res[0] = dipAngles[0] >= -70 && dipAngles[0] <= -17.5f;
                     for (int f=1; f<4; f++)
                     {
-                        res[f] = relDipFlexions[f] >= maxDIPFlexion && relDipFlexions[f] <= maxDIPExtension;
+                        res[f] = dipAngles[f] >= maxDIPFlexion && dipAngles[f] <= maxDIPExtension;
                     }
-                    res[4] = relDipFlexions[4] >= maxDIPFlexion && relDipFlexions[4] <= maxDIPExtension - 5;
+                    res[4] = dipAngles[4] >= (maxDIPFlexion + 10) && dipAngles[4] <= (maxDIPExtension - 15); //the pinky
                 }
-                //also perform a dynamic analysis
+                //and/or perform a dynamic analysis
                 //if (this.checkIntention >= CheckIntention.Dynamic)
                 //{
 
@@ -525,22 +431,15 @@ public class SenseGlove_PhysGrab : SenseGlove_GrabScript
 
     #endregion GrabLogic
 
-    
 }
 
-/// <summary> Debugging options for Pickup colliders. </summary>
-public enum PickupDebug
-{
-    /// <summary> The pickup debug colliders are turned off </summary>
-    Off = 0,
-    AlwaysOn,
-    ToggleOnTouch
-}
 
 /// <summary> The way in which the grabscript check for grab / release intention </summary>
 public enum CheckIntention
 {
+    /// <summary> Intention Checking is off. </summary>
     Off = 0,
+    /// <summary> No interaction takes place if the user stretches their fingers, or when they make a fist. </summary>
     Static,
     //Dynamic
 }

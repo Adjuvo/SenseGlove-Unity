@@ -12,27 +12,19 @@ public class SenseGlove_Touch : MonoBehaviour
 
     #region Properties
 
+    /// <summary> The collider used to determine which object is currently being touched. </summary>
     [Tooltip("The collider used to determine which object is currently being touched")]
     public Collider touch;
 
     /// <summary> The object that is currently touched by this SenseGlove_Touch script. </summary>
-    [Tooltip("The object that is currently touched by this SenseGlove_Touch script.")]
-    public GameObject touchedObject;
+    protected GameObject touchedObject;
 
     /// <summary> Script of touched object </summary>
-    private SenseGlove_Interactable touchedScript;
+    protected SenseGlove_Interactable touchedScript;
 
     /// <summary> The grabscript using these colliders for its logic. Only PhysGrab uses these. </summary>
-    private SenseGlove_GrabScript grabScript;
+    protected SenseGlove_GrabScript grabScript;
     
-    /// <summary> Whether or not the collider 'should'be shown. </summary>
-    private bool showCollider = false;
-
-    /// <summary> A visual representation of the Collider. </summary>
-    private GameObject debugVisual;
-
-    /// <summary> The method to determine when to show the debugVisual. </summary>
-    private PickupDebug debugLvl = PickupDebug.Off;
 
     #endregion Properties
 
@@ -76,38 +68,16 @@ public class SenseGlove_Touch : MonoBehaviour
     {
         if (touch != null) { touch.isTrigger = true; } //enure the touch collider is always kinematic.
 
-        if ( (this.touchedObject != null && !this.touchedObject.activeInHierarchy) || (this.touchedScript != null && !this.touchedScript.isInteractable) )
+        if ( this.touchedObject == null || (this.touchedObject != null && !this.touchedObject.activeInHierarchy) 
+            || (this.touchedScript != null && !this.touchedScript.CanInteract()) )
         {
             //SenseGlove_Debugger.Log("Object no longer exists. Releasing.");
-            this.SetDebug(false);
             this.touchedObject = null;
             this.touchedScript = null;
         }
-
-        //check debug logic
-        if (this.grabScript != null && this.grabScript is SenseGlove_PhysGrab)
-        {
-            if (((SenseGlove_PhysGrab)this.grabScript).debugMode != this.debugLvl)
-            {
-                this.debugLvl = ((SenseGlove_PhysGrab)this.grabScript).debugMode;
-                if (this.debugLvl == PickupDebug.Off)
-                {
-                    this.SetDebug(false);
-                }
-                else if (this.debugLvl == PickupDebug.AlwaysOn)
-                {
-                    this.SetDebug(true);
-                }
-                else if (this.debugLvl == PickupDebug.ToggleOnTouch)
-                {
-                    this.SetDebug(this.touchedObject != null);
-                }
-            }
-        }
-
     }
 
-   
+
 
     //--------------------------------------------------------------------------------------------------------------------------
     // Collision Detection / Force Feedback 
@@ -124,7 +94,6 @@ public class SenseGlove_Touch : MonoBehaviour
             //}
             this.touchedObject = col.gameObject;
             this.touchedScript = interact;
-            if (this.debugLvl == PickupDebug.ToggleOnTouch) { this.SetDebug(true); }
         }
     }
 
@@ -140,7 +109,6 @@ public class SenseGlove_Touch : MonoBehaviour
         {
             this.touchedObject = null;
             this.touchedScript = null;
-            if (this.debugLvl == PickupDebug.ToggleOnTouch) { this.SetDebug(false); }
         }
     }
 
@@ -207,73 +175,12 @@ public class SenseGlove_Touch : MonoBehaviour
         return null;
     }
 
-    /// <summary> Clear the object currntly touched by this script </summary>
+    /// <summary> Clear the object currently touched by this script </summary>
     public void ClearTouchedObjects()
     {
         this.touchedObject = null;
     }
 
     #endregion TouchLogic
-
-    //--------------------------------------------------------------------------------------------------------------------------
-    // Debug
-
-    #region Debug
     
-    /// <summary> Create a primitive object representing this collider, that canbe turned on or off. </summary>
-    /// <param name="debugColor"></param>
-    public void CreateDebugObject(Color debugColor)
-    {
-        if (this.touch != null && this.debugVisual == null)
-        {
-            if (this.touch is CapsuleCollider)
-            {
-                this.debugVisual = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-            }
-            else if (this.touch is BoxCollider)
-            {
-                this.debugVisual = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            }
-            else if (this.touch is SphereCollider)
-            {
-                this.debugVisual = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            }
-
-            if (this.debugVisual != null)
-            {
-                this.debugVisual.transform.parent = null;
-                this.debugVisual.transform.position = this.touch.transform.position;
-                this.debugVisual.transform.rotation = this.touch.transform.rotation;
-                this.debugVisual.transform.localScale = this.touch.transform.lossyScale;
-                this.debugVisual.transform.parent = this.touch.transform;
-                this.debugVisual.GetComponent<Renderer>().material.color = debugColor;
-                this.debugVisual.name = "Debug Collider";
-
-                Collider C = this.debugVisual.GetComponent<Collider>();
-                if (C != null)
-                {
-                    GameObject.Destroy(C);
-                }
-                this.debugVisual.SetActive(this.showCollider);
-            }
-        }
-    }
-
-    /// <summary> Set the debug collider to be active or inactive. </summary>
-    /// <param name="active"></param>
-    public void SetDebug(bool active)
-    {
-        this.showCollider = active;
-        this.debugVisual.SetActive(this.showCollider);
-       
-    }
-
-    /// <summary> Edit the Debug level of this SenseGlove_Touch </summary>
-    /// <param name="debugLevel"></param>
-    public void SetDebugLevel(PickupDebug debugLevel)
-    {
-        this.debugLvl = debugLevel;
-    }
-
-    #endregion Debug
 }

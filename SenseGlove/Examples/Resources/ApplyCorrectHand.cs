@@ -1,107 +1,110 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
-public class ApplyCorrectHand : MonoBehaviour
+namespace SenseGlove_Examples
 {
-    public SenseGlove_Object leftGlove, rightGlove;
 
-    private GameObject leftHandModel, rightHandModel;
-
-    public KeyCode swapHandsKey = KeyCode.Return;
-    //private SolveType currSolv;
-
-    public KeyCode switchSolver = KeyCode.S;
-    private bool leftReady = false, rightReady = false;
-
-	// Use this for initialization
-	void Start ()
+    public class ApplyCorrectHand : MonoBehaviour
     {
-        if (leftGlove != null)
+        public SenseGlove_Object leftGlove, rightGlove;
+
+        private GameObject leftHandModel, rightHandModel;
+
+        public KeyCode swapHandsKey = KeyCode.Return;
+        //private SolveType currSolv;
+
+        public KeyCode switchSolver = KeyCode.S;
+        private bool leftReady = false, rightReady = false;
+
+        // Use this for initialization
+        void Start()
         {
-            leftGlove.gameObject.SetActive(true);
-            leftHandModel = leftGlove.transform.GetChild(0).gameObject;
-        }
-        if (rightGlove != null)
-        {
-            rightGlove.gameObject.SetActive(true);
-            rightHandModel = rightGlove.transform.GetChild(0).gameObject;
-        }
-        SetModels(false, false);
-	}
-	
-	// Update is called once per frame
-	void Update ()
-    {
-        if (leftGlove != null)
-        {
-            if (leftGlove.GloveReady() && !leftReady)
+            if (leftGlove != null)
             {
-                this.leftReady = true;
-                if (!rightReady)
+                leftGlove.gameObject.SetActive(true);
+                leftHandModel = leftGlove.transform.GetChild(0).gameObject;
+            }
+            if (rightGlove != null)
+            {
+                rightGlove.gameObject.SetActive(true);
+                rightHandModel = rightGlove.transform.GetChild(0).gameObject;
+            }
+            SetModels(false, false);
+        }
+
+        // Update is called once per frame
+        void Update()
+        {
+            if (leftGlove != null)
+            {
+                if (leftGlove.GloveReady() && !leftReady)
                 {
-                    SetModels(true, false);
+                    this.leftReady = true;
+                    if (!rightReady)
+                    {
+                        SetModels(true, false);
+                    }
+                }
+            }
+            if (rightGlove != null)
+            {
+                if (rightGlove.GloveReady() && !rightReady)
+                {
+                    this.rightReady = true;
+                    if (!leftReady)
+                    {
+                        SetModels(false, true);
+                    }
+                }
+            }
+
+            if (Input.GetKeyDown(swapHandsKey) && (leftReady || rightReady))
+            {
+                SetModels(!this.leftHandModel.activeInHierarchy, !this.rightHandModel.activeInHierarchy);
+            }
+            if (Input.GetKeyDown(switchSolver))
+            {
+                if (leftReady)
+                {
+                    if (leftGlove.solver == SenseGloveCs.Solver.Interpolate4Sensors)
+                    {
+                        leftGlove.solver = SenseGloveCs.Solver.InverseKinematics;
+                    }
+                    else if (leftGlove.solver == SenseGloveCs.Solver.InverseKinematics)
+                    {
+                        leftGlove.solver = SenseGloveCs.Solver.Interpolate4Sensors;
+                    }
+                }
+                if (rightReady)
+                {
+                    if (rightGlove.solver == SenseGloveCs.Solver.Interpolate4Sensors)
+                    {
+                        rightGlove.solver = SenseGloveCs.Solver.InverseKinematics;
+                    }
+                    else if (rightGlove.solver == SenseGloveCs.Solver.InverseKinematics)
+                    {
+                        rightGlove.solver = SenseGloveCs.Solver.Interpolate4Sensors;
+                    }
                 }
             }
         }
-        if (rightGlove != null)
+
+        public void SetSolver(SenseGloveCs.Solver solv)
         {
-            if (rightGlove.GloveReady() && !rightReady)
+
+        }
+
+        public void SetModels(bool left, bool right)
+        {
+            if (leftHandModel != null)
             {
-                this.rightReady = true;
-                if (!leftReady)
-                {
-                    SetModels(false, true);
-                }
+                leftHandModel.SetActive(left);
+            }
+            if (rightHandModel != null)
+            {
+                rightHandModel.SetActive(right);
             }
         }
 
-        if (Input.GetKeyDown(swapHandsKey) && (leftReady || rightReady))
-        {
-            SetModels( !this.leftHandModel.activeInHierarchy, !this.rightHandModel.activeInHierarchy);
-        }
-        if (Input.GetKeyDown(switchSolver))
-        {
-            if (leftReady)
-            {
-                if (leftGlove.solver == SolveType.InterpolateAsIMU)
-                {
-                    leftGlove.solver = SolveType.Kinematic3D;
-                }
-                else if (leftGlove.solver == SolveType.Kinematic3D)
-                {
-                    leftGlove.solver = SolveType.InterpolateAsIMU;
-                }
-            }
-            if (rightReady)
-            {
-                if (rightGlove.solver == SolveType.InterpolateAsIMU)
-                {
-                    rightGlove.solver = SolveType.Kinematic3D;
-                }
-                else if (rightGlove.solver == SolveType.Kinematic3D)
-                {
-                    rightGlove.solver = SolveType.InterpolateAsIMU;
-                }
-            }
-        }
-	}
-
-    public void SetSolver(SolveType solv)
-    {
-
-    }
-
-    public void SetModels(bool left, bool right)
-    {
-        if (leftHandModel != null)
-        {
-            leftHandModel.SetActive(left);
-        }
-        if (rightHandModel != null)
-        {
-            rightHandModel.SetActive(right);
-        }
     }
 
 }

@@ -13,14 +13,14 @@ public class SenseGlove_Data
     /// <summary> Determines if the glove-specific data has been loaded yet. </summary>
     public bool dataLoaded = false;
     /// <summary> Check whether or not this is a left-handed or right-handed glove.  </summary>
-    public bool isRight;
+    public GloveSide gloveSide;
 
     /// <summary> The unique ID of this SenseGlove. </summary>
     public string deviceID;
     /// <summary> The hardware version of this SenseGlove. </summary>
     public string gloveVersion;
     /// <summary> The version of the firmware that runs on this SenseGlove's Microcontroller </summary>
-    public string firmwareVersion;
+    public float firmwareVersion;
 
 
 
@@ -35,6 +35,12 @@ public class SenseGlove_Data
 
     /// <summary> The raw x y z w values of the IMU within the SenseGlove. </summary>
     public float[] imuValues;
+
+    /// <summary> 
+    /// The IMU Calibration values for System, Gyro-, Accelero- and Magnetometer. 
+    /// These vary from -1 (N/A) and from 0 (not calibrated) to 3 (fully calibrated) 
+    /// </summary>
+    public int[] imuCalibration;
 
     /// <summary> The amount of sensor packets the senseglove is sending to your system. </summary>
     public int packetsPerSecond = 0;
@@ -123,105 +129,165 @@ public class SenseGlove_Data
     /// <param name="packets"></param>
     /// <param name="totalCSteps"></param>
     /// <param name="currCStep"></param>
-    public SenseGlove_Data(SenseGloveCs.GloveData data, int packets, int totalCSteps, int currCStep)
+    public SenseGlove_Data(SenseGloveCs.GloveData data)
     {
         if (data != null)
         {
             this.dataLoaded = data.dataLoaded;
-            this.isRight = data.isRight;
+            this.gloveSide = SenseGlove_Data.GetSide(data.kinematics.isRight);
 
             this.deviceID = data.deviceID;
             this.firmwareVersion = data.firmwareVersion;
-            this.gloveVersion = data.gloveVersion;
+            this.gloveVersion = data.deviceVersion;
 
             this.gloveValues = data.gloveValues;
             this.imuValues = data.imuValues;
-            this.packetsPerSecond = packets;
+            this.imuCalibration = data.imuCalibration;
+            this.packetsPerSecond = data.samplesPerSec;
             this.numberOfSensors = data.numberOfSensors;
 
-            this.calibrationStep = currCStep;
-            this.totalCalibrationSteps = totalCSteps;
+            this.calibrationStep = data.currentCalStep;
+            this.totalCalibrationSteps = data.totalCalSteps;
 
             this.absoluteCalibratedWrist = SenseGlove_Util.ToUnityQuaternion(data.wrist.QcalibratedAbs);
             this.absoluteWrist = SenseGlove_Util.ToUnityQuaternion(data.wrist.QwristAbs);
             this.relativeWrist = SenseGlove_Util.ToUnityQuaternion(data.wrist.Qrelative);
 
-            this.commonOriginPos = SenseGlove_Util.ToUnityPosition(data.handModel.gloveRelPos);
-            this.commonOriginRot = SenseGlove_Util.ToUnityQuaternion(data.handModel.gloveRelOrient);
+            this.commonOriginPos = SenseGlove_Util.ToUnityPosition(data.kinematics.gloveRelPos);
+            this.commonOriginRot = SenseGlove_Util.ToUnityQuaternion(data.kinematics.gloveRelRot);
 
-            this.gloveAngles = SenseGlove_Data.ToEuler(data.handModel.gloveAngles);
-            this.gloveLengths = SenseGlove_Data.ToVector3(data.handModel.gloveLengths);
-            this.gloveRotations = SenseGlove_Data.ToQuaternion(data.handModel.gloveRotations);
-            this.glovePositions = SenseGlove_Data.ToVector3(data.handModel.glovePositions);
+            SenseGlove_Data.GetChainVariables(ref data.kinematics.gloveLinks, ref this.glovePositions, 
+                ref this.gloveAngles, ref this.gloveRotations, ref this.gloveLengths );
 
-            this.handAngles = SenseGlove_Data.ToEuler(data.handModel.handAngles);
-            this.handLengths = SenseGlove_Data.ToVector3(data.handModel.handLengths);
-            this.handRotations = SenseGlove_Data.ToQuaternion(data.handModel.handRotations);
-            this.handPositions = SenseGlove_Data.ToVector3(data.handModel.handPositions);
+            SenseGlove_Data.GetChainVariables(ref data.kinematics.fingers, ref this.handPositions,
+                ref this.handAngles, ref this.handRotations, ref this.handLengths);
+
         }
+    }
+
+    /// <summary> Retrieve the total glove angles, used for gesture recognition (for each finger; pronation, abduction, flexion). </summary>
+    /// <returns></returns>
+    public Vector3[] TotalGloveAngles()
+    {
+        Vector3[] res = new Vector3[5];
+        for (int f=0; f<5; f++)
+        {
+            res[f] = Vector3.zero;
+            if (this.gloveAngles.Length > f)
+            {
+                for (int i=0; i<this.gloveAngles[f].Length - 1; i++) //-1 so we skip the "fingertip" position, that will always be 0, 0, 0.
+                {
+                    res[f] += this.gloveAngles[f][i];
+                }
+            }
+        }
+        return res;
     }
 
 
     //-------------------------------------------------------------------------------------------------------------------
     // Bulk Conversion Methods
 
+    /// <summary> Retrieve the Glove Side of this Sense Glove. </summary>
+    /// <param name="isRight"></param>
+    /// <returns></returns>
+    protected static GloveSide GetSide(bool isRight)
+    {
+        return isRight ? GloveSide.RightHand : GloveSide.LeftHand;
+    }
 
     /// <summary>
-    /// Convert a collection of right-handed positions stored in a float[][][] into a Unity Vector3[][].
+    /// Fill a number of arrays with data from a single kinematic chain.
     /// </summary>
+    /// <param name="chains"></param>
     /// <param name="positions"></param>
-    /// <returns></returns>
-    private static Vector3[][] ToVector3(float[][][] positions)
-    {
-        Vector3[][] res = new Vector3[positions.Length][];
-        for (int f=0; f<positions.Length; f++)
-        {
-            res[f] = new Vector3[positions[f].Length];
-            for (int i=0; i<res[f].Length; i++)
-            {
-                res[f][i] = SenseGlove_Util.ToUnityPosition(positions[f][i]);
-            }
-        }
-        return res;
-    }
-
-    /// <summary>
-    /// Convert a collection of right handed euler angles stored in a float[][][] into a Unity Vector3[][].
-    /// </summary>
-    /// <param name="eulers"></param>
-    /// <returns></returns>
-    private static Vector3[][] ToEuler(float[][][] eulers)
-    {
-        Vector3[][] res = new Vector3[eulers.Length][];
-        for (int f = 0; f < eulers.Length; f++)
-        {
-            res[f] = new Vector3[eulers[f].Length];
-            for (int i = 0; i < res[f].Length; i++)
-            {
-                res[f][i] = SenseGlove_Util.ToUnityEuler(eulers[f][i]);
-            }
-        }
-        return res;
-    }
-
-    /// <summary>
-    /// Convert a collection of right-handed Quaternion rotations stored in a float[][][] into a Unity Quaternion[][].
-    /// </summary>
+    /// <param name="angles"></param>
     /// <param name="rotations"></param>
-    /// <returns></returns>
-    private static Quaternion[][] ToQuaternion(float[][][] rotations)
+    /// <param name="lengths"></param>
+    protected static void GetChainVariables(ref SenseGloveCs.Kinematics.JointChain[] chains, ref Vector3[][] positions, ref Vector3[][] angles, ref Quaternion[][] rotations, ref Vector3[][] lengths)
     {
-        Quaternion[][] res = new Quaternion[rotations.Length][];
-        for (int f = 0; f < rotations.Length; f++)
+        int N = chains.Length;
+
+        angles = new Vector3[N][];
+        lengths = new Vector3[N][];
+        positions = new Vector3[N][];
+        rotations = new Quaternion[N][];
+
+        for (int f = 0; f < N; f++)
         {
-            res[f] = new Quaternion[rotations[f].Length];
-            for (int i = 0; i < res[f].Length; i++)
+            SenseGlove_Data.GetLinkVariables(ref chains[f], ref positions[f], ref angles[f], ref rotations[f], ref lengths[f]);
+        }
+    }
+
+    /// <summary> Fill the appropriate unity Quaternion and Vector3 arrays based on a single joing chain (finger or glove semgent) </summary>
+    /// <param name="chain"></param>
+    /// <param name="positions"></param>
+    /// <param name="angles"></param>
+    /// <param name="rotations"></param>
+    /// <param name="lengths"></param>
+    protected static void GetLinkVariables(ref SenseGloveCs.Kinematics.JointChain chain, ref Vector3[] positions, ref Vector3[] angles, ref Quaternion[] rotations, ref Vector3[] lengths)
+    {
+        int n = chain.joints.Length;
+        positions = new Vector3[n];
+        angles = new Vector3[n];
+        rotations = new Quaternion[n];
+        lengths = new Vector3[n - 1];
+
+        for (int j=0; j<n; j++)
+        {
+            positions[j] = SenseGlove_Util.ToUnityPosition(chain.joints[j].position);
+            angles[j] = SenseGlove_Util.ToUnityEuler(chain.joints[j].relativeAngle);
+            rotations[j] = SenseGlove_Util.ToUnityQuaternion(chain.joints[j].rotation);
+            if (j < n - 1)
             {
-                res[f][i] = SenseGlove_Util.ToUnityQuaternion(rotations[f][i]);
+                lengths[j] = SenseGlove_Util.ToUnityPosition(chain.lengths[j]);
+            }
+        }
+
+    }
+
+    //-------------------------------------------------------------------------------------------------------------------
+    // Access
+
+
+    /// <summary> Retrieve the finger lengths of this GloveData </summary>
+    /// <returns></returns>
+    public float[][] GetFingerLengths()
+    {
+        float[][] res = new float[5][];
+        for (int f=0; f<5; f++)
+        {
+            res[f] = new float[3];
+            for (int j=0; j<3; j++)
+            {
+                res[f][j] = this.handLengths[f][j][0]; //all x lengths
             }
         }
         return res;
     }
 
-   
+    /// <summary> Retrieve the joint positions </summary>
+    /// <returns></returns>
+    public Vector3[] GetJointPositions()
+    {
+        Vector3[] res = new Vector3[5];
+        for (int f = 0; f < 5; f++)
+        {
+            res[f] = this.handPositions[f][0];
+        }
+        return res;
+    }
+
 }
+
+/// <summary> Whether this glove is left- or right handed. </summary>
+public enum GloveSide
+{
+    /// <summary> No data about this glove is available yet. </summary>
+    Unknown = 0,
+    /// <summary> This is a right hand. </summary>
+    RightHand,
+    /// <summary> This is a left hand. </summary>
+    LeftHand
+}
+

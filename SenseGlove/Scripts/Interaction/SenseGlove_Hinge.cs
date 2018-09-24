@@ -174,16 +174,14 @@ public class SenseGlove_Hinge : SenseGlove_Interactable
 
     #region HingeMethods
 
-    /// <summary>
-    /// Enable / disable all connected gameobjects.
-    /// </summary>
+    /// <summary> Set this drawer and its handles to active / inactive. </summary>
     /// <param name="interactable"></param>
-    public void SetInteractable(bool interactable)
+    public override void SetInteractable(bool interactable)
     {
         this.isInteractable = interactable;
         for (int i=0; i<this.handles.Count; i++)
         {
-            this.handles[i].isInteractable = interactable;
+            this.handles[i].SetInteractable(interactable);
         }
     }
 

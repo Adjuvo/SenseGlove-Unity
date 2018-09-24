@@ -58,7 +58,7 @@ public class SenseGlove_Detector : MonoBehaviour
 
     /// <summary> An optional Highlight of this Detector that can be enabled / disabled. </summary>
     [Tooltip("An optional Highlight of this Detector that can be enabled / disabled.")]
-    public GameObject highLight;
+    public Renderer highLight;
 
     // Internal Properties.
 
@@ -214,7 +214,7 @@ public class SenseGlove_Detector : MonoBehaviour
     {
         if (this.highLight != null)
         {
-            this.highLight.SetActive(active);
+            this.highLight.enabled = active;
         }
     }
 

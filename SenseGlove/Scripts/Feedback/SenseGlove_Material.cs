@@ -10,10 +10,17 @@ using UnityEditor;
 /// <summary> Determines how the material properties are loaded. </summary>
 public enum VirtualMaterial
 {
+    /// <summary> Material Properties can be assigned via the inspector. </summary>
     Custom = 0,
+
+    /// <summary> Material properties are loaded from a .txt file. </summary>
     FromDataBase,
+
+    /// <summary> Assigns properties of the hardest material. </summary>
     Steel,
+    /// <summary> Assigns properties of a medium-soft material.  </summary>
     Rubber,
+    /// <summary> Assigns properties of a soft material that is breakable.  </summary>
     Egg
 }
 
@@ -97,6 +104,9 @@ public class SenseGlove_Material : MonoBehaviour
     /// <summary> My (optional) interactable script </summary>
     private SenseGlove_Interactable myInteractable;
 
+    /// <summary> (Optional) Connected Material Deformation Script, used to pass deformation paraeters? </summary>
+    protected SenseGlove_MeshDeform deformScript;
+
     /// <summary> [thumb/palm, index, middle, pinky, ring] </summary>
     private bool[] raisedBreak = new bool[5];
 
@@ -143,9 +153,10 @@ public class SenseGlove_Material : MonoBehaviour
         }
     }
 
-    void Update()
+    /// <summary> Unbreak this material if it is disabled. </summary>
+    private void OnDisable()
     {
-
+        this.UnBreak();
     }
 
     #endregion Monobehaviour
@@ -166,7 +177,13 @@ public class SenseGlove_Material : MonoBehaviour
     public void UnBreak()
     {
         this.isBroken = false;
+        this.brokenBy = 0;
+        this.raisedBreak = new bool[5];
+
+        if (this.deformScript != null)
+            this.deformScript.ResetMesh();
     }
+    
 
     /// <summary> Calculates the force on the finger based on material properties. </summary>
     /// <param name="displacement"></param>

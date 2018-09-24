@@ -62,21 +62,15 @@ public static class SenseGlove_Util
 
     #region Conversion
 
-    /// <summary> DLL indices for the different variables. </summary>
-    private static int x = 0, y = 1, z = 2, w = 3;
 
     /// <summary>
     /// Convert a float[3] position taken from the DLL into a Unity Position.
     /// </summary>
     /// <param name="pos"></param>
     /// <returns></returns>
-    public static Vector3 ToUnityPosition(float[] pos)
+    public static Vector3 ToUnityPosition(SenseGloveCs.Kinematics.Vect3D pos)
     {
-        if (pos.Length > 2)
-        {
-            return new Vector3(pos[x], pos[z], pos[y]);
-        }
-        return Vector3.zero;
+        return new Vector3(pos.x, pos.z, pos.y);
     }
 
     /// <summary>
@@ -84,7 +78,7 @@ public static class SenseGlove_Util
     /// </summary>
     /// <param name="pos"></param>
     /// <returns></returns>
-    public static Vector3[] ToUnityPosition(float[][] pos)
+    public static Vector3[] ToUnityPosition(SenseGloveCs.Kinematics.Vect3D[] pos)
     {
         if (pos != null)
         {
@@ -101,9 +95,9 @@ public static class SenseGlove_Util
     /// <summary> Convert from a unity vector3 to a float[3] used in the DLL. </summary>
     /// <param name="pos"></param>
     /// <returns></returns>
-    public static float[] ToPosition(Vector3 pos)
+    public static SenseGloveCs.Kinematics.Vect3D ToPosition(Vector3 pos)
     {
-        return new float[] { pos.x, pos.z, pos.y };
+        return new SenseGloveCs.Kinematics.Vect3D( pos.x, pos.z, pos.y );
     }
 
     /// <summary>
@@ -111,9 +105,9 @@ public static class SenseGlove_Util
     /// </summary>
     /// <param name="pos"></param>
     /// <returns></returns>
-    public static float[][] ToPosition(Vector3[] pos)
+    public static SenseGloveCs.Kinematics.Vect3D[] ToPosition(Vector3[] pos)
     {
-        float[][] res = new float[pos.Length][];
+        SenseGloveCs.Kinematics.Vect3D[] res = new SenseGloveCs.Kinematics.Vect3D[pos.Length];
         for (int f = 0; f < pos.Length; f++)
         {
             res[f] = SenseGlove_Util.ToPosition(pos[f]);
@@ -128,17 +122,17 @@ public static class SenseGlove_Util
     /// </summary>
     /// <param name="quat"></param>
     /// <returns></returns>
-    public static Quaternion ToUnityQuaternion(float[] quat)
+    public static Quaternion ToUnityQuaternion(SenseGloveCs.Kinematics.Quat quat)
     {
-        return new Quaternion(-quat[x], -quat[z], -quat[y], quat[w]);
+        return new Quaternion(-quat.x, -quat.z, -quat.y, quat.w);
     }
 
     /// <summary> Convert a unity Quaternion into a float[4] used in the DLL. </summary>
     /// <param name="Q"></param>
     /// <returns></returns>
-    public static float[] ToQuaternion(Quaternion Q)
+    public static SenseGloveCs.Kinematics.Quat ToQuaternion(Quaternion Q)
     {
-        return new float[] { -Q.x, -Q.z, -Q.y, Q.w };
+        return new SenseGloveCs.Kinematics.Quat ( -Q.x, -Q.z, -Q.y, Q.w );
     }
 
     
@@ -150,18 +144,18 @@ public static class SenseGlove_Util
     /// </summary>
     /// <param name="euler"></param>
     /// <returns></returns>
-    public static float[] ToEuler(Vector3 euler)
+    public static SenseGloveCs.Kinematics.Vect3D ToEuler(Vector3 euler)
     {
-        return SenseGloveCs.Values.Radians(new float[] { -euler.x, -euler.z, -euler.y });
+        return SenseGloveCs.Values.Radians(new SenseGloveCs.Kinematics.Vect3D ( -euler.x, -euler.z, -euler.y ));
     }
 
     /// <summary> Convert a set of euler angles from the DLL into the Unity notation. </summary>
     /// <param name="euler"></param>
     /// <returns></returns>
-    public static Vector3 ToUnityEuler(float[] euler)
+    public static Vector3 ToUnityEuler(SenseGloveCs.Kinematics.Vect3D euler)
     {
         euler = SenseGloveCs.Values.Degrees(euler);
-        return new Vector3(-euler[x], -euler[z], -euler[y]);
+        return new Vector3(-euler.x, -euler.z, -euler.y);
     }
 
     #endregion Conversion
