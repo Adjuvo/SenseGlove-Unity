@@ -1,9 +1,13 @@
 # SenseGlove-Unity
 The latest stable Unity SDK for the SenseGlove.
 
-Current version is 0.20, released on the 24th of March 2019.
+Current version is 0.20, released on the 24th of OCtober 2018.
 
 When importing a new version of the Sense Glove SDK, the best practice is to delete the SenseGlove folder before re-importing, since some files may have been removed. If you don't wish to interfere with your scripts, delete only the Examples folder.
+
+
+## Backwards Compatability
+Starting from v0.20 and onwards, the SDK is no longer compatible with the old, white, lasercut prototypes (released before DK1). If you have such a device and wish to continue using it with the latest SDK, contact the Sense Glove team.
 
 ## Getting Started
 The first thing one should do is ensure that their Sense Glove is working.
