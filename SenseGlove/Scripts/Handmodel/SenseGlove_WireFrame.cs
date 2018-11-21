@@ -1,8 +1,15 @@
-﻿using System;
-using System.Collections;
+﻿/*
+ * A hand model that visualizes the kinematic model of the Sense Glove in a wireframe.
+ * Its purpose is to debug the Sense Glove Hardware and Software models, and therefore has no grabscripts attached.
+ *  
+ * @Author: Max Lammers of Sense Glove
+ */
+
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary> Type of SenseGlove_HandModel to debug hardware- and software models. </summary>
 public class SenseGlove_WireFrame : SenseGlove_HandModel
 {
     //------------------------------------------------------------------------------------------------------------------------------------
@@ -51,7 +58,7 @@ public class SenseGlove_WireFrame : SenseGlove_HandModel
     /// <summary> Do not run the setups more than once. </summary>
     private bool setupComplete = false;
 
-    /// <summary> To apply glove angles to. </summary>
+    /// <summary> Glove joints to which the gloveAngles are applied. </summary>
     private Transform[][] gloveJoints;
 
     #endregion Properties 
@@ -64,7 +71,7 @@ public class SenseGlove_WireFrame : SenseGlove_HandModel
     /// <summary> Collect the finger joints. If these do not exist yet, try again. </summary>
     protected override void CollectFingerJoints()
     {
-        if (!this.setupComplete && this.senseGlove != null && this.senseGlove.GloveReady())
+        if (!this.setupComplete && this.senseGlove != null && this.senseGlove.GloveReady)
         {
             this.SenseGlove_OnGloveLoaded(null, null);
         }
@@ -233,7 +240,7 @@ public class SenseGlove_WireFrame : SenseGlove_HandModel
         //setup the glove model.
         if (this.previewGroup != null) { Destroy(this.previewGroup); }
 
-        SenseGlove_Data data = this.senseGlove.GloveData();
+        SenseGlove_Data data = this.senseGlove.GloveData;
 
         this.SetupFingers(data);
         this.SetupGlove(data);
@@ -312,6 +319,9 @@ public class SenseGlove_WireFrame : SenseGlove_HandModel
         }
     }
 
+    /// <summary> Keeps the glove index position on the same location, while shifting the other glove fingers back or forth. </summary>
+    /// <param name="source"></param>
+    /// <param name="args"></param>
     protected override void SenseGlove_OnCalibrationFinished(object source, GloveCalibrationArgs args)
     {
         //resize so that the index finger position remains on the same place
@@ -331,7 +341,7 @@ public class SenseGlove_WireFrame : SenseGlove_HandModel
     /// <param name="active"></param>
     public void SetGlove(bool active)
     {
-        if (this.senseGlove.GloveReady())
+        if (this.senseGlove.GloveReady)
         {
             if (gloveBase != null)
             {
@@ -345,7 +355,7 @@ public class SenseGlove_WireFrame : SenseGlove_HandModel
     /// <param name="active"></param>
     public void SetHand(bool active)
     {
-        if (this.senseGlove.GloveReady())
+        if (this.senseGlove.GloveReady)
         {
             if (handBase != null)
             {

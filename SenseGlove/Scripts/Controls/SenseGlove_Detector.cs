@@ -86,9 +86,9 @@ public class SenseGlove_Detector : MonoBehaviour
     // Monobehaviour
 
     #region Monobehaviour
-    
+
     // Use this for initialization
-    void Start () 
+    protected virtual void Start () 
 	{
 		//add a rigidbody if not already present?
         myCollider = this.GetComponent<Collider>();
@@ -106,7 +106,7 @@ public class SenseGlove_Detector : MonoBehaviour
     }
 
     // Updates every frame, used to raise event(s).
-    void LateUpdate()
+    protected virtual void LateUpdate()
     {
         for (int i = 0; i < this.detectedGloves.Count; i++)
         {

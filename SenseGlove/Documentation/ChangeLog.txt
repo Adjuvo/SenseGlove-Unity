@@ -1,7 +1,36 @@
 # Changelog
 All notable changes to the SenseGlove Prefabs will be documented in this file.
 
-You are currently using version 0.20
+You are currently using version 1.0
+
+## [v1.0] - 2018-11-21
+First Release. Compatibility and Stability.
+
+### Added
+-	New way to connect to the Sense Glove in Unity: The SenseGlove_DeviceManager class automatically connects the appropriate Sense Gloves
+	to the SenseGlove_Objects within the Scene, and fires a GloveDetected event when a new connection is found.
+-	AutoConnect variable added to the SenseGlove_Object, which determines if the script can automatically connect to new Sense Glove(s),
+	or if it must wait for the LinkGlove function to be called.
+-	SenseGlove_Interactable: InteractionBegun, InteractionEnded, Touched, Untouched events that can be subscribed to.
+-	HingeRatio() function for Senseglove_Hinge Script, allowing one to determine how far along a hinge / door is moved from 0 to 1, 
+	where 0 is the minimum angle, and 1 is the maximum angle.
+-	SenseGlove_TapFeedback script, which allows for a very rudimentary 2nd order force-feedback (Haptic pulse when the tool you're holding hits something else).
+	
+### Changed
+-	Changed the Unity build version from 2018.2 to 2017.2.4f1, in order to ensure compatibility with clients using older Sense Glove Versions
+-	SenseGlove_Manager renamed to SenseGlove_Device Manager.
+-	SenseGlove_Object creates SenseGlove_Device Manager object if it does not exist within the scene.
+-	Removed obsolete connection options from the SenseGlove_Object script. 
+-	The Diagnostics scene in the Examples folder now shows the currently active connections if no Sense Glove has been detected.
+- 	Merged the PacketsCounter script with the SenseGlove_Diagnostics script.
+- 	Removed Prefab Connections from Examples, which ensures that no MISSING PREFAB issues occur.
+
+
+### Fixed
+-	Worker thread for communication would sometimes fail to close when Unity crashes. These threads are now marked as background tasks.
+
+-------------------------------------------------------------------------------------------------------
+
 
 ## [v0.20] - 2018-09-24
 New Kinematics and Calibration, DK1 compatibility.

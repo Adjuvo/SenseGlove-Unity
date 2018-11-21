@@ -61,7 +61,7 @@ namespace Util
                 }
                 else
                 {
-                    Debug.LogError(path + " does not exist.");
+                    Debug.Log(path + " does not exist.");
                 }
             }
             catch (System.Exception Ex)

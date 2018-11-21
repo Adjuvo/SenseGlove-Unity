@@ -19,23 +19,23 @@ namespace SenseGlove_Examples
         public KeyCode swapHandsKey = KeyCode.S;
 
         // Use this for initialization
-        void Start()
+        protected virtual void Start()
         {
             if (handModel_L != null)
             {
-                handModel_L.OnGloveLoaded += LoadLeft;
+                handModel_L.GloveLoaded += LoadLeft;
             }
             if (handModel_R != null)
             {
-                handModel_R.OnGloveLoaded += LoadRight;
+                handModel_R.GloveLoaded += LoadRight;
             }
         }
 
-        private void OnApplicationQuit()
+        protected virtual void OnApplicationQuit()
         {
-            if (this.handModel_L != null && this.handModel_L.GloveReady())
+            if (this.handModel_L != null && this.handModel_L.GloveReady)
                 this.SaveGloveData(this.handModel_L);
-            if (this.handModel_R != null && this.handModel_R.GloveReady())
+            if (this.handModel_R != null && this.handModel_R.GloveReady)
                 this.SaveGloveData(this.handModel_R);
         }
 
@@ -50,7 +50,7 @@ namespace SenseGlove_Examples
         }
 
         // Update is called once per frame
-        void Update()
+        protected virtual void Update()
         {
             if (Input.GetKeyDown(this.swapHandsKey))
             {
@@ -127,11 +127,11 @@ namespace SenseGlove_Examples
 
                         if (saveLengths && lengths.Length > 0)
                         {
-                            senseGlove.SetFingerLengths(lengths);
+                            senseGlove.FingerLengths = (lengths);
                         }
                         if (saveStartpos && positions.Length > 0)
                         {
-                            senseGlove.SetStartJointPositions(positions);
+                            senseGlove.StartJointPositions = (positions);
                         }
                     }
                 }
@@ -146,8 +146,8 @@ namespace SenseGlove_Examples
 
         private void SaveGloveData(SenseGlove_Object senseGlove)
         {
-            Vector3[] positions = senseGlove.GetStartJointPositions();
-            float[][] lengths = senseGlove.GetFingerLengths();
+            Vector3[] positions = senseGlove.StartJointPositions;
+            float[][] lengths = senseGlove.FingerLengths;
 
             if (true)
             {

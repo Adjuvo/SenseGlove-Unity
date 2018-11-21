@@ -61,7 +61,7 @@ public class SenseGlove_Drawer : SenseGlove_Interactable
 
     #region Monobehaviour
 
-    void Awake()
+    protected virtual void Awake()
     {
         this.isInteractable = false;
         this.actualMoveDirection = this.moveDirection;
@@ -72,13 +72,13 @@ public class SenseGlove_Drawer : SenseGlove_Interactable
         }
     }
 
-    void Start()
+    protected virtual void Start()
     {
         this.originalPos = this.transform.position;
         this.originalRot = this.transform.rotation;
     }
 
-    void Update()
+    protected virtual void Update()
     {
         if (this.actualMoveDirection != this.moveDirection)
         {
@@ -103,7 +103,7 @@ public class SenseGlove_Drawer : SenseGlove_Interactable
     /// <summary> Called when a new SenseGlove_Grabscript engages in an interaction with this Drawer </summary>
     /// <param name="grabScript"></param>
     /// <param name="fromExternal"></param>
-    public override void BeginInteraction(SenseGlove_GrabScript grabScript, bool fromExternal = false)
+    protected override bool InteractionBegin(SenseGlove_GrabScript grabScript, bool fromExternal = false)
     {
         //SenseGlove_Debugger.Log("Handle.BeginInteraction"); 
         if (!InteractingWith(grabScript)) //never interact twice with the same grabscript before EndInteraction is called.
@@ -116,7 +116,7 @@ public class SenseGlove_Drawer : SenseGlove_Interactable
 
             //Quaternion.Inverse(QT) * (Qo);
             //this.grabRotation = Quaternion.Inverse(this.grabReference.transform.rotation) * this.transform.rotation;
-            
+
             /*
             if (this.physicsBody)
             {
@@ -129,14 +129,15 @@ public class SenseGlove_Drawer : SenseGlove_Interactable
                 this.physicsBody.angularVelocity = new Vector3(0, 0, 0);
             }
             */
-
+            return true;
         }
+        return false;
     }
 
     /// <summary> Called when a SenseGlove_Grabscript ends the interaction with this drawer. </summary>
     /// <param name="grabScript"></param>
     /// <param name="fromExternal"></param>
-    public override void EndInteraction(SenseGlove_GrabScript grabScript, bool fromExternal = false)
+    protected override bool InteractionEnd(SenseGlove_GrabScript grabScript, bool fromExternal = false)
     {
         //SenseGlove_Debugger.Log("Handle.EndInteraction");
         if (InteractingWith(grabScript)) //only do the proper endInteraction if the EndInteraction comes from the script currently holding it.
@@ -156,7 +157,9 @@ public class SenseGlove_Drawer : SenseGlove_Interactable
             };
             this.grabReference = null;
             this._grabScript = null;
+            return true;
         }
+        return false;
     }
 
     /// <summary> Called when the grabreference of the SenseGlove_Grabscript has been updated during the LateUpdate function. </summary>

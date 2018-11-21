@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary> Represents an Interactable that can rotate around a specified point and axis. Used to extend doors and levers. </summary>
@@ -62,7 +60,7 @@ public class SenseGlove_Hinge : SenseGlove_Interactable
 
     #region Monobehaviour
 
-    void Awake()
+    protected virtual void Awake()
     {
         if (this.autoSetup)
         {
@@ -71,7 +69,7 @@ public class SenseGlove_Hinge : SenseGlove_Interactable
     }
 
     // Use this for initialization
-    void Start()
+    protected virtual void Start()
     {
         for (int i = 0; i < this.handles.Count; i++)
         {
@@ -80,13 +78,13 @@ public class SenseGlove_Hinge : SenseGlove_Interactable
     }
 
     // Update is called once per frame
-    void Update()
+    protected virtual void Update()
     {
         //this.SetAngle(this.GethingeAngle(this.TEST.transform.position), true);
     }
 
     //called every physics-update
-    void FixedUpdate()
+    protected virtual void FixedUpdate()
     {
         // this.CheckhingeLimits();
     }
@@ -100,10 +98,9 @@ public class SenseGlove_Hinge : SenseGlove_Interactable
 
     /// <summary> Begin the interaction with this Interactable </summary>
     /// <param name="grabScript"></param>
-    public override void BeginInteraction(SenseGlove_GrabScript grabScript, bool fromExternal = false)
+    protected override bool InteractionBegin(SenseGlove_GrabScript grabScript, bool fromExternal = false)
     {
         //SenseGlove_Debugger.Log("Grabbing Lever");
-
         if (this.isInteractable || fromExternal)
         {
 
@@ -131,7 +128,9 @@ public class SenseGlove_Hinge : SenseGlove_Interactable
                 this.physicsBody.useGravity = false;
                 this.physicsBody.isKinematic = true;
             }
+            return true;
         }
+        return false;
     }
 
     /// <summary> Update the interaction with this Interactable. </summary>
@@ -147,7 +146,7 @@ public class SenseGlove_Hinge : SenseGlove_Interactable
 
     /// <summary> Ends the interaction between the grabscript and this hinge </summary>
     /// <param name="grabScript"></param>
-    public override void EndInteraction(SenseGlove_GrabScript grabScript, bool fromExternal = false)
+    protected override bool InteractionEnd(SenseGlove_GrabScript grabScript, bool fromExternal = false)
     {
         if (this.IsInteracting())
         {   //break every possible instance that could connect this interactable to the grabscript.
@@ -165,6 +164,8 @@ public class SenseGlove_Hinge : SenseGlove_Interactable
         }
         this._grabScript = null;
         this.grabReference = null;
+
+        return true;
     }
 
     #endregion InteractionMethods
@@ -368,26 +369,13 @@ public class SenseGlove_Hinge : SenseGlove_Interactable
         }
         return this.hingePoint.rotation * localAxis;
     }
-
-    /*
-    /// <summary> Map the hinge angle to a range of -180 ... 180</summary>
-    /// <param name="angle"></param>
+    
+    /// <summary> Retrieve the ratio (0 .. 1) of this Hinge Joint, from minAngle (0) to maxAngle (1). Used for events / animations. </summary>
     /// <returns></returns>
-    private static float NormalizeAngle(float angle)
+    public float HingeRatio()
     {
-        while (angle > 180)
-        {
-            angle -= 360;
-        }
-
-        //while (angle < -180)
-        //{
-        //    angle += 360;
-        //}
-
-        return angle;
+        return Mathf.Clamp01( SenseGloveCs.Values.Interpolate(this.GetHingeAngle(), this.minAngle, this.maxAngle, 0, 1) );
     }
-    */
 
     #endregion HingeMethods
     

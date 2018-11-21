@@ -1,22 +1,19 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-
-using SenseGloveCs;
+﻿
+using UnityEngine; //used for Debug.Log()
+using SenseGloveCs.Diagnostics; // Used to access Debugger.
 
 /// <summary> 
-/// Utility Script that allows access to the internal debugger of the SenseGloveCs Library,
-/// and controls debug messages from the SenseGlove SDK specifically.
+/// Utility Script that allows access to the internal debugger of the SenseGloveCs Library, and controls debug messages from the SenseGlove SDK specifically.
 /// </summary>
 public class SenseGlove_Debugger : MonoBehaviour
 {
+    //----------------------------------------------------------------------------------------------------
+    // Properties
+
     /// <summary> The level of debug messages that one will recieve from the DLL. </summary>
     [Tooltip("The level of debug messages that one will recieve from the DLL.")]
-    public DebugLevel debugLevel = SenseGloveCs.Debugger.defaultDebugLvl;
+    public DebugLevel DLL_debugLevel = SenseGloveCs.Diagnostics.Debugger.defaultDebugLvl;
 
-    /// <summary> Enables or disables debug messages from the SenseGloveCs.dll. </summary>
-    [Tooltip("Enables or disables debug messages from the SenseGloveCs.dll.")]
-    public bool dllEnabled = true;
 
     /// <summary> Enables or disables debug messages from the Unity SDK scripts. </summary>
     [Tooltip("Enables or disables debug messages from the Unity SDK scripts.")]
@@ -29,29 +26,19 @@ public class SenseGlove_Debugger : MonoBehaviour
     /// </remarks>
     private static bool unityEnabled_S = true;
 
+    //----------------------------------------------------------------------------------------------------
+    // Monobehaviour
 
-
-
-	// Ensure the Debugger is active before the Start() functions are called.
-	void Awake()
+    // Ensure the Debugger is active before the Start() functions are called.
+    void Awake()
     {
-        Debugger.storeMessages = true;
-        SenseGlove_Debugger.unityEnabled_S = this.unityEnabled;
-        SenseGloveCs.Debugger.debugLevel = this.debugLevel;
-	}
-	
+        SenseGloveCs.Diagnostics.Debugger.DebugLevel = this.DLL_debugLevel;
+        SenseGloveCs.Diagnostics.Debugger.Instance.DebugMessageRecieved += Instance_DebugMessageRecieved;
+    }
+
     //runs after all Update() methods have been called.
     void LateUpdate()
     {
-        string[] lastMessages = Debugger.GetMessages(); //Always retrieve the latest messages, which will clear the buffer in the DLL.
-        if (dllEnabled)
-        {
-            foreach (string msg in lastMessages)
-            {
-                Debug.Log(msg);
-            }
-        }
-
         //update the static variable.
         if (SenseGlove_Debugger.unityEnabled_S != this.unityEnabled)
         {
@@ -59,15 +46,32 @@ public class SenseGlove_Debugger : MonoBehaviour
         }
 
         //Update the internal debug level
-        if (SenseGloveCs.Debugger.debugLevel != this.debugLevel)
+        if (SenseGloveCs.Diagnostics.Debugger.DebugLevel != this.DLL_debugLevel)
         {
-            SenseGloveCs.Debugger.debugLevel = this.debugLevel;
+            SenseGloveCs.Diagnostics.Debugger.DebugLevel = this.DLL_debugLevel;
         }
+    }
 
+    // unsubscribe on quit.
+    private void OnApplicationQuit()
+    {
+        SenseGloveCs.Diagnostics.Debugger.Instance.DebugMessageRecieved -= Instance_DebugMessageRecieved; //unsubscribe
     }
 
 
+    //----------------------------------------------------------------------------------------------------
+    // Class Methods
 
+    /// <summary> Fires when our debugger reports that a new message has been recieved. </summary>
+    /// <param name="source"></param>
+    /// <param name="args"></param>
+    private void Instance_DebugMessageRecieved(object source, DebugArgs args)
+    {
+        Debug.Log(args.message);
+    }
+
+
+    // Static (Unity Related)
 
     /// <summary>  Write a message to the SenseGlove_Debugger. </summary>
     /// <param name="message"></param>

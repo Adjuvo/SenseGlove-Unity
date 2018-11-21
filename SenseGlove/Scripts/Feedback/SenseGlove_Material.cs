@@ -116,52 +116,6 @@ public class SenseGlove_Material : MonoBehaviour
     #endregion Properties
 
     //----------------------------------------------------------------------------------
-    // Monobehaviour
-
-    #region Monobehaviour
-
-    void Start()
-    {
-        //load material props, if required.
-        if (this.materialDataBase != null)
-        {
-            if (this.materialDataBase.Length == 0)
-            {
-                this.materialDataBase = SenseGlove_Material.baseFileName;
-            }
-            SenseGloveMats.MaterialLibraries.LoadLibrary(Application.dataPath + "/", this.materialDataBase);
-        }
-        if (this.materialName.Length > 0)
-        {
-            this.materialName = this.materialName.Split(new char[] { ' ' }, System.StringSplitOptions.RemoveEmptyEntries)[0]; //remove spaces
-        }
-
-        if (this.material == VirtualMaterial.FromDataBase)
-        {
-            this.LoadMaterialProps();
-        }
-        else if (this.material != VirtualMaterial.Custom)
-        {
-            this.LoadMaterialProps(this.material); //don't load yield distances if the material has been edited?
-        }
-
-        //load grab options
-        this.myInteractable = this.gameObject.GetComponent<SenseGlove_Interactable>();
-        if (myInteractable == null && this.mustBeGrabbed)
-        {
-            this.mustBeGrabbed = false; //we cannot require this material to be grabbed if it's not an interactable.
-        }
-    }
-
-    /// <summary> Unbreak this material if it is disabled. </summary>
-    private void OnDisable()
-    {
-        this.UnBreak();
-    }
-
-    #endregion Monobehaviour
-
-    //----------------------------------------------------------------------------------
     // Material Methods
 
     #region MaterialMethods
@@ -341,6 +295,54 @@ public class SenseGlove_Material : MonoBehaviour
         this.brokenBy = 0;
         this.raisedBreak = new bool[this.raisedBreak.Length];
     }
+
+
+    //----------------------------------------------------------------------------------
+    // Monobehaviour
+
+    #region Monobehaviour
+
+    protected virtual void Start()
+    {
+        //load material props, if required.
+        if (this.materialDataBase != null)
+        {
+            if (this.materialDataBase.Length == 0)
+            {
+                this.materialDataBase = SenseGlove_Material.baseFileName;
+            }
+            SenseGloveMats.MaterialLibraries.LoadLibrary(Application.dataPath + "/", this.materialDataBase);
+        }
+        if (this.materialName.Length > 0)
+        {
+            this.materialName = this.materialName.Split(new char[] { ' ' }, System.StringSplitOptions.RemoveEmptyEntries)[0]; //remove spaces
+        }
+
+        if (this.material == VirtualMaterial.FromDataBase)
+        {
+            this.LoadMaterialProps();
+        }
+        else if (this.material != VirtualMaterial.Custom)
+        {
+            this.LoadMaterialProps(this.material); //don't load yield distances if the material has been edited?
+        }
+
+        //load grab options
+        this.myInteractable = this.gameObject.GetComponent<SenseGlove_Interactable>();
+        if (myInteractable == null && this.mustBeGrabbed)
+        {
+            this.mustBeGrabbed = false; //we cannot require this material to be grabbed if it's not an interactable.
+        }
+    }
+
+    /// <summary> Unbreak this material if it is disabled. </summary>
+    protected virtual void OnDisable()
+    {
+        this.UnBreak();
+    }
+
+    #endregion Monobehaviour
+
 
 }
 

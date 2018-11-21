@@ -196,7 +196,7 @@ public class SenseGlove_Breakable : MonoBehaviour
     #region Monobehaviour
 
     // Use this for initialization
-    void Start()
+    protected virtual void Start()
     {
         this.wholeDeform = this.wholeObject.GetComponent<SenseGlove_MeshDeform>();
         this.wholeMaterial = this.wholeObject.GetComponent<SenseGlove_Material>();
@@ -214,7 +214,7 @@ public class SenseGlove_Breakable : MonoBehaviour
     }
 
     // Update is called once per frame
-    void Update()
+    protected virtual void Update()
     {
         this.CheckUnbreak();
     }

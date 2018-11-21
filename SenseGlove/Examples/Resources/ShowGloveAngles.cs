@@ -26,11 +26,11 @@ namespace SenseGlove_Examples
 
         void UpdateAngles()
         {
-            if (this.glove != null && glove.GloveReady())
+            if (this.glove != null && glove.GloveReady)
             {
 
-                float[][] angles = this.glove.GloveData().gloveValues;
-                SenseGloveCs.GloveData data = this.glove.GetRawGloveData();
+                float[][] angles = this.glove.GloveData.gloveValues;
+                SenseGloveCs.GloveData data = SenseGlove_DeviceManager.GetSenseGlove(this.glove.GloveIndex).gloveData;
 
                 string msg = "";
                 for (int f = 0; f < angles.Length; f++)

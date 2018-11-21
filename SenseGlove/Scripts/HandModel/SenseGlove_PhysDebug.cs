@@ -239,7 +239,7 @@ public class SenseGlove_PhysDebug : MonoBehaviour
     public void UpdateIntention()
     {
         //No need to check what the Grabscript's intentions are, as these are already refelcted in the wantsGrab variable.
-        bool[] want = this.grabScript.wantsGrab;
+        bool[] want = this.grabScript.GrabValues;
         this.SetIntentions(want);
     }
 
@@ -287,13 +287,13 @@ public class SenseGlove_PhysDebug : MonoBehaviour
     // Monobehaviour
 
     // Use this for initialization
-    void Start ()
+    protected virtual void Start ()
     {
         this.grabScript = this.gameObject.GetComponent<SenseGlove_PhysGrab>();
     }
-	
-	// Update is called once per frame
-	void Update ()
+
+    // Update is called once per frame
+    protected virtual void Update ()
     {
 		if ((this.fingers == null && this.palm == null) && this.grabScript.SetupComplete()) //ensures it is not called before the physgrab has completed setup.
         {

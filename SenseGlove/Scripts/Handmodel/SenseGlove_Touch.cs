@@ -40,10 +40,7 @@ public class SenseGlove_Touch : MonoBehaviour
 
     /// <summary> Get a reference to the grabscript that this SenseGlove_Touch is attached to. </summary>
     /// <returns></returns>
-    public SenseGlove_GrabScript GrabScript()
-    {
-        return this.grabScript;
-    }
+    public SenseGlove_GrabScript GrabScript { get { return this.grabScript; } }
 
     //--------------------------------------------------------------------------------------------------------------------------
     // Monobehaviour
@@ -51,20 +48,19 @@ public class SenseGlove_Touch : MonoBehaviour
     #region Monobehaviour
 
     //Colled when the application starts
-    void Start()
+    protected virtual void Start()
     {
         if (this.touch == null) { this.touch = this.GetComponent<Collider>(); }
     }
 
     // Called once per frame
-    void Update()
+    protected virtual void Update()
     {
         this.touch.isTrigger = true;
-        
     }
 
     // Called during a physics update.
-    void FixedUpdate()
+    protected virtual void FixedUpdate()
     {
         if (touch != null) { touch.isTrigger = true; } //enure the touch collider is always kinematic.
 
@@ -79,11 +75,12 @@ public class SenseGlove_Touch : MonoBehaviour
 
 
 
+
     //--------------------------------------------------------------------------------------------------------------------------
     // Collision Detection / Force Feedback 
 
     // Called when this object enters the collider of another object
-    void OnTriggerEnter(Collider col)
+    protected virtual void OnTriggerEnter(Collider col)
     {
         SenseGlove_Interactable interact = col.GetComponent<SenseGlove_Interactable>();
         if (interact != null && this.touchedObject == null)
@@ -94,19 +91,22 @@ public class SenseGlove_Touch : MonoBehaviour
             //}
             this.touchedObject = col.gameObject;
             this.touchedScript = interact;
+            this.touchedScript.TouchedBy(this);
         }
     }
 
     // Called every FixedUpdate while this collider is inside another collider.
-    void OnTriggerStay(Collider col)
+    protected virtual void OnTriggerStay(Collider col)
     {
     }
 
     // Called when this object exits the collider of another object
-    void OnTriggerExit(Collider col)
+    protected virtual void OnTriggerExit(Collider col)
     {
         if (this.IsTouching(col.gameObject))
         {
+            this.touchedScript.UnTouchedBy(this);
+
             this.touchedObject = null;
             this.touchedScript = null;
         }

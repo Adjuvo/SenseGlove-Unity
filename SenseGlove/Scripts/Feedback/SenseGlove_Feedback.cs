@@ -93,126 +93,6 @@ public class SenseGlove_Feedback : MonoBehaviour
 
     #endregion Setup
 
-    //--------------------------------------------------------------------------------------------------------------------------
-    // Monobehaviour
-
-    #region MonoBehaviour
-
-    //Colled when the application starts
-    void Start()
-    {
-        if (this.touch == null) { this.touch = this.GetComponent<SphereCollider>(); }
-        this.motorLevel = 0;
-    }
-
-    // Called once per frame
-    void Update()
-    {
-        this.touch.isTrigger = true;
-    }
-
-    // Called during a physics update.
-    void FixedUpdate()
-    {
-        if (touch != null) { touch.isTrigger = true; } //ensure the touch collider is always kinematic.
-
-        if (this.TouchDisabled()) //also disable if the collider has been disabled, which some of the 
-        {
-            this.Detach();
-        }
-    }
-
-    #endregion MonoDevelop
-
-    //--------------------------------------------------------------------------------------------------------------------------
-    // Collision Detection / Force Feedback 
-
-    #region Collision
-
-    protected bool TouchDisabled()
-    {
-        return this.touchedObject == null
-            || (this.touchedObject != null && !this.touchedObject.activeInHierarchy)
-                || (this.touchedCollider != null && !this.touchedCollider.enabled);
-    }
-
-
-    // Called when this object enters the collider of another object
-    void OnTriggerEnter(Collider col)
-    {
-        if (this.touchedObject == null)
-        {
-            SenseGlove_Material material = col.GetComponent<SenseGlove_Material>();
-            if (material)
-            {
-                // SenseGlove_Debugger.Log("Touching " + col.name + "; material = " + (material != null) + ", interactable = " + (interactable != null));
-                //SenseGlove_Interactable interactable = col.GetComponent<SenseGlove_Interactable>();
-
-                //this.touchedObject = col.gameObject;
-                //this.touchedScript = interactable;
-                //this.touchedMaterial = material;
-                //this.touchedDeform = col.GetComponent<SenseGlove_MeshDeform>();
-
-                this.Attach(material);
-                
-                if (this.handModel.forceFeedback == ForceFeedbackType.Simple && material)
-                {
-                    this.motorLevel = material.maxForce;
-                }
-                else if (this.handModel.forceFeedback == ForceFeedbackType.MaterialBased)
-                {
-                    this.FindForceDirection(col);
-                    this.motorLevel = 0; //still 0 since OP == EO
-                }
-                if (material && material.hapticFeedback)
-                {
-                    this.buzzLevel = material.hapticMagnitude;
-                    this.buzzTime = material.hapticDuration;
-                }
-            }
-        }
-    }
-
-    // Called every FixedUpdate while this collider is inside another collider.
-    void OnTriggerStay(Collider col)
-    {
-        //No forther checks if (myObj == 0, because it interferes with the entry vector...
-
-        if (this.IsTouching(col.gameObject)) //Check if we're still on the same object?
-        {
-            //any object that we are touching has either an Interactable and/or a material
-
-            //Calculate Motor Level
-            if (this.handModel.forceFeedback == ForceFeedbackType.Simple)
-            {
-                if (this.touchedMaterial)
-                {
-                    this.motorLevel = this.touchedMaterial.maxForce;
-                }
-            }
-            else if (this.handModel.forceFeedback == ForceFeedbackType.MaterialBased)
-            {
-                if (this.entryPoint.Equals(this.entryOrigin))
-                {
-                    this.FindForceDirection(col); //only during FixedUpdate will the collider have a new position for us to check.
-                }
-                else
-                {
-                    this.CalculateMaterialBased(col.gameObject, this.touchedMaterial, true);
-                }
-            }
-        }
-    }
-
-    // Called when this object exits the collider of another object
-    void OnTriggerExit(Collider col)
-    {
-        if (this.touchedObject != null && this.IsTouching(col.gameObject))
-        {
-            this.Detach();
-        }
-    }
-
     /// <summary> Attach a material script to this feedback script. </summary>
     /// <param name="material"></param>
     public void Attach(SenseGlove_Material material)
@@ -245,7 +125,6 @@ public class SenseGlove_Feedback : MonoBehaviour
     }
 
 
-    #endregion Collision
 
     //--------------------------------------------------------------------------------------------------------------------------
     // Feedback Logic
@@ -372,4 +251,127 @@ public class SenseGlove_Feedback : MonoBehaviour
 
     #endregion Touch
 
+
+
+    //--------------------------------------------------------------------------------------------------------------------------
+    // Monobehaviour
+
+    #region MonoBehaviour
+
+    //Colled when the application starts
+    protected virtual void Start()
+    {
+        if (this.touch == null) { this.touch = this.GetComponent<SphereCollider>(); }
+        this.motorLevel = 0;
+    }
+
+    // Called once per frame
+    protected virtual void Update()
+    {
+        this.touch.isTrigger = true;
+    }
+
+    // Called during a physics update.
+    protected virtual void FixedUpdate()
+    {
+        if (touch != null) { touch.isTrigger = true; } //ensure the touch collider is always kinematic.
+
+        if (this.TouchDisabled()) //also disable if the collider has been disabled, which some of the 
+        {
+            this.Detach();
+        }
+    }
+
+    #endregion MonoDevelop
+
+    //--------------------------------------------------------------------------------------------------------------------------
+    // Collision Detection / Force Feedback 
+
+    #region Collision
+
+    protected bool TouchDisabled()
+    {
+        return this.touchedObject == null
+            || (this.touchedObject != null && !this.touchedObject.activeInHierarchy)
+                || (this.touchedCollider != null && !this.touchedCollider.enabled);
+    }
+
+
+    // Called when this object enters the collider of another object
+    protected virtual void OnTriggerEnter(Collider col)
+    {
+        if (this.touchedObject == null)
+        {
+            SenseGlove_Material material = col.GetComponent<SenseGlove_Material>();
+            if (material)
+            {
+                // SenseGlove_Debugger.Log("Touching " + col.name + "; material = " + (material != null) + ", interactable = " + (interactable != null));
+                //SenseGlove_Interactable interactable = col.GetComponent<SenseGlove_Interactable>();
+
+                //this.touchedObject = col.gameObject;
+                //this.touchedScript = interactable;
+                //this.touchedMaterial = material;
+                //this.touchedDeform = col.GetComponent<SenseGlove_MeshDeform>();
+
+                this.Attach(material);
+
+                if (this.handModel.forceFeedback == ForceFeedbackType.Simple && material)
+                {
+                    this.motorLevel = material.maxForce;
+                }
+                else if (this.handModel.forceFeedback == ForceFeedbackType.MaterialBased)
+                {
+                    this.FindForceDirection(col);
+                    this.motorLevel = 0; //still 0 since OP == EO
+                }
+                if (material && material.hapticFeedback)
+                {
+                    this.buzzLevel = material.hapticMagnitude;
+                    this.buzzTime = material.hapticDuration;
+                }
+            }
+        }
+    }
+
+    // Called every FixedUpdate while this collider is inside another collider.
+    protected virtual void OnTriggerStay(Collider col)
+    {
+        //No forther checks if (myObj == 0, because it interferes with the entry vector...
+
+        if (this.IsTouching(col.gameObject)) //Check if we're still on the same object?
+        {
+            //any object that we are touching has either an Interactable and/or a material
+
+            //Calculate Motor Level
+            if (this.handModel.forceFeedback == ForceFeedbackType.Simple)
+            {
+                if (this.touchedMaterial)
+                {
+                    this.motorLevel = this.touchedMaterial.maxForce;
+                }
+            }
+            else if (this.handModel.forceFeedback == ForceFeedbackType.MaterialBased)
+            {
+                if (this.entryPoint.Equals(this.entryOrigin))
+                {
+                    this.FindForceDirection(col); //only during FixedUpdate will the collider have a new position for us to check.
+                }
+                else
+                {
+                    this.CalculateMaterialBased(col.gameObject, this.touchedMaterial, true);
+                }
+            }
+        }
+    }
+
+    // Called when this object exits the collider of another object
+    protected virtual void OnTriggerExit(Collider col)
+    {
+        if (this.touchedObject != null && this.IsTouching(col.gameObject))
+        {
+            this.Detach();
+        }
+    }
+
+    #endregion Collision
 }

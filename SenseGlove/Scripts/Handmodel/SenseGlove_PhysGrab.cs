@@ -45,23 +45,19 @@ public class SenseGlove_PhysGrab : SenseGlove_GrabScript
 
     /// <summary> Whether of not this finger has the intention of grabbing an object </summary>
     [Tooltip("Whether of not the fingers have the intention of grabbing an object ")]
-    public bool[] wantsGrab = new bool[5] { true, true, true, true, true };
+    protected bool[] wantsGrab = new bool[5] { true, true, true, true, true };
 
-
-    /// <summary>
-    /// It is used!!
-    /// </summary>
-    [SerializeField]
-    private float[] dipAngles = new float[5] { 0, 0, 0, 0, 0 };
+    /// <summary> Used for Gesture Recognition </summary>
+    protected float[] dipAngles = new float[5] { 0, 0, 0, 0, 0 };
 
     //-----------------------------------------------------------------------------------------------------------------------------------
     // Private Variables
 
     /// <summary> The actual touchScripts used for grab logic. </summary>
-    private SenseGlove_Touch[][] touchScripts = null;
+    protected SenseGlove_Touch[][] touchScripts = null;
 
     /// <summary> The collider of the handPalm </summary>
-    private SenseGlove_Touch handPalm;
+    protected SenseGlove_Touch handPalm;
 
 
     #endregion Properties
@@ -251,6 +247,14 @@ public class SenseGlove_PhysGrab : SenseGlove_GrabScript
     //-----------------------------------------------------------------------------------------------------------------------------------
     // Grab Logic
 
+    /// <summary> Retrieve whether each of the fingers want to grab an object </summary>
+    public bool[] GrabValues
+    {
+        get { return this.wantsGrab; }
+    }
+
+    
+
     #region GrabLogic
 
 
@@ -365,12 +369,12 @@ public class SenseGlove_PhysGrab : SenseGlove_GrabScript
         bool[] res = new bool[5] { true, true, true, true, true };
         if (this.checkIntention != CheckIntention.Off)
         {
-            if (this.senseGlove != null && this.senseGlove.GloveReady())
+            if (this.senseGlove != null && this.senseGlove.GloveReady)
             {
                 //bool[] D = new bool[5] { true, true, true, true, true };
 
                 //collect the relative flexion angles of the fingers.
-                SenseGlove_Data data = this.senseGlove.GloveData();
+                SenseGlove_Data data = this.senseGlove.GloveData;
                 float[] relDipFlexions = new float[5];
                 for (int f=0; f<5; f++)
                 {

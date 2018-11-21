@@ -57,38 +57,6 @@ public class SenseGlove_MeshDeform : MonoBehaviour
     #endregion Properties
 
     //----------------------------------------------------------------------------------------------
-    // Monobehaviour
-
-    #region Monobehaviour
-
-    // Use this for initialization
-    void Start ()
-    {
-        this.CollectMeshData();
-    }
-	
-	// Update is called once per frame
-	void Update ()
-    {
-		
-	}
-
-    //Called at a fixed rate, same time as the physics engine.
-    void FixedUpdate()
-    {
-        this.UpdateMesh(); //can be moved to Update to call the mesh deformation at different speeds.
-    }
-
-    //Called when the script is disabled.
-    void OnDisable()
-    {
-        this.ResetMesh();
-    }
-
-
-    #endregion Monobehaviour
-
-    //----------------------------------------------------------------------------------------------
     // Mesh Deformation
 
     #region MeshDeformation
@@ -377,7 +345,35 @@ public class SenseGlove_MeshDeform : MonoBehaviour
         this.atRest = true;
     }
 
-#endregion MeshDeformation
+    #endregion MeshDeformation
+
+
+    //----------------------------------------------------------------------------------------------
+    // Monobehaviour
+
+    #region Monobehaviour
+
+    // Use this for initialization
+    protected virtual void Start()
+    {
+        this.CollectMeshData();
+    }
+
+    //Called at a fixed rate, same time as the physics engine.
+    protected virtual void FixedUpdate()
+    {
+        this.UpdateMesh(); //can be moved to Update to call the mesh deformation at different speeds.
+    }
+
+    //Called when the script is disabled.
+    protected virtual void OnDisable()
+    {
+        this.ResetMesh();
+    }
+
+
+    #endregion Monobehaviour
+
 
 }
 

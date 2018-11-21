@@ -13,8 +13,10 @@ public class SenseGlove_KeyBinds : MonoBehaviour
     /// <summary> The SenseGlove_Object that is controlled by this script. </summary>
     private SenseGlove_Object senseGlove;
 
-    /// <summary> (Optional) grabscript that is attacked to the senseGlove. </summary>
-    private SenseGlove_PhysGrab grabScript;
+    private SenseGlove_HandModel model;
+
+    /// <summary> (Optional) grabscript that is attached to the senseGlove. </summary>
+    private SenseGlove_GrabScript grabScript;
 
     /// <summary> The key used to align the wrist with the SenseGlove's foreArm. </summary>
     [Header("Keybinds")]
@@ -70,7 +72,8 @@ public class SenseGlove_KeyBinds : MonoBehaviour
         {
             this.senseGlove.OnCalibrationFinished += SenseGlove_OnCalibrationFinished;
         }
-        this.grabScript = this.gameObject.GetComponent<SenseGlove_PhysGrab>();
+        this.grabScript = this.gameObject.GetComponent<SenseGlove_GrabScript>();
+        this.model = this.senseGlove.GetComponent<SenseGlove_HandModel>();
     }
 
     /// <summary> Resets the initation from this script when my calibration completes. </summary>
@@ -88,7 +91,8 @@ public class SenseGlove_KeyBinds : MonoBehaviour
         {
             if (Input.GetKeyDown(this.calibrateWristKey))
             {
-                this.senseGlove.CalibrateWrist();
+                //this.senseGlove.CalibrateWrist();
+                this.model.CalibrateWrist();
             }
 
             ///////
@@ -97,7 +101,7 @@ public class SenseGlove_KeyBinds : MonoBehaviour
             {
                 if (this.collectionMethod == CollectionMethod.Manual)
                 {
-                    if (!this.senseGlove.IsCalibrating())
+                    if (!this.senseGlove.IsCalibrating)
                     {
                         this.initiated = true;
                         this.senseGlove.StartCalibration(this.variableToCalibrate, this.collectionMethod);
@@ -111,7 +115,7 @@ public class SenseGlove_KeyBinds : MonoBehaviour
                         SenseGlove_Debugger.Log("Could not start calibration because another one is running.");
                     }
                 }
-                else if (!this.senseGlove.IsCalibrating())
+                else if (!this.senseGlove.IsCalibrating)
                 {
                     //Check if the Sense Glove is Calibrating yet.
                     this.initiated = true;
@@ -136,7 +140,7 @@ public class SenseGlove_KeyBinds : MonoBehaviour
             if (Input.GetKeyDown(this.resetModelKey))
             {
                 SenseGlove_Debugger.Log("Reset Hand Model");
-                this.senseGlove.ResetHand();
+                this.senseGlove.ResetKinematics();
             }
             
         }	

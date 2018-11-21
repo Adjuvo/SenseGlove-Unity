@@ -165,6 +165,10 @@ public class SenseGlove_Data
         }
     }
 
+
+    //-------------------------------------------------------------------------------------------------------------------
+    // Accessors
+
     /// <summary> Retrieve the total glove angles, used for gesture recognition (for each finger; pronation, abduction, flexion). </summary>
     /// <returns></returns>
     public Vector3[] TotalGloveAngles()
@@ -183,7 +187,7 @@ public class SenseGlove_Data
         }
         return res;
     }
-
+    
 
     //-------------------------------------------------------------------------------------------------------------------
     // Bulk Conversion Methods

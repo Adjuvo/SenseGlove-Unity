@@ -36,7 +36,7 @@ namespace SenseGlove_Examples
         {
             if (leftGlove != null)
             {
-                if (leftGlove.GloveReady() && !leftReady)
+                if (leftGlove.GloveReady && !leftReady)
                 {
                     this.leftReady = true;
                     if (!rightReady)
@@ -47,7 +47,7 @@ namespace SenseGlove_Examples
             }
             if (rightGlove != null)
             {
-                if (rightGlove.GloveReady() && !rightReady)
+                if (rightGlove.GloveReady && !rightReady)
                 {
                     this.rightReady = true;
                     if (!leftReady)

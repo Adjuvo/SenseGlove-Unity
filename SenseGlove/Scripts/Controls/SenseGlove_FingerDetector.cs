@@ -36,7 +36,7 @@ public class SenseGlove_FingerDetector : MonoBehaviour
     #region Monobehaviour
 
     // Use this for initialization
-    void Start ()
+    protected virtual void Start ()
     {
         //Set my colliders to istrigger
         Collider[]  myColliders = this.gameObject.GetComponents<Collider>();
@@ -48,8 +48,8 @@ public class SenseGlove_FingerDetector : MonoBehaviour
             }
         }
 	}
-	
-    void Update()
+
+    protected virtual void Update()
     {
         //collect the colliders after startup, to make sure the handmodel has completed.
         if (!setup)
@@ -66,13 +66,13 @@ public class SenseGlove_FingerDetector : MonoBehaviour
             setup = true;
         }
     }
-	
+
 
 
 
     /// <summary> A new (feedback) collider enters the detector. </summary>
     /// <param name="other"></param>
-    private void OnTriggerEnter(Collider other)
+    protected virtual void OnTriggerEnter(Collider other)
     {
        // Debug.Log("Touche!");
         if (this.modelToCheck != null) //we have access specific GameObjects
@@ -93,7 +93,7 @@ public class SenseGlove_FingerDetector : MonoBehaviour
 
     /// <summary> A (feedback) collider exits the detector. </summary>
     /// <param name="other"></param>
-    private void OnTriggerExit(Collider other)
+    protected virtual void OnTriggerExit(Collider other)
     {
       //  Debug.Log("Letgo!");
         if (this.modelToCheck != null) //we have access specific GameObjects

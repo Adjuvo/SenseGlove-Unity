@@ -4,6 +4,262 @@
         <name>SenseGloveCs</name>
     </assembly>
     <members>
+        <member name="T:SenseGloveCs.Devices.SenseArm">
+            <summary> An exoskeleton that can provide force feedback to the gross movement of the arm. </summary>
+        </member>
+        <member name="F:SenseGloveCs.Devices.SenseArm.deviceID">
+            <summary> Unique ID used in DeviceScanning and Logistics </summary>
+        </member>
+        <member name="F:SenseGloveCs.Devices.SenseArm.deviceVersion">
+            <summary> The hardware version of the Sense Arm, used for debugging and backwards compatibility. </summary>
+        </member>
+        <member name="F:SenseGloveCs.Devices.SenseArm.firmwareVersion">
+            <summary> Version of the Code that runs on the Sense Arm Microcontroller. Used for maintentance and backwards compatibility. </summary>
+        </member>
+        <member name="F:SenseGloveCs.Devices.SenseArm.dataLoaded">
+            <summary> Whether or not constants have been recieved and the device is ready to calculate. </summary>
+        </member>
+        <member name="F:SenseGloveCs.Devices.SenseArm.isRight">
+            <summary> Determines if this is a left- or right sided Sense Arm. </summary>
+        </member>
+        <member name="F:SenseGloveCs.Devices.SenseArm.brakeAmount">
+            <summary> The amount of brakes on this SenseArm </summary>
+        </member>
+        <member name="F:SenseGloveCs.Devices.SenseArm.brakeComandByte">
+            <summary> Sent before brake magnitudes to let the SenseArm know this is a Brake command. </summary>
+        </member>
+        <member name="M:SenseGloveCs.Devices.SenseArm.DeviceID">
+            <summary> Retrieve the unique identifier of this SenseArm </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.Devices.SenseArm.IsReady">
+            <summary> Check if this object's data has been loaded. </summary>
+            <returns></returns>
+        </member>
+        <member name="P:SenseGloveCs.Devices.SenseArm.DeviceVersion">
+            <summary> The hardware version of this Sense Arm </summary>
+        </member>
+        <member name="P:SenseGloveCs.Devices.SenseArm.IsRight">
+            <summary> If true, this is a right handed Sense Arm </summary>
+        </member>
+        <member name="P:SenseGloveCs.Devices.SenseArm.FirmwareVersion">
+            <summary> The firmware version running on the Sense Arm  </summary>
+        </member>
+        <member name="P:SenseGloveCs.Devices.SenseArm.NumberOfBrakes">
+            <summary> The number of brakes that this Sense Arm posesses. </summary>
+        </member>
+        <member name="M:SenseGloveCs.Devices.SenseArm.#ctor(SenseGloveCs.Communicator)">
+            <summary> Create a new SenseArm object in the chosen communications address. </summary>
+            <param name="source"></param>
+        </member>
+        <member name="M:SenseGloveCs.Devices.SenseArm.Disconnect">
+            <summary> Manually disconnect this SenseGlove. </summary>
+        </member>
+        <member name="M:SenseGloveCs.Devices.SenseArm.ParseConstants(System.String)">
+            <summary>  </summary>
+            <param name="C"></param>
+        </member>
+        <member name="M:SenseGloveCs.Devices.SenseArm.StopFeedback">
+            <summary> Stops all froms of feedback on the SenseArm. </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.Devices.SenseArm.SendBrakeCmd(System.Int32[])">
+            <summary> Send a brake command to this Sense Arm. </summary>
+            <param name="magnitudes"></param>
+            <returns></returns>
+        </member>
+        <member name="T:SenseGloveCs.Devices.SenseArmConstants">
+            <summary> Contains definitions for the SenseArm Constants </summary>
+        </member>
+        <member name="F:SenseGloveCs.Devices.SenseArmConstants.ConstantsOpen">
+            <summary> Part that is only used to determine if this is a constants command "{C:" </summary>
+        </member>
+        <member name="F:SenseGloveCs.Devices.SenseArmConstants.DeviceID">
+            <summary> Unique identifier (string , length > 0) </summary>
+        </member>
+        <member name="F:SenseGloveCs.Devices.SenseArmConstants.HardwareVersion">
+            <summary> Hardware version (string, length > 0) </summary>
+        </member>
+        <member name="F:SenseGloveCs.Devices.SenseArmConstants.FirmwareVersion">
+            <summary> Code version on MC. Parsed to float (ex. 1.0, 2.2) </summary>
+        </member>
+        <member name="F:SenseGloveCs.Devices.SenseArmConstants.Side">
+            <summary> Whether this is a left or right sided Sense Arm. </summary>
+        </member>
+        <member name="F:SenseGloveCs.Devices.SenseArmConstants.Functions">
+            <summary> Which specific Sense Arm function this hardware has over others. </summary>
+        </member>
+        <member name="F:SenseGloveCs.Devices.SenseArmConstants.BrakeNumber">
+            <summary> The amount of brakes on this Sense Arm. </summary>
+        </member>
+        <member name="F:SenseGloveCs.Devices.SenseArmConstants.All">
+            <summary> Utility value used to check the length of constants.split(). </summary>
+        </member>
+        <member name="T:SenseGloveCs.IO.SerialWrapper">
+            <summary> Wrapper class that combines a SerialPort and a continous ReadThread. </summary>
+        </member>
+        <member name="F:SenseGloveCs.IO.SerialWrapper.recieveData">
+            <summary> 
+            Controls if the ReadThread should still be reading data. 
+            Set to false to force the thread to exit as a last resort. The Disconnect() function is neater.
+            </summary>
+        </member>
+        <member name="F:SenseGloveCs.IO.SerialWrapper._port">
+            <summary> The Serial Port that sends / recieves the data. </summary>
+        </member>
+        <member name="F:SenseGloveCs.IO.SerialWrapper.readThread">
+            <summary> The worker thread that receives serial data. </summary>
+        </member>
+        <member name="F:SenseGloveCs.IO.SerialWrapper.commandBuffer">
+            <summary> The buffer of unfinished commands coming in. Allows us to intercept smaller commands interrupting larger ones. </summary>
+        </member>
+        <member name="F:SenseGloveCs.IO.SerialWrapper.lastChar">
+            <summary> The character that was received before the current measurement, used mostly to catch escape characters. </summary>
+        </member>
+        <member name="F:SenseGloveCs.IO.SerialWrapper.isSending">
+            <summary> Is true while the Communicator is Writing to the SerialPort. </summary>
+        </member>
+        <member name="P:SenseGloveCs.IO.SerialWrapper.IsConnected">
+            <summary> Check if the Serial Port is (still) connected. </summary>
+            <returns></returns>
+        </member>
+        <member name="P:SenseGloveCs.IO.SerialWrapper.Address">
+            <summary> Retrieve the name of the Serial Port. </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.IO.SerialWrapper.#ctor(System.String)">
+            <summary> Create a new USB communication line on the specified COMPort </summary>
+            <param name="COMPort"></param>
+        </member>
+        <member name="M:SenseGloveCs.IO.SerialWrapper.Finalize">
+            <summary> Deconstructor. Ensure disconenct(?) </summary>
+        </member>
+        <member name="M:SenseGloveCs.IO.SerialWrapper.Open">
+            <summary> (Re)Connect to the Serial USB device. </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.IO.SerialWrapper.Close(SenseGloveCs.Diagnostics.ExitCodes)">
+            <summary>  Disconnect from this device, destroys worker thread. </summary>
+        </member>
+        <member name="M:SenseGloveCs.IO.SerialWrapper.Read">
+            <summary>
+            Function that is run within the ReadThread and keeps it in scope.
+            </summary>
+        </member>
+        <member name="M:SenseGloveCs.IO.SerialWrapper.ProcessNextChar(System.Int32)">
+            <summary> Processes the next byte coming in from the Serial Port. Fires within the ReadThread. </summary>
+            <param name="nextByte"></param>
+        </member>
+        <member name="M:SenseGloveCs.IO.SerialWrapper.Write(System.String)">
+            <summary> Send command(s) to the MicroController aboard the Sense Glove. </summary>
+            <param name="command">The command to send</param>
+            <returns>Returns true if the command has been fired.</returns>
+        </member>
+        <member name="T:SenseGloveCs.IO.SerialWrapper.ConnectionLostEventHandler">
+            <summary> Event Delegate for the Disconnected event </summary>
+            <param name="source"></param>
+            <param name="args"></param>
+        </member>
+        <member name="E:SenseGloveCs.IO.SerialWrapper.Disconnected">
+            <summary> Fires when this wrapper lost its connection for any reason. </summary>
+        </member>
+        <member name="M:SenseGloveCs.IO.SerialWrapper.OnDisconnect(SenseGloveCs.Diagnostics.ExitCodes)">
+            <summary> Fires the Disconnected event. </summary>
+            <param name="exitCode"></param>
+        </member>
+        <member name="T:SenseGloveCs.IO.SerialWrapper.CommandEventHandler">
+            <summary> Delegate function implemented by subscribers to the OnFingerCalibrationFinished event. </summary>
+            <param name="source"></param>
+            <param name="args"></param>
+        </member>
+        <member name="E:SenseGloveCs.IO.SerialWrapper.CommandRecieved">
+            <summary> Fires when the new finger lengths and joint positions are calculated. </summary>
+        </member>
+        <member name="M:SenseGloveCs.IO.SerialWrapper.OnCommandRecieved(System.String)">
+            <summary>  Used to call the OnFingerCalibrationFinished event in all subscribers. </summary>
+        </member>
+        <member name="T:SenseGloveCs.IO.SerialWrapper.SenseDataHandler">
+            <summary> Delegate function implemented by subscribers to the OnFingerCalibrationFinished event. </summary>
+            <param name="source"></param>
+            <param name="args"></param>
+        </member>
+        <member name="E:SenseGloveCs.IO.SerialWrapper.DataRecieved">
+            <summary> Fires when the new finger lengths and joint positions are calculated. </summary>
+        </member>
+        <member name="M:SenseGloveCs.IO.SerialWrapper.OnDataRecieved(System.String)">
+            <summary>  Used to call the OnFingerCalibrationFinished event in all subscribers. </summary>
+        </member>
+        <member name="T:SenseGloveCs.IO.DisconnectArgs">
+            <summary>  Arguments to pass ExitCodes in between objects. </summary>
+        </member>
+        <member name="P:SenseGloveCs.IO.DisconnectArgs.ExitCode">
+            <summary> The ExitCode with which the SerialWrapper has disconnected. </summary>
+        </member>
+        <member name="M:SenseGloveCs.IO.DisconnectArgs.#ctor(SenseGloveCs.Diagnostics.ExitCodes)">
+            <summary> Create a new instance of DisconnectArgs. </summary>
+            <param name="code"></param>
+        </member>
+        <member name="T:SenseGloveCs.IO.DeviceArgs">
+            <summary> Arguments of DeviceDetected / DeviceDisconnected events. </summary>
+        </member>
+        <member name="F:SenseGloveCs.IO.DeviceArgs.device">
+            <summary> The device that has been detected / disconnected, wrapped with an Accessor. </summary>
+        </member>
+        <member name="M:SenseGloveCs.IO.DeviceArgs.#ctor(SenseGloveCs.IODevice)">
+            <summary> Create a new instance of the DeviceArgs, limited to the Dll. </summary>
+            <param name="detectedDevice"></param>
+        </member>
+        <member name="P:SenseGloveCs.IO.DeviceArgs.Device">
+            <summary> The device that has been detected / disconnected. </summary>
+        </member>
+        <member name="T:SenseGloveCs.UnitTest.UnitTestCommunicator">
+            <summary> Simulates a specific type of IODevice. Used for Unit Tests </summary>
+        </member>
+        <member name="F:SenseGloveCs.UnitTest.UnitTestCommunicator.simulatedType">
+            <summary> Which DeviceType this Communicator is simulating. </summary>
+        </member>
+        <member name="F:SenseGloveCs.UnitTest.UnitTestCommunicator.myAddress">
+            <summary> The simulated address, used to create multiple UnitTests with similar addresses. </summary>
+        </member>
+        <member name="F:SenseGloveCs.UnitTest.UnitTestCommunicator.isConnected">
+            <summary> Set to true / false, depending on the Connect() / Disconnect() method. </summary>
+        </member>
+        <member name="M:SenseGloveCs.UnitTest.UnitTestCommunicator.#ctor(System.String,SenseGloveCs.DeviceType)">
+            <summary> Create a new Communicator simulationof the chosen DeviceType. </summary>
+            <param name="address"></param>
+            <param name="simulateType"></param>
+        </member>
+        <member name="M:SenseGloveCs.UnitTest.UnitTestCommunicator.Address">
+            <summary> Retrieve the address of this Communicator. </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.UnitTest.UnitTestCommunicator.Connect">
+            <summary> Connect to this Communicator for the first time. </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.UnitTest.UnitTestCommunicator.Disconnect(SenseGloveCs.Diagnostics.ExitCodes)">
+            <summary> Disconnect from this Communicator </summary>
+            <param name="exitCode"></param>
+        </member>
+        <member name="M:SenseGloveCs.UnitTest.UnitTestCommunicator.IsConnected">
+            <summary> Check if this Communicator is still connected </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.UnitTest.UnitTestCommunicator.Send2Device(System.String)">
+            <summary> Send a command to this device. </summary>
+            <param name="command"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.UnitTest.UnitTestCommunicator.Send2Device(System.Char)">
+            <summary> Send a single character to this device. </summary>
+            <param name="c"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.UnitTest.UnitTestCommunicator.Send2Device(System.Byte[])">
+            <summary> Send an array of bytes to this  </summary>
+            <param name="bytes"></param>
+            <returns></returns>
+        </member>
         <member name="T:SenseGloveCs.Kinematics.CalibrateVariable">
             <summary> Which variable of a SenseGlove HandModel or Solver to calibrate; which determines what algorithm is used. </summary>
         </member>
@@ -1113,6 +1369,10 @@
             <param name="isRight"></param>
             <returns></returns>
         </member>
+        <member name="M:SenseGloveCs.Util.SimpleSenseGlove.DeviceID">
+            <summary> Retrieve the device's unique ID </summary>
+            <returns></returns>
+        </member>
         <member name="T:SenseGloveCs.BuzzMotorPattern">
             <summary> The pattern of the Buzz Motor </summary>
         </member>
@@ -1537,6 +1797,125 @@
         <member name="F:SenseGloveCs.Diagnostics.ExitCodes.Comm_PortClosed">
             <summary> The Port is closed, and we were not sending anything. </summary>
         </member>
+        <member name="F:SenseGloveCs.Diagnostics.ExitCodes.Comm_Finalizer">
+            <summary> The communicator has been disconnected because the destructor has been called. </summary>
+        </member>
+        <member name="F:SenseGloveCs.Diagnostics.ExitCodes.DevScn_AddressNotAvailable">
+            <summary> The connection's address is no longer available to the System. </summary>
+        </member>
+        <member name="F:SenseGloveCs.Diagnostics.ExitCodes.DevScn_CouldNotPing">
+            <summary> Removed because the DeviceScanner could not ping this device. </summary>
+        </member>
+        <member name="F:SenseGloveCs.Diagnostics.ExitCodes.DevScn_UnknownDevice">
+            <summary> The device has responded, but does not belong to any deviceType we know. </summary>
+            <remarks> Indicates that the DLL is out of date or that the Firmware is not properly implemented. </remarks>
+        </member>
+        <member name="F:SenseGloveCs.Diagnostics.ExitCodes.DevScn_NotValidDevice">
+            <summary> The connection was terminated because this is not a valid IO Device. </summary>
+        </member>
+        <member name="F:SenseGloveCs.Diagnostics.ExitCodes.DevScn_IDAlreadyConnected">
+            <summary> We have found a decvice that is already in memory and still connected to a different address. Most likely two devices with the sameID </summary>
+        </member>
+        <member name="F:SenseGloveCs.Diagnostics.ExitCodes.DevScn_Cleanup">
+            <summary> The DeviceScanner has cleaned up this Communicator. </summary>
+        </member>
+        <member name="F:SenseGloveCs.Diagnostics.ExitCodes.Test">
+            <summary> Test </summary>
+        </member>
+        <member name="T:SenseGloveCs.Diagnostics.DebugLevel">
+            <summary> 
+            The level of Debug Messages one can recieve from the Sense Glove. 
+            Note: Higher levels also include the lower ones. (ex. Setting messages to Lv3 means you will recieve lv1 and lv2 messages as well)
+            </summary>
+        </member>
+        <member name="F:SenseGloveCs.Diagnostics.DebugLevel.Disabled">
+            <summary> The Debugger is disabled, show no messages from the DLL. </summary>
+        </member>
+        <member name="F:SenseGloveCs.Diagnostics.DebugLevel.Lv1_ErrorsOnly">
+            <summary> Show only if something goes wrong with any of the devices or functions. </summary>
+        </member>
+        <member name="F:SenseGloveCs.Diagnostics.DebugLevel.Lv2_CalibrationMessages">
+            <summary> Show messages of the Calibration sequences. </summary>
+        </member>
+        <member name="F:SenseGloveCs.Diagnostics.DebugLevel.Lv3_DeviceInfo">
+            <summary> Show messages related to device- or firmware version. </summary>
+        </member>
+        <member name="F:SenseGloveCs.Diagnostics.DebugLevel.Lv4_IOMessages">
+            <summary> Messages related to Connecting / Disconnecting </summary>
+        </member>
+        <member name="F:SenseGloveCs.Diagnostics.DebugLevel.Lv5_DeviceScanning">
+            <summary> Messages related to the Device Scanning </summary>
+        </member>
+        <member name="F:SenseGloveCs.Diagnostics.DebugLevel.Lv6_ShowMessageRecieved">
+            <summary> Show all messages that were recieved from the device </summary>
+        </member>
+        <member name="F:SenseGloveCs.Diagnostics.DebugLevel.Lv7_ShowMessageSent">
+            <summary> Show the messages that are sent to the devices. </summary>
+        </member>
+        <member name="F:SenseGloveCs.Diagnostics.DebugLevel.lv8_UnitTests">
+            <summary> Deep level used to (unit) test certain functions. </summary>
+        </member>
+        <member name="F:SenseGloveCs.Diagnostics.DebugLevel.lv9_ReadThreadDebug">
+            <summary> Used to (unit) test the readthread of communicator(s). </summary>
+        </member>
+        <member name="T:SenseGloveCs.Diagnostics.DebugArgs">
+            <summary> Debugging args containing the message sent and its level. </summary>
+        </member>
+        <member name="F:SenseGloveCs.Diagnostics.DebugArgs.message">
+            <summary> The message sent by the Debugger </summary>
+        </member>
+        <member name="F:SenseGloveCs.Diagnostics.DebugArgs.debugLv">
+            <summary> The Debug level of the accompanying message </summary>
+        </member>
+        <member name="M:SenseGloveCs.Diagnostics.DebugArgs.#ctor(System.String,SenseGloveCs.Diagnostics.DebugLevel)">
+            <summary> Create a new Instance of DebugArgs. </summary>
+            <param name="msg"></param>
+            <param name="lv"></param>
+        </member>
+        <member name="T:SenseGloveCs.Diagnostics.Debugger">
+            <summary>
+            Utility class to warn the user about certain errors / warnings that occur in the SenseGloveAPI. Enabled By default. Use SenseGloveAPI.Debugger.Disable() to stop it.
+            </summary>
+            <remarks> Sealed tells the compiler that this class cannot be inherited. </remarks>
+        </member>
+        <member name="F:SenseGloveCs.Diagnostics.Debugger.debugLv">
+            <summary> The current debug level of the SenseGloveCs.Debugger. </summary>
+        </member>
+        <member name="M:SenseGloveCs.Diagnostics.Debugger.#ctor">
+            <summary> Empty Constructor to create the instance. </summary>
+        </member>
+        <member name="T:SenseGloveCs.Diagnostics.Debugger.MessageRecievedEventHandler">
+            <summary> Delegate for the DebugMessageRecieved event. </summary>
+            <param name="source"></param>
+            <param name="args"></param>
+        </member>
+        <member name="E:SenseGloveCs.Diagnostics.Debugger.DebugMessageRecieved">
+            <summary> Fires when a new message is recieved by the Debugger. </summary>
+        </member>
+        <member name="M:SenseGloveCs.Diagnostics.Debugger.OnMessageRecieved(System.String,SenseGloveCs.Diagnostics.DebugLevel)">
+            <summary> Constructs DebugArs and Fires the MessageRecieved event. </summary>
+            <param name="msg"></param>
+            <param name="lvl"></param>
+        </member>
+        <member name="F:SenseGloveCs.Diagnostics.Debugger.defaultDebugLvl">
+            <summary> The Default debug level for any application </summary>
+        </member>
+        <member name="F:SenseGloveCs.Diagnostics.Debugger.instance">
+            <summary> Instance of the Debugger to which events can be subscribed. </summary>
+        </member>
+        <member name="P:SenseGloveCs.Diagnostics.Debugger.Instance">
+            <summary> Access the Debugger instance. </summary>
+        </member>
+        <member name="P:SenseGloveCs.Diagnostics.Debugger.DebugLevel">
+            <summary> The debug level of the Debugger </summary>
+        </member>
+        <member name="M:SenseGloveCs.Diagnostics.Debugger.Log(System.String,SenseGloveCs.Diagnostics.DebugLevel)">
+            <summary>
+            Attempt to post output to the System.Console class. If that fails, try to write to the System.Diagnostics.Debug class.
+            </summary>
+            <param name="message">The message to write to the user.</param>
+            <param name="level"></param>
+        </member>
         <member name="T:SenseGloveCs.Gestures.StandardGesture">
             <summary>
             Enumerators with which to access basic gestures.
@@ -1632,14 +2011,8 @@
             The Type of IODevice that this Communicator is sending data to.
             </summary>
         </member>
-        <member name="F:SenseGloveCs.Communicator.metaData">
-            <summary> Contains metaData string as received by the Communicator. To be parsed by the IODevice. </summary>
-        </member>
-        <member name="F:SenseGloveCs.Communicator.constants">
-            <summary> Contains constants string as received by the Communicator. To be parsed by the IODevice.  </summary>
-        </member>
         <member name="F:SenseGloveCs.Communicator.lastValues">
-            <summary>  </summary>
+            <summary> the last recieved values from the Sense Glove. </summary>
         </member>
         <member name="F:SenseGloveCs.Communicator.activationTime">
             <summary>
@@ -1647,9 +2020,7 @@
             </summary>
         </member>
         <member name="F:SenseGloveCs.Communicator.samplesPerSecond">
-            <summary>
-            The number of sensor packets that are received by the communicator every second.
-            </summary>
+            <summary> The number of sensor packets that are received by the communicator every second. </summary>
         </member>
         <member name="F:SenseGloveCs.Communicator.padWithBraces">
             <summary> Whether or not to enclose all commands in '{' and '}' a.k.a. curly braces. </summary>
@@ -1727,6 +2098,20 @@
             <summary>
             Disconnect this communicator
             </summary>
+        </member>
+        <member name="M:SenseGloveCs.Communicator.EqualAddress(SenseGloveCs.Communicator)">
+            <summary> Check if this Communicator's Address matches that of another one's </summary>
+            <param name="other"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.Communicator.EqualDevice(SenseGloveCs.Communicator)">
+            <summary> Check if two communicators have been connected to the same device. </summary>
+            <param name="other"></param>
+            <returns></returns>
+        </member>
+        <member name="P:SenseGloveCs.Communicator.ActiveTime">
+            <summary> Retrieve the time this communicator has been active for. </summary>
+            <returns></returns>
         </member>
         <member name="M:SenseGloveCs.Communicator.Ping">
             <summary>
@@ -2013,6 +2398,10 @@
             <summary> Parse the MetaData of a Re-Minder, which includes data about the sensors. </summary>
             <param name="M"></param>
         </member>
+        <member name="M:SenseGloveCs.ReMinder.DeviceID">
+            <summary> Retrieve the device's unique identifier. </summary>
+            <returns></returns>
+        </member>
         <member name="M:SenseGloveCs.ReMinder.GetData(System.Boolean)">
             <summary> Retrieve a copy of the latest data from the Re-Minder.  </summary>
             <param name="recalculate"></param>
@@ -2035,198 +2424,194 @@
             <param name="bodyPart"></param>
             <param name="quaternion"></param>
         </member>
-        <member name="T:SenseGloveCs.DebugLevel">
-            <summary> 
-            The level of Debug Messages one can recieve from the Sense Glove. 
-            Note: Higher levels also include the lower ones. (ex. Setting messages to Lv3 means you will recieve lv1 and lv2 messages as well)
-            </summary>
-        </member>
-        <member name="F:SenseGloveCs.DebugLevel.Lv1_ErrorsOnly">
-            <summary> Show only if something goes wrong with any of the devices or functions. </summary>
-        </member>
-        <member name="F:SenseGloveCs.DebugLevel.Lv2_CalibrationMessages">
-            <summary> Show messages of the Calibration sequences. </summary>
-        </member>
-        <member name="F:SenseGloveCs.DebugLevel.Lv3_DeviceInfo">
-            <summary> Show messages related to device- or firmware version. </summary>
-        </member>
-        <member name="F:SenseGloveCs.DebugLevel.Lv4_IOMessages">
-            <summary> Messages related to Connecting / Disconnecting </summary>
-        </member>
-        <member name="F:SenseGloveCs.DebugLevel.Lv5_DeviceScanning">
-            <summary> Messages related to the Device Scanning </summary>
-        </member>
-        <member name="F:SenseGloveCs.DebugLevel.Lv6_ShowMessageRecieved">
-            <summary> Show all messages that were recieved from the device </summary>
-        </member>
-        <member name="F:SenseGloveCs.DebugLevel.Lv7_ShowMessageSent">
-            <summary> Show the messages that are sent to the devices. </summary>
-        </member>
-        <member name="F:SenseGloveCs.DebugLevel.lv8_UnitTests">
-            <summary> Deep level used to (unit) test certain functions. </summary>
-        </member>
-        <member name="F:SenseGloveCs.DebugLevel.lv9_ReadThreadDebug">
-            <summary> Used to (unit) test the readthread of communicator(s). </summary>
-        </member>
-        <member name="T:SenseGloveCs.Debugger">
-            <summary>
-            Utility class to warn the user about certain errors / warnings that occur in the SenseGloveAPI. Enabled By default. Use SenseGloveAPI.Debugger.Disable() to stop it.
-            </summary>
-        </member>
-        <member name="F:SenseGloveCs.Debugger.enabled">
-            <summary> Controls wether the SenseGloveAPI Debugger is enabled or not. </summary>
-        </member>
-        <member name="F:SenseGloveCs.Debugger.storeMessages">
-            <summary> Determines if the Debugger stores messages for logging or retrieval. </summary>
-        </member>
-        <member name="F:SenseGloveCs.Debugger.messages">
-            <summary> The debug messages that have been sent since the last time the GetMessages was called. </summary>
-        </member>
-        <member name="F:SenseGloveCs.Debugger.messageLimit">
-            <summary> The maximum amount of messages that can be stored between GetMessages functions. </summary>
-        </member>
-        <member name="F:SenseGloveCs.Debugger.defaultDebugLvl">
-            <summary> The default DebugLevel </summary>
-        </member>
-        <member name="F:SenseGloveCs.Debugger.debugLevel">
-            <summary> The level of Debugging messages you will recieve on the console / messages </summary>
-        </member>
-        <member name="M:SenseGloveCs.Debugger.Enable">
-            <summary>
-            Enable the SenseGloveAPI Debugger.
-            </summary>
-        </member>
-        <member name="M:SenseGloveCs.Debugger.Disable">
-            <summary>
-            Disable the SenseGloveAPI Debugger.
-            </summary>
-        </member>
-        <member name="M:SenseGloveCs.Debugger.WriteLine(System.String,SenseGloveCs.DebugLevel)">
-            <summary>
-            Attempt to post output to the System.Console class. If that fails, try to write to the System.Diagnostics.Debug class.
-            </summary>
-            <param name="message">The message to write to the user.</param>
-            <param name="level"></param>
-        </member>
-        <member name="M:SenseGloveCs.Debugger.WriteLine(SenseGloveCs.DebugLevel)">
-            <summary>
-            Write an empty line.
-            </summary>
-        </member>
-        <member name="M:SenseGloveCs.Debugger.GetMessages">
-            <summary>
-            Retrieve any messages stored in the Debugger since the last time this method was called.
-            </summary>
-            <returns></returns>
-        </member>
         <member name="T:SenseGloveCs.DeviceScanner">
-            <summary>
-            Scan for IODevices
-            </summary>
+            <summary> Scans for IODevices, including Sense Gloves. </summary>
         </member>
-        <member name="F:SenseGloveCs.DeviceScanner.scanDelay">
-            <summary> Determines how often the CheckDevices thread fires. </summary>
+        <member name="F:SenseGloveCs.DeviceScanner.possibleDevices">
+            <summary> List of Communicators that may or may not be connected to a IODevice. </summary>
+        </member>
+        <member name="F:SenseGloveCs.DeviceScanner.detectedDevices">
+            <summary> list of all IODevices that have been detected on this system. </summary>
+        </member>
+        <member name="F:SenseGloveCs.DeviceScanner.eventsFired">
+            <summary> Keeps track of which DeviceDetect events have been fired. </summary>
+        </member>
+        <member name="F:SenseGloveCs.DeviceScanner.isScanning">
+            <summary> Indicated that the DeviceScanner is currently active. </summary>
+        </member>
+        <member name="F:SenseGloveCs.DeviceScanner.updateFlag">
+            <summary> Ensures our update function is not called too often. </summary>
+        </member>
+        <member name="F:SenseGloveCs.DeviceScanner.retryMissedConnections">
+            <summary> If set to true, the DeviceScanner will continue to attempt connections with communicators untill they can connect </summary>
+            <remarks> Important to do with wireless communications, as those bastartds show up but don't actually want to connect yet. </remarks>
+        </member>
+        <member name="F:SenseGloveCs.DeviceScanner.scanTimer">
+            <summary> Worker thread responsible for checking (new) connections. </summary>
+        </member>
+        <member name="F:SenseGloveCs.DeviceScanner.defaultScanDelay">
+            <summary> The default time (in ms) in between which the Devicescanner pings for new addresses. </summary>
         </member>
         <member name="F:SenseGloveCs.DeviceScanner.pingTime">
-            <summary> The time (in ms) an IODevice has to respond with its ID and DeviceType. </summary>
+            <summary> The default time (in ms) that a Communicator has to respond with a valid IDResponse. </summary>
         </member>
-        <member name="M:SenseGloveCs.DeviceScanner.DevicesFound">
-            <summary> Retieve the number of devices found by the DeviceScanner. </summary>
+        <member name="F:SenseGloveCs.DeviceScanner.olderAddresses">
+            <summary> Tells the communicator classes whether or not they need to correct their addresses for older dotnet version. </summary>
+        </member>
+        <member name="F:SenseGloveCs.DeviceScanner.instance">
+            <summary> Instance of the DeviceScanner, which fires events to subscribe to. </summary>
+        </member>
+        <member name="M:SenseGloveCs.DeviceScanner.#ctor">
+            <summary> Empty Constructor </summary>
+        </member>
+        <member name="P:SenseGloveCs.DeviceScanner.Instance">
+            <summary> Retrieve the DeviceScanner instance; used to subscribe to events. </summary>
+        </member>
+        <member name="P:SenseGloveCs.DeviceScanner.ScanInterval">
+            <summary> The time (in ms) the DeviceScanner waits before checking connections again. Changing this value resets the timer. </summary>
+        </member>
+        <member name="P:SenseGloveCs.DeviceScanner.ResponseTime">
+            <summary> The time (in ms) that a device has to respond with a proper ID request. </summary>
+        </member>
+        <member name="P:SenseGloveCs.DeviceScanner.IsScanning">
+            <summary> Check if the deviceScanner is currently scanning for devices. </summary>
+        </member>
+        <member name="P:SenseGloveCs.DeviceScanner.RetryMissedConnections">
+            <summary> Determines if the DeviceScanner should keep trying to open new connections until they have succefully connectd once. </summary>
+        </member>
+        <member name="P:SenseGloveCs.DeviceScanner.DeviceCount">
+            <summary> Check how many devices have been detected by the Sense Glove API. </summary>
+        </member>
+        <member name="P:SenseGloveCs.DeviceScanner.AllDevices">
+            <summary> Retrieve a list of detected devices. </summary>
+        </member>
+        <member name="P:SenseGloveCs.DeviceScanner.SenseGloves">
+            <summary> Returns a list of all loaded Sense Gloves. </summary>
+        </member>
+        <member name="M:SenseGloveCs.DeviceScanner.ReportConnections">
+            <summary> Creates a report for each active connection, showing its address and status </summary>
             <returns></returns>
         </member>
-        <member name="M:SenseGloveCs.DeviceScanner.StartScanning">
-            <summary>
-            Reset the DeviceScanner and start looking for IODevices
-            </summary>
-        </member>
-        <member name="M:SenseGloveCs.DeviceScanner.StartScanning(System.Boolean)">
-            <summary>
-            Reset the DeviceScanner and start looking for IODevices
-            </summary>
-            <param name="addressCorrection">Set to true if the Adresses require any correction, for example when using Unity.</param>
-        </member>
-        <member name="M:SenseGloveCs.DeviceScanner.StopScanning">
-            <summary>
-            Stop scanning for IODevices and return all that were found.
-            </summary>
+        <member name="M:SenseGloveCs.DeviceScanner.ReportConnection(SenseGloveCs.Communicator)">
+            <summary> Generate a report from one of the possibleDevices lines </summary>
+            <param name="com"></param>
             <returns></returns>
         </member>
-        <member name="M:SenseGloveCs.DeviceScanner.GetDevices">
-            <summary>
-            Get a list of the currently detected IODevices.
-            </summary>
+        <member name="M:SenseGloveCs.DeviceScanner.ReportDevice(SenseGloveCs.IODevice)">
+            <summary> Generate a report from one of the DetectedDevices. </summary>
+            <param name="device"></param>
             <returns></returns>
         </member>
-        <member name="M:SenseGloveCs.DeviceScanner.GetDevices``1">
+        <member name="T:SenseGloveCs.DeviceScanner.DeviceDetectedHandler">
+            <summary> Event delegate for the Device Detected Handler </summary>
+            <param name="source"> Which script called the function. As per the singleton pattern, it will be null. </param>
+            <param name="args"> Shows which Device is detected. </param>
+        </member>
+        <member name="E:SenseGloveCs.DeviceScanner.DeviceDetected">
             <summary> 
-            Get a list of the desired (template) Devices.
-            Note that only subclasses of IODevice are possible.
+            Fires when a new device, compatible with the Sense Glove communication architecture is detected. 
+            Events for specific devices are available as well.
             </summary>
-            <typeparam name="T"></typeparam>
-            <returns></returns>
         </member>
-        <member name="M:SenseGloveCs.DeviceScanner.CheckDevices(System.Object,System.Timers.ElapsedEventArgs)">
-            <summary>
-            A thread that checks for connected devices every time-interval.
-            </summary>
+        <member name="M:SenseGloveCs.DeviceScanner.OnDeviceDetected(SenseGloveCs.IODevice)">
+            <summary> Fire a DeviceDetected Event. </summary>
+            <remarks> Scan for device here? </remarks>
+            <param name="newDevice"></param>
+        </member>
+        <member name="M:SenseGloveCs.DeviceScanner.OnSpecificConnectEvent(SenseGloveCs.IODevice)">
+            <summary> Called during the DeviceDetected event to fire an additional event for specific IODevices. </summary>
+            <param name="device"></param>
+        </member>
+        <member name="E:SenseGloveCs.DeviceScanner.SenseGloveDetected">
+            <summary> Fires when a new Sense Glove has been detected. </summary>
+        </member>
+        <member name="M:SenseGloveCs.DeviceScanner.OnSenseGloveDetected(SenseGloveCs.IODevice)">
+            <summary> Calls the SenseGloveDetected event. </summary>
+            <param name="newSenseGlove"></param>
+        </member>
+        <member name="M:SenseGloveCs.DeviceScanner.ClearDevices">
+            <summary> Removes all connections from memory such that we can try them all once more. </summary>
+        </member>
+        <member name="M:SenseGloveCs.DeviceScanner.ScanTimer_Elapsed(System.Object,System.Timers.ElapsedEventArgs)">
+            <summary> Fires when the ScanTimer has elapsed. </summary>
             <param name="sender"></param>
             <param name="e"></param>
         </member>
-        <member name="M:SenseGloveCs.DeviceScanner.GetSerialPorts(System.Boolean)">
-            <summary>
-            Retrieve a list of Serial Ports connected to this PC.
-            </summary>
-            <param name="correctNames">(optional) Correct names for older .Net versions, such as the one used by Unity.</param>
+        <member name="M:SenseGloveCs.DeviceScanner.CheckDevices">
+            <summary> Fired every time during the ScanDelay. Run through all of the steps of detecting IODevices. </summary>
+        </member>
+        <member name="M:SenseGloveCs.DeviceScanner.GetCurrentConnections">
+            <summary> Retrieve a list of all communicators currently active within the system </summary>
             <returns></returns>
         </member>
-        <member name="M:SenseGloveCs.DeviceScanner.CheckDevicesIndex(System.String)">
-            <summary>
-            Check if a certain address is already being checked for IODevices
-            </summary>
-            <param name="Address"></param>
+        <member name="M:SenseGloveCs.DeviceScanner.GetNewConnections(System.Collections.Generic.List{SenseGloveCs.Communicator})">
+            <summary> Get a list of Connections that do not exist in the possibleDevices and detectedDevices lists. </summary>
+            <param name="currentConnections"></param>
             <returns></returns>
         </member>
-        <member name="M:SenseGloveCs.DeviceScanner.SenseGloveIndex(System.String)">
-            <summary>
-            Check if an Address is aleady used by one of the IODevices.
-            </summary>
-            <param name="Address"></param>
+        <member name="M:SenseGloveCs.DeviceScanner.FilterMissingConnections(System.Collections.Generic.List{SenseGloveCs.Communicator})">
+            <summary> Remove connections in possibleDevices that (no longer) exist in the currentConnections </summary>
+            <param name="currentConnections"></param>
+        </member>
+        <member name="M:SenseGloveCs.DeviceScanner.PingConnections(System.Collections.Generic.List{SenseGloveCs.Communicator}@)">
+            <summary> Attemp to connect to a list of Communicators. If no connection is made, the connection is disposed of and removed. </summary>
+            <param name="connectionsToPing"></param>
+        </member>
+        <member name="M:SenseGloveCs.DeviceScanner.CheckResponses">
+            <summary> Check the possibleConnections for any responses. If no response is given, disconnect it. </summary>
+        </member>
+        <member name="M:SenseGloveCs.DeviceScanner.ProcessValidDevice(SenseGloveCs.Communicator@)">
+            <summary> Knowing that validConnection has given a proper ID response; add it to our list. </summary>
+            <param name="validConnection"></param>
+        </member>
+        <member name="M:SenseGloveCs.DeviceScanner.CheckDeviceEvents">
+            <summary> Check the instance's detectedDevices. If their data is loaded, fire a DataLoaded event. </summary>
+        </member>
+        <member name="M:SenseGloveCs.DeviceScanner.AddDevice(SenseGloveCs.IODevice)">
+            <summary> Add a new device to the detectedDevices list, then fire the event(s)/ </summary>
+            <param name="newDevice"></param>
+        </member>
+        <member name="M:SenseGloveCs.DeviceScanner.ContainsAddress(SenseGloveCs.Communicator,System.Collections.Generic.List{SenseGloveCs.Communicator})">
+            <summary> Check if this communicator's address is already present in a list </summary>
+            <param name="toCheck"></param>
+            <param name="communicators"></param>
             <returns></returns>
         </member>
-        <member name="M:SenseGloveCs.DeviceScanner.AddressIndex(SenseGloveCs.Communicator,System.String[])">
-            <summary>
-            Check if a Communicator occurs in a list of adresses, a.k.a it is already in memory.
-            </summary>
-            <param name="com"></param>
-            <param name="addrList"></param>
+        <member name="M:SenseGloveCs.DeviceScanner.ContainsAddress(SenseGloveCs.Communicator,System.Collections.Generic.List{SenseGloveCs.IODevice})">
+            <summary> Check if this communicator's address is already present in a list of devies </summary>
+            <param name="toCheck"></param>
+            <param name="devices"></param>
             <returns></returns>
         </member>
-        <member name="M:SenseGloveCs.DeviceScanner.AddressIndex(SenseGloveCs.IODevice,System.String[])">
-            <summary>
-            Check if an IODevice occurs in a list of adresses, a.k.a it is already in memory.
-            </summary>
-            <param name="Device"></param>
-            <param name="List"></param>
+        <member name="M:SenseGloveCs.DeviceScanner.DeviceIndex(SenseGloveCs.Communicator,System.Collections.Generic.List{SenseGloveCs.IODevice})">
+            <summary> Check if this Communicator is connected to one of the devices. </summary>
+            <param name="connection"></param>
+            <param name="devices"></param>
             <returns></returns>
         </member>
-        <member name="M:SenseGloveCs.DeviceScanner.DeviceIDIndex(System.String,SenseGloveCs.DeviceType)">
-            <summary>
-            Check if a deviceID is already present in the list of SenseGloves; used to reconnect.
-            </summary>
-            <param name="deviceID"></param>
-            <param name="type"></param>
+        <member name="M:SenseGloveCs.DeviceScanner.CreateDevice(SenseGloveCs.Communicator)">
+            <summary> Create a new IODevice, based on an existing connection. Returns null if the device type is not implemented. </summary>
+            <param name="newConnection"></param>
             <returns></returns>
         </member>
-        <member name="M:SenseGloveCs.DeviceScanner.IsScanning">
-            <summary>
-            Check if the DeviceScanner is (still) running.
-            </summary>
-            <returns></returns>
+        <member name="M:SenseGloveCs.DeviceScanner.StartScanning(System.Single)">
+            <summary> Begin Scanning for devices. </summary>
+            <remarks> As per the C# static variable rules, The DeviceScanner instance is not initialized untill it is accessed the first time. 
+            Calling this method will ensure our Singleton is created. </remarks>
+            <param name="dotNetVer"> The .Net version of your environment, used for older communications. Unity runs on .Net 2.0. </param>
+        </member>
+        <member name="M:SenseGloveCs.DeviceScanner.StopScanning">
+            <summary> Stops using resources to scan, but does not dispose of them. Use the CleanUp Method to remove all resources instead. </summary>
         </member>
         <member name="M:SenseGloveCs.DeviceScanner.CleanUp">
-            <summary>
-            Cleanup the DeviceScanner and all of the IODevices.
-            </summary>
+            <summary> Explicitly Dispose of the DeviceScanner Resources. </summary>
+            <remarks> Used in engines where destructors are not called, like Unity. </remarks>
+        </member>
+        <member name="M:SenseGloveCs.DeviceScanner.Finalize">
+            <summary> Finalizer </summary>
+        </member>
+        <member name="M:SenseGloveCs.DeviceScanner.Dispose">
+            <summary> Manualy dispose of the class' resources. </summary>
         </member>
         <member name="T:SenseGloveCs.DeviceType">
             <summary> DeviceTypes supported by this DLL, used to selectively scan for devices, and create the appropriate subclass. </summary>
@@ -2239,6 +2624,9 @@
         </member>
         <member name="F:SenseGloveCs.DeviceType.SimpleSenseGlove">
             <summary> A version of the Sense Glove that uses IMUs instead of flex sensors. </summary>
+        </member>
+        <member name="F:SenseGloveCs.DeviceType.SenseArm">
+            <summary> An exoskeleton that can provide force feedback to the gross movement of the arm. </summary>
         </member>
         <member name="F:SenseGloveCs.DeviceType.Unknown">
             <summary> Indicated a device type that is not recognized or supported by the DLL. </summary>
@@ -2253,10 +2641,17 @@
             Used to send and receive data from the microcontroller.
             </summary>
         </member>
+        <member name="M:SenseGloveCs.IODevice.Finalize">
+            <summary> Ensure a disconnect upon GC </summary>
+        </member>
         <member name="M:SenseGloveCs.IODevice.IsConnected">
             <summary>
             Check if this IODevice is (still) connected to its communicator.
             </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.IODevice.DeviceID">
+            <summary> Retrieve the device's unique identifier. </summary>
             <returns></returns>
         </member>
         <member name="M:SenseGloveCs.IODevice.Connect">
@@ -2269,12 +2664,21 @@
             Disconnect from the communicator of this IODevice, cleaning up its resources.
             </summary>
         </member>
+        <member name="M:SenseGloveCs.IODevice.Disconnect(SenseGloveCs.Diagnostics.ExitCodes)">
+            <summary> Disconnect the device's communicator with a specific exitCode. </summary>
+            <param name="exitCode"></param>
+        </member>
         <member name="M:SenseGloveCs.IODevice.ReConnect(SenseGloveCs.Communicator)">
             <summary> Reconnect the IODevice to a (different) Communicator, but only after we have verified that it is the same device! [DeviceScanner]  </summary>
             <param name="source"></param>
         </member>
+        <member name="M:SenseGloveCs.IODevice.SameDeviceType(SenseGloveCs.IODevice)">
+            <summary> Theck if this IODevice has the same (subclass of) DeviceType as another IODevice. </summary>
+            <param name="other"></param>
+            <returns></returns>
+        </member>
         <member name="M:SenseGloveCs.IODevice.GetDeviceType(System.String)">
-            <summary> Based on a string contained in an integer value, determine which device type this IODevice is. </summary>
+            <summary> Based on the deviceType field from an ID respose, determine which device type this is. </summary>
             <param name="typeIndicator"></param>
             <returns></returns>
         </member>
@@ -2326,16 +2730,19 @@
             <summary> Debug variable that reports when a Sense Glove does not have a specific function -> only once. </summary>
         </member>
         <member name="F:SenseGloveCs.SenseGlove.buzzCommands">
-            <summary>  </summary>
+            <summary> Wrappers to keep track of when a buzzMotorCommand ends. </summary>
         </member>
         <member name="F:SenseGloveCs.SenseGlove.lastBuzzCmds">
-            <summary> The last sent buzzCommands </summary>
+            <summary> The last sent buzzCommands, sent with brakeCommands if they are not sent together </summary>
+        </member>
+        <member name="F:SenseGloveCs.SenseGlove.lastBrakeCmds">
+            <summary> the last sent brakeCommand, sent with buzzCommands if they are not sent together </summary>
         </member>
         <member name="F:SenseGloveCs.SenseGlove.buzz_update_time">
             <summary> Teh time [ms] that the buzzMotor commands are updated. </summary>
         </member>
         <member name="F:SenseGloveCs.SenseGlove.buzzCmdThread">
-            <summary> ensures the buzzCommands are updated at least every x seconds. </summary>
+            <summary> Ensures the buzzCommands are updated at least every x seconds. </summary>
         </member>
         <member name="F:SenseGloveCs.SenseGlove.gettingCommands">
             <summary> a semaphore command. </summary>
@@ -2418,6 +2825,14 @@
             <param name="magnitudes"></param>
             <returns></returns>
         </member>
+        <member name="M:SenseGloveCs.SenseGlove.BuzzMotorCmd(System.Boolean[],System.Int32,System.Int32,SenseGloveCs.BuzzMotorPattern)">
+            <summary> Send the same buzzmotor command to the chosen fingers. </summary>
+            <param name="fingers"></param>
+            <param name="duration"></param>
+            <param name="magnitude"></param>
+            <param name="pattern"></param>
+            <returns></returns>
+        </member>
         <member name="M:SenseGloveCs.SenseGlove.StopBuzzMotors">
             <summary> </summary>
             <returns></returns>
@@ -2461,6 +2876,10 @@
             <summary>
             Check wether this SenseGlove belongs to a left- or right hand.
             </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.SenseGlove.DeviceID">
+            <summary> Retrieve the glove's unique identifier. </summary>
             <returns></returns>
         </member>
         <member name="M:SenseGloveCs.SenseGlove.IsReady">
@@ -2535,7 +2954,7 @@
             <param name="newComps"></param>
         </member>
         <member name="M:SenseGloveCs.SenseGlove.RestoreHand">
-            <summary> This method restores the lengths of the phalanxes to default values </summary>
+            <summary> > Reset the hand values (joint positions, finger lengths) back to their default values.  </summary>
         </member>
         <member name="M:SenseGloveCs.SenseGlove.ResetSolvers">
             <summary> Resets solver parameters back tto initial values.</summary>
@@ -2596,12 +3015,6 @@
             Arduino / Teensy communication. Also works with the XBee Explorer Module
             </summary>
         </member>
-        <member name="F:SenseGloveCs.SerialCommunicator.recieveData">
-            <summary> 
-            Controls if the ReadThread should still be reading data. 
-            Set to false to force the thread to exit as a last resort. The Disconnect() function is neater.
-            </summary>
-        </member>
         <member name="F:SenseGloveCs.SerialCommunicator.baudRate">
             <summary> The Baud-Rate of the Serial Port </summary>
         </member>
@@ -2617,126 +3030,77 @@
         <member name="F:SenseGloveCs.SerialCommunicator.rts">
             <summary> Must be set to true to communicate with Arduino-Like PCBs. </summary>
         </member>
-        <member name="F:SenseGloveCs.SerialCommunicator._port">
-            <summary> The Serial Port that sends / recieves the data. </summary>
+        <member name="F:SenseGloveCs.SerialCommunicator.serialPort">
+            <summary> Wrapper for Serial communication so that older versions of .NET can also use it. </summary>
         </member>
-        <member name="F:SenseGloveCs.SerialCommunicator.readThread">
-            <summary> The worker thread that receives serial data. </summary>
-        </member>
-        <member name="F:SenseGloveCs.SerialCommunicator.charBuffer">
-            <summary> The buffer of unfinished commands. </summary>
-        </member>
-        <member name="F:SenseGloveCs.SerialCommunicator.lastByte">
-            <summary> The byte that was received before the current measurement, used mostly to catch escape characters. </summary>
-        </member>
-        <member name="F:SenseGloveCs.SerialCommunicator.isSending">
-            <summary> Is true while the Communicator is Writing to the SerialPort. </summary>
-        </member>
-        <member name="F:SenseGloveCs.SerialCommunicator.samples">
+        <member name="F:SenseGloveCs.SerialCommunicator.samplesThisSecond">
             <summary> The amount of sensor samples recieved since the last time we've checked. </summary>
+            <remarks> This integer is update up to 100x per second, and is copied to the samplesPerSecond variable to avoid locking. </remarks>
         </member>
         <member name="F:SenseGloveCs.SerialCommunicator.sampleTimer">
             <summary> A timer that checks for the amount of samples per second. </summary>
         </member>
-        <member name="F:SenseGloveCs.SerialCommunicator.cmds">
-            <summary>
-            Test Command Queue for Bytes
-            </summary>
+        <member name="M:SenseGloveCs.SerialCommunicator.#ctor(System.String)">
+            <summary> Create a new Serial Communication line over the chosen COM Port. </summary>
+            <param name="COMport"></param>
+        </member>
+        <member name="M:SenseGloveCs.SerialCommunicator.Finalize">
+            <summary> Ensure that we disconnect upon release. </summary>
+        </member>
+        <member name="M:SenseGloveCs.SerialCommunicator.Address">
+            <summary> Retrieve the Address of the Serial Port that this communicator is connected to. </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.SerialCommunicator.IsConnected">
+            <summary> Check if this Serial Communicator is (still) connected. </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.SerialCommunicator.Connect">
+            <summary> Connect to the Serial Port resource. </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.SerialCommunicator.Disconnect(SenseGloveCs.Diagnostics.ExitCodes)">
+            <summary> Disconnect this SerialPort with the chosen ExitCode. </summary>
+            <param name="exitCode"></param>
+        </member>
+        <member name="M:SenseGloveCs.SerialCommunicator.SerialPort_Disconnected(System.Object,SenseGloveCs.IO.DisconnectArgs)">
+            <summary> Fires when our SerialWrapper closes for any reason. Properly dispose of my resources as well. </summary>
+            <param name="source"></param>
+            <param name="args"></param>
+        </member>
+        <member name="M:SenseGloveCs.SerialCommunicator.SampleTimer_Elapsed(System.Object,System.Timers.ElapsedEventArgs)">
+            <summary> Fires every second to check on the SamplesPerSecond variable. </summary>
+            <param name="sender"></param>
+            <param name="e"></param>
+        </member>
+        <member name="M:SenseGloveCs.SerialCommunicator.SerialPort_DataRecieved(System.Object,SenseGloveCs.CMDEventArgs)">
+            <summary> Fires when the SeriapWrapper recieved new SensorData{ [ ... ] </summary>
+            <param name="source"></param>
+            <param name="args"></param>
+        </member>
+        <member name="M:SenseGloveCs.SerialCommunicator.SerialPort_CommandRecieved(System.Object,SenseGloveCs.CMDEventArgs)">
+            <summary> Fires whenever the SerialWrapper recieves a Command: { ... } </summary>
+            <param name="source"></param>
+            <param name="args"></param>
+        </member>
+        <member name="M:SenseGloveCs.SerialCommunicator.Send2Device(System.String)">
+            <summary> Send a string command to the Serial Port </summary>
+            <param name="command"></param>
+            <returns> Returns true if the command has been succesully sent. </returns>
+        </member>
+        <member name="M:SenseGloveCs.SerialCommunicator.Send2Device(System.Char)">
+            <summary> Send a single character command to the Serial Port </summary>
+            <param name="c"></param>
+            <returns>  Returns true if the command has been succesully sent. </returns>
+        </member>
+        <member name="M:SenseGloveCs.SerialCommunicator.Send2Device(System.Byte[])">
+            <summary> Send a byte array command to the Serial Port  </summary>
+            <param name="bytes"></param>
+            <returns> Returns true if the command has been succesully sent. </returns>
         </member>
         <member name="M:SenseGloveCs.SerialCommunicator.GetPorts(System.Boolean)">
             <summary> Retrieve a list of serial ports that are connected to this system. </summary>
             <param name="withCorrection">Whether or not to add corrections for older .NET versions. </param>
-            <returns></returns>
-        </member>
-        <member name="M:SenseGloveCs.SerialCommunicator.#ctor(System.String)">
-            <summary>
-            Create a new USBCommunicator on the specified COMPort;
-            </summary>
-            <param name="COMPort"></param>
-        </member>
-        <member name="M:SenseGloveCs.SerialCommunicator.Finalize">
-            <summary>
-            Deconstructor
-            </summary>
-        </member>
-        <member name="M:SenseGloveCs.SerialCommunicator.Connect">
-            <summary>
-            (Re)Connect to the Serial USB device.
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="M:SenseGloveCs.SerialCommunicator.Disconnect(SenseGloveCs.Diagnostics.ExitCodes)">
-            <summary>
-            Disconnect from this device.
-            </summary>
-        </member>
-        <member name="M:SenseGloveCs.SerialCommunicator.Read">
-            <summary>
-            Function that is run within the ReadThread and keeps it in scope.
-            </summary>
-        </member>
-        <member name="M:SenseGloveCs.SerialCommunicator.Address">
-            <summary>
-            Retrieve the name of the Serial Port.
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="M:SenseGloveCs.SerialCommunicator.Send2Device(System.String)">
-            <summary>
-            Send command(s) to the MicroController aboard the Sense Glove.
-            </summary>
-            <param name="command">The command to send</param>
-            <returns>Returns true if the command has been fired.</returns>
-        </member>
-        <member name="M:SenseGloveCs.SerialCommunicator.Send2Device(System.Int16)">
-            <summary>
-            sends a 16 bit integer to the device as a byte array of 2 elements
-            </summary>
-            <param name="i16"></param>
-            <returns></returns>
-        </member>
-        <member name="M:SenseGloveCs.SerialCommunicator.Send2Device(System.Int32)">
-            <summary>
-            sends a 32 bit integer to the device as a byte array of 4 elements
-            </summary>
-            <param name="i32"></param>
-            <returns></returns>
-        </member>
-        <member name="M:SenseGloveCs.SerialCommunicator.Send2Device(System.Int64)">
-            <summary>
-            sends a 64 bit integer to the device as a byte array of 8 elements
-            </summary>
-            <param name="i64"></param>
-            <returns></returns>
-        </member>
-        <member name="M:SenseGloveCs.SerialCommunicator.Send2Device(System.Byte[])">
-            <summary>
-            Send an array of Bytes to the Teensy
-            </summary>
-            <param name="bytes"></param>
-            <returns></returns>
-        </member>
-        <member name="M:SenseGloveCs.SerialCommunicator.Send2Device(System.Byte[],System.Int32,System.Int32,System.Boolean)">
-            <summary>
-            Send an array of Bytes to the Teensy
-            </summary>
-            <param name="bytes"></param>
-            <param name="offset"></param>
-            <param name="count"></param>
-            <param name="queue"></param>
-            <returns></returns>
-        </member>
-        <member name="M:SenseGloveCs.SerialCommunicator.Send2Device(System.Char)">
-            <summary>
-            Send a single byte to 
-            </summary>
-            <param name="c"></param>
-            <returns></returns>
-        </member>
-        <member name="M:SenseGloveCs.SerialCommunicator.IsConnected">
-            <summary>
-            Check if the Serial Port is (still) connected.
-            </summary>
             <returns></returns>
         </member>
         <member name="T:SenseGloveCs.Values">

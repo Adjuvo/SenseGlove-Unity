@@ -20,6 +20,8 @@ namespace SenseGlove_Examples
 
         private KeyCode prevObjKey = KeyCode.A;
 
+        public KeyCode quitKey = KeyCode.Escape;
+
         /// <summary> The current index in the objectsToSwap list. </summary>
         [Tooltip("The current index in the objectsToSwap list.")]
         public int index = -1;
@@ -61,6 +63,9 @@ namespace SenseGlove_Examples
                 this.ShowNextObject(false);
             }
 
+            if (Input.GetKeyDown(this.quitKey))
+                Application.Quit();
+
             if (this.instrText != null)
             {
                 this.WriteInstr(this.GetInstructions());
@@ -71,13 +76,13 @@ namespace SenseGlove_Examples
         /// <returns></returns>
         private string GetInstructions()
         {
-            if (this.senseGlove != null && this.senseGlove.GloveReady())
+            if (this.senseGlove != null && this.senseGlove.GloveReady)
             {
                 string res = this.prevObjKey.ToString() + " / " + this.nextObjKey.ToString() + " to cycle through objects" + "\r\n";
 
-                if (this.senseGlove != null && this.senseGlove.IsCalibrating())
+                if (this.senseGlove != null && this.senseGlove.IsCalibrating)
                 {
-                    SenseGlove_Data data = this.senseGlove.GloveData();
+                    SenseGlove_Data data = this.senseGlove.GloveData;
                     res += "Calibrating: Gathered " + data.calibrationStep + " / " + data.totalCalibrationSteps + " points.\r\n";
                     if (this.keyBinds != null)
                     {

@@ -112,14 +112,14 @@ namespace SenseGlove_Examples
                 //}
             }
 
-            if (debugText != null && glove.GloveData() != null)
+            if (debugText != null && glove.GloveData != null)
             {
                 //debugText.text = "";
 
 
                 //debugText.text = "Samples / Second = " + glove.GetSenseGlove().communicator.samplesPerSecond;
 
-                debugText.text = "IMU: " + SenseGlove_Util.ToString(glove.GloveData().imuCalibration);
+                debugText.text = "IMU: " + SenseGlove_Util.ToString(glove.GloveData.imuCalibration);
                 //debugText.text = "Angles: " + SenseGlove_Util.ToString(glove.GloveData().handAngles[1][0]);
 
                 //debugText.text = SenseGlove_Util.ToString(SenseGloveCs.Values.Degrees(glove.GetGloveData().handModel.handAngles[1][2]));
@@ -150,7 +150,7 @@ namespace SenseGlove_Examples
                 //debugText.text = SenseGlove_Util.ToString(grabScript.GetVelocity());
             }
 
-            if (this.glove != null && this.glove.GloveReady())
+            if (this.glove != null && this.glove.GloveReady)
             {
                 if (Input.GetKeyDown(KeyCode.V))
                 {

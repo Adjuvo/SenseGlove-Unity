@@ -65,7 +65,7 @@ public class SenseGlove_GrabZone : SenseGlove_Interactable
 
     /// <summary> Pass the BeginInteraction on to all connected SenseGlove_Interactables. </summary>
     /// <param name="grabScript"></param>
-    public override void BeginInteraction(SenseGlove_GrabScript grabScript, bool fromExternal = false)
+    protected override bool InteractionBegin(SenseGlove_GrabScript grabScript, bool fromExternal = false)
     {
         if (this.isInteractable)
         {
@@ -73,14 +73,16 @@ public class SenseGlove_GrabZone : SenseGlove_Interactable
             {
                 this.connectedTo[i].BeginInteraction(grabScript, true);
             }
+            return true;
         }
+        return false;
     }
 
     /// <summary>
     /// Pass the EndInteraction on to all connected SenseGlove_Interactables. 
     /// </summary>
     /// <param name="grabScript"></param>
-    public override void EndInteraction(SenseGlove_GrabScript grabScript, bool fromExternal = false)
+    protected override bool InteractionEnd(SenseGlove_GrabScript grabScript, bool fromExternal = false)
     {
         if (this.isInteractable)
         {
@@ -88,7 +90,9 @@ public class SenseGlove_GrabZone : SenseGlove_Interactable
             {
                 this.connectedTo[i].EndInteraction(grabScript, true);
             }
+            return true;
         }
+        return false;
     }
 
 

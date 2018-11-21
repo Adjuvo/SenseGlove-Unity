@@ -54,7 +54,7 @@ public abstract class SenseGlove_HandModel : MonoBehaviour
 
     /// <summary> The last sent motor levels of the SenseGlove. </summary>
     [Tooltip("The determined motor levels of the SenseGlove.")]
-    public int[] motorLevels = new int[5] { 0, 0, 0, 0, 0 };
+    protected int[] motorLevels = new int[5] { 0, 0, 0, 0, 0 };
 
     /// <summary> Debug the motor levels </summary>
     [Tooltip("Text apprears on the touchColliders, showing the current motor level.")]
@@ -79,6 +79,12 @@ public abstract class SenseGlove_HandModel : MonoBehaviour
     /// <summary> Offset between the wrist and lower arm, used when updating the wrist transfrom. </summary>
     protected Quaternion wristCorrection = Quaternion.identity;
 
+    /// <summary> Quaternion that aligns the lower arm with the wrist at the moment of calibration. </summary>
+    protected Quaternion wristCalibration = Quaternion.identity;
+
+    /// <summary> The relative angles between wrist and lower arm transforms. </summary>
+    protected Quaternion wristAngles = Quaternion.identity;
+
     /// <summary> A container for the motor level debug texts to easily toggle it on/off. </summary>
     protected GameObject debugGroup;
 
@@ -86,59 +92,6 @@ public abstract class SenseGlove_HandModel : MonoBehaviour
     protected TextMesh[] debugText;
 
     #endregion Properties
-
-    //-----------------------------------------------------------------------------------------------------------------------------------------
-    // Monobehaviour
-
-    #region Monobehaviour
-
-    // Use this for initialization
-    void Start()
-    {
-        if (senseGlove == null)
-        {
-            senseGlove = this.GetComponent<SenseGlove_Object>();
-        }
-        if (senseGlove != null)
-        {
-            if (senseGlove.foreArm == null) { senseGlove.foreArm = this.foreArmTransfrom.gameObject; }
-            senseGlove.OnGloveLoaded += SenseGlove_OnGloveLoaded;
-            senseGlove.OnCalibrationFinished += SenseGlove_OnCalibrationFinished;
-        }
-
-        this.CollectFingerJoints();
-        this.CollectCorrections();
-
-        this.SetupGrabScript();
-        this.SetupFeedbackColliders();
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        if (this.senseGlove != null && this.senseGlove.GloveReady())
-        {
-            this.UpdateWrist(this.senseGlove.GloveData());
-
-            if (this.updateFingers &&  !(this.senseGlove != null && this.senseGlove.solver == SenseGloveCs.Solver.Custom) )
-            {   //in case of a custom solver, the model waits for an external UpdateHand call
-                this.UpdateHand(this.senseGlove.GloveData());
-            }
-        }
-    }
-
-    //called at the end of all Update functions
-    void LateUpdate()
-    {
-        if (this.senseGlove != null && this.senseGlove.GloveReady())
-        {
-            this.UpdateForceFeedback();
-            this.UpdateDebugText();
-            this.UpdateHapticFeedback();
-        }
-    }
-
-    #endregion Monobehaviour
 
     //-----------------------------------------------------------------------------------------------------------------------------------------
     // Glove Events
@@ -158,6 +111,7 @@ public abstract class SenseGlove_HandModel : MonoBehaviour
             this.CollectCorrections();
         }
         this.SetupDebugText();
+        this.CalibrateWrist();
     }
 
     /// <summary> Call the ResizeFingers function. </summary>
@@ -198,7 +152,7 @@ public abstract class SenseGlove_HandModel : MonoBehaviour
     /// <summary> Set up the touchColliders to send force feedback back to the hand. </summary>
     protected virtual void SetupFeedbackColliders()
     {
-        if (this.touchColliders != null && this.touchColliders.Count > 0)
+        if (this.feedbackScripts == null && this.touchColliders != null && this.touchColliders.Count > 0)
         {
             int n = this.touchColliders.Count > 5 ? 5 : this.touchColliders.Count; //ensure we have enough colliders.
             this.feedbackScripts = new SenseGlove_Feedback[n];
@@ -222,7 +176,7 @@ public abstract class SenseGlove_HandModel : MonoBehaviour
     /// <summary> Collect the absolute angles of the fingers in their 'calibration' pose, correct these with the current wrist orientation. </summary>
     protected virtual void CollectCorrections() 
     {
-        if (this.fingerJoints != null && this.fingerJoints.Count > 0)
+        if (this.fingerCorrection.Count == 0 && this.fingerJoints != null && this.fingerJoints.Count > 0)
         {
             this.fingerCorrection.Clear();
             for (int f = 0; f < this.fingerJoints.Count; f++)
@@ -246,12 +200,12 @@ public abstract class SenseGlove_HandModel : MonoBehaviour
     /// <summary> Setup the debug texts for the motor levels </summary>
     protected virtual void SetupDebugText()
     {
-        if (this.touchColliders != null)
+        if (this.touchColliders != null && this.debugGroup == null && this.senseGlove.GloveReady)
         {
             //creating a new group to house the debug text
             this.debugGroup = new GameObject("DebugContainer");
 
-            int scale = this.senseGlove.GloveData().gloveSide == GloveSide.RightHand ? -1 : 1;
+            int scale = this.senseGlove.GloveData.gloveSide == GloveSide.RightHand ? -1 : 1;
 
             int n = this.touchColliders.Count > 5 ? 5 : this.touchColliders.Count;
             this.debugText = new TextMesh[n];
@@ -280,6 +234,34 @@ public abstract class SenseGlove_HandModel : MonoBehaviour
     }
 
     #endregion Setup
+
+    //-----------------------------------------------------------------------------------------------------------------------------------------
+    // HandModel Calibration
+
+    /// <summary> Calibrate the wrist model of this handModel. </summary>
+    public void CalibrateWrist()
+    {
+        if (this.senseGlove != null && this.senseGlove.GloveReady)
+        {
+            Debug.Log(this.name + ": Calibrated Wrist");
+            this.wristCalibration = this.foreArmTransfrom.rotation * Quaternion.Inverse(this.senseGlove.GloveData.absoluteWrist);
+        }
+    }
+
+    //------------------------------------------------------------------------------------------------------------------------------------
+    // Accessors
+
+    /// <summary> Retrieve the Quaterion rotation between this model's foreArm and Wrist. </summary>
+    public Quaternion RelativeWrist
+    {
+        get { return this.wristAngles; }
+    }
+
+    /// <summary> Retrive the euler angles between this model's foreArm and Wrist.  </summary>
+    public Vector3 WristAngles
+    {
+        get { return SenseGlove_Util.NormalizeAngles(this.wristAngles.eulerAngles); }
+    }
 
     //-----------------------------------------------------------------------------------------------------------------------------------------
     // Update Methods
@@ -317,12 +299,14 @@ public abstract class SenseGlove_HandModel : MonoBehaviour
         {
             if (data.dataLoaded)
             {
-                this.wristTransfrom.rotation = this.foreArmTransfrom.rotation * this.wristCorrection * data.relativeWrist;
+                this.wristTransfrom.rotation = /*this.foreArmTransfrom.rotation */ this.wristCorrection * (this.wristCalibration * data.absoluteWrist);
+                this.wristAngles = Quaternion.Inverse(this.foreArmTransfrom.rotation) * this.wristTransfrom.rotation;
             }
         }
         else
         {
             this.wristTransfrom.rotation = this.wristCorrection * this.foreArmTransfrom.rotation;
+            this.wristAngles = Quaternion.identity; //ignore wrist angle(s).
         }
     }
 
@@ -427,6 +411,7 @@ public abstract class SenseGlove_HandModel : MonoBehaviour
         }
     }
 
+    /// <summary> Clear refrences of what this hand model is touching, resetting the feedback parameters. </summary>
     public void ClearFeedback()
     {
         if (this.feedbackScripts != null)
@@ -439,6 +424,60 @@ public abstract class SenseGlove_HandModel : MonoBehaviour
     }
 
     #endregion Feedback
+
+
+    //-----------------------------------------------------------------------------------------------------------------------------------------
+    // Monobehaviour
+
+    #region Monobehaviour
+
+    // Use this for initialization
+    protected virtual void Start()
+    {
+        if (senseGlove == null)
+        {
+            senseGlove = this.GetComponent<SenseGlove_Object>();
+        }
+        if (senseGlove != null)
+        {
+            senseGlove.GloveLoaded += SenseGlove_OnGloveLoaded;
+            senseGlove.OnCalibrationFinished += SenseGlove_OnCalibrationFinished;
+        }
+
+        if (this.foreArmTransfrom == null) { this.foreArmTransfrom = this.transform; }
+
+        this.CollectFingerJoints();
+        this.CollectCorrections();
+        this.SetupGrabScript();
+        this.SetupFeedbackColliders();
+    }
+
+    // Update is called once per frame
+    protected virtual void Update()
+    {
+        if (this.senseGlove != null && this.senseGlove.GloveReady)
+        {
+            this.UpdateWrist(this.senseGlove.GloveData);
+
+            if (this.updateFingers && !(this.senseGlove != null && this.senseGlove.solver == SenseGloveCs.Solver.Custom))
+            {   //in case of a custom solver, the model waits for an external UpdateHand call
+                this.UpdateHand(this.senseGlove.GloveData);
+            }
+        }
+    }
+
+    //called at the end of all Update functions
+    protected virtual void LateUpdate()
+    {
+        if (this.senseGlove != null && this.senseGlove.GloveReady)
+        {
+            this.UpdateForceFeedback();
+            this.UpdateDebugText();
+            this.UpdateHapticFeedback();
+        }
+    }
+
+    #endregion Monobehaviour
 
 
 }

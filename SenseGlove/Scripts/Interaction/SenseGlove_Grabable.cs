@@ -16,10 +16,12 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
     [Tooltip("The way that this object is be picked up by a GrabScript.")]
     public GrabType pickupMethod = GrabType.Parent;
 
-    /// <summary> The way this object connects itself to the grabscript it is holding. WIP. </summary>
-    protected AttachType attachMethod = AttachType.Default;
+    /// <summary> The way this object connects itself to the grabscript. </summary>
+    [Tooltip("The way this object connects itself to the grabscript")]
+    public AttachType attachMethod = AttachType.Default;
 
-    /// <summary> The object to snap to. </summary>
+    /// <summary> If this object has an attachType of SnapToAnchor, this transform is used as a refrence. </summary>
+    [Tooltip("If this object has an attachType of SnapToAnchor, this transform is used as a refrence.")]
     public Transform snapReference;
 
     /// <summary> Whether or not this object can be picked up by another Grabscript while it is being held. </summary>
@@ -27,6 +29,7 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
     public bool canTransfer = true;
 
     /// <summary> The transform that is grabbed instead of this object. Useful when dealing with a grabable that is a child of another grabable. </summary>
+    [Tooltip("The transform that is grabbed instead of this object. Useful when dealing with a grabable that is a child of another grabable.")]
     public Transform pickupReference;
 
     /// <summary> The gameObject used as a reference for the Grabable's transform updates. </summary>
@@ -59,60 +62,16 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
     protected bool usedGravity;
 
     #endregion Properties
-
-    //--------------------------------------------------------------------------------------------------------------------------
-    // Events
-
-    #region Events
-
-    public delegate void PickedUpEventHandler(object source, EventArgs args);
-    /// <summary> Fires when this Grabable is picked up. </summary>
-    public event PickedUpEventHandler ObjectGrabbed;
-
-    protected void OnPickedUp()
-    {
-        if (ObjectGrabbed != null)
-        {
-            ObjectGrabbed(this, null);
-        }
-    }
-
-    public delegate void ReleasedEventHandler(object source, EventArgs args);
-    /// <summary> Fires when this Grabable is released. </summary>
-    public event ReleasedEventHandler ObjectReleased;
-
-    protected void OnReleased()
-    {
-        if (ObjectReleased != null)
-        {
-            ObjectReleased(this, null);
-        }
-    }
-
-
-    public delegate void ResetEventHandler(object source, EventArgs args);
-    /// <summary> Fires when this Grabable is reset to its original position. </summary>
-    public event ResetEventHandler ObjectReset;
-
-    protected void OnObjectReset()
-    {
-        if (ObjectReset != null)
-        {
-            ObjectReset(this, null);
-        }
-    }
-
-    #endregion Events
-
+    
     //--------------------------------------------------------------------------------------------------------------------------
     // Class methods
 
     #region ClassMethods
-    
+
     /// <summary> Called when a SenseGlove_Grabscript initiates an interaction with this grabable. </summary>
     /// <param name="grabScript"></param>
     /// <param name="fromExternal"></param>
-    public override void BeginInteraction(SenseGlove_GrabScript grabScript, bool fromExternal = false)
+    protected override bool InteractionBegin(SenseGlove_GrabScript grabScript, bool fromExternal = false)
     {
         if (this.isInteractable) //never interact twice with the same grabscript before EndInteraction is called.
         {
@@ -140,22 +99,28 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
 
                 this.grabReference = grabScript.grabReference;
                 this._grabScript = grabScript;
-                
+
+                this.originalDist = (grabScript.grabReference.transform.position - this.pickupReference.transform.position).magnitude;
+
                 if (this.attachMethod != AttachType.Default && this.snapReference != null)
                 {
-                    if (this.attachMethod == AttachType.SnapToAnchor)
+                    if (this.attachMethod != AttachType.Default && this.snapReference != null)
                     {
-                        //match orientation: x axis of ref is aligned with the x axis of the glove.
+                        if (this.attachMethod == AttachType.SnapToAnchor)
+                        {
+                            Quaternion Qto = grabScript.grabAnchor.rotation;
+                            Quaternion Qmain = this.pickupReference.transform.rotation;
+                            Quaternion Qsub = this.snapReference.transform.rotation;
 
-                        int RL = this._grabScript.senseGlove != null && !(this._grabScript.senseGlove.GloveData().gloveSide == GloveSide.RightHand) ? 1 : -1;
-                        this.pickupReference.rotation = this.grabReference.transform.rotation * Quaternion.Euler(-90*RL, 0, 0);
+                            Quaternion QMS = Quaternion.Inverse(Qmain) * Qsub;
+                            this.pickupReference.rotation = (Qto) * Quaternion.Inverse(QMS);
 
-                        Vector3 dRS = this.pickupReference.position - this.snapReference.position;
-
-                        this.pickupReference.transform.position = this.grabReference.transform.position + dRS;
-
+                            //calculate diff between my snapanchor and the glove's grabAnchor. 
+                            Vector3 dPos = this.snapReference.position - grabScript.grabAnchor.transform.position;
+                            this.pickupReference.transform.position = this.pickupReference.transform.position - dPos;
+                        }
+                        //other attachmethods.
                     }
-               
                 }
 
 
@@ -189,10 +154,12 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
                         this.physicsBody.isKinematic = true;
                     }
                 }
-                this.OnPickedUp();
+                return true;
             }
            
         }
+
+        return false;
     }
 
     /// <summary> Called when this object is being held and the GrabReference is updated. </summary>
@@ -211,7 +178,7 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
     /// <summary> Called when a SenseGlove_Grabscript no longer wishes to interact with this grabable. </summary>
     /// <param name="grabScript"></param>
     /// <param name="fromExternal"></param>
-    public override void EndInteraction(SenseGlove_GrabScript grabScript, bool fromExternal = false)
+    protected override bool InteractionEnd(SenseGlove_GrabScript grabScript, bool fromExternal = false)
     {
         //SenseGlove_Debugger.Log("End Interaction, fromExternal = " + fromExternal);
 
@@ -235,12 +202,13 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
                     }
                 }
             }
-
-            this.OnReleased();
-
+            
             this._grabScript = null;
             this.grabReference = null;
+
+            return true;
         }
+        return false;
     }
 
 
@@ -424,14 +392,14 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
 
     #region Monobehaviour
 
-    protected void Awake()
+    protected virtual void Awake()
     {
         this.CheckPickupRef();
         this.SaveRBParameters();
         this.SaveTransform();
     }
 
-    protected void Update()
+    protected virtual void Update()
     {
         if (!this.isInteractable && this.grabReference != null) { this.EndInteraction(null); } //end the interaction if the object is no longer interactable with.
     }

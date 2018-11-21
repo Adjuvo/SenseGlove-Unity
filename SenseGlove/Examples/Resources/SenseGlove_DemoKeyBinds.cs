@@ -18,7 +18,7 @@ namespace SenseGlove_Examples
         public KeyCode calibratePositionsKey = KeyCode.Alpha0;
 
         // Use this for initialization
-        void Start()
+        protected virtual void Start()
         {
             if (this.senseGlove == null)
             {
@@ -27,9 +27,9 @@ namespace SenseGlove_Examples
         }
 
         // Update is called once per frame
-        void Update()
+        protected virtual void Update()
         {
-            if (this.senseGlove != null && this.senseGlove.GloveReady())
+            if (this.senseGlove != null && this.senseGlove.GloveReady)
             {
                 if (Input.GetKeyDown(this.smallPresetKey))
                 {
@@ -43,7 +43,7 @@ namespace SenseGlove_Examples
                     new float[3] { 20, 20, 20 }
                     };
 
-                    this.senseGlove.SetFingerLengths(newLengths);
+                    this.senseGlove.FingerLengths = newLengths;
                 }
                 else if (Input.GetKeyDown(this.mediumPresetKey))
                 {
@@ -57,7 +57,7 @@ namespace SenseGlove_Examples
                     new float[3] { 25, 20, 20 }
                     };
 
-                    this.senseGlove.SetFingerLengths(newLengths);
+                    this.senseGlove.FingerLengths = newLengths;
                 }
                 else if (Input.GetKeyDown(this.largePresetKey))
                 {
@@ -71,7 +71,7 @@ namespace SenseGlove_Examples
                     new float[3] { 30, 20, 20 }
                     };
 
-                    this.senseGlove.SetFingerLengths(newLengths);
+                    this.senseGlove.FingerLengths = newLengths;
                 }
 
                 //if (Input.GetKeyDown(this.calibratePositionsKey))

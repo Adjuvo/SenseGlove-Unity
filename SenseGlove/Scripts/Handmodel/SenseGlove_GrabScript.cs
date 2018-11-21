@@ -71,8 +71,6 @@ public abstract class SenseGlove_GrabScript : MonoBehaviour
     /// <summary> The amount of time that has elpased since the Manual Release function was called. </summary>
     protected float elapsedTime = 0;
 
-
-
     #endregion Properties
 
     //-----------------------------------------------------------------------------------------------------------------------------------------
@@ -213,7 +211,7 @@ public abstract class SenseGlove_GrabScript : MonoBehaviour
     /// <returns></returns>
     protected virtual bool WantsRelease(SenseGlove_Interactable obj)
     {
-        return !obj.CanInteract() || (obj.releaseMethod == ReleaseMethod.Default);
+        return obj.releaseMethod != ReleaseMethod.FunctionCall && (!obj.CanInteract() || (obj.releaseMethod == ReleaseMethod.Default) || !obj.WithinBounds());
     }
 
 
@@ -258,7 +256,7 @@ public abstract class SenseGlove_GrabScript : MonoBehaviour
     // Monobehaviour
 
     //Load Resources before Start() function is called
-    void Awake()
+    protected virtual void Awake()
     {
         if (this.senseGlove == null)
         {
@@ -275,7 +273,7 @@ public abstract class SenseGlove_GrabScript : MonoBehaviour
     }
 
     //Runs once after Awake
-    void Start()
+    protected virtual void Start()
     {
         if (this.senseGlove == null)
         {
@@ -285,7 +283,7 @@ public abstract class SenseGlove_GrabScript : MonoBehaviour
     }
 
     //Runs once every frame
-    void Update()
+    protected virtual void Update()
     {
         this.UpdateDynamics();
         if (this.setupFinished)
@@ -303,7 +301,7 @@ public abstract class SenseGlove_GrabScript : MonoBehaviour
     }
 
     //runs after all trasforms have been updated
-    void LateUpdate()
+    protected virtual void LateUpdate()
     {
         for (int f = 0; f < heldObjects.Count; f++)
         {
@@ -315,6 +313,14 @@ public abstract class SenseGlove_GrabScript : MonoBehaviour
         }
     }
 
+    // When the script is disabled, release objects.
+    protected virtual void OnDisable()
+    {
+        if (this.setupFinished)
+        {
+            this.ManualRelease(0.1f);
+        }
+    }
 
 }
 

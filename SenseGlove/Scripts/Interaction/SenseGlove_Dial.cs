@@ -50,7 +50,7 @@ public class SenseGlove_Dial : SenseGlove_Interactable
     /// <summary> Start an interaction between this dial and a sense glove. </summary>
     /// <param name="grabScript"></param>
     /// <param name="fromExternal"></param>
-    public override void BeginInteraction(SenseGlove_GrabScript grabScript, bool fromExternal = false)
+    protected override bool InteractionBegin(SenseGlove_GrabScript grabScript, bool fromExternal = false)
     {
         if (!InteractingWith(grabScript)) //never interact twice with the same grabscript before EndInteraction is called.
         {
@@ -59,18 +59,19 @@ public class SenseGlove_Dial : SenseGlove_Interactable
 
             this.rotOffset = Quaternion.Inverse(this._grabReference.transform.rotation) * this.hingePoint.rotation;
             this.anglOffset = this.GetAngle();
-            this.OnGrabbed();
+            return true;
         }
+        return false;
     }
 
     /// <summary> End an interaction between this dial and a Sense Glove. </summary>
     /// <param name="grabScript"></param>
     /// <param name="fromExternal"></param>
-    public override void EndInteraction(SenseGlove_GrabScript grabScript, bool fromExternal = false)
+    protected override bool InteractionEnd(SenseGlove_GrabScript grabScript, bool fromExternal = false)
     {
         this._grabScript = null;
         this._grabReference = null;
-        this.OnReleased();
+        return true;
     }
 
     /// <summary> Update the dial while it is held by the glove. </summary>
@@ -169,7 +170,7 @@ public class SenseGlove_Dial : SenseGlove_Interactable
 
 
     // Use this for initialization
-    void Start ()
+    protected virtual void Start ()
     {
 	    if (this.hingePoint == null)
         {
@@ -181,8 +182,8 @@ public class SenseGlove_Dial : SenseGlove_Interactable
         this.angleIndex = SenseGlove_Dial.AngleIndex(this.hingeAxis);
     }
 
-	// Update is called once per frame
-	void Update ()
+    // Update is called once per frame
+    protected virtual void Update ()
     {
         //force end interaction of the grabscript is removed from the scene?
         if (this.IsInteracting() && !this._grabScript.gameObject.activeInHierarchy)
@@ -190,43 +191,4 @@ public class SenseGlove_Dial : SenseGlove_Interactable
             this.EndInteraction(null, true);
         }
     }
-
-
-
-
-
-
-
-    //--------------------------------------------------------------------------------------------------------------------------
-    // Events
-
-    #region Events
-
-    public delegate void GrabbedEventHandler(object source, EventArgs args);
-    /// <summary> Fires when this Grabable is picked up. </summary>
-    public event GrabbedEventHandler DialGrabbed;
-
-    protected void OnGrabbed()
-    {
-        if (DialGrabbed != null)
-        {
-            DialGrabbed(this, null);
-        }
-    }
-
-    public delegate void ReleasedEventHandler(object source, EventArgs args);
-    /// <summary> Fires when this Grabable is released. </summary>
-    public event ReleasedEventHandler DialReleased;
-
-    protected void OnReleased()
-    {
-        if (DialReleased != null)
-        {
-            DialReleased(this, null);
-        }
-    }
-
-    #endregion Events
-
-
 }

@@ -68,11 +68,11 @@ public class SenseGlove_Manager : MonoBehaviour
    
     public void Start()
     {
-        if (!DeviceScanner.IsScanning())
+        if (!DeviceScanner.IsScanning)
         {
-            SenseGloveCs.DeviceScanner.pingTime = 200;
-            SenseGloveCs.DeviceScanner.scanDelay = 500;
-            DeviceScanner.StartScanning(true);
+            SenseGloveCs.DeviceScanner.ResponseTime = 200;
+            SenseGloveCs.DeviceScanner.ScanInterval = 500;
+            DeviceScanner.StartScanning(2.0f);
         }
     }
 

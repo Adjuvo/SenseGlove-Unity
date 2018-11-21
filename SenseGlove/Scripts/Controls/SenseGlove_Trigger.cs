@@ -163,7 +163,7 @@ public class SenseGlove_Trigger : SenseGlove_Detector
 
     #region Monobehaviour
 
-    void Start()
+    protected override void Start()
     {
         this.SetAudio(false);
         this.SetParticles(false);
@@ -176,7 +176,7 @@ public class SenseGlove_Trigger : SenseGlove_Detector
         
     }
 
-    void Update()
+    protected virtual void Update()
     {
         if (this.loop)
         {

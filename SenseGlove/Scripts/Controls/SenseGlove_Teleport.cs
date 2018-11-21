@@ -286,7 +286,7 @@ public class SenseGlove_Teleport : MonoBehaviour
     /// <returns></returns>
     public virtual bool ShouldActivate()
     {
-        if (this.gestureDetector != null && (this.senseGlove == null || this.senseGlove.senseGlove.GloveReady()))
+        if (this.gestureDetector != null && (this.senseGlove == null || this.senseGlove.senseGlove.GloveReady))
         {
             if (this.grabScript == null || (this.grabScript != null && !this.grabScript.IsTouching()))
             {
@@ -339,7 +339,7 @@ public class SenseGlove_Teleport : MonoBehaviour
     #region Monobehaviour
 
     // Use this for initialization
-    void Start ()
+    protected virtual void Start ()
     {
         if (this.senseGlove != null)
         {
@@ -350,9 +350,9 @@ public class SenseGlove_Teleport : MonoBehaviour
         SetHighlights(false);
         this.coolDownTimer = this.coolDown; //set to equal so we can teleport right away.
 	}
-	
-	// Update is called once per frame
-	void Update ()
+
+    // Update is called once per frame
+    protected virtual void Update ()
     {
         if (this.coolDownTimer < this.coolDown)
         {

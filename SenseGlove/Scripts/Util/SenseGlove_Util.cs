@@ -181,8 +181,21 @@ public static class SenseGlove_Util
         return N;
     }
 
+    /// <summary> Normalize a set of (euler) angles to fall within a -180... 180 range. </summary>
+    /// <param name="angles"></param>
+    /// <returns></returns>
+    public static Vector3 NormalizeAngles(Vector3 angles)
+    {
+        return new Vector3
+        (
+            SenseGlove_Util.NormalizeAngle(angles.x),
+            SenseGlove_Util.NormalizeAngle(angles.y),
+            SenseGlove_Util.NormalizeAngle(angles.z)
+        );
+    }
 
-    /// <summary>  Calculate the angular velocity of a GameObject, using its current rotation and that of the previous frame. </summary>
+
+    /// <summary> Calculate the angular velocity of a GameObject, using its current rotation and that of the previous frame. </summary>
     /// <param name="currentRot"></param>
     /// <param name="previousRot"></param>
     /// <remarks>Placed here because it may be used by other scripts as well.</remarks>
