@@ -82,7 +82,16 @@ public class SenseGlove_Touch : MonoBehaviour
     // Called when this object enters the collider of another object
     protected virtual void OnTriggerEnter(Collider col)
     {
-        SenseGlove_Interactable interact = col.GetComponent<SenseGlove_Interactable>();
+        SenseGlove_Interactable interact = null;
+        if (col.attachedRigidbody != null)
+        {
+            interact = col.attachedRigidbody.GetComponent<SenseGlove_Interactable>();
+        }
+        else
+        {
+            interact = col.GetComponent<SenseGlove_Interactable>();
+        }
+		
         if (interact != null && this.touchedObject == null)
         {
             //if (!this.IsTouching(col.gameObject))
@@ -103,7 +112,18 @@ public class SenseGlove_Touch : MonoBehaviour
     // Called when this object exits the collider of another object
     protected virtual void OnTriggerExit(Collider col)
     {
-        if (this.IsTouching(col.gameObject))
+        GameObject gameObject = null;
+
+        if (col.attachedRigidbody != null)
+        {
+            gameObject = col.attachedRigidbody.gameObject;
+        }
+        else
+        {
+            gameObject = col.gameObject;
+        }
+
+        if (this.IsTouching(gameObject))
         {
             this.touchedScript.UnTouchedBy(this);
 
