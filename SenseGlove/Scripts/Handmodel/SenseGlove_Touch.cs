@@ -98,7 +98,7 @@ public class SenseGlove_Touch : MonoBehaviour
             //{
             //    //touching a new object!
             //}
-            this.touchedObject = col.gameObject;
+            this.touchedObject = interact.gameObject;
             this.touchedScript = interact;
             this.touchedScript.TouchedBy(this);
         }
