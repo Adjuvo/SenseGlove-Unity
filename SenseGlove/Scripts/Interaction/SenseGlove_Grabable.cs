@@ -187,8 +187,11 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
 
             if (this.IsInteracting())
             {   //break every possible instance that could connect this interactable to the grabscript.
-                this.pickupReference.parent = this.originalParent;
-
+				if(this.pickupReference != null)
+				{
+					this.pickupReference.parent = this.originalParent;
+				}
+				
                 this.BreakJoint();
 
                 if (this.physicsBody != null)
