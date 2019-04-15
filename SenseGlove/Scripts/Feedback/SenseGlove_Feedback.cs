@@ -302,7 +302,19 @@ public class SenseGlove_Feedback : MonoBehaviour
     {
         if (this.touchedObject == null)
         {
-            SenseGlove_Material material = col.GetComponent<SenseGlove_Material>();
+			GameObject gameObject = null;
+
+            if (col.attachedRigidbody != null)
+            {
+                gameObject = col.attachedRigidbody.gameObject;
+            }
+            else
+            {
+                gameObject = col.gameObject;
+            }
+
+            SenseGlove_Material material = gameObject.GetComponent<SenseGlove_Material>();
+			
             if (material)
             {
                 // SenseGlove_Debugger.Log("Touching " + col.name + "; material = " + (material != null) + ", interactable = " + (interactable != null));
@@ -337,8 +349,17 @@ public class SenseGlove_Feedback : MonoBehaviour
     protected virtual void OnTriggerStay(Collider col)
     {
         //No forther checks if (myObj == 0, because it interferes with the entry vector...
+        GameObject gameObject = null;
 
-        if (this.IsTouching(col.gameObject)) //Check if we're still on the same object?
+        if (col.attachedRigidbody != null)
+        {
+            gameObject = col.attachedRigidbody.gameObject;
+        }
+        else
+        {
+            gameObject = col.gameObject;
+        }
+        if (this.IsTouching(gameObject)) //Check if we're still on the same object?
         {
             //any object that we are touching has either an Interactable and/or a material
 
@@ -358,7 +379,7 @@ public class SenseGlove_Feedback : MonoBehaviour
                 }
                 else
                 {
-                    this.CalculateMaterialBased(col.gameObject, this.touchedMaterial, true);
+                    this.CalculateMaterialBased(gameObject, this.touchedMaterial, true);
                 }
             }
         }
@@ -367,7 +388,18 @@ public class SenseGlove_Feedback : MonoBehaviour
     // Called when this object exits the collider of another object
     protected virtual void OnTriggerExit(Collider col)
     {
-        if (this.touchedObject != null && this.IsTouching(col.gameObject))
+        GameObject gameObject = null;
+
+        if (col.attachedRigidbody != null)
+        {
+            gameObject = col.attachedRigidbody.gameObject;
+        }
+        else
+        {
+            gameObject = col.gameObject;
+        }
+		
+        if (this.touchedObject != null && this.IsTouching(gameObject))
         {
             this.Detach();
         }
