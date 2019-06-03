@@ -18,7 +18,7 @@ public class SenseGlove_Hinge : SenseGlove_Interactable
     /// <summary> The (optional) physics-based hingejoint that controls the hinge's movement when not interacting. </summary>
     public HingeJoint joint;
 
-    /// <summary> Set to true if you want the Sense Glove to be automatically set up. False to stop the SenseGlove from messign with your script(s). </summary>
+    /// <summary> Set to true if you want the Sense Glove to be automatically set up. False to stop the SenseGlove from messing with your script(s). </summary>
     public bool autoSetup = true;
 
     /// <summary> The (optional) rigidbody of the hinge that moves it around when not interacting. </summary>

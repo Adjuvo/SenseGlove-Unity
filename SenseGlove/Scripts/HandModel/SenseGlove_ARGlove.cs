@@ -1,15 +1,14 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 /// <summary> A type of handModel that follows only glove hardware; with feedback colliders at the tips of the Thimbles. </summary>
 public class SenseGlove_ARGlove : SenseGlove_HandModel
 {
 
+    /// <summary> The five end-effectors of the Sense Glove, who can be parented to pickup- and/or feedback colliders. </summary>
     [Header("AR Glove")]
+    [Tooltip("The five end-effectors of the Sense Glove, who can be parented to pickup- and/or feedback colliders.")]
     [SerializeField]
-    private Transform[] thimbles = new Transform[0];
+    protected Transform[] thimbles = new Transform[0];
 
     protected override void CollectFingerJoints()
     {

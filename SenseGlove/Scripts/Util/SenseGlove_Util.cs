@@ -1,10 +1,19 @@
-﻿using System.Collections;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
+
+
+[Serializable]
+public class SGEvent : UnityEvent { }
 
 /// <summary> Contains methods that make the SenseGloveCs library work with Unity. </summary>
 public static class SenseGlove_Util
 {
+    public enum MoveAxis
+    {
+        X = 0, Y, Z, NegativeX, NegativeY, NegativeZ
+    }
 
     //--------------------------------------------------------------------------------------------------------------------
     // ToString Methods
@@ -211,6 +220,63 @@ public static class SenseGlove_Util
             SenseGlove_Util.NormalizeAngle(dE.z)
         );
         return (res * Mathf.Deg2Rad) / Time.deltaTime; //convert from deg to rad / sec
+    }
+
+
+
+    /// <summary> Returns a unit vector representing the chosen movement axis. </summary>
+    /// <param name="axis"></param>
+    /// <returns></returns>
+    public static Vector3 GetAxis(MovementAxis axis)
+    {
+        Vector3 res = Vector3.zero;
+        res[(int)axis] = 1;
+        return res;
+    }
+
+    public static float Map(float value, float inMin, float inMax, float outMin, float outMax)
+    {
+        return SenseGloveCs.Values.Interpolate(value, inMin, inMax, outMin, outMax);
+    }
+
+
+
+
+    public static bool IsNegative(MoveAxis axis)
+    {
+        return axis >= MoveAxis.NegativeX;
+    }
+
+    public static int AxisIndex(MoveAxis axis)
+    {
+        return IsNegative(axis) ? (int)axis - 3 : (int)axis;
+    }
+
+    public static Vector3 GetVector(MoveAxis axis)
+    {
+        Vector3 res = Vector3.zero;
+        if (IsNegative(axis))
+            res[(int)axis - 3] = -1;
+        else
+            res[(int)axis] = 1;
+        return res;
+    }
+
+
+
+    public static int ListIndex(MonoBehaviour obj, List<MonoBehaviour> objects) //List<> needs standardization
+    {
+        return SenseGlove_Util.ListIndex(obj.gameObject, objects);
+    }
+
+    public static int ListIndex(GameObject obj, List<MonoBehaviour> objects) //List<> needs standardization
+    {
+        for (int i = 0; i < objects.Count; i++)
+        {
+            if (GameObject.ReferenceEquals(obj, objects[i].gameObject))
+                return i;
+        }
+        return -1;
     }
 
 

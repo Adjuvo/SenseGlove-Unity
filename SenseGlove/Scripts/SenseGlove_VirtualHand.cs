@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary> A SenseGlove_HandModel where the finger joints can be assigned via the inspector. </summary>

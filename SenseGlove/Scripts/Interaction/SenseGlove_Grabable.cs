@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 /// <summary> An object that can be picked up and dropped by the SenseGlove. </summary>
 public class SenseGlove_Grabable : SenseGlove_Interactable
@@ -61,6 +58,8 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
     /// <summary> Whether this grabable's physicsBody was used gravity before it was picked up. </summary>
     protected bool usedGravity;
 
+    public const float defaultBreakForce = 4000;
+
     #endregion Properties
     
     //--------------------------------------------------------------------------------------------------------------------------
@@ -79,19 +78,6 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
 
             bool alreadyBeingHeld = this.IsInteracting();
 
-           // SenseGlove_Debugger.Log("alreadyHeld = " + alreadyBeingHeld);
-
-            if (!alreadyBeingHeld)
-            {
-                //always record the properties of the object in case we switch pickupTypes mid-Play for some reason.
-                this.originalParent = this.pickupReference.parent;
-                if (this.physicsBody)
-                {
-                    this.wasKinematic = this.physicsBody.isKinematic;
-                    this.usedGravity = this.physicsBody.useGravity;
-                }
-            }
-
             //if the object was actually grabbed.
             if (!alreadyBeingHeld || (alreadyBeingHeld && this.canTransfer))
             {
@@ -108,16 +94,7 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
                     {
                         if (this.attachMethod == AttachType.SnapToAnchor)
                         {
-                            Quaternion Qto = grabScript.grabAnchor.rotation;
-                            Quaternion Qmain = this.pickupReference.transform.rotation;
-                            Quaternion Qsub = this.snapReference.transform.rotation;
-
-                            Quaternion QMS = Quaternion.Inverse(Qmain) * Qsub;
-                            this.pickupReference.rotation = (Qto) * Quaternion.Inverse(QMS);
-
-                            //calculate diff between my snapanchor and the glove's grabAnchor. 
-                            Vector3 dPos = this.snapReference.position - grabScript.grabAnchor.transform.position;
-                            this.pickupReference.transform.position = this.pickupReference.transform.position - dPos;
+                            this.SnapMeTo(grabScript.grabAnchor.transform);
                         }
                         //other attachmethods.
                     }
@@ -184,10 +161,10 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
 
         if (this.InteractingWith(grabScript) || fromExternal)
         {
-
             if (this.IsInteracting())
             {   //break every possible instance that could connect this interactable to the grabscript.
-                this.pickupReference.parent = this.originalParent;
+                if (this.pickupReference != null)
+                    this.pickupReference.parent = this.originalParent;
 
                 this.BreakJoint();
 
@@ -211,13 +188,29 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
         return false;
     }
 
+    /// <summary> Moves this Grbabale such that its snapRefrence matches the rotation and position of the originToMatch. </summary>
+    /// <param name="originToMatch"></param>
+    public void SnapMeTo(Transform originToMatch)
+    {
+        Quaternion Qto = originToMatch.rotation;
+        Quaternion Qmain = this.pickupReference.transform.rotation;
+        Quaternion Qsub = this.snapReference.transform.rotation;
+
+        Quaternion QMS = Quaternion.Inverse(Qmain) * Qsub;
+        this.pickupReference.rotation = (Qto) * Quaternion.Inverse(QMS);
+
+        //calculate diff between my snapanchor and the glove's grabAnchor. 
+        Vector3 dPos = this.snapReference.position - originToMatch.transform.position;
+        this.pickupReference.transform.position = this.pickupReference.transform.position - dPos;
+    }
 
     /// <summary> Save this object's position and orientation, in case the ResetObject function is called. </summary>
     public override void SaveTransform()
     {
         this.CheckPickupRef();
-        this.originalPos = this.pickupReference.transform.position;
-        this.originalRot = this.pickupReference.transform.rotation;
+        this.originalParent = this.pickupReference.parent;
+        this.originalPos = this.pickupReference.position;
+        this.originalRot = this.pickupReference.rotation;
     }
 
     /// <summary> Reset this object back to its original position. Removes all connections between this and grabscripts. </summary>
@@ -225,13 +218,11 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
     {
         this.OnObjectReset();
         this.CheckPickupRef();
-        if (this.originalParent)
-        {
-            this.pickupReference.parent = originalParent;
-        }
 
         this.BreakJoint();
-        
+
+        this.pickupReference.parent = originalParent;
+
         this.pickupReference.position = this.originalPos;
         this.pickupReference.rotation = this.originalRot;
 
@@ -264,25 +255,27 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
 
     #region Utility
 
-
-    /// <summary>
-    /// Set the original parent of this object, before it was picked up by the GrabScript.
-    /// </summary>
-    /// <param name="newParent"></param>
-    public void SetOriginalParent(Transform newParent)
+    /// <summary> The original parent of this Grabable, before any GrabScripts picked it up. </summary>
+    public Transform OriginalParent
     {
-        this.originalParent = newParent;
+        get { return this.originalParent; }
+        set { this.originalParent = value; }
     }
 
-    /// <summary>
-    ///  Get the original parent of this object, before it was picked up by the GrabScript.
-    /// </summary>
-    /// <returns></returns>
-    public Transform GetOriginalParent()
+    /// <summary> Whether this Grabable used gravity before it was picked up </summary>
+    public bool UsedGravity
     {
-        return this.originalParent;
+        get { return this.usedGravity; }
+        set { this.usedGravity = value; }
     }
 
+    /// <summary> Whether this Grabable was marked as Kinematic before it was picked up </summary>
+    public bool WasKinematic
+    {
+        get { return this.wasKinematic; }
+        set { this.wasKinematic = value; }
+    }
+    
 
     /// <summary> Set the Velocities of this script to 0. Stops the grabable from rotating / flying away. </summary>
     public void ZeroVelocity()
@@ -297,7 +290,7 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
     /// <summary> Connect this Grabable's rigidBody to another using a FixedJoint </summary>
     /// <param name="other"></param>
     /// <returns>True, if the connection was sucesfully made.</returns>
-    public bool ConnectJoint(Rigidbody other, float breakForce = 4000)
+    public bool ConnectJoint(Rigidbody other, float breakForce = SenseGlove_Grabable.defaultBreakForce)
     {
         if (other != null)
         {
@@ -331,21 +324,6 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
         }
     }
 
-    /// <summary> Returns the rigidbody properties [useGravity, isKinematic] that are assigned to the physicsbody when this object is released. </summary>
-    /// <returns></returns>
-    public bool[] GetRBProps()
-    {
-        return new bool[2] { this.usedGravity, this.wasKinematic };
-    }
-
-    /// <summary> Edit the rigidbody properties that are assigned to the physicsbody when this object is released. </summary>
-    /// <param name="gravity"></param>
-    /// <param name="kinematic"></param>
-    public void SetRBProps(bool gravity, bool kinematic)
-    {
-        this.usedGravity = gravity;
-        this.wasKinematic = kinematic;
-    }
 
 
     /// <summary> Enable/Disable rigidbody collision of this Grabable. </summary>
@@ -371,7 +349,7 @@ public class SenseGlove_Grabable : SenseGlove_Interactable
         }
     }
 
-    /// <summary> Store the BigidBody parameters of this Grabable </summary>
+    /// <summary> Store the RigidBody parameters of this Grabable </summary>
     public virtual void SaveRBParameters()
     {
         if (!this.physicsBody) { this.physicsBody = this.pickupReference.GetComponent<Rigidbody>(); }

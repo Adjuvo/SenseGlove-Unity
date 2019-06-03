@@ -13,6 +13,7 @@ public class SenseGlove_KeyBinds : MonoBehaviour
     /// <summary> The SenseGlove_Object that is controlled by this script. </summary>
     private SenseGlove_Object senseGlove;
 
+    /// <summary> The SenseGlove_HandModel connected to this same Object </summary>
     private SenseGlove_HandModel model;
 
     /// <summary> (Optional) grabscript that is attached to the senseGlove. </summary>
@@ -70,7 +71,7 @@ public class SenseGlove_KeyBinds : MonoBehaviour
         this.senseGlove = this.gameObject.GetComponent<SenseGlove_Object>();
         if (this.senseGlove != null)
         {
-            this.senseGlove.OnCalibrationFinished += SenseGlove_OnCalibrationFinished;
+            this.senseGlove.CalibrationFinished += SenseGlove_OnCalibrationFinished;
         }
         this.grabScript = this.gameObject.GetComponent<SenseGlove_GrabScript>();
         this.model = this.senseGlove.GetComponent<SenseGlove_HandModel>();

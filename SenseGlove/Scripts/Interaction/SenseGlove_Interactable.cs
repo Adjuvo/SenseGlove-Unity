@@ -1,5 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary> Represents an object that a SenseGlove Grabscript can interact with. Extended by most of the Interaction scripts. </summary>
@@ -20,8 +19,8 @@ public abstract class SenseGlove_Interactable : MonoBehaviour
     [Tooltip("This object can be picked up between the palm collider and a finger (including the thumb).")]
     public bool fingerPalm = false;
 
-    /// <summary> Determines special conditions under which this Interactable can end an interaction. </summary>
-    [Tooltip("Determines special conditions under which this Interactable is released. ")]
+    /// <summary> Determines special conditions that must be fulfilled to release this object. </summary>
+    [Tooltip("Determines special conditions that must be fulfilled to release this object. ")]
     public ReleaseMethod releaseMethod = ReleaseMethod.Default;
 
     /// <summary> Force then EndInteraction if the handModel ever passes more than this distance (in m) from the original grab location. </summary>
@@ -71,9 +70,27 @@ public abstract class SenseGlove_Interactable : MonoBehaviour
     /// <summary> Check if this object is still within acceptable distance of the grabscript. </summary>
     public virtual bool WithinBounds()
     {
-        return true;
+        if (this._grabScript != null)
+        {
+            float currDist = (this._grabScript.grabReference.transform.position - this.transform.position).magnitude;
+            return Mathf.Abs(currDist - this.originalDist) >= this.releaseDistance;
+        }
+        return false;
     }
 
+
+    /// <summary> Check if this interactable allows a grabScript to end an interaction. </summary>
+    /// <returns></returns>
+    public virtual bool EndInteractAllowed()
+    {
+        if (this.releaseMethod != ReleaseMethod.FunctionCall)
+            return (!this.CanInteract() || !this.WithinBounds() || this.releaseMethod == ReleaseMethod.MustOpenHand);
+        else if (!this.CanInteract())
+            return true;
+        return false;
+    //    return this.releaseMethod != ReleaseMethod.FunctionCall 
+    //        && (!this.CanInteract() || (this.releaseMethod == ReleaseMethod.Default) || !this.WithinBounds());
+    }
 
 
 
@@ -120,6 +137,8 @@ public abstract class SenseGlove_Interactable : MonoBehaviour
         }
     }
 
+    /// <summary> Called by the grabscript after it has updated. Ensures that the FollowObject always updates last. </summary>
+    public virtual void UpdateInteraction() { }
 
     //---------------------------------------------------------------------------------------------------------------------------------
     // Abstract Interaction Methods
@@ -130,9 +149,7 @@ public abstract class SenseGlove_Interactable : MonoBehaviour
     /// <returns> True if a succesfull connection has been established. </returns>
     protected abstract bool InteractionBegin(SenseGlove_GrabScript grabScript, bool fromExternal);
 
-    /// <summary> Called by the grabscript after it has updated. Ensures that the FollowObject always updates last. </summary>
-    public abstract void UpdateInteraction();
-
+    
     /// <summary> Called when the Interaction ends on this Interactable. </summary>
     /// <param name="grabScript"></param>
     /// <param name="fromExternal"></param>
@@ -142,7 +159,7 @@ public abstract class SenseGlove_Interactable : MonoBehaviour
     //---------------------------------------------------------------------------------------------------------------------------------
     // Touch Methods
 
-    /// <summary> Inform this Interactable that it is being touched. </summary>
+    /// <summary> Called by SenseGlove_Touch when it touches an interactable. Informs this Interactable that it is being touched. </summary>
     /// <param name="touchScript"></param>
     public void TouchedBy(SenseGlove_Touch touchScript)
     {
@@ -163,7 +180,7 @@ public abstract class SenseGlove_Interactable : MonoBehaviour
     }
 
 
-    /// <summary> Inform this Interactable that it is no longer touched. </summary>
+    /// <summary> Called by SenseGlove_Touch when it touches an interactable. Informs this Interactable that it is no longer being touched </summary>
     /// <param name="touchScript"></param>
     public void UnTouchedBy(SenseGlove_Touch touchScript)
     {
@@ -244,15 +261,6 @@ public abstract class SenseGlove_Interactable : MonoBehaviour
     {
         return this._grabScript != null;
     }
-    
-    /// <summary> Whether or not this object wants interaction to end. </summary>
-    /// <returns></returns>
-    public virtual bool CanEndInteraction()
-    {
-        return true;
-    }
-
-
 
 
     //-------------------------------------------------------------------------------------------------------
@@ -263,7 +271,7 @@ public abstract class SenseGlove_Interactable : MonoBehaviour
 
     public delegate void InteractBeginEventHandler(object source, SG_InteractArgs args);
 
-    /// <summary> Fires when this interactable begins an interaction with another grabscript. </summary>
+    /// <summary> Fires after this interactable begins an interaction with a specific Grabscript. </summary>
     public event InteractBeginEventHandler InteractionBegun;
 
     protected virtual void OnInteractBegin(SenseGlove_GrabScript grabScript, bool fromExternal)
@@ -279,7 +287,7 @@ public abstract class SenseGlove_Interactable : MonoBehaviour
 
     public delegate void InteractEndEventHandler(object source, SG_InteractArgs args);
 
-    /// <summary> Fires when this interactable ends in interaction with a specific GrabScript. </summary>
+    /// <summary> Fires after this interactable ends an interaction with a specific GrabScript. </summary>
     public event InteractEndEventHandler InteractionEnded;
 
     protected virtual void OnInteractEnd(SenseGlove_GrabScript grabScript, bool fromExternal)

@@ -5,7 +5,7 @@ using UnityEngine;
 /// <summary> 
 /// A Generic Script that can be extended to work with most hand models. 
 /// It requires the developer to assign the correct transforms for each joint. 
-/// All of its methods can be overrided to create custom solutions.
+/// All of its methods can be overridden to create custom solutions.
 /// </summary>
 public abstract class SenseGlove_HandModel : MonoBehaviour
 {
@@ -110,6 +110,19 @@ public abstract class SenseGlove_HandModel : MonoBehaviour
         {
             this.CollectCorrections();
         }
+
+        if (this.fingerJoints.Count > 0)
+        {
+            if (this._jointPositions.Length < 0)
+                this.CollectHandParameters();
+
+            ////TODO: Apply this to the Sense Glove
+            //if (this.senseGlove != null)
+            //    this.senseGlove.SetHandParameters(this._jointPositions, this._handLengths);
+            //else
+            //    Debug.Log("Sense Glove is null. Something is wrong?");
+        }
+
         this.SetupDebugText();
         this.CalibrateWrist();
     }
@@ -198,7 +211,7 @@ public abstract class SenseGlove_HandModel : MonoBehaviour
     }
 
     /// <summary> Setup the debug texts for the motor levels </summary>
-    protected virtual void SetupDebugText()
+    protected void SetupDebugText()
     {
         if (this.touchColliders != null && this.debugGroup == null && this.senseGlove.GloveReady)
         {
@@ -233,6 +246,67 @@ public abstract class SenseGlove_HandModel : MonoBehaviour
         }
     }
 
+
+    protected Vector3[] _jointPositions = new Vector3[0];
+    protected Vector3[][] _handLengths = new Vector3[0][];
+
+    /// <summary> collects the starting positions and rotations of the VHM, which can later be applied to Sense Glove models </summary>
+    public virtual void CollectHandParameters()
+    {
+        this._jointPositions = new Vector3[this.fingerJoints.Count];
+        this._handLengths = new Vector3[this.fingerJoints.Count][];
+        for (int f=0; f<this._jointPositions.Length; f++)
+        {
+            Vector3 relPos = DifferenceFromWrist(this.wristTransfrom, this.fingerJoints[f][0].position);
+            this._jointPositions[f] = new Vector3(relPos.x * 1000, relPos.y * 1000, relPos.z * 1000);
+
+            this._handLengths[f] = new Vector3[this.fingerJoints[f].Count - 1];
+            for (int i = 0; i < this._handLengths[f].Length; i++)
+            {
+                Vector3 dV = DifferenceFromWrist(this.wristTransfrom, this.fingerJoints[f][i + 1].position) 
+                    - DifferenceFromWrist(this.wristTransfrom, this.fingerJoints[f][i].position);
+                this._handLengths[f][i] = new Vector3(dV.x*1000, dV.y*1000, dV.z*1000);
+            }
+        }
+
+        /*
+        // Debug Paramaters
+        if (this._jointPositions.Length > 0)
+        {
+            Debug.Log(this.name + "Collected Hand Parameters (" + this._jointPositions.Length + "): ");
+            string posStr = "Positions: ";
+            for (int i = 0; i < this._jointPositions.Length; i++)
+            {
+                posStr += SenseGlove_Util.ToString(this._jointPositions[i]);
+                posStr += (i == this._jointPositions.Length - 1) ? "" : ", ";
+            }
+
+            string lString = "Hand lengths : \r\n";
+            for (int f=0; f < this._handLengths.Length; f++)
+            {
+                for (int i = 0; i < this._handLengths[f].Length; i++)
+                {
+                    lString += SenseGlove_Util.ToString(this._handLengths[f][i]);
+                    lString += (i == this._handLengths[f].Length - 1) ? "" : ", ";
+                }
+                if (f < this._handLengths.Length)
+                    lString += "\r\n";
+            }
+            Debug.Log(posStr);
+            Debug.Log(lString);
+        }
+        */
+    }
+
+    /// <summary> Calculates the difference between an absolute position and the wrist transform, without scaling. </summary>
+    /// <param name="wristTransfrom"></param>
+    /// <param name="absPos"></param>
+    /// <returns></returns>
+    public static Vector3 DifferenceFromWrist(Transform wristTransfrom, Vector3 absPos)
+    {
+        return Quaternion.Inverse(wristTransfrom.rotation) * (absPos - wristTransfrom.position);
+    }
+
     #endregion Setup
 
     //-----------------------------------------------------------------------------------------------------------------------------------------
@@ -247,6 +321,7 @@ public abstract class SenseGlove_HandModel : MonoBehaviour
             this.wristCalibration = this.foreArmTransfrom.rotation * Quaternion.Inverse(this.senseGlove.GloveData.absoluteWrist);
         }
     }
+
 
     //------------------------------------------------------------------------------------------------------------------------------------
     // Accessors
@@ -316,8 +391,6 @@ public abstract class SenseGlove_HandModel : MonoBehaviour
     {
         //return the hand to a position where the handAngles are 0
 
-
-        //
         for (int f=0; f<newLengths.Length; f++)
         {
             if (newLengths.Length > f && newLengths[f].Length > this.fingerJoints[f].Count)
@@ -386,14 +459,14 @@ public abstract class SenseGlove_HandModel : MonoBehaviour
         if (atLeastOne)
         {
             this.senseGlove.SendBuzzCmd(fingers, durations, magnitudes); //advanced controls
-                                                                         //this.senseGlove.GetSenseGlove().SimpleBuzzCmd(magnitudes); //simple controls
-                                                                         //Debug.Log("Sent " + SenseGlove_Util.ToString(magnitudes) + " + " + SenseGlove_Util.ToString(durations));
-                                                                         // SenseGlove_Debugger.Log(SenseGlove_Util.ToString(magnitudes));
+            //this.senseGlove.GetSenseGlove().SimpleBuzzCmd(magnitudes); //simple controls
+            //Debug.Log("Sent " + SenseGlove_Util.ToString(magnitudes) + " + " + SenseGlove_Util.ToString(durations));
+            // SenseGlove_Debugger.Log(SenseGlove_Util.ToString(magnitudes));
         }
     }
 
     /// <summary> Update the motor level texts and se them to the appropriate position. </summary>
-    protected virtual void UpdateDebugText()
+    protected void UpdateDebugText()
     {
         if (this.debugMotorLevels)
         {
@@ -412,7 +485,7 @@ public abstract class SenseGlove_HandModel : MonoBehaviour
     }
 
     /// <summary> Clear refrences of what this hand model is touching, resetting the feedback parameters. </summary>
-    public void ClearFeedback()
+    public virtual void ClearFeedback()
     {
         if (this.feedbackScripts != null)
         {
@@ -441,7 +514,7 @@ public abstract class SenseGlove_HandModel : MonoBehaviour
         if (senseGlove != null)
         {
             senseGlove.GloveLoaded += SenseGlove_OnGloveLoaded;
-            senseGlove.OnCalibrationFinished += SenseGlove_OnCalibrationFinished;
+            senseGlove.CalibrationFinished += SenseGlove_OnCalibrationFinished;
         }
 
         if (this.foreArmTransfrom == null) { this.foreArmTransfrom = this.transform; }
@@ -450,6 +523,9 @@ public abstract class SenseGlove_HandModel : MonoBehaviour
         this.CollectCorrections();
         this.SetupGrabScript();
         this.SetupFeedbackColliders();
+
+        if (this.fingerJoints.Count > 0)
+            this.CollectHandParameters();
     }
 
     // Update is called once per frame

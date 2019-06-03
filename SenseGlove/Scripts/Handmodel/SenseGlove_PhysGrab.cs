@@ -14,7 +14,7 @@ public class SenseGlove_PhysGrab : SenseGlove_GrabScript
 
     /// <summary> If set to true, we check the intention of the user to determine if we can interact with objects. </summary>
     [Tooltip("If set to true, we check the intention of the user to determine if we can interact with objects.")]
-    public CheckIntention checkIntention = CheckIntention.Off;
+    protected CheckIntention checkIntention = CheckIntention.Static;
 
     /// <summary> The colliders that will be used for the thumb pickup logic.</summary>
     [Header("Grabscript Colliders")]
@@ -108,6 +108,14 @@ public class SenseGlove_PhysGrab : SenseGlove_GrabScript
         return false;
     }
 
+    /// <summary> CHeck if this script wishes to release objects at the moment. </summary>
+    /// <returns></returns>
+    protected override bool CanRelease(SenseGlove_Interactable obj)
+    {
+        if (obj.releaseMethod == ReleaseMethod.MustOpenHand)
+            return !this.wantsGrab[0] && !this.wantsGrab[1]; //only index and thumb atm.
+        return base.CanRelease(obj);
+    }
     
     /// <summary> Manually release (all) objects that this SenseGlove_physgrab is interacting with. </summary>
     /// <param name="timeToReactivate">(Optional) time (in seconds) before the SenseGlove_Physgrab can start picking up objects again.</param>
@@ -267,7 +275,8 @@ public class SenseGlove_PhysGrab : SenseGlove_GrabScript
         //End interaction with objects that are in the heldObjects but not in the grabables.
         for (int i = 0; i < this.heldObjects.Count;)
         {
-            if (!this.IsInside(heldObjects[i], grabables) && this.WantsRelease(heldObjects[i]))
+            if (!this.IsInside(heldObjects[i], grabables)
+                && this.CanRelease(heldObjects[i]) && heldObjects[i].EndInteractAllowed())
             {
                // Debug.Log("Ending interaction with " + heldObjects[i].name + " because we are no longer touching it.");
                 this.heldObjects[i].EndInteraction(this);
@@ -289,22 +298,7 @@ public class SenseGlove_PhysGrab : SenseGlove_GrabScript
             }
         }
     }
-
-    /// <summary> This script can also check via simple gestures. </summary>
-    /// <param name="obj"></param>
-    /// <returns></returns>
-    protected override bool WantsRelease(SenseGlove_Interactable obj)
-    {
-        if (obj.CanInteract()) //separate if statement to catch more releaseMethods.
-        {
-            if (obj.releaseMethod == ReleaseMethod.MustOpenHand)
-            {
-                return (!wantsGrab[1] && !wantsGrab[2]);
-            }
-        }
-        return base.WantsRelease(obj);
-    }
-
+    
 
     /// <summary> Retrieve a list of all objects that CAN be grabbed this frame </summary>
     /// <returns></returns>
@@ -359,7 +353,7 @@ public class SenseGlove_PhysGrab : SenseGlove_GrabScript
     }
 
     /// <summary> Test Variable </summary>
-    protected readonly int maxDIPFlexion = -70;
+    protected readonly int maxDIPFlexion = -160;
     /// <summary> Test Variable </summary>
     protected readonly int maxDIPExtension = -10;
 
@@ -373,14 +367,13 @@ public class SenseGlove_PhysGrab : SenseGlove_GrabScript
             {
                 //bool[] D = new bool[5] { true, true, true, true, true };
 
+                Vector3[] sumAngles = this.senseGlove.GloveData.TotalGloveAngles();
+
                 //collect the relative flexion angles of the fingers.
                 SenseGlove_Data data = this.senseGlove.GloveData;
-                float[] relDipFlexions = new float[5];
+                this.dipAngles = new float[5];
                 for (int f=0; f<5; f++)
-                {
-                    relDipFlexions[f] = data.handAngles[f][2].z;
-                }
-                this.dipAngles = relDipFlexions;
+                    this.dipAngles[f] = sumAngles[f].z;
 
                 if (this.checkIntention >= CheckIntention.Static)
                 {

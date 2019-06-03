@@ -28,10 +28,12 @@ public class SenseGlove_FingerDetector : MonoBehaviour
     /// <summary> boolean to run setup once after start (so that the modelToTrack has time to setup its colliders). </summary>
     private bool setup = false;
 
+    private List<SenseGlove_Object> touchedGloves = new List<SenseGlove_Object>();
+
     #endregion Properties
 
     //-----------------------------------------------------------------------------------------------------------------------------------
-    //  Class Methods
+    //  Monobehaviour
 
     #region Monobehaviour
 
@@ -80,13 +82,15 @@ public class SenseGlove_FingerDetector : MonoBehaviour
             int index = ColliderIndex(other.gameObject);
             //Debug.Log("Touching Index " + index);
             this.SetTouch(index, true);
+            this.MarkTouching(this.modelToCheck.senseGlove, true);
         }
         else //no acces, so we need to check for scripts.
         {
             SenseGlove_Feedback script = other.GetComponent<SenseGlove_Feedback>();
-            if (script != null)
+            if (script != null && script.handModel != null)
             {
                 this.SetTouch(script.GetIndex(), true);
+                this.MarkTouching(script.handModel.senseGlove, true);
             }
         }
     }
@@ -101,13 +105,20 @@ public class SenseGlove_FingerDetector : MonoBehaviour
             int index = ColliderIndex(other.gameObject);
             //Debug.Log("Releasing Index " + index);
             this.SetTouch(index, false);
+
+            if (index > -1 && this.finger[index] <= 0) //check if we removed all fingers.
+                this.MarkTouching(this.modelToCheck.senseGlove, false);
         }
-        else //no acces, so we need to check for scripts.
+        else //no access, so we need to check for scripts.
         {
             SenseGlove_Feedback script = other.GetComponent<SenseGlove_Feedback>();
             if (script != null)
             {
-                this.SetTouch(script.GetIndex(), false);
+                int index = script.GetIndex();
+                this.SetTouch(index, false);
+
+                if (index > -1 && this.finger[index] <= 0) //check if we removed all fingers.
+                    this.MarkTouching(script.handModel.senseGlove, false);
             }
         }
     }
@@ -118,6 +129,23 @@ public class SenseGlove_FingerDetector : MonoBehaviour
     //  Class Methods
 
     #region ClassMethods
+
+    public bool[] FingerStates
+    {
+        //could have used touchedBy, but that will create unnecessary checks
+        get { return new bool[5] { this.finger[0] > 0, this.finger[1] > 0, this.finger[2] > 0, this.finger[3] > 0, this.finger[4] > 0 }; }
+    }
+
+
+    /// <summary> Get a list of all sense gloves detected </summary>
+    public SenseGlove_Object[] TouchedGloves
+    {
+        get
+        {
+            return this.touchedGloves.ToArray();
+        }
+    }
+
 
     /// <summary> Check if the this detector is touched by a specific finger. </summary>
     /// <param name="index"></param>
@@ -167,6 +195,27 @@ public class SenseGlove_FingerDetector : MonoBehaviour
             }
         }
     }
+
+    private void MarkTouching(SenseGlove_Object obj, bool touching)
+    {
+        if (obj != null)
+        {
+            for (int i = 0; i < this.touchedGloves.Count; i++)
+            {
+                if (GameObject.ReferenceEquals(obj, this.touchedGloves[i])) //we've found it!
+                {
+                    if (!touching) { this.touchedGloves.RemoveAt(i); } //if we are already touching, just return...
+                    return;
+                }
+            }
+            //we've not found it in the list 
+            if (touching)
+            {
+                this.touchedGloves.Add(obj);
+            }
+        }
+    }
+
 
     /// <summary> Retrieve the index of a collided gameobject </summary>
     /// <param name="collided"></param>

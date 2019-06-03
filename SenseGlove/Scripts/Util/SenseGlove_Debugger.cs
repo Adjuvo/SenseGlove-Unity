@@ -55,7 +55,7 @@ public class SenseGlove_Debugger : MonoBehaviour
     // unsubscribe on quit.
     private void OnApplicationQuit()
     {
-        SenseGloveCs.Diagnostics.Debugger.Instance.DebugMessageRecieved -= Instance_DebugMessageRecieved; //unsubscribe
+     //   SenseGloveCs.Diagnostics.Debugger.Instance.DebugMessageRecieved -= Instance_DebugMessageRecieved; //unsubscribe
     }
 
 

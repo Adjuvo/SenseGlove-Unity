@@ -22,8 +22,6 @@ public class SenseGlove_Data
     /// <summary> The version of the firmware that runs on this SenseGlove's Microcontroller </summary>
     public float firmwareVersion;
 
-
-
     //-------------------------------------------------------------------------------------------------------------------
     // Sensor Variables
 
@@ -97,7 +95,6 @@ public class SenseGlove_Data
     public Quaternion[][] handRotations;
 
 
-
     //-------------------------------------------------------------------------------------------------------------------
     // Wrist Variables
 
@@ -123,6 +120,46 @@ public class SenseGlove_Data
     //-------------------------------------------------------------------------------------------------------------------
     // Constructor
 
+    /// <summary> Create an instance of SenseGlove_Data with default values. </summary>
+    private SenseGlove_Data()
+    {
+        Vector3[] zero = new Vector3[] { Vector3.zero, Vector3.zero, Vector3.zero };
+        Vector3[][] multiZero = new Vector3[5][] { zero, zero, zero, zero, zero };
+
+        Quaternion[] ident = new Quaternion[] { Quaternion.identity, Quaternion.identity, Quaternion.identity };
+        Quaternion[][] multiIdent = new Quaternion[5][] { ident, ident, ident, ident, ident };
+
+        this.absoluteCalibratedWrist = Quaternion.identity;
+        this.absoluteWrist = Quaternion.identity;
+        this.calibrationStep = -1;
+        this.commonOriginPos = Vector3.zero;
+        this.commonOriginRot = Quaternion.identity;
+        this.dataLoaded = false;
+        this.deviceID = "N\\A";
+        this.firmwareVersion = -1.0f;
+        this.gloveAngles = multiZero;
+        this.gloveLengths = multiZero;
+        this.glovePositions = multiZero;
+        this.gloveRotations = multiIdent;
+        this.gloveSide = GloveSide.Unknown;
+        this.gloveValues = new float[0][] { };
+        this.gloveVersion = "N\\A";
+        this.handAngles = multiZero;
+        this.handLengths = multiZero;
+        this.handPositions = multiZero;
+        this.handRotations = multiIdent;
+        this.imuCalibration = new int[4] { -1, -1, -1, -1 };
+        this.imuValues = new float[] { 0, 0, 0, 1 };
+        this.numberOfSensors = 0;
+        this.packetsPerSecond = 0;
+        this.relativeWrist = Quaternion.identity;
+        this.totalCalibrationSteps = 0;
+    }
+
+    /// <summary> Retrieve an unloaded set of data, which indictates that this glove has not been loaded yet. </summary>
+    /// <remarks> Allows access to the empty Constructor without exposing it. </remarks>
+    public static SenseGlove_Data Empty { get { return new SenseGlove_Data(); }  }
+
 
     /// <summary> Extract right-handed coordinate system data from the SenseGlove DLL and convert it into Unity values. </summary>
     /// <param name="data"></param>
@@ -133,36 +170,47 @@ public class SenseGlove_Data
     {
         if (data != null)
         {
-            this.dataLoaded = data.dataLoaded;
             this.gloveSide = SenseGlove_Data.GetSide(data.kinematics.isRight);
 
             this.deviceID = data.deviceID;
             this.firmwareVersion = data.firmwareVersion;
             this.gloveVersion = data.deviceVersion;
-
-            this.gloveValues = data.gloveValues;
-            this.imuValues = data.imuValues;
-            this.imuCalibration = data.imuCalibration;
+            
             this.packetsPerSecond = data.samplesPerSec;
-            this.numberOfSensors = data.numberOfSensors;
-
-            this.calibrationStep = data.currentCalStep;
-            this.totalCalibrationSteps = data.totalCalSteps;
-
-            this.absoluteCalibratedWrist = SenseGlove_Util.ToUnityQuaternion(data.wrist.QcalibratedAbs);
-            this.absoluteWrist = SenseGlove_Util.ToUnityQuaternion(data.wrist.QwristAbs);
-            this.relativeWrist = SenseGlove_Util.ToUnityQuaternion(data.wrist.Qrelative);
 
             this.commonOriginPos = SenseGlove_Util.ToUnityPosition(data.kinematics.gloveRelPos);
             this.commonOriginRot = SenseGlove_Util.ToUnityQuaternion(data.kinematics.gloveRelRot);
 
-            SenseGlove_Data.GetChainVariables(ref data.kinematics.gloveLinks, ref this.glovePositions, 
-                ref this.gloveAngles, ref this.gloveRotations, ref this.gloveLengths );
-
-            SenseGlove_Data.GetChainVariables(ref data.kinematics.fingers, ref this.handPositions,
-                ref this.handAngles, ref this.handRotations, ref this.handLengths);
-
+            this.UpdateVariables(data);
         }
+    }
+
+    /// <summary> Updates all variables that can change during the simulation.</summary>
+    /// <param name="data"></param>
+    public void UpdateVariables(SenseGloveCs.GloveData data)
+    {
+        this.dataLoaded = data.dataLoaded;
+        this.deviceID = data.deviceID;
+        this.gloveValues = data.gloveValues;
+        this.imuValues = data.imuValues;
+        this.imuCalibration = data.imuCalibration;
+
+        this.numberOfSensors = data.numberOfSensors;
+
+        this.packetsPerSecond = data.samplesPerSec;
+
+        this.calibrationStep = data.currentCalStep;
+        this.totalCalibrationSteps = data.totalCalSteps;
+
+        this.absoluteCalibratedWrist = SenseGlove_Util.ToUnityQuaternion(data.wrist.QcalibratedAbs);
+        this.absoluteWrist = SenseGlove_Util.ToUnityQuaternion(data.wrist.QwristAbs);
+        this.relativeWrist = SenseGlove_Util.ToUnityQuaternion(data.wrist.Qrelative);
+
+        SenseGlove_Data.GetChainVariables(ref data.kinematics.gloveLinks, ref this.glovePositions,
+                ref this.gloveAngles, ref this.gloveRotations, ref this.gloveLengths);
+
+        SenseGlove_Data.GetChainVariables(ref data.kinematics.fingers, ref this.handPositions,
+            ref this.handAngles, ref this.handRotations, ref this.handLengths);
     }
 
 
@@ -187,7 +235,37 @@ public class SenseGlove_Data
         }
         return res;
     }
-    
+
+
+
+    /// <summary> Retrieve the finger lengths of this GloveData </summary>
+    /// <returns></returns>
+    public float[][] GetFingerLengths()
+    {
+        float[][] res = new float[5][];
+        for (int f = 0; f < 5; f++)
+        {
+            res[f] = new float[3];
+            for (int j = 0; j < 3; j++)
+            {
+                res[f][j] = this.handLengths[f][j][0]; //all x lengths
+            }
+        }
+        return res;
+    }
+
+    /// <summary> Retrieve the joint positions </summary>
+    /// <returns></returns>
+    public Vector3[] GetJointPositions()
+    {
+        Vector3[] res = new Vector3[5];
+        for (int f = 0; f < 5; f++)
+        {
+            res[f] = this.handPositions[f][0];
+        }
+        return res;
+    }
+
 
     //-------------------------------------------------------------------------------------------------------------------
     // Bulk Conversion Methods
@@ -249,39 +327,8 @@ public class SenseGlove_Data
         }
 
     }
-
-    //-------------------------------------------------------------------------------------------------------------------
-    // Access
-
-
-    /// <summary> Retrieve the finger lengths of this GloveData </summary>
-    /// <returns></returns>
-    public float[][] GetFingerLengths()
-    {
-        float[][] res = new float[5][];
-        for (int f=0; f<5; f++)
-        {
-            res[f] = new float[3];
-            for (int j=0; j<3; j++)
-            {
-                res[f][j] = this.handLengths[f][j][0]; //all x lengths
-            }
-        }
-        return res;
-    }
-
-    /// <summary> Retrieve the joint positions </summary>
-    /// <returns></returns>
-    public Vector3[] GetJointPositions()
-    {
-        Vector3[] res = new Vector3[5];
-        for (int f = 0; f < 5; f++)
-        {
-            res[f] = this.handPositions[f][0];
-        }
-        return res;
-    }
-
+    
+    
 }
 
 /// <summary> Whether this glove is left- or right handed. </summary>

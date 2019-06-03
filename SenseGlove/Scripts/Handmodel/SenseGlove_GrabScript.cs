@@ -157,6 +157,14 @@ public abstract class SenseGlove_GrabScript : MonoBehaviour
         this.heldObjects.Clear();
     }
 
+    /// <summary> Check if this GrabScript is allowed to release an object, based on its release parameters. </summary>
+    /// <param name="obj"></param>
+    /// <returns></returns>
+    protected virtual bool CanRelease(SenseGlove_Interactable obj)
+    {
+        return true;
+    }
+
     /// <summary> Returns true if this grabscript can currently pickup an object </summary>
     /// <returns></returns>
     public abstract bool CanInteract();
@@ -206,13 +214,6 @@ public abstract class SenseGlove_GrabScript : MonoBehaviour
         }
     }
 
-
-    /// <summary> Check if an objects wants to be released </summary>
-    /// <returns></returns>
-    protected virtual bool WantsRelease(SenseGlove_Interactable obj)
-    {
-        return obj.releaseMethod != ReleaseMethod.FunctionCall && (!obj.CanInteract() || (obj.releaseMethod == ReleaseMethod.Default) || !obj.WithinBounds());
-    }
 
 
     #endregion GrabMethods

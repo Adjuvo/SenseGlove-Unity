@@ -26,7 +26,12 @@ public class GloveDetectedArgs : System.EventArgs
 }
 
 
-/// <summary> Utility class to detect Sense Gloves and assign them proper connection. </summary>
+/// <summary> 
+/// The SenseGlove_DeviceManager is responsible for detecting new Sense Glove Connections, 
+/// and disposing of them once the application exits. 
+/// These connections are then linked to SenseGlove_Objects within the scene, 
+/// based on their connection parameters.
+/// </summary>
 public sealed class SenseGlove_DeviceManager : MonoBehaviour
 {
     //--------------------------------------------------------------------------------------------------------
@@ -49,6 +54,22 @@ public sealed class SenseGlove_DeviceManager : MonoBehaviour
     //--------------------------------------------------------------------------------------------------------
     // Accessors
     
+    public static string ReportConnections()
+    {
+        string msg = "";
+        string[] reports = SenseGloveCs.DeviceScanner.Instance.ReportConnections();
+        if (reports.Length > 0)
+        {
+            msg = reports[0];
+            for (int i = 1; i < reports.Length; i++)
+                msg += "\r\n" + reports[i];
+        }
+        else
+            msg = "Plug in at least one device";
+
+        return msg;
+    }
+
 
     //--------------------------------------------------------------------------------------------------------
     // Events
@@ -156,8 +177,7 @@ public sealed class SenseGlove_DeviceManager : MonoBehaviour
             SenseGloveCs.DeviceScanner.StopScanning();
 
         this.queuedGloves.Clear(); //Stop recieving new gloves
-
-
+        
         foreach (SenseGlove_Object glove in this.senseGloves)
         {
             glove.UnlinkGlove(); //stop all forms of feedback before ending.
@@ -174,6 +194,8 @@ public sealed class SenseGlove_DeviceManager : MonoBehaviour
         SenseGloveCs.DeviceScanner.CleanUp(); //Explicityly cleans up deviceScanner, since Unity does call finalizers / destructors.
     }
 
+    /// <summary> Add a SenseGlove_Object to this Device Manager's watch list, which automatically connects a new Sense Glove if one is detected. </summary>
+    /// <param name="obj"></param>
     public void AddToWatchList(SenseGlove_Object obj)
     {
         if (obj != null)

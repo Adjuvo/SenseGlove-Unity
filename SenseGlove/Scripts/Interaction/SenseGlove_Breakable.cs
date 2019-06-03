@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 /// <summary> A Gameobject that despawns an objects once its material breaks, and optionally replaces it with a 'broken' version. </summary>
 public class SenseGlove_Breakable : MonoBehaviour

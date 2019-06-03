@@ -45,7 +45,8 @@ public class GloveCalibrationArgs : System.EventArgs
 
 }
 
-
+/// <summary> After being linked to a proper Sense Glove via the SenseGlove_DeviceManager, this script is
+/// responsible for updating SenseGlove_Data every frame, and for exposing feedback - and calibration methods. </summary>
 public class SenseGlove_Object : MonoBehaviour
 {
     //--------------------------------------------------------------------------------------------------------------------------
@@ -62,12 +63,16 @@ public class SenseGlove_Object : MonoBehaviour
     /// <summary> The index of the internal Sense Glove that this _Object is connected to. </summary>
     [SerializeField] protected int trackedGloveIndex = -1;
 
-    /// <summary> Just in case some cheeky bastard tries to change via the inspector. </summary>
+    /// <summary> Just in case someone tries to change via the inspector. </summary>
     protected int actualTrackedIndex = -1;
 
     /// <summary> The Solver used to calculate this Sense Glove's hand model each frame. </summary>
     [Header("Kinematics Settings")]
     public Solver solver = Solver.Interpolate4Sensors;
+
+    /// <summary> Enables/Diables the force feedback on this _Object. </summary>
+    public bool forceFeedback = true;
+
 
     /// <summary> Whether or not to apply natural limits to the fingers. </summary>
     /// <remarks> Marked as protected since these wil likely always be true during normal use. </remarks>
@@ -77,12 +82,16 @@ public class SenseGlove_Object : MonoBehaviour
     /// <remarks> We will always update it, but calibrate it at hand-model level. </remarks>
     protected bool updateWrist = true;
 
+    /// <summary> Unity Even that fires when this script is assigned to a Sense Glove </summary>
+    [Header("Events")]
+    [Tooltip("Unity Even that fires when this script is assigned to a Sense Glove ")]
+    public SGEvent OnGloveLoad;
 
     /// <summary> The Internal Sense Glove object that is linked to this monobehaviour Object </summary>
     protected SenseGlove linkedGlove = null;
 
     /// <summary> The last data from the linked glove. </summary>
-    protected SenseGlove_Data linkedGloveData = null;
+    protected SenseGlove_Data linkedGloveData = SenseGlove_Data.Empty; //an empty data struct
 
     /// <summary> Queued Calibration Command from the fingers, which will fire during Unity's next LateUpdate() (so as to allow acces to transforms) </summary>
     protected List<GloveCalibrationArgs> calibrationArguments = new List<GloveCalibrationArgs>();
@@ -90,11 +99,16 @@ public class SenseGlove_Object : MonoBehaviour
     /// <summary> Whether or not the linked glove was connected the last time we checked. </summary>
     protected bool wasConnected = false;
 
+    /// <summary> Command queue for the brakes, which is flushed at the end of every Update function. </summary>
+    protected List<int[]> brakeQueue = new List<int[]>();
+
+
     //Static properties
 
     /// <summary> Saves setup time for multiple SenseGlove_Objects checking for DeviceManager's existance. </summary>
     protected static bool deviceScannerPresent = false;
 
+    protected static int maxBrakeCmds = 10;
 
     //--------------------------------------------------------------------------------------------------------------------------
     // Basic Accessors, Gets
@@ -109,19 +123,19 @@ public class SenseGlove_Object : MonoBehaviour
     /// <summary> Returns the index that this Glove uses to access data via the SenseGlove_DeviceManager. </summary>
     public int GloveIndex
     {
-        get { return this.trackedGloveIndex; }
+        get { return this.actualTrackedIndex; }
     }
 
     /// <summary> Check if this SenseGlove_Object has been linked to a Sense Glove via the SenseGlove_DeviceManager. </summary>
     public bool IsLinked
     {
-        get { return this.trackedGloveIndex > -1; }
+        get { return this.actualTrackedIndex > -1; }
     }
 
     /// <summary> Determines if this glove is ready and linked to the hardware. </summary>
     public bool GloveReady
     {
-        get { return this.linkedGlove != null && this.trackedGloveIndex > -1; }
+        get { return this.linkedGlove != null && this.actualTrackedIndex > -1; }
     }
 
     /// <summary> Check if the Sense Glove is connected. </summary>
@@ -141,6 +155,18 @@ public class SenseGlove_Object : MonoBehaviour
     {
         get { return this.linkedGlove != null ? this.linkedGlove.CalibrationStarted() : false; }
     }
+
+    [System.Obsolete("Use GloveData Instead")]
+    public GloveData InternalGloveData
+    {
+        get
+        {
+            if (this.linkedGlove != null)
+                return this.linkedGlove.GetData(false);
+            return null;
+        }
+    }
+
 
 
     //--------------------------------------------------------------------------------------------------------------------------
@@ -241,7 +267,7 @@ public class SenseGlove_Object : MonoBehaviour
             //lower arm rotation is set to identity (n/a) since we will calibrate at _HandModel Level
             SenseGloveCs.GloveData rawData = this.linkedGlove.Update(UpdateLevel.HandPositions, this.solver, this.limitFingers, this.updateWrist,
                 new Quat(0, 0, 0, 1), false);
-            this.linkedGloveData = new SenseGlove_Data(rawData);
+            this.linkedGloveData.UpdateVariables(rawData);
         }
     }
 
@@ -297,6 +323,7 @@ public class SenseGlove_Object : MonoBehaviour
         {
             GloveLoaded(this, null);
         }
+        this.OnGloveLoad.Invoke(); //code before inspector.
     }
 
     //GloveUnLinked
@@ -356,15 +383,15 @@ public class SenseGlove_Object : MonoBehaviour
     public delegate void CalibrationFinishedEventHandler(object source, GloveCalibrationArgs args);
 
     /// <summary> Occurs when the finger calibration is finished. Passes the old and new GloveData as arguments. </summary>
-    public event CalibrationFinishedEventHandler OnCalibrationFinished;
+    public event CalibrationFinishedEventHandler CalibrationFinished;
 
     /// <summary> Used to call the OnCalibrationFinished event. </summary>
     /// <param name="calibrationArgs"></param>
-    protected void CalibrationFinished(GloveCalibrationArgs calibrationArgs)
+    protected void FinishCalibration(GloveCalibrationArgs calibrationArgs)
     {
-        if (OnCalibrationFinished != null)
+        if (CalibrationFinished != null)
         {
-            OnCalibrationFinished(this, calibrationArgs);
+            CalibrationFinished(this, calibrationArgs);
         }
     }
 
@@ -405,11 +432,42 @@ public class SenseGlove_Object : MonoBehaviour
     /// <param name="commands"></param>
     /// <returns>Returns true if the command has been succesfully sent.</returns>
     /// <remarks> This is where the magic happens; where the actual command is sent. All other SendBrakeCmd methods are wrappers. </remarks>
-    public bool SendBrakeCmd(int[] commands)
+    protected bool WriteBrakeCmd(int[] commands)
     {
         if (this.linkedGlove != null && this.linkedGlove.IsConnected())
         {
             return this.linkedGlove.BrakeCmd(commands); //todo; queue
+        }
+        return false;
+    }
+
+    /// <summary> Send the highest, last recieved brake commands recieved by this _Object. </summary>
+    protected void FlushBrakeCmds() //only write brakecommands if we have recieved any.
+    {
+        if (this.forceFeedback && this.brakeQueue.Count > 0)
+        {
+            int[] finalCommand = new int[] { 0, 0, 0, 0, 0 };
+            for (int i = 0; i < this.brakeQueue.Count; i++)
+            {
+                for (int f = 0; f < 5; f++)
+                    finalCommand[f] = Mathf.Max(finalCommand[f], brakeQueue[i][f]);
+            }
+            this.WriteBrakeCmd(finalCommand);
+            this.brakeQueue.Clear(); 
+        }
+    }
+
+    /// <summary> Send motor commands to the Sense Glove. summary>
+    /// <param name="commands"></param>
+    /// <returns></returns>
+    public bool SendBrakeCmd(int[] commands)
+    {
+        if (commands.Length >= 5)
+        {
+            this.brakeQueue.Add(commands);
+            if (this.brakeQueue.Count > SenseGlove_Object.maxBrakeCmds)
+                this.brakeQueue.RemoveAt(0); //remove the earliest one.
+            return true;
         }
         return false;
     }
@@ -430,7 +488,7 @@ public class SenseGlove_Object : MonoBehaviour
     /// <returns></returns>
     public bool StopBrakes()
     {
-        return this.SendBrakeCmd(0, 0, 0, 0, 0);
+        return this.WriteBrakeCmd(new int[5]); //send 5x 0% directly.
     }
 
     #endregion ForceFeedback
@@ -485,6 +543,22 @@ public class SenseGlove_Object : MonoBehaviour
             magnitudes);
     }
 
+    /// <summary> Send a buzzmotor command to a specific finger. </summary>
+    /// <param name="finger"></param>
+    /// <param name="magnitude"></param>
+    /// <param name="duration"></param>
+    /// <param name="pattern"></param>
+    /// <returns></returns>
+    public bool SendBuzzCmd(Finger finger, int magnitude, int duration, BuzzMotorPattern pattern = BuzzMotorPattern.Constant)
+    {
+        bool[] fingers = new bool[5];
+        if (finger == Finger.All)
+            fingers = new bool[5] { true, true, true, true, true };
+        else
+            fingers[(int)finger] = true;
+        return this.SendBuzzCmd(fingers, magnitude, duration, pattern);
+    }
+
     /// <summary> Stop all vibration feedback on the Sense Glove. </summary>
     /// <returns></returns>
     public bool StopBuzzMotors()
@@ -493,6 +567,19 @@ public class SenseGlove_Object : MonoBehaviour
             return this.linkedGlove.StopBuzzMotors(); //using a specific command here so that no 'stop' command is sent again after x seconds.
         return false;
     }
+
+
+    /// <summary> Play an effect using the Thumper module on this glove (if it has any). </summary>
+    /// <param name="effect"></param>
+    /// <returns></returns>
+    public bool SendThumperCmd(SenseGloveCs.ThumperEffect effect)
+    {
+        if (this.linkedGlove != null)
+            return this.linkedGlove.SendThumperCmd(effect);
+        return false;
+    }
+
+
 
     #endregion Vibration
 
@@ -512,7 +599,7 @@ public class SenseGlove_Object : MonoBehaviour
         if (fromDLL) //comes from a possibly async thread within the DLL
             this.calibrationArguments.Add(args); //queue
         else
-            this.CalibrationFinished(args); //Unity's main thread. just fire, no queue.
+            this.FinishCalibration(args); //Unity's main thread. just fire, no queue.
     }
 
     /// <summary> Check if we have any CalibrationComplete events queued, then send them. </summary>
@@ -521,9 +608,12 @@ public class SenseGlove_Object : MonoBehaviour
     {
         if (this.calibrationArguments.Count > 0)
         {
+            if (this.linkedGlove != null && this.linkedGloveData != null)
+                this.linkedGloveData.UpdateVariables(this.linkedGlove.gloveData); //update before fire.
+
             for (int i = 0; i < calibrationArguments.Count; i++)
             {
-                this.CalibrationFinished(this.calibrationArguments[i]);
+                this.FinishCalibration(this.calibrationArguments[i]);
             }
             this.calibrationArguments.Clear();
         }
@@ -580,12 +670,34 @@ public class SenseGlove_Object : MonoBehaviour
         }
     }
 
+    /// <summary> Apply hand parameters to the Sense Glove internal model. </summary>
+    /// <param name="jointPositions"></param>
+    /// <param name="handLengths"></param>
+    public void SetHandParameters(Vector3[] jointPositions, Vector3[][] handLengths)
+    {
+        if (this.linkedGlove != null && this.linkedGlove.IsReady() && jointPositions.Length > 4 && handLengths.Length > 4)
+        {
+            this.StartJointPositions = jointPositions;
+            for (int f=0; f<handLengths.Length; f++)
+            {
+                if (handLengths[f].Length > 2)
+                {   //Set Hand Lengths
+                    for (int i = 0; i < handLengths[f].Length; i++)
+                        this.linkedGlove.gloveData.kinematics.fingers[f].lengths[i] = SenseGlove_Util.ToPosition(handLengths[f][i]);
+                }
+            }
+            Debug.Log(this.name  + " Applied hand Lengths to Sense Glove Internal Model");
+        }
+    }
+
 
     /// <summary> Reset the internal handmodel back to the default finger lengths and -positions </summary>
     public void ResetKinematics()
     {
         if (this.linkedGlove != null)
             this.linkedGlove.RestoreHand();
+        SenseGlove_Data newData = new SenseGlove_Data(this.linkedGlove.GetData(false));
+        this.ReadyCalibration(new GloveCalibrationArgs(this.linkedGloveData, newData), false);
     }
 
 
@@ -646,6 +758,107 @@ public class SenseGlove_Object : MonoBehaviour
 
     #endregion Calibration
 
+
+    protected static char calValDelim = ';';
+    protected static char calFDelim = '|';
+    protected static char calBlockDelim = ':';
+
+
+    /// <summary> The the Calibration data from this Sense Glove and serialize it for later use. </summary>
+    /// <returns></returns>
+    public string SerializeCalibration()
+    {
+        if (this.linkedGlove != null && this.linkedGloveData != null)
+        {
+            string FLString = "", JPString = "", IPString = "";
+
+
+            //gets finger lengths,
+            float[][] FL = this.FingerLengths;
+            for (int f=0; f<FL.Length; f++)
+            {
+                for (int j=0; j<FL[f].Length; j++)
+                {
+                    FLString += FL[f][j];
+                    if (j != FL[f].Length - 1)
+                        FLString += calValDelim;
+                }
+                if (f != FL.Length - 1) //except for the one.
+                    FLString += calFDelim;
+            }
+
+            //gets joint positions
+            Vector3[] jointPos = this.StartJointPositions;
+            for (int f = 0; f < jointPos.Length; f++)
+            {
+                JPString += (jointPos[f].x.ToString() + calValDelim + jointPos[f].y + calValDelim + jointPos[f].z.ToString());
+                if (f != jointPos.Length - 1) //except for the one.
+                    JPString += calFDelim;
+            }
+
+            IPString = this.linkedGlove.GetInterpolationValues();
+
+            return FLString + calBlockDelim + JPString + calBlockDelim + IPString;
+        }
+        return "";
+    }
+
+    /// <summary> Load a serialized calibration data from another session. </summary>
+    /// <param name="calibrationData"></param>
+    public void LoadCalibrationData(string calibrationData)
+    {
+        if (this.linkedGlove != null && calibrationData != null && calibrationData.Length > 0)
+        {
+            string[] split = calibrationData.Split(calBlockDelim);
+            if (split.Length > 0)
+            {
+                //load finger lengths
+                string[] lFingers = split[0].Split(calFDelim);
+                float[][] FL = new float[lFingers.Length][];
+                for (int f = 0; f < lFingers.Length; f++)
+                {
+                    string[] fVals = lFingers[f].Split(calValDelim);
+                    FL[f] = new float[fVals.Length];
+                    for (int j = 0; j < fVals.Length; j++)
+                        FL[f][j] = SenseGloveCs.Values.toFloat(fVals[j]);
+                }
+                this.FingerLengths = FL;
+
+                if (split.Length > 1)
+                {
+                    //load joint positions
+                    string[] pJoints = split[1].Split(calFDelim);
+                    Vector3[] joints = new Vector3[pJoints.Length];
+                    for (int f = 0; f < pJoints.Length; f++)
+                    {
+                        string[] vect = pJoints[f].Split(calValDelim);
+                        if (vect.Length > 2)
+                        {
+                            joints[f] = new Vector3
+                            (
+                                SenseGloveCs.Values.toFloat(vect[0]),
+                                SenseGloveCs.Values.toFloat(vect[1]),
+                                SenseGloveCs.Values.toFloat(vect[2])
+                            );
+                        }
+                        else
+                            joints[f] = Vector3.zero;
+                    }
+                    this.StartJointPositions = joints;
+
+                    //Loads interpolation values.
+                    if (split.Length > 2 && split[2].Length > 0)
+                    {
+                        this.linkedGlove.SetInterpolationValues(split[2]);
+                    }
+                }
+            }
+            
+
+        }
+    }
+
+
     //--------------------------------------------------------------------------------------------------------------------------
     // Monobehaviour
 
@@ -668,6 +881,7 @@ public class SenseGlove_Object : MonoBehaviour
     protected virtual void LateUpdate()
     {
         this.CheckCalibration(); //Placed here, so that all scripts that use the Sense Glove durign the Update() have access to the same data.
+        this.FlushBrakeCmds();
     }
 
     protected virtual void OnDestroy()

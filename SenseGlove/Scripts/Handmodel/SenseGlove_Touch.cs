@@ -82,16 +82,20 @@ public class SenseGlove_Touch : MonoBehaviour
     // Called when this object enters the collider of another object
     protected virtual void OnTriggerEnter(Collider col)
     {
-        SenseGlove_Interactable interact = col.GetComponent<SenseGlove_Interactable>();
-        if (interact != null && this.touchedObject == null)
+        SenseGlove_Interactable interact = col.attachedRigidbody != null ? col.attachedRigidbody.GetComponent<SenseGlove_Interactable>()
+            : col.GetComponent<SenseGlove_Interactable>();
+        if (interact != null)
         {
-            //if (!this.IsTouching(col.gameObject))
-            //{
-            //    //touching a new object!
-            //}
-            this.touchedObject = col.gameObject;
-            this.touchedScript = interact;
-            this.touchedScript.TouchedBy(this);
+            interact.TouchedBy(this);
+            if (this.touchedObject == null)
+            {
+                //if (!this.IsTouching(col.gameObject))
+                //{
+                //    //touching a new object!
+                //}
+                this.touchedObject = interact.gameObject;
+                this.touchedScript = interact;
+            }
         }
     }
 
@@ -103,7 +107,13 @@ public class SenseGlove_Touch : MonoBehaviour
     // Called when this object exits the collider of another object
     protected virtual void OnTriggerExit(Collider col)
     {
-        if (this.IsTouching(col.gameObject))
+        GameObject gObj = col.attachedRigidbody != null ? col.attachedRigidbody.gameObject : col.gameObject;
+
+        SenseGlove_Interactable interact = gObj.GetComponent<SenseGlove_Interactable>();
+        if (interact != null)
+            interact.UnTouchedBy(this);
+
+        if (this.IsTouching(gObj))
         {
             this.touchedScript.UnTouchedBy(this);
 
@@ -148,9 +158,9 @@ public class SenseGlove_Touch : MonoBehaviour
     {
         if (other == null)
         {
-            SenseGlove_Debugger.Log("Other is Null");
-        } else
-        if (this.touchedObject != null && other.touchedObject != null)
+            SenseGlove_Debugger.LogError("Other is Null"); //If this occurs then our grabScript(s) aren't up to scratch.
+        }
+        else if (this.touchedObject != null && other.touchedObject != null)
         {
             return GameObject.ReferenceEquals(this.touchedObject, other.touchedObject);
         }

@@ -1,7 +1,44 @@
 # Changelog
 All notable changes to the SenseGlove Prefabs will be documented in this file.
 
-You are currently using version 1.0
+You are currently using version 1.1
+
+
+## [v1.1] - 2019-06-03
+Bug Fixes and Additional Features
+
+### Added
+-	SenseGlove_Snapzone script, which extends the SenseGlove_DropZone and allows one to detect and snap Grabable objects.
+	Added an example scene which shows the usage of both DropZone and SnapZone.
+-	An interface to play a number of vibro-tactile effects using the new Thumper Module in Dk1.2 gloves.
+	One can play an effect using the SenseGlove_Object.SendThumperCmd(ThumperEffect) function.
+-	Example 08_ThumperModule, which allows users with a Sense Glove Dk1.2 glove to test the new Hardware.
+-	Added an experimental "Distance Based" solver which calculates hand joint angles of the Virtual hand model,
+	based on the distance between the "thimbles" of the glove. It allows for manipulation of very small object without the need for calibration,
+	but is still in development.
+-	Optional SenseGlove_SvaeCalibration script, which can be attached to any SenseGlove_Object to store its calibration data in between sessions.
+-	Example Scene 02_Calibration, which allows one to play around with different solvers and their corresponding calibration parameters.
+	
+	
+### Changed
+-	DropZone's functionality was changed to no longer snap Grabables, only to detect them properly. The snapping functionality was moved to the
+	SenseGlove_SnapZone.
+-	The SenseGlove_FingerDetector can now detect multiple gloves if required.
+- 	SenseGlove_Feedback and SenseGlove_Touch each have a set of new accessors, and can now check for a collider's attachedRigidBody, allowing one to add 
+	Grabable / Material colliders as a child to a GameObject with a RigidBody. (Thanks to J.Biewenga, CleVR)
+- 	Senseglove_Grabscript's now have access to a CanRelease(SenseGlove_Interactable) function. 
+	Now, both the GrabScript and the Grabables must indicate that release is possible.
+-	SenseGlove_Grabable now has a SnapToAnchor function, which places the object's "snapRefrence" at the same position and rotation as the "snapAnchor" in the hand.
+	Is has also been given better accessors to its internal / rigidbody properties.
+-	SenseGlove_Data is now created on startup, and only the changing variables are updated, resulting in more efficient Update operations.
+-	A SenseGlove_Object now only sends all of its (force)feedback commands to the device at the end of each frame.
+-	Calibration Data from a SenseGlove_Object can now be retrieved in string format, using the SerializeCalibration() function. 
+	Calibration data can also be loaded again using the LoadCalibrationData(string) function.
+
+
+### Fixed
+-	Bug where a Nullrefrence exception could occur on SenseGlove_Grabable's EndInteraction function by calling the function before the object is Awake(). (Thanks to J.Biewenga, CleVR)
+
 
 ## [v1.0] - 2018-11-21
 First Release. Compatibility and Stability.
