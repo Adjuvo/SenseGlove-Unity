@@ -152,6 +152,14 @@
             one Dk1.2 finger length set
             </summary>
         </member>
+        <member name="M:SenseGloveCs.Util.SGHardware.GetCString(System.String,System.String,System.Single,System.Boolean)">
+            <summary> Retrieve a C-String (Hacky) </summary>
+            <param name="deviceID"></param>
+            <param name="hwVer"></param>
+            <param name="fwVer"></param>
+            <param name="isRight"></param>
+            <returns></returns>
+        </member>
         <member name="T:SenseGloveCs.Util.InterpolationSet_IMUGlove">
             <summary> A set of joint angle interpolations used to create  </summary>
         </member>
@@ -2002,6 +2010,57 @@
         <member name="F:SenseGloveCs.ReMind.ReMindVars.All">
             <summary> Utility variable, used to check if all sensor values are present. </summary>
         </member>
+        <member name="T:SenseGloveCs.SG_ClientData">
+            <summary> Data received from a Sense Glove server </summary>
+        </member>
+        <member name="T:SenseGloveCs.SG_ClientData.DataFormat">
+            <summary> Enumerator used for felxible parsing </summary>
+        </member>
+        <member name="F:SenseGloveCs.SG_ClientData.DataFormat.LeftRight">
+            <summary>  </summary>
+        </member>
+        <member name="F:SenseGloveCs.SG_ClientData.DataFormat.HWVersion">
+            <summary>  </summary>
+        </member>
+        <member name="F:SenseGloveCs.SG_ClientData.DataFormat.FWVersion">
+            <summary>  </summary>
+        </member>
+        <member name="F:SenseGloveCs.SG_ClientData.DataFormat.Connected">
+            <summary>  </summary>
+        </member>
+        <member name="F:SenseGloveCs.SG_ClientData.DataFormat.SensorData">
+            <summary>  </summary>
+        </member>
+        <member name="F:SenseGloveCs.SG_ClientData.DataFormat.All">
+            <summary>  </summary>
+        </member>
+        <member name="P:SenseGloveCs.SG_ClientData.IsRight">
+            <summary>  </summary>
+        </member>
+        <member name="P:SenseGloveCs.SG_ClientData.IsConnected">
+            <summary>  </summary>
+        </member>
+        <member name="P:SenseGloveCs.SG_ClientData.HWVersion">
+            <summary>  </summary>
+        </member>
+        <member name="P:SenseGloveCs.SG_ClientData.FWVersion">
+            <summary>  </summary>
+        </member>
+        <member name="P:SenseGloveCs.SG_ClientData.SensorData">
+            <summary>  </summary>
+        </member>
+        <member name="P:SenseGloveCs.SG_ClientData.ConnectionReady">
+            <summary> True if this device is ready to recieve data. </summary>
+        </member>
+        <member name="F:SenseGloveCs.SG_ClientData.dataDelim">
+            <summary>  </summary>
+        </member>
+        <member name="M:SenseGloveCs.SG_ClientData.ToString">
+            <summary>  </summary>
+        </member>
+        <member name="M:SenseGloveCs.SG_ClientData.Deserialize(System.String)">
+            <summary>  </summary>
+        </member>
         <member name="T:SenseGloveCs.Diagnostics.ExitCodes">
             <summary>
             Error Codes
@@ -3202,6 +3261,12 @@
             <param name="imuValues"></param>
             <param name="qLowerArm"></param>
             <param name="limitWrist"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SenseGloveCs.SenseGlove.Update(SenseGloveCs.SG_ClientData,SenseGloveCs.Solver)">
+            <summary> Update this Sense Glove using client-data. </summary>
+            <param name="clData"></param>
+            <param name="solver"></param>
             <returns></returns>
         </member>
         <member name="M:SenseGloveCs.SenseGlove.UpdateCalibrationStats">
