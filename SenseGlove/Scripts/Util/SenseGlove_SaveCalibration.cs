@@ -85,7 +85,10 @@ public class SenseGlove_SaveCalibration : MonoBehaviour
     private void Update()
     {
         if (Input.GetKeyDown(this.resetCalibrationKey))
+        {
+            SenseGlove_Debugger.Log("Resetting Hand Parameters");
             this.senseGlove.ResetKinematics();
+        }
     }
 
     // Runs every frame, after Update()
