@@ -122,8 +122,12 @@ public class SG_BasicFeedback : SG_SimpleTracking
             {
                 if (handLocation == SG_HandSection.Wrist)
                 {
+                    
+
                     SenseGloveCs.ThumperEffect effect = impactLevel > 50 ? SenseGloveCs.ThumperEffect.Impact_Thump_100
                         : SenseGloveCs.ThumperEffect.Impact_Thump_30;
+
+                    Debug.Log("Speed: " + impactVelocity + " => " + impactLevel + " => " + effect.ToString());
                     linkedGlove.SendThumperCmd(effect);
                 }
                 else //finger

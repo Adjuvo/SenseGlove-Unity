@@ -193,6 +193,7 @@ public class SG_SenseGloveHardware : SG_DeviceLink
 
     /// <summary> If the average force-feedback levels are above this threshold, we should not fire Thumper Commands. </summary>
     protected static int thumpFFBThreshold = 70;
+    protected static int thumpBuzzThreshold = 70;
 
     //--------------------------------------------------------------------------------------------------------------------------
     // Basic Accessors, Gets
@@ -535,22 +536,22 @@ public class SG_SenseGloveHardware : SG_DeviceLink
 
         int finalThump = this.nextThump;
         if (finalThump != (int)ThumperEffect.None && finalThump != (int) ThumperEffect.TurnOff
-            && SG_Util.Average(finalBrakeCmd) >= thumpFFBThreshold)
+            && (SG_Util.Average(finalBrakeCmd) >= thumpFFBThreshold || SG_Util.Average(finalBuzzCmd) >= thumpBuzzThreshold) )
         {
+            Debug.Log("Too much other jazz, reset Thump");
             finalThump = (int)ThumperEffect.None; //do not sent thumper commands if there is too much FFB active.
         }
-        nextThump = (int)ThumperEffect.None; //reset
 
         if (sendHaptics == HapticSendMode.OnChange)
         {
-            if (nextThump != (int)ThumperEffect.None || !AlreadySent(finalBrakeCmd, lastBrakeLvls) || !AlreadySent(finalBuzzCmd, lastBuzzLvls))
+            if (finalThump != (int)ThumperEffect.None || !AlreadySent(finalBrakeCmd, lastBrakeLvls) || !AlreadySent(finalBuzzCmd, lastBuzzLvls))
             {
                 WriteHaptics(finalBrakeCmd, finalBuzzCmd, finalThump);
             }
         }
         else if (sendHaptics == HapticSendMode.OnChangeRepeat)
         {
-            if (nextThump != (int)ThumperEffect.None ||  !AlreadySent(finalBrakeCmd, lastBrakeLvls) || !AlreadySent(finalBuzzCmd, lastBuzzLvls))
+            if (finalThump != (int)ThumperEffect.None ||  !AlreadySent(finalBrakeCmd, lastBrakeLvls) || !AlreadySent(finalBuzzCmd, lastBuzzLvls))
             {
                 cmdsSend = 1; //its a new command
                 WriteHaptics(finalBrakeCmd, finalBuzzCmd, finalThump);
@@ -758,6 +759,7 @@ public class SG_SenseGloveHardware : SG_DeviceLink
         if (GloveData.firmwareVersion >= 4.6f)
         {
             nextThump = (int)effect; //added to queue
+            Debug.Log("Queueing " + nextThump.ToString());
             return true;
         }
         else if (linkedGlove != null && linkedGlove.IsConnected())

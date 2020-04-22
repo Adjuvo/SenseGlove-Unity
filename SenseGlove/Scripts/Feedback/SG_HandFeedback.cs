@@ -86,6 +86,41 @@ public class SG_HandFeedback : MonoBehaviour
         }
     }
 
+    /// <summary> Set ignoreCollision between this layer and another set of rigidbodies. </summary>
+    /// <param name="otherLayer"></param>
+    /// <param name="ignoreCollision"></param>
+    public void SetIgnoreCollision(SG_HandRigidBodies otherLayer, bool ignoreCollision)
+    {
+        if (otherLayer != null)
+        {
+            GameObject wrist = otherLayer.wristObj != null ? otherLayer.wristObj.gameObject : null;
+            SetIgnoreCollision(wrist, ignoreCollision);
+            for (int f = 0; f < otherLayer.fingerObjs.Length; f++)
+            {
+                SetIgnoreCollision(otherLayer.fingerObjs[f].gameObject, ignoreCollision);
+            }
+        }
+    }
+
+
+    public void SetIgnoreCollision(GameObject obj, bool ignoreCollision)
+    {
+        Collider[] colliders = obj != null ? obj.GetComponents<Collider>() : new Collider[0];
+        for (int i = 0; i < colliders.Length; i++)
+        {
+            this.SetIgnoreCollision(colliders[i], ignoreCollision);
+        }
+    }
+
+    public void SetIgnoreCollision(Collider col, bool ignoreCollision)
+    {
+        if (this.wristFeedbackScript != null) { wristFeedbackScript.SetIgnoreCollision(col, ignoreCollision); }
+        for (int f=0; f<this.fingerFeedbackScripts.Length; f++)
+        {
+            this.fingerFeedbackScripts[f].SetIgnoreCollision(col, ignoreCollision);
+        }
+    }
+
 
     /// <summary> Sets up this script's components to link to the same glove and the appropriate hand section. </summary>
     public void SetupScripts()

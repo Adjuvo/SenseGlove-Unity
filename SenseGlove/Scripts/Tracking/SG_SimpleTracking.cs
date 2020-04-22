@@ -24,7 +24,16 @@ public class SG_SimpleTracking : MonoBehaviour
     /// <summary> Rotation offset between this object and the target transform </summary>
     protected Quaternion rotationOffset = Quaternion.identity;
 
-
+    /// <summary> Ignore collision between this object and another collider </summary>
+    /// <param name="col"></param>
+    public virtual void SetIgnoreCollision(Collider col, bool ignoreCollision)
+    {
+        Collider[] myColliders = this.GetComponents<Collider>();
+        for (int i = 0; i < myColliders.Length; i++)
+        {
+            Physics.IgnoreCollision(col, myColliders[i], ignoreCollision);
+        }
+    }
 
     /// <summary> Enable/Disable the MeshRenderer connected to this script's GameObject </summary>
     public virtual bool DebugEnabled

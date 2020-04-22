@@ -6617,28 +6617,28 @@ MonoBehaviour:
   updateTime: 0
   linkedGlove: {fileID: 0}
   handLocation: 6
-  impactFeedbackEnabled: 0
-  impactCooldown: 0.5
-  minImpactSpeed: 0.01
-  maxImpactSpeed: 0.1
+  impactFeedbackEnabled: 1
+  impactCooldown: 0.3
+  minImpactSpeed: 0.1
+  maxImpactSpeed: 1
   impactProfile:
     serializedVersion: 2
     m_Curve:
     - serializedVersion: 2
       time: 0
       value: 0
-      inSlope: 0
-      outSlope: 0
+      inSlope: 1
+      outSlope: 1
       tangentMode: 0
     - serializedVersion: 2
       time: 1
       value: 1
-      inSlope: 0
-      outSlope: 0
+      inSlope: 1
+      outSlope: 1
       tangentMode: 0
     m_PreInfinity: 2
     m_PostInfinity: 2
-    m_RotationOrder: 4
+    m_RotationOrder: 0
   debugDirections: 0
 --- !u!114 &114333457489145782
 MonoBehaviour:
@@ -6674,28 +6674,28 @@ MonoBehaviour:
   updateTime: 0
   linkedGlove: {fileID: 0}
   handLocation: 6
-  impactFeedbackEnabled: 0
-  impactCooldown: 0.5
-  minImpactSpeed: 0.01
-  maxImpactSpeed: 0.1
+  impactFeedbackEnabled: 1
+  impactCooldown: 0.3
+  minImpactSpeed: 0.1
+  maxImpactSpeed: 1
   impactProfile:
     serializedVersion: 2
     m_Curve:
     - serializedVersion: 2
       time: 0
       value: 0
-      inSlope: 0
-      outSlope: 0
+      inSlope: 1
+      outSlope: 1
       tangentMode: 0
     - serializedVersion: 2
       time: 1
       value: 1
-      inSlope: 0
-      outSlope: 0
+      inSlope: 1
+      outSlope: 1
       tangentMode: 0
     m_PreInfinity: 2
     m_PostInfinity: 2
-    m_RotationOrder: 4
+    m_RotationOrder: 0
   debugDirections: 0
 --- !u!114 &114431665316656042
 MonoBehaviour:
@@ -6726,28 +6726,28 @@ MonoBehaviour:
   updateTime: 0
   linkedGlove: {fileID: 0}
   handLocation: 6
-  impactFeedbackEnabled: 0
-  impactCooldown: 0.5
-  minImpactSpeed: 0.01
-  maxImpactSpeed: 0.1
+  impactFeedbackEnabled: 1
+  impactCooldown: 0.3
+  minImpactSpeed: 0.1
+  maxImpactSpeed: 1
   impactProfile:
     serializedVersion: 2
     m_Curve:
     - serializedVersion: 2
       time: 0
       value: 0
-      inSlope: 0
-      outSlope: 0
+      inSlope: 1
+      outSlope: 1
       tangentMode: 0
     - serializedVersion: 2
       time: 1
       value: 1
-      inSlope: 0
-      outSlope: 0
+      inSlope: 1
+      outSlope: 1
       tangentMode: 0
     m_PreInfinity: 2
     m_PostInfinity: 2
-    m_RotationOrder: 4
+    m_RotationOrder: 0
   debugDirections: 0
 --- !u!114 &114456276081664580
 MonoBehaviour:
@@ -6934,28 +6934,28 @@ MonoBehaviour:
   updateTime: 0
   linkedGlove: {fileID: 0}
   handLocation: 6
-  impactFeedbackEnabled: 0
-  impactCooldown: 0.5
-  minImpactSpeed: 0.01
-  maxImpactSpeed: 0.1
+  impactFeedbackEnabled: 1
+  impactCooldown: 0.3
+  minImpactSpeed: 0.1
+  maxImpactSpeed: 1
   impactProfile:
     serializedVersion: 2
     m_Curve:
     - serializedVersion: 2
       time: 0
       value: 0
-      inSlope: 0
-      outSlope: 0
+      inSlope: 1
+      outSlope: 1
       tangentMode: 0
     - serializedVersion: 2
       time: 1
       value: 1
-      inSlope: 0
-      outSlope: 0
+      inSlope: 1
+      outSlope: 1
       tangentMode: 0
     m_PreInfinity: 2
     m_PostInfinity: 2
-    m_RotationOrder: 4
+    m_RotationOrder: 0
   debugDirections: 0
 --- !u!114 &114700156830341256
 MonoBehaviour:
@@ -6973,7 +6973,6 @@ MonoBehaviour:
   sendHaptics: 1
   FFB_Enabled: 1
   buzz_Enabled: 1
-  solver: 0
   OnGloveLoad:
     m_PersistentCalls:
       m_Calls: []
@@ -6994,27 +6993,27 @@ MonoBehaviour:
   linkedGlove: {fileID: 0}
   handLocation: 6
   impactFeedbackEnabled: 1
-  impactCooldown: 1
-  minImpactSpeed: 0.01
-  maxImpactSpeed: 0.1
+  impactCooldown: 0.5
+  minImpactSpeed: 2
+  maxImpactSpeed: 4
   impactProfile:
     serializedVersion: 2
     m_Curve:
     - serializedVersion: 2
       time: 0
       value: 0
-      inSlope: 0
-      outSlope: 0
+      inSlope: 1
+      outSlope: 1
       tangentMode: 0
     - serializedVersion: 2
       time: 1
       value: 1
-      inSlope: 0
-      outSlope: 0
+      inSlope: 1
+      outSlope: 1
       tangentMode: 0
     m_PreInfinity: 2
     m_PostInfinity: 2
-    m_RotationOrder: 4
+    m_RotationOrder: 0
 --- !u!114 &114771512768980636
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -7057,28 +7056,28 @@ MonoBehaviour:
   updateTime: 0
   linkedGlove: {fileID: 0}
   handLocation: 6
-  impactFeedbackEnabled: 0
-  impactCooldown: 0.5
-  minImpactSpeed: 0.01
-  maxImpactSpeed: 0.1
+  impactFeedbackEnabled: 1
+  impactCooldown: 0.3
+  minImpactSpeed: 0.1
+  maxImpactSpeed: 1
   impactProfile:
     serializedVersion: 2
     m_Curve:
     - serializedVersion: 2
       time: 0
       value: 0
-      inSlope: 0
-      outSlope: 0
+      inSlope: 1
+      outSlope: 1
       tangentMode: 0
     - serializedVersion: 2
       time: 1
       value: 1
-      inSlope: 0
-      outSlope: 0
+      inSlope: 1
+      outSlope: 1
       tangentMode: 0
     m_PreInfinity: 2
     m_PostInfinity: 2
-    m_RotationOrder: 4
+    m_RotationOrder: 0
   debugDirections: 0
 --- !u!114 &114890763661134360
 MonoBehaviour:

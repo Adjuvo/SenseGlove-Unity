@@ -34,19 +34,6 @@ public class SG_TrackedBody : SG_SimpleTracking
         this.physicsBody = null;
     }
 
-
-
-    /// <summary> Ignore collision between this object and another collider </summary>
-    /// <param name="col"></param>
-    public void SetIgnoreCollision(Collider col, bool ignoreCollision)
-    {
-        Collider[] myColliders = this.GetComponents<Collider>();
-        for (int i=0; i<myColliders.Length; i++)
-        {
-            Physics.IgnoreCollision(col, myColliders[i], ignoreCollision);
-        }
-    }
-
     /// <summary> Enable / Disable collision of this collider in general </summary>
     public bool CollisionEnabled
     {

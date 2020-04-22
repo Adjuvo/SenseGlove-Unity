@@ -165,9 +165,14 @@ public class SG_TrackedHand : MonoBehaviour
         }
 
         //Ignore collisions of the hand itself
-        if (physicsTrackingLayer != null && this.rigidBodyLayer != null)
+        if (this.rigidBodyLayer != null)
         {
-            this.rigidBodyLayer.SetIgnoreCollision(this.physicsTrackingLayer, true);
+            if (this.physicsTrackingLayer != null) { this.rigidBodyLayer.SetIgnoreCollision(this.physicsTrackingLayer, true); }
+            if (this.feedbackScript != null) { this.feedbackScript.SetIgnoreCollision(this.rigidBodyLayer, true); }
+        }
+        if (this.feedbackScript != null && this.physicsTrackingLayer != null)
+        {
+            this.feedbackScript.SetIgnoreCollision(this.physicsTrackingLayer, true);
         }
 
         //Apply the appropriate RB method
