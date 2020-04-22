@@ -1,7 +1,43 @@
 # Changelog
 All notable changes to the SenseGlove Prefabs will be documented in this file.
 
-You are currently using version 1.1
+You are currently using version 1.2
+
+
+## [v1.2] - 2020-04-22
+Hand Model overhaul, script renaming and calibration scene
+
+All "SenseGlove_" prefixes have been shortended to "SG_" to increase readability and to speed up searches. Some script names have been changed to better describe their function. 
+When upgrading to v1.2 from any other version, one should delete their SenseGlove folder prior to importing the new assets.
+
+### Added
+- Several new (sub) folders to better structure the package.
+- Calibration folder, which contains a Scene to calibrate the Interpolation solver. This data is stored on disk, and is thereafter used by other programs using SenseGlove SDK v1_2 and above.
+- SG_TrackedHand, which provides an interface to the new handModel components, as well as configurable positional tracking for a hand. It also features preprogrammed offsets for specific tracking hardware, such as the Vive Trackers.
+- SG_User, which manages up to two SG_trackedHands, and allows us to swap their tracking reference if the hardware gets swapped around.
+- A new plugin that ignores all non-senseglove bluetooth connections, resulting in a more stable connection.
+- A custom robotic hand model, as a prefab that has been rigged with all behaviour.
+- SG_DetectGrab, a type of SG_Interactable that is detected by our grabScripts, but which does not change said object's behaviour in any way. When using non-senseglove scripts for manipulation (such as VRTK), one can add this to the desired objects, subscribe to a GrabScript's ObjectGrabbed and ObjectReleased events, and use these to trigger the appropriate behaviour.
+- Impact Vibration when a hand collider impacts an object at a certain speed.
+- Rigidbody components to the hand model, that allow the hand to push and hold objects.
+- "Physics-Based Tracking", which prevent a SG_TrackedHand from passing through non-trigger colliders on its same PhysicsLayer
+
+### Changed
+- The basic blue hand model no longer includes the lower arm. It's bone structure has been simplified significantly.
+- The SenseGlove hands are now divided into different gameObjects or 'layers'; each responsible for different behaviour that was normally integrated throughout the hand model transforms. These layers can now be freely enabled/disabled without affecting the other behaviours, and allow for an easier integration of custom solvers, hand models and grab scripts. These layers are: HandModel, Animator, Feedback Layer, Grab Layer, Rigidbody Layer and PhysicsTracking layer.
+- Removed obsolete example scenes, and upgraded existing ones. Added new examples to guide users through the new SenseGlove prefab.
+- The 'solver' property of the SG_SenseGloveHardware (formerly SenseGlove_Object) can no longer be changed from "interpolate 4 sensors" until the next update, which will focus on upgrading the Hand Pose algorithms.
+- Removed the SenseGlove_Teleport script, as it was not used by many and was causing errors with Unity version 2019 and onwards. Will be re-introduced when a proper gesture detection API is in place.
+- All haptic commands (force-feedback, vibrotactile) are now queued in the SG_SenseGloveHandware script, and only sent at end of a frame. This script is also responsible for making sure the vibration stops.
+- Removed the older hand model prefabs  
+
+### Fixed
+- SG_MeshDeform (formerly known as SenseGlove_MeshDeform) glitching out the meshes of 3D models when grabbed with the left hand.
+- SG_GrabScript's throwing velocity is no longer dependent on the speed since last frame, which resulted in objects sometimes just dropping to the floor when released. It is now based on an average speed over the last few frames, resulting in a much smoother throwing velocity.
+- Resetting a Scene that does not have a SG_DeviceManager script in it will cause the gloves to lose connection.
+- Firing a specific thumper command while FFB is active causes the Sense Glove to disconnect.
+
+
 
 
 ## [v1.1] - 2019-06-03

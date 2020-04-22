@@ -1,10 +1,10 @@
 # SenseGlove-Unity
-The latest stable Unity SDK for the SenseGlove, built using Unity 2017.2.4f1.
+The latest stable Unity SDK for the SenseGlove, built using Unity 2017.4.30f1. Can be imported into Unity 2017.4 and up, which will automatically update the assets for you. Using older Unity versions may cause issues.
 
-Current version is 1.1, released on the 3rd of June 2019.
+Current version is 1.2, released on the 22nd of April 2020.
 
-When importing a new version of the Sense Glove SDK, the best practice is to delete the SenseGlove folder before re-importing, since some files may have been removed. If you don't wish to interfere with your scripts, delete only the Examples folder before importing.
-
+## Upgrade Guide
+When importing a new version of the Sense Glove SDK, the best practice is to delete the SenseGlove folder before re-importing, since some files may have been removed.
 
 ## Backwards Compatability
 Starting from v0.20 and onwards, the SDK is no longer compatible out of the box with the old, white, lasercut prototypes (released before DK1). If you have such a device and wish to continue using it with the latest SDK, contact the Sense Glove team.
@@ -14,9 +14,9 @@ The first thing one should do is ensure that their Sense Glove is working.
 
 1.	Download / clone the latest version of the SenseGlove SDK.
 2.	Import the unitypackage into your Unity project.
-3.	Ensure your Sense Glove is connected to and recognized by your computer.
-4.	Open the diagnostics scene in the examples folder and press play. You should now see a virtual hand and glove moving.
-5.  Verify that the glove model's movement matches that of its real-life counterpart. If it moves correctly, you're all set to go! If not, please contact the Sense Glove team.
+3.	Ensure your SenseGlove is connected to and recognized by your computer.
+4.	Open the 00_HardWareDiagnostics scene in the Examples folder and press play. You should now see a virtual hand and glove moving.
+5.  Verify that the glove model's movement matches that of its real-life counterpart, and test out some of the haptic functions. If it moves correctly, you're all set to go! If not, please contact the Sense Glove team.
 
 ## Before you build
 
