@@ -2194,6 +2194,9 @@
         <member name="F:SenseGloveCs.Diagnostics.ExitCodes.DevScn_Clear">
             <summary> A developer has forced DeviceScanner to clean up this communicator outside of its main loop. </summary>
         </member>
+        <member name="F:SenseGloveCs.Diagnostics.ExitCodes.Device_Request">
+            <summary> The Device has requested to terminate the connection. </summary>
+        </member>
         <member name="F:SenseGloveCs.Diagnostics.ExitCodes.Test">
             <summary> Test </summary>
         </member>

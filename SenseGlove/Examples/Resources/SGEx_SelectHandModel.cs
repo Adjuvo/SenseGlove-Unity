@@ -1,8 +1,7 @@
 ﻿using UnityEngine;
 
-namespace SenseGlove_Examples
+namespace SG.Examples
 {
-
     public class SGEx_SelectHandModel : MonoBehaviour
     {
         public SG_SenseGloveHardware leftGlove, rightGlove;

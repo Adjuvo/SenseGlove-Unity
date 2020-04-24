@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace SenseGloveUtils
+namespace SG.Util
 {
     public class SG_ResetFloor : MonoBehaviour
     {

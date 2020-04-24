@@ -2,7 +2,7 @@
 using UnityEngine.UI;
 using SenseGloveCs;
 
-namespace SenseGlove_Examples
+namespace SG.Examples
 {
     public class SGEx_ShowGloveAngles : MonoBehaviour
     {

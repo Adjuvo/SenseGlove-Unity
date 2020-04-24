@@ -2,34 +2,37 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class SG_QuitKey : MonoBehaviour
+namespace SG.Util
 {
-    public KeyCode exitKey = KeyCode.None;
-    public KeyCode resetKey = KeyCode.None;
-
-    public void Quit()
+    public class SG_QuitKey : MonoBehaviour
     {
-        Application.Quit();
-    }
+        public KeyCode exitKey = KeyCode.None;
+        public KeyCode resetKey = KeyCode.None;
 
-    public void ResetScene()
-    {
-        UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
-    }
-
-	// Update is called once per frame
-	void Update ()
-    {
-        if (SG_Util.keyBindsEnabled)
+        public void Quit()
         {
-            if (Input.GetKeyDown(exitKey))
+            Application.Quit();
+        }
+
+        public void ResetScene()
+        {
+            UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
+        }
+
+        // Update is called once per frame
+        void Update()
+        {
+            if (SG_Util.keyBindsEnabled)
             {
-                Quit();
-            }
-            else if (Input.GetKeyDown(resetKey))
-            {
-                ResetScene();
+                if (Input.GetKeyDown(exitKey))
+                {
+                    Quit();
+                }
+                else if (Input.GetKeyDown(resetKey))
+                {
+                    ResetScene();
+                }
             }
         }
-	}
+    }
 }

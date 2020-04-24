@@ -1,16 +1,34 @@
-﻿/// <summary> A HandAnimator that grabs its animation info from a SG_HandModelInfo script. </summary>
-public class SG_AutoHandAnimation : SG_HandAnimator
+﻿namespace SG
 {
-    /// <summary> teh HandModelInfo that this scripts animates. </summary>
-    public SG_HandModelInfo handModelInfo;
-
-    /// <summary> Assign the joints of this script so that the SG_HandAnimator script takes over animation. </summary>
-    protected override void CollectFingerJoints()
+    /// <summary> A HandAnimator that grabs its animation info from a SG_HandModelInfo script. </summary>
+    public class SG_AutoHandAnimation : SG_HandAnimator
     {
-        SG_Util.CheckForHandInfo(this.transform, ref this.handModelInfo);
-        if (this.handModelInfo != null)
+        /// <summary> teh HandModelInfo that this scripts animates. </summary>
+        public SG_HandModelInfo handModelInfo;
+
+        /// <summary> Assign the joints of this script so that the SG_HandAnimator script takes over animation. </summary>
+        protected override void CollectFingerJoints()
         {
-            this.fingerJoints = handModelInfo.FingerJoints;
+            SG_Util.CheckForHandInfo(this.transform, ref this.handModelInfo);
+            if (this.handModelInfo != null)
+            {
+                this.fingerJoints = handModelInfo.FingerJoints;
+                if (this.foreArmTransfrom == null)
+                {
+                    this.foreArmTransfrom = handModelInfo.foreArmTransform;
+                }
+                if (this.wristTransfrom == null)
+                {
+                    this.wristTransfrom = handModelInfo.wristTransform;
+                }
+            }
+        }
+
+        /// <summary> Check for relevant linked scripts for this HandAnimator, specifically to the SG_HandModelInfo. </summary>
+        protected override void CheckForScripts()
+        {
+            base.CheckForScripts();
+            SG_Util.CheckForHandInfo(this.transform, ref this.handModelInfo);
             if (this.foreArmTransfrom == null)
             {
                 this.foreArmTransfrom = handModelInfo.foreArmTransform;
@@ -20,29 +38,14 @@ public class SG_AutoHandAnimation : SG_HandAnimator
                 this.wristTransfrom = handModelInfo.wristTransform;
             }
         }
-    }
 
-    /// <summary> Check for relevant linked scripts for this HandAnimator, specifically to the SG_HandModelInfo. </summary>
-    protected override void CheckForScripts()
-    {
-        base.CheckForScripts();
-        SG_Util.CheckForHandInfo(this.transform, ref this.handModelInfo);
-        if (this.foreArmTransfrom == null)
+        /// <summary> If we have HandModelInfo, we can already collect joints </summary>
+        protected override void Start()
         {
-            this.foreArmTransfrom = handModelInfo.foreArmTransform;
+            CollectFingerJoints();
+            base.Start();
         }
-        if (this.wristTransfrom == null)
-        {
-            this.wristTransfrom = handModelInfo.wristTransform;
-        }
+
+
     }
-
-    /// <summary> If we have HandModelInfo, we can already collect joints </summary>
-    protected override void Start()
-    {
-        CollectFingerJoints();
-        base.Start();
-    }
-
-
 }

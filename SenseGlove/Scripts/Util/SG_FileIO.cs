@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.IO;
 
-namespace Util
+namespace SG.Util
 {
-    /// <summary> Ensures that .txt files are properly handled by Unity. Used by the Materials and UserProfile Libraries. </summary>
+    /// <summary> Ensures that .txt files are properly handled by Unity. </summary>
     public static class FileIO
     {
         

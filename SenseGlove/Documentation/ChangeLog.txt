@@ -7,7 +7,7 @@ You are currently using version 1.2
 ## [v1.2] - 2020-04-22
 Hand Model overhaul, script renaming and calibration scene
 
-All "SenseGlove_" prefixes have been shortended to "SG_" to increase readability and to speed up searches. Some script names have been changed to better describe their function. 
+All "SenseGlove_" prefixes have been shortended to "SG_" to increase readability and to speed up searches. Some script names have been changed to better describe their function. All SenseGlove related classes have been put under the SG namespace.
 When upgrading to v1.2 from any other version, one should delete their SenseGlove folder prior to importing the new assets.
 
 ### Added
@@ -35,7 +35,7 @@ When upgrading to v1.2 from any other version, one should delete their SenseGlov
 - SG_MeshDeform (formerly known as SenseGlove_MeshDeform) glitching out the meshes of 3D models when grabbed with the left hand.
 - SG_GrabScript's throwing velocity is no longer dependent on the speed since last frame, which resulted in objects sometimes just dropping to the floor when released. It is now based on an average speed over the last few frames, resulting in a much smoother throwing velocity.
 - Resetting a Scene that does not have a SG_DeviceManager script in it will cause the gloves to lose connection.
-- Firing a specific thumper command while FFB is active causes the Sense Glove to disconnect.
+- Firing a specific thumper command while FFB is active causes the SenseGlove to disconnect.
 
 
 
@@ -48,7 +48,7 @@ Bug Fixes and Additional Features
 	Added an example scene which shows the usage of both DropZone and SnapZone.
 -	An interface to play a number of vibro-tactile effects using the new Thumper Module in Dk1.2 gloves.
 	One can play an effect using the SenseGlove_Object.SendThumperCmd(ThumperEffect) function.
--	Example 08_ThumperModule, which allows users with a Sense Glove Dk1.2 glove to test the new Hardware.
+-	Example 08_ThumperModule, which allows users with a SenseGlove Dk1.2 glove to test the new Hardware.
 -	Added an experimental "Distance Based" solver which calculates hand joint angles of the Virtual hand model,
 	based on the distance between the "thimbles" of the glove. It allows for manipulation of very small object without the need for calibration,
 	but is still in development.
@@ -66,7 +66,7 @@ Bug Fixes and Additional Features
 	Now, both the GrabScript and the Grabables must indicate that release is possible.
 -	SenseGlove_Grabable now has a SnapToAnchor function, which places the object's "snapRefrence" at the same position and rotation as the "snapAnchor" in the hand.
 	Is has also been given better accessors to its internal / rigidbody properties.
--	SenseGlove_Data is now created on startup, and only the changing variables are updated, resulting in more efficient Update operations.
+-	SG_SenseGloveData is now created on startup, and only the changing variables are updated, resulting in more efficient Update operations.
 -	A SenseGlove_Object now only sends all of its (force)feedback commands to the device at the end of each frame.
 -	Calibration Data from a SenseGlove_Object can now be retrieved in string format, using the SerializeCalibration() function. 
 	Calibration data can also be loaded again using the LoadCalibrationData(string) function.
@@ -80,9 +80,9 @@ Bug Fixes and Additional Features
 First Release. Compatibility and Stability.
 
 ### Added
--	New way to connect to the Sense Glove in Unity: The SenseGlove_DeviceManager class automatically connects the appropriate Sense Gloves
+-	New way to connect to the SenseGlove in Unity: The SenseGlove_DeviceManager class automatically connects the appropriate SenseGloves
 	to the SenseGlove_Objects within the Scene, and fires a GloveDetected event when a new connection is found.
--	AutoConnect variable added to the SenseGlove_Object, which determines if the script can automatically connect to new Sense Glove(s),
+-	AutoConnect variable added to the SenseGlove_Object, which determines if the script can automatically connect to new SenseGlove(s),
 	or if it must wait for the LinkGlove function to be called.
 -	SenseGlove_Interactable: InteractionBegun, InteractionEnded, Touched, Untouched events that can be subscribed to.
 -	HingeRatio() function for Senseglove_Hinge Script, allowing one to determine how far along a hinge / door is moved from 0 to 1, 
@@ -90,11 +90,11 @@ First Release. Compatibility and Stability.
 -	SenseGlove_TapFeedback script, which allows for a very rudimentary 2nd order force-feedback (Haptic pulse when the tool you're holding hits something else).
 	
 ### Changed
--	Changed the Unity build version from 2018.2 to 2017.2.4f1, in order to ensure compatibility with clients using older Sense Glove Versions
+-	Changed the Unity build version from 2018.2 to 2017.2.4f1, in order to ensure compatibility with clients using older SenseGlove Versions
 -	SenseGlove_Manager renamed to SenseGlove_Device Manager.
 -	SenseGlove_Object creates SenseGlove_Device Manager object if it does not exist within the scene.
 -	Removed obsolete connection options from the SenseGlove_Object script. 
--	The Diagnostics scene in the Examples folder now shows the currently active connections if no Sense Glove has been detected.
+-	The Diagnostics scene in the Examples folder now shows the currently active connections if no SenseGlove has been detected.
 - 	Merged the PacketsCounter script with the SenseGlove_Diagnostics script.
 - 	Removed Prefab Connections from Examples, which ensures that no MISSING PREFAB issues occur.
 
@@ -111,7 +111,7 @@ This is one of the last versions of the SDK before v1.0. A few scripts will need
 
 ### Added
 -	SenseGlove_AR Prefab and SenseGlove_ARGlove Script, that controls only the fingertip positions based on the glove hardware.
-	It allows one to create force feedback with the Sense Glove without the need for a Virtual Hand Model or -Calibration.
+	It allows one to create force feedback with the SenseGlove without the need for a Virtual Hand Model or -Calibration.
 -	SenseGlove_PhysDebug; a visual debugger for the SenseGlove_PhysGrab script. 
 	It was once built into the SenseGlove_Physgrab, but is now a more intuitive script on its own.
 -	Examples/ShowAngles script, which shows the calculated handAngles of the thumb and index finger.
@@ -124,7 +124,7 @@ This is one of the last versions of the SDK before v1.0. A few scripts will need
 -	The SenseGlove_Physgrab no longer has any of its debugMode or DebugColliderColor properties; these have been moved to the SenseGlove_PhysDebug script
 -	SolveType enumerator has been renamed to Solver, and the 'experimental' kinematics options have been removed untill they are re-validated.
 -	StartCalibration function now takes two arguments; A CalibrateVariable, indicating what to calibrate, and a CollectionMethod, which indicated how the points are collected.
--	Output GloveData of the DLL has a more easy to read format. The SenseGlove_Data of the SDk remains unchanged (for now).
+-	Output GloveData of the DLL has a more easy to read format. The SG_SenseGloveData of the SDk remains unchanged (for now).
 -	Most of the SenseGlove_Interactable and _Grabable methods, especially the Monobehaviour, have been marked as 'virtual', making them overrideable.
 -	SenseGlove_Grabable has additional methods, which are called during the Awake() method.
 
@@ -169,7 +169,7 @@ Debugging and VR components
 	to deform objects even if they do not have a material attached, and saves processing power on materials that do not deform.
 -	SenseGlove_FingerDetector script, that can tell which fingers of a SenseGlove_Handmodel are within its collider(s). Can be used for rudimentary gesture recognition.
 -	SenseGlove_Teleport, that uses a _FingerDetector script to activate a pointer and teleport the player around the (VR Play) area.
--	SenseGlove_Trigger, A SenseGlove_Detector that can activate a number of effects (Play sound, particles, show gameObject(s)) when it detects a Sense Glove.
+-	SenseGlove_Trigger, A SenseGlove_Detector that can activate a number of effects (Play sound, particles, show gameObject(s)) when it detects a SenseGlove.
 -	SenseGlove_Profile, An optional script to attach to a SenseGlove_Object, so that the user's calibration data is stored in between sessions.
 -	Example scenes for the new SenseGlove_Material, SenseGlove_Breakable scripts and the SenseGlove_Profiles.
 
@@ -202,7 +202,7 @@ Debugging and VR components
 -	SenseGlove_Wireframe is now a subclass of the SenseGlove_HandModel.
 
 ### Fixed
--	Issue where the fingers of left-handed Sense Gloves would be shown incorrectly in the Wireframe only (though their internal positioning was still correct). 
+-	Issue where the fingers of left-handed SenseGloves would be shown incorrectly in the Wireframe only (though their internal positioning was still correct). 
 -	Issue where it was not possible to take an object from one SenseGloe_HandModel with another _HandModel.
 -	Issue where the events from the SenseGlove_HandModel script would not fire.
 
@@ -220,10 +220,10 @@ Haptics, Bug Fixes and Example Scenes
 
 ### Changed
 -	Restructured the Scripts folder to be more intuitive: The three main scripts (object, data, handmodel) are in the root folder, the rest have been divided into
-	Controls (Logic using the Sense Glove), Feedback (Material properties), Handmodel (for grabscripts, etc), Interactions (Doors, Drawers), and Util (Debuggers, Conversions).
+	Controls (Logic using the SenseGlove), Feedback (Material properties), Handmodel (for grabscripts, etc), Interactions (Doors, Drawers), and Util (Debuggers, Conversions).
 	
 -	Several scripts now have #region statements, allowing one to collapse / expand sections of code for easier navigation.
--	Values to interpolate the thumb twist are now retrieved from the Sense Glove during startup (Backwards-Compatible).
+-	Values to interpolate the thumb twist are now retrieved from the SenseGlove during startup (Backwards-Compatible).
 -	SenseGlove_Handmodel: The motorlevels variable (which indicates the force feedback levels per finger) are now public and therefore visible in the Inspector (for debugging)
 -	ForceFeedback example scene now lets one switch between objects / materials in the hand using the A and D Keys.
 -	SenseGlove_Material now has a maxForce and MaxForceDist function, which creates a ramp response of the material.
@@ -231,19 +231,19 @@ Haptics, Bug Fixes and Example Scenes
 
 -	SenseGlove_Grabable now have a pickupReference property, which is the actual object picked up the grabscript. 
 	This way, one can pick up an interactable by one of its children.
--	SenseGlove_Physgrab's colliders are also assigned a kinematic rigidbody, allowing the Sense Glove to pick up objects that do not have rigidBodies 
+-	SenseGlove_Physgrab's colliders are also assigned a kinematic rigidbody, allowing the SenseGlove to pick up objects that do not have rigidBodies 
 	(although they still need to be assigned a SenseGlove_Interactable).
--	SenseGlove_Hinge; an abstract class that allows one to rotate objects around a specified axis using the Sense Glove.
+-	SenseGlove_Hinge; an abstract class that allows one to rotate objects around a specified axis using the SenseGlove.
 -	SenseGlove_Door; A _Hinge that be combined with Unity's HingeJoints to create an openeable door.
 -	SenseGlove_Lever: An experimental _Hinge that can raise events when pulled up or down.
 
 -	Internal DLL: The IMU correction is now be hard coded into the glove.
--	Internal DLL: Communication protocol is now compatible with Sense Gloves using firmware versions v2 (protoboards) and v3 (our custom PCB).
+-	Internal DLL: Communication protocol is now compatible with SenseGloves using firmware versions v2 (protoboards) and v3 (our custom PCB).
 
 ### Fixed
 -	A bug where the Material-Based Force feedback would use absolute coordinates instead of local coordinates to determine the depth in the collider(s)
--	A bug where the Sense Glove communication thread would crash if we disconnected while sending commands.
--	A bug where multiple SenseGlove_Objects connected to the same Sense Glove, even though two are connected.
+-	A bug where the SenseGlove communication thread would crash if we disconnected while sending commands.
+-	A bug where multiple SenseGlove_Objects connected to the same SenseGlove, even though two are connected.
 
 -------------------------------------------------------------------------------------------------------
 
@@ -251,11 +251,11 @@ Haptics, Bug Fixes and Example Scenes
 Grabscript, Hand Model and Force Feedback Overhaul.
 
 ### Added
--	"Number Of Sensors", "Current Calibration Step" and "Total Calibration Steps" variables for the SenseGlove_Data.
+-	"Number Of Sensors", "Current Calibration Step" and "Total Calibration Steps" variables for the SG_SenseGloveData.
 -	SenseGlove_Grabscript class, a superclass for both Physics- and Gesture based grabscripts.
 -	SenseGlove_HandModel scripts; abstract script which should make it a lot easier to set up your own hand model.
 -	SenseGlove "Hologram" Hand Model, courtesy of The Virtual Dutch Men.
--	SenseGlove_Feedback script, which determines the Sense Glove motor levels based on the desired colliders and force feedback type.
+-	SenseGlove_Feedback script, which determines the SenseGlove motor levels based on the desired colliders and force feedback type.
 -	SenseGlove_Material script, which is added to SenseGlove_Interactables to calculate the force feedback.
 -	SenseGlove_HandModel now takes the motor levels of the fingertip SenseGlove_Feedback scripts and sends these to the SenseGlove_Object. 
 -	SenseGlove_DropZone; detects (and optionally snaps) SenseGlove_Grabables in its area.
@@ -265,7 +265,7 @@ Grabscript, Hand Model and Force Feedback Overhaul.
 -	SenseGlove_StaticObject, which cannot be interacted with, but provides force feedback only.
 
 ### Changed
--	The WireFrame "preview" model is now destroyed when the Sense Glove is connected, rather than on StartUp.
+-	The WireFrame "preview" model is now destroyed when the SenseGlove is connected, rather than on StartUp.
 -	SenseGlove_Detector now has an optional activationTime variable, which controls how long the glove should be inside the detector before the event fires. 
 	Set this variable to 0 to ignore it.
 -	ForceFeedback option for SenseGlove_Interactables, which determines whether or not they activate the SenseGlove_Feedback.
@@ -369,9 +369,9 @@ Finger Precision and Bug Fixing
 GloveData and Calibration Upgrades
 
 ### Added
--	SenseGlove_Data class, which is a wrapper for the SenseGlove's GloveData. Autmatically converts to Unity Quaternions / Vector3 positions.
+-	SG_SenseGloveData class, which is a wrapper for the SenseGlove's GloveData. Autmatically converts to Unity Quaternions / Vector3 positions.
 -	ToUnityEuler() method to SenseGlove_Util, which converts Euler angles from the SenseGlove's right handed coordinate system to Unity's left handed one.
--	The number of 'sensor packets' per second recieved from the Sense Glove (+/- 100) is now available through SenseGlove_Data.
+-	The number of 'sensor packets' per second recieved from the SenseGlove (+/- 100) is now available through SG_SenseGloveData.
 -	limitFingers and limitWrist options to SenseGlove_Object, which allows one to limit the joint angles of the fingers within realistic contraints.
 	However, the wrist limits are not fully functional due to a Gimball lock when converting between Euler and Quaternion angles...
 -	UpdateGloveData() method in the SenseGlove_Object to retrieve the latest glove data, which can be moved to the FixedUpdate() if a fixed update rate is desired.
@@ -381,7 +381,7 @@ GloveData and Calibration Upgrades
 -	Renamed Kinematics enumerator to UpdateLevel to allow room for the Kinematics namespace within the DLL.
 -	Added GetData() function to SenseGlove_Object, which returns the new GloveData wrapper.
 -	Added a warning to scripts using the GetGloveData() method, telling them that a Unity wrapper is available.
--	SenseGlove_Wireframe now makes use of the new SenseGlove_Data wrapper.
+-	SenseGlove_Wireframe now makes use of the new SG_SenseGloveData wrapper.
 -	New way to handle calibration within the DLL, which is called the same way, but does not get stuck.
 -	Newly calibrated finger lengths are automatically limited between those of 5th percentile females and 95th percentile males. 
 -	To pervent breaking the joint positions, newly calibrated joint positions can now only move a limited amount (20mm) from their previous location.

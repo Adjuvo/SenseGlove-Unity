@@ -1,439 +1,441 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using SenseGloveMats;
 
 #if UNITY_EDITOR //prevents crashing when building.
 using UnityEditor;
 #endif
 
-/// <summary> Determines how the material properties are loaded. </summary>
-public enum VirtualMaterial
+namespace SG.Materials
 {
-    /// <summary> Material Properties can be assigned via the inspector. </summary>
-    Custom = 0,
 
-    /// <summary> Assigns properties of the hardest material. </summary>
-    Steel,
-    /// <summary> Assigns properties of a medium-soft material.  </summary>
-    Rubber,
-    /// <summary> Assigns properties of a soft material that is breakable.  </summary>
-    Egg
-}
-
-
-/// <summary> Contains the editable Material Properties of a single SenseGlove_Material </summary>
-public struct MaterialProps
-{
-    /// <summary> The maximum force that this material can put on the Sense Glove. </summary>
-    public int maxForce;
-
-    /// <summary> The distance [m] where the maximum force has been reached. Setting it to 0 will instantly send maxForce on touch </summary>
-    public float maxForceDist;
-
-    /// <summary> The distance [m] at which the material breaks. </summary>
-    public float yieldDist;
-
-    /// <summary> The magnitude [0..100%] of the buzz motor pulse </summary>
-    public int hapticForce;
-
-    /// <summary> The duration of the Haptic Feedback, in miliseconds </summary>
-    public int hapticDur;
-
-    /// <summary> Convert a SenseGlove_Material into a MaterialProps, which can be passed between scripts or stored later on. </summary>
-    /// <param name="material"></param>
-    public MaterialProps(SG_Material material)
+    /// <summary> Determines how the material properties are loaded. </summary>
+    public enum VirtualMaterial
     {
-        this.maxForce = material.maxForce;
-        this.maxForceDist = material.maxForceDist;
-        this.yieldDist = material.yieldDistance;
-        this.hapticForce = material.hapticMagnitude;
-        this.hapticDur = material.hapticDuration;
+        /// <summary> Material Properties can be assigned via the inspector. </summary>
+        Custom = 0,
+
+        /// <summary> Assigns properties of the hardest material. </summary>
+        Steel,
+        /// <summary> Assigns properties of a medium-soft material.  </summary>
+        Rubber,
+        /// <summary> Assigns properties of a soft material that is breakable.  </summary>
+        Egg
     }
 
-    /// <summary> Retrieve a 'default' material. </summary>
-    /// <returns></returns>
-    public static MaterialProps Default()
-    {
-        MaterialProps res = new MaterialProps();
-        res.maxForce = 100;
-        res.maxForceDist = 0;
-        res.yieldDist = float.MaxValue;
-        res.hapticDur = 100;
-        res.hapticForce = 100;
-        return res;
-    }
 
-    /// <summary> Parse a DataBlock into a MaterialProps. Any missing variables will be set to their default value. </summary>
-    /// <param name="dataBlock"></param>
-    /// <returns></returns>
-    public static MaterialProps Parse(List<string> dataBlock)
+    /// <summary> Contains the editable Material Properties of a single SenseGlove_Material </summary>
+    public struct MaterialProps
     {
-        MaterialProps res = MaterialProps.Default();
-        if (dataBlock.Count > 1)
+        /// <summary> The maximum force that this material can put on the Sense Glove. </summary>
+        public int maxForce;
+
+        /// <summary> The distance [m] where the maximum force has been reached. Setting it to 0 will instantly send maxForce on touch </summary>
+        public float maxForceDist;
+
+        /// <summary> The distance [m] at which the material breaks. </summary>
+        public float yieldDist;
+
+        /// <summary> The magnitude [0..100%] of the buzz motor pulse </summary>
+        public int hapticForce;
+
+        /// <summary> The duration of the Haptic Feedback, in miliseconds </summary>
+        public int hapticDur;
+
+        /// <summary> Convert a SenseGlove_Material into a MaterialProps, which can be passed between scripts or stored later on. </summary>
+        /// <param name="material"></param>
+        public MaterialProps(SG_Material material)
         {
-            float parsedValue;
-            if (dataBlock.Count > (int)MatProp.maxForce && TryGetFloat(dataBlock[(int)MatProp.maxForce], out parsedValue))
+            this.maxForce = material.maxForce;
+            this.maxForceDist = material.maxForceDist;
+            this.yieldDist = material.yieldDistance;
+            this.hapticForce = material.hapticMagnitude;
+            this.hapticDur = material.hapticDuration;
+        }
+
+        /// <summary> Retrieve a 'default' material. </summary>
+        /// <returns></returns>
+        public static MaterialProps Default()
+        {
+            MaterialProps res = new MaterialProps();
+            res.maxForce = 100;
+            res.maxForceDist = 0;
+            res.yieldDist = float.MaxValue;
+            res.hapticDur = 100;
+            res.hapticForce = 100;
+            return res;
+        }
+
+        /// <summary> Parse a DataBlock into a MaterialProps. Any missing variables will be set to their default value. </summary>
+        /// <param name="dataBlock"></param>
+        /// <returns></returns>
+        public static MaterialProps Parse(List<string> dataBlock)
+        {
+            MaterialProps res = MaterialProps.Default();
+            if (dataBlock.Count > 1)
             {
-                res.maxForce = (int)parsedValue;
+                float parsedValue;
+                if (dataBlock.Count > (int)MatProp.maxForce && TryGetFloat(dataBlock[(int)MatProp.maxForce], out parsedValue))
+                {
+                    res.maxForce = (int)parsedValue;
+                }
+                if (dataBlock.Count > (int)MatProp.maxForceDist && TryGetFloat(dataBlock[(int)MatProp.maxForceDist], out parsedValue))
+                {
+                    res.maxForceDist = parsedValue;
+                }
+                if (dataBlock.Count > (int)MatProp.yieldDist && TryGetFloat(dataBlock[(int)MatProp.yieldDist], out parsedValue))
+                {
+                    if (float.IsNaN(parsedValue)) { parsedValue = float.MaxValue; }
+                    res.yieldDist = parsedValue;
+                }
+                if (dataBlock.Count > (int)MatProp.hapticMagn && TryGetFloat(dataBlock[(int)MatProp.hapticMagn], out parsedValue))
+                {
+                    res.hapticForce = (int)parsedValue;
+                }
+                if (dataBlock.Count > (int)MatProp.hapticDur && TryGetFloat(dataBlock[(int)MatProp.hapticDur], out parsedValue))
+                {
+                    res.hapticDur = (int)parsedValue;
+                }
             }
-            if (dataBlock.Count > (int)MatProp.maxForceDist && TryGetFloat(dataBlock[(int)MatProp.maxForceDist], out parsedValue))
+            return res;
+        }
+
+        /// <summary> Attempt to retieve the (raw) value of this material property. </summary>
+        /// <param name="line"></param>
+        /// <param name="raw"></param>
+        /// <returns></returns>
+        private static bool TryGetRawValue(string line, out string raw)
+        {
+            try
             {
-                res.maxForceDist = parsedValue;
+                raw = line.Split(new char[] { '\t' }, System.StringSplitOptions.RemoveEmptyEntries)[1];
+                return true;
             }
-            if (dataBlock.Count > (int)MatProp.yieldDist && TryGetFloat(dataBlock[(int)MatProp.yieldDist], out parsedValue))
+            catch
             {
-                if (float.IsNaN(parsedValue)) { parsedValue = float.MaxValue; }
-                res.yieldDist = parsedValue;
-            }
-            if (dataBlock.Count > (int)MatProp.hapticMagn && TryGetFloat(dataBlock[(int)MatProp.hapticMagn], out parsedValue))
-            {
-                res.hapticForce = (int)parsedValue;
-            }
-            if (dataBlock.Count > (int)MatProp.hapticDur && TryGetFloat(dataBlock[(int)MatProp.hapticDur], out parsedValue))
-            {
-                res.hapticDur = (int)parsedValue;
+                raw = "";
+                return false;
             }
         }
-        return res;
-    }
 
-    /// <summary> Attempt to retieve the (raw) value of this material property. </summary>
-    /// <param name="line"></param>
-    /// <param name="raw"></param>
-    /// <returns></returns>
-    private static bool TryGetRawValue(string line, out string raw)
-    {
-        try
+        /// <summary> Attempt to convert a specific property to a floating point. </summary>
+        /// <param name="line"></param>
+        /// <param name="res"></param>
+        /// <returns></returns>
+        private static bool TryGetFloat(string line, out float res)
         {
-            raw = line.Split(new char[] { '\t' }, System.StringSplitOptions.RemoveEmptyEntries)[1];
-            return true;
-        }
-        catch
-        {
-            raw = "";
+            string raw;
+            if (TryGetRawValue(line, out raw))
+            {
+                res = SenseGloveCs.Values.toFloat(raw);
+                return true;
+            }
+            res = float.NaN;
             return false;
         }
+
     }
 
-    /// <summary> Attempt to convert a specific property to a floating point. </summary>
-    /// <param name="line"></param>
-    /// <param name="res"></param>
-    /// <returns></returns>
-    private static bool TryGetFloat(string line, out float res)
+
+    /// <summary> Used to parse enties within material databases. </summary>
+    internal enum MatProp
     {
-        string raw;
-        if (TryGetRawValue(line, out raw))
+        Name,
+        maxForce,
+        maxForceDist,
+        yieldDist,
+        hapticMagn,
+        hapticDur,
+        All
+    }
+}
+
+namespace SG
+{
+
+    /// <summary> A class that contains material properties for a virtual objects, which can be customized, hard-coded or loaded during runtime. </summary>
+    [HelpURL("https://github.com/Adjuvo/SenseGlove-Unity/wiki/SenseGlove_Material")]
+    [DisallowMultipleComponent]
+    public class SG_Material : MonoBehaviour
+    {
+        //----------------------------------------------------------------------------------
+        // Properties
+
+        #region Properties
+
+        //---------------------------------------------------------------------
+        // Material options, enabled by default.
+
+        /// <summary> The material-type of the SenseGlove_Material.  </summary>
+        public SG.Materials.VirtualMaterial material = SG.Materials.VirtualMaterial.Custom;
+
+
+        //---------------------------------------------------------------------
+        //  The actual material properties, hidden to all but custom materials
+
+        // Force Feedback
+
+        /// <summary> The maximum brake force [0..100%] that the material provides at maxForceDist. </summary>
+        public int maxForce = 100;
+
+        /// <summary> The distance [in m] before the maximum force is reached. </summary>
+        public float maxForceDist = 0.00f;
+
+        /// <summary> The distance [in m] before the material calls an OnBreak event. </summary>
+        public float yieldDistance = 0.03f;
+
+
+        // Haptic Feedback
+
+        /// <summary> Whether or not the material should give any haptic feedback through the buzzMotors. </summary>
+        public bool hapticFeedback = false;
+
+        /// <summary> The magnitude of the haptic pulse [0..100%] </summary>
+        public int hapticMagnitude = 100;
+
+        /// <summary> (maximum) duration in ms of the haptic pulse </summary>
+        public int hapticDuration = 100;
+
+
+        //---------------------------------------------------------------------
+        //  Breakable properties
+
+        /// <summary> Indicates that this material can raise an OnBreak event. </summary>
+        public bool breakable = false;
+
+        /// <summary> this object must first be picked up before it can be broken. </summary>
+        public bool mustBeGrabbed = false;
+
+        /// <summary> This object must be crushed by the thumb before it can be broken </summary>
+        public bool requiresThumb = false;
+
+        /// <summary> The minimum amount of fingers (not thumb) that 'break' this object before it actually breaks. </summary>
+        public int minimumFingers = 1;
+
+        /// <summary> Check whether or not this object is broken. </summary>
+        private bool isBroken = false;
+
+
+        /// <summary> My (optional) interactable script </summary>
+        private SG_Interactable myInteractable;
+
+        /// <summary> (Optional) Connected Material Deformation Script, used to pass deformation paraeters? </summary>
+        protected SG_MeshDeform deformScript;
+
+        /// <summary> [thumb/palm, index, middle, pinky, ring] </summary>
+        private bool[] raisedBreak = new bool[5];
+
+        /// <summary> How many fingers [not thumb] have raised break events. </summary>
+        private int brokenBy = 0;
+
+        #endregion Properties
+
+        //----------------------------------------------------------------------------------
+        // Material Methods
+
+        #region MaterialMethods
+
+        /// <summary> Check if this material is broken </summary>
+        /// <returns></returns>
+        public bool IsBroken()
         {
-            res = SenseGloveCs.Values.toFloat(raw);
-            return true;
+            return this.isBroken;
         }
-        res = float.NaN;
-        return false;
-    }
 
-}
-
-
-/// <summary> Used to parse enties within material databases. </summary>
-internal enum MatProp
-{
-    Name,
-    maxForce,
-    maxForceDist,
-    yieldDist,
-    hapticMagn,
-    hapticDur,
-    All
-}
-
-
-
-/// <summary> A class that contains material properties for a virtual objects, which can be customized, hard-coded or loaded during runtime. </summary>
-[HelpURL("https://github.com/Adjuvo/SenseGlove-Unity/wiki/SenseGlove_Material")]
-[DisallowMultipleComponent]
-public class SG_Material : MonoBehaviour
-{
-
-
-
-    //----------------------------------------------------------------------------------
-    // Properties
-
-    #region Properties
-
-    //---------------------------------------------------------------------
-    // Material options, enabled by default.
-
-    /// <summary> The material-type of the SenseGlove_Material.  </summary>
-    public VirtualMaterial material = VirtualMaterial.Custom;
-
-
-    //---------------------------------------------------------------------
-    //  The actual material properties, hidden to all but custom materials
-
-    // Force Feedback
-
-    /// <summary> The maximum brake force [0..100%] that the material provides at maxForceDist. </summary>
-    public int maxForce = 100;
-
-    /// <summary> The distance [in m] before the maximum force is reached. </summary>
-    public float maxForceDist = 0.00f;
-
-    /// <summary> The distance [in m] before the material calls an OnBreak event. </summary>
-    public float yieldDistance = 0.03f;
-
-
-    // Haptic Feedback
-
-    /// <summary> Whether or not the material should give any haptic feedback through the buzzMotors. </summary>
-    public bool hapticFeedback = false;
-
-    /// <summary> The magnitude of the haptic pulse [0..100%] </summary>
-    public int hapticMagnitude = 100;
-
-    /// <summary> (maximum) duration in ms of the haptic pulse </summary>
-    public int hapticDuration = 100;
-
-
-    //---------------------------------------------------------------------
-    //  Breakable properties
-
-    /// <summary> Indicates that this material can raise an OnBreak event. </summary>
-    public bool breakable = false;
-
-    /// <summary> this object must first be picked up before it can be broken. </summary>
-    public bool mustBeGrabbed = false;
-
-    /// <summary> This object must be crushed by the thumb before it can be broken </summary>
-    public bool requiresThumb = false;
-
-    /// <summary> The minimum amount of fingers (not thumb) that 'break' this object before it actually breaks. </summary>
-    public int minimumFingers = 1;
-
-    /// <summary> Check whether or not this object is broken. </summary>
-    private bool isBroken = false;
-
-
-    /// <summary> My (optional) interactable script </summary>
-    private SG_Interactable myInteractable;
-
-    /// <summary> (Optional) Connected Material Deformation Script, used to pass deformation paraeters? </summary>
-    protected SG_MeshDeform deformScript;
-
-    /// <summary> [thumb/palm, index, middle, pinky, ring] </summary>
-    private bool[] raisedBreak = new bool[5];
-
-    /// <summary> How many fingers [not thumb] have raised break events. </summary>
-    private int brokenBy = 0;
-
-    #endregion Properties
-
-    //----------------------------------------------------------------------------------
-    // Material Methods
-
-    #region MaterialMethods
-
-    /// <summary> Check if this material is broken </summary>
-    /// <returns></returns>
-    public bool IsBroken()
-    {
-        return this.isBroken;
-    }
-
-    /// <summary> Unbreak the material, allowing it to give feedback and raise the break event again. </summary>
-    public void UnBreak()
-    {
-        this.isBroken = false;
-        this.brokenBy = 0;
-        this.raisedBreak = new bool[5];
-
-        if (this.deformScript != null)
-            this.deformScript.ResetMesh();
-    }
-    
-
-    /// <summary> Calculates the force on the finger based on material properties. </summary>
-    /// <param name="displacement"></param>
-    /// <param name="fingerIndex"></param>
-    /// <returns></returns>
-    public int CalculateForce(float displacement, int fingerIndex)
-    {
-        if (this.breakable)
+        /// <summary> Unbreak the material, allowing it to give feedback and raise the break event again. </summary>
+        public void UnBreak()
         {
-            if (!this.isBroken)
+            this.isBroken = false;
+            this.brokenBy = 0;
+            this.raisedBreak = new bool[5];
+
+            if (this.deformScript != null)
+                this.deformScript.ResetMesh();
+        }
+
+
+        /// <summary> Calculates the force on the finger based on material properties. </summary>
+        /// <param name="displacement"></param>
+        /// <param name="fingerIndex"></param>
+        /// <returns></returns>
+        public int CalculateForce(float displacement, int fingerIndex)
+        {
+            if (this.breakable)
             {
-                //  SenseGlove_Debugger.Log("Disp:\t" + displacement + ",\t i:\t"+fingerIndex);
-                if (!this.mustBeGrabbed || (this.mustBeGrabbed && this.myInteractable.IsInteracting()))
+                if (!this.isBroken)
                 {
-                    // SenseGlove_Debugger.Log("mustBeGrabbed = " + this.mustBeGrabbed + ", isInteracting: " + this.myInteractable.IsInteracting());
-
-                    if (fingerIndex >= 0 && fingerIndex < 5)
+                    //  SenseGlove_Debugger.Log("Disp:\t" + displacement + ",\t i:\t"+fingerIndex);
+                    if (!this.mustBeGrabbed || (this.mustBeGrabbed && this.myInteractable.IsInteracting()))
                     {
-                        bool shouldBreak = displacement >= this.yieldDistance;
-                        if (shouldBreak && !this.raisedBreak[fingerIndex])
-                        { this.brokenBy++; }
-                        else if (!shouldBreak && this.raisedBreak[fingerIndex])
-                        { this.brokenBy--; }
-                        this.raisedBreak[fingerIndex] = shouldBreak;
+                        // SenseGlove_Debugger.Log("mustBeGrabbed = " + this.mustBeGrabbed + ", isInteracting: " + this.myInteractable.IsInteracting());
 
-                        // SenseGlove_Debugger.Log(displacement + " --> raisedBreak[" + fingerIndex + "] = " + this.raisedBreak[fingerIndex]+" --> "+this.brokenBy);
-                        if (this.brokenBy >= this.minimumFingers && (!this.requiresThumb || (this.requiresThumb && this.raisedBreak[0])))
+                        if (fingerIndex >= 0 && fingerIndex < 5)
                         {
-                            this.OnMaterialBreak();
+                            bool shouldBreak = displacement >= this.yieldDistance;
+                            if (shouldBreak && !this.raisedBreak[fingerIndex])
+                            { this.brokenBy++; }
+                            else if (!shouldBreak && this.raisedBreak[fingerIndex])
+                            { this.brokenBy--; }
+                            this.raisedBreak[fingerIndex] = shouldBreak;
+
+                            // SenseGlove_Debugger.Log(displacement + " --> raisedBreak[" + fingerIndex + "] = " + this.raisedBreak[fingerIndex]+" --> "+this.brokenBy);
+                            if (this.brokenBy >= this.minimumFingers && (!this.requiresThumb || (this.requiresThumb && this.raisedBreak[0])))
+                            {
+                                this.OnMaterialBreak();
+                            }
                         }
                     }
                 }
+                else
+                {
+                    return 0;
+                }
             }
-            else
+            return (int)SenseGloveCs.Values.Wrap(SG_Material.CalculateResponseForce(displacement, this.maxForce, this.maxForceDist), 0, this.maxForce);
+        }
+
+        /// <summary> Calculate the haptic pulse based on material properties. </summary>
+        /// <returns></returns>
+        public int CalculateHaptics()
+        {
+            if (this.hapticFeedback)
             {
-                return 0;
+                return this.hapticMagnitude;
             }
+            return 0;
         }
-        return (int)SenseGloveCs.Values.Wrap(SG_Material.CalculateResponseForce(displacement, this.maxForce, this.maxForceDist), 0, this.maxForce);
-    }
 
-    /// <summary> Calculate the haptic pulse based on material properties. </summary>
-    /// <returns></returns>
-    public int CalculateHaptics()
-    {
-        if (this.hapticFeedback)
+
+        /// <summary>
+        /// The actual method to calculate things, used by both default and custom materials.
+        /// </summary>
+        /// <returns></returns>
+        public static int CalculateResponseForce(float disp, int maxForce, float maxForceDist)
         {
-            return this.hapticMagnitude;
-        }
-        return 0;
-    }
-
-
-    /// <summary>
-    /// The actual method to calculate things, used by both default and custom materials.
-    /// </summary>
-    /// <returns></returns>
-    public static int CalculateResponseForce(float disp, int maxForce, float maxForceDist)
-    {
-        if (maxForceDist > 0)
-        {
-            return (int)SenseGloveCs.Values.Wrap(disp * (maxForce / maxForceDist), 0, 100);
-        }
-        else if (disp > 0)
-        {
-            return maxForce;
-        }
-        return 0;
-    }
-
-    #endregion MaterialMethods
-
-    //----------------------------------------------------------------------------------
-    // Material Property loading
-
-    #region MaterialProps
-
-    /// <summary> Load the hard-coded properties of the material </summary>
-    /// <param name="ofMaterial"></param>
-    public void LoadMaterialProps(VirtualMaterial ofMaterial)
-    {
-        //SenseGlove_Debugger.Log("Loading material props of " + ofMaterial.ToString());
-        if (ofMaterial != VirtualMaterial.Custom)
-        {
-            MaterialProps thisProps = new MaterialProps();
-            switch (ofMaterial)
+            if (maxForceDist > 0)
             {
-                case VirtualMaterial.Rubber:
-                    thisProps.maxForce = 65;
-                    thisProps.maxForceDist = 0.02f;
-                    thisProps.yieldDist = float.MaxValue;
-                    thisProps.hapticForce = 60;
-                    thisProps.hapticDur = 200;
-                    break;
-
-                case VirtualMaterial.Steel:
-                    thisProps.maxForce = 100;
-                    thisProps.maxForceDist = 0.00f;
-                    thisProps.yieldDist = float.MaxValue;
-                    thisProps.hapticForce = 0;
-                    thisProps.hapticDur = 0;
-                    break;
-                case VirtualMaterial.Egg:
-                    thisProps.maxForce = 90;
-                    thisProps.maxForceDist = 0.01f;
-                    thisProps.yieldDist = 0.02f;
-                    thisProps.hapticForce = 0;
-                    thisProps.hapticDur = 0;
-                    break;
+                return (int)SenseGloveCs.Values.Wrap(disp * (maxForce / maxForceDist), 0, 100);
             }
-            this.LoadMaterialProps(thisProps);
+            else if (disp > 0)
+            {
+                return maxForce;
+            }
+            return 0;
         }
-    }
 
-    /// <summary> Actually apply materialProps to this Material.  </summary>
-    /// <param name="props"></param>
-    private void LoadMaterialProps(MaterialProps props)
-    {
-        this.maxForce = props.maxForce;
-        this.maxForceDist = props.maxForceDist;
-        this.yieldDistance = props.yieldDist;
-        this.hapticMagnitude = props.hapticForce;
-        this.hapticDuration = props.hapticDur;
-    }
+        #endregion MaterialMethods
 
-    #endregion MaterialProps
+        //----------------------------------------------------------------------------------
+        // Material Property loading
 
-    //------------------------------------------------------------------------------------
-    // Events
+        #region MaterialProps
 
-    public delegate void MaterialBreaksEventHandler(object source, System.EventArgs args);
-    /// <summary> Fires when the material breaks under the conditions set through the Material Properties. </summary>
-    public event MaterialBreaksEventHandler MaterialBreaks;
-
-    protected void OnMaterialBreak()
-    {
-        if (MaterialBreaks != null)
+        /// <summary> Load the hard-coded properties of the material </summary>
+        /// <param name="ofMaterial"></param>
+        public void LoadMaterialProps(SG.Materials.VirtualMaterial ofMaterial)
         {
-            MaterialBreaks(this, null);
+            //SenseGlove_Debugger.Log("Loading material props of " + ofMaterial.ToString());
+            if (ofMaterial != SG.Materials.VirtualMaterial.Custom)
+            {
+                SG.Materials.MaterialProps thisProps = new SG.Materials.MaterialProps();
+                switch (ofMaterial)
+                {
+                    case SG.Materials.VirtualMaterial.Rubber:
+                        thisProps.maxForce = 65;
+                        thisProps.maxForceDist = 0.02f;
+                        thisProps.yieldDist = float.MaxValue;
+                        thisProps.hapticForce = 60;
+                        thisProps.hapticDur = 200;
+                        break;
+
+                    case SG.Materials.VirtualMaterial.Steel:
+                        thisProps.maxForce = 100;
+                        thisProps.maxForceDist = 0.00f;
+                        thisProps.yieldDist = float.MaxValue;
+                        thisProps.hapticForce = 0;
+                        thisProps.hapticDur = 0;
+                        break;
+                    case SG.Materials.VirtualMaterial.Egg:
+                        thisProps.maxForce = 90;
+                        thisProps.maxForceDist = 0.01f;
+                        thisProps.yieldDist = 0.02f;
+                        thisProps.hapticForce = 0;
+                        thisProps.hapticDur = 0;
+                        break;
+                }
+                this.LoadMaterialProps(thisProps);
+            }
         }
-        this.isBroken = true;
-        this.brokenBy = 0;
-        this.raisedBreak = new bool[this.raisedBreak.Length];
-    }
 
-
-    //----------------------------------------------------------------------------------
-    // Monobehaviour
-
-    #region Monobehaviour
-
-    protected virtual void Start()
-    {
-        if (this.material != VirtualMaterial.Custom)
+        /// <summary> Actually apply materialProps to this Material.  </summary>
+        /// <param name="props"></param>
+        private void LoadMaterialProps(SG.Materials.MaterialProps props)
         {
-            this.LoadMaterialProps(this.material); //don't load yield distances if the material has been edited?
+            this.maxForce = props.maxForce;
+            this.maxForceDist = props.maxForceDist;
+            this.yieldDistance = props.yieldDist;
+            this.hapticMagnitude = props.hapticForce;
+            this.hapticDuration = props.hapticDur;
         }
 
-        //load grab options
-        this.myInteractable = this.gameObject.GetComponent<SG_Interactable>();
-        if (myInteractable == null && this.mustBeGrabbed)
+        #endregion MaterialProps
+
+        //------------------------------------------------------------------------------------
+        // Events
+
+        public delegate void MaterialBreaksEventHandler(object source, System.EventArgs args);
+        /// <summary> Fires when the material breaks under the conditions set through the Material Properties. </summary>
+        public event MaterialBreaksEventHandler MaterialBreaks;
+
+        protected void OnMaterialBreak()
         {
-            this.mustBeGrabbed = false; //we cannot require this material to be grabbed if it's not an interactable.
+            if (MaterialBreaks != null)
+            {
+                MaterialBreaks(this, null);
+            }
+            this.isBroken = true;
+            this.brokenBy = 0;
+            this.raisedBreak = new bool[this.raisedBreak.Length];
         }
+
+
+        //----------------------------------------------------------------------------------
+        // Monobehaviour
+
+        #region Monobehaviour
+
+        protected virtual void Start()
+        {
+            if (this.material != SG.Materials.VirtualMaterial.Custom)
+            {
+                this.LoadMaterialProps(this.material); //don't load yield distances if the material has been edited?
+            }
+
+            //load grab options
+            this.myInteractable = this.gameObject.GetComponent<SG_Interactable>();
+            if (myInteractable == null && this.mustBeGrabbed)
+            {
+                this.mustBeGrabbed = false; //we cannot require this material to be grabbed if it's not an interactable.
+            }
+        }
+
+        /// <summary> Unbreak this material if it is disabled. </summary>
+        protected virtual void OnDisable()
+        {
+            this.UnBreak();
+        }
+
+        #endregion Monobehaviour
+
+
     }
-
-    /// <summary> Unbreak this material if it is disabled. </summary>
-    protected virtual void OnDisable()
-    {
-        this.UnBreak();
-    }
-
-    #endregion Monobehaviour
-
-
 }
 
 #if UNITY_EDITOR
 
 #region CustomEditor
 
-[CustomEditor(typeof(SG_Material))]
+[CustomEditor(typeof(SG.SG_Material))]
 [CanEditMultipleObjects]
 public class SenseGloveMaterialEditor : Editor
 {
@@ -442,7 +444,7 @@ public class SenseGloveMaterialEditor : Editor
         _breakAble, _mustGrab, _mustThumb, _nuFingers;
 
     /// <summary> The previous material that was applies to this material via the inspector. Used to update hard coded properties on-the-go. </summary>
-    private VirtualMaterial previousMaterial = VirtualMaterial.Custom;
+    private SG.Materials.VirtualMaterial previousMaterial = SG.Materials.VirtualMaterial.Custom;
     /// <summary> Style for the Material, Breakable and Haptic Feedback properties. </summary>
     private FontStyle headerStyle = FontStyle.Bold;
 
@@ -491,7 +493,7 @@ public class SenseGloveMaterialEditor : Editor
         // Update the serializedProperty - always do this in the beginning of OnInspectorGUI.
         serializedObject.Update();
 
-        var materialClass = target as SG_Material;
+        var materialClass = target as SG.SG_Material;
         var origFontStyle = EditorStyles.label.fontStyle;
 
         ///// Always show the dropdown menu
@@ -499,7 +501,7 @@ public class SenseGloveMaterialEditor : Editor
 
         EditorGUI.BeginChangeCheck();        
         SetRenderMode(_materialType.hasMultipleDifferentValues, headerStyle);
-        materialClass.material = (VirtualMaterial)EditorGUILayout.EnumPopup(l_material, materialClass.material);
+        materialClass.material = (SG.Materials.VirtualMaterial)EditorGUILayout.EnumPopup(l_material, materialClass.material);
         SetRenderMode(false, origFontStyle);
         if (EditorGUI.EndChangeCheck()) //update serialzed properties before showing them.
         {
@@ -507,7 +509,7 @@ public class SenseGloveMaterialEditor : Editor
             if (materialClass.material != this.previousMaterial)
             {
                 //SenseGlove_Debugger.Log("Material Changed (from Editor)");
-                if (materialClass.material != VirtualMaterial.Custom)
+                if (materialClass.material != SG.Materials.VirtualMaterial.Custom)
                 {
                     //SenseGlove_Debugger.Log("We've updated! materialClass.material = " + materialClass.material.ToString());
 
@@ -532,7 +534,7 @@ public class SenseGloveMaterialEditor : Editor
         if (!_materialType.hasMultipleDifferentValues)
         {
             ///only show material properties if custom is selected.
-            if (materialClass.material == VirtualMaterial.Custom)
+            if (materialClass.material == SG.Materials.VirtualMaterial.Custom)
             {
                 CreateIntSlider(ref materialClass.maxForce, ref this._maxForce, 0, 100, l_maxForce);
                 CreateFloatField(ref materialClass.maxForceDist, ref this._maxForceDist, l_maxForceDist);

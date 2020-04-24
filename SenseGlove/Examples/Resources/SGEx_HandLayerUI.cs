@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace SenseGlove_Examples
+namespace SG.Examples
 {
     public class SGEx_HandLayerUI : MonoBehaviour
     {
