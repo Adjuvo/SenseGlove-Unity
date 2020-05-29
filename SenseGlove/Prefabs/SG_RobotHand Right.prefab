@@ -6544,7 +6544,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   trackingTarget: {fileID: 0}
-  updateTime: 0
+  updateTime: 1
   physicsBody: {fileID: 0}
 --- !u!114 &114026410567635400
 MonoBehaviour:
@@ -6558,7 +6558,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   trackingTarget: {fileID: 0}
-  updateTime: 0
+  updateTime: 1
   physicsBody: {fileID: 0}
 --- !u!114 &114027557918473190
 MonoBehaviour:
@@ -6572,7 +6572,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   trackingTarget: {fileID: 0}
-  updateTime: 0
+  updateTime: 1
   physicsBody: {fileID: 0}
 --- !u!114 &114245983650804294
 MonoBehaviour:
@@ -6586,7 +6586,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   trackingTarget: {fileID: 0}
-  updateTime: 0
+  updateTime: 1
   physicsBody: {fileID: 0}
 --- !u!114 &114318580526905990
 MonoBehaviour:
@@ -6600,7 +6600,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   trackingTarget: {fileID: 0}
-  updateTime: 0
+  updateTime: 1
   physicsBody: {fileID: 0}
 --- !u!114 &114332819119865214
 MonoBehaviour:
@@ -6709,7 +6709,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   trackingTarget: {fileID: 0}
-  updateTime: 0
+  updateTime: 1
   physicsBody: {fileID: 0}
 --- !u!114 &114436443314203164
 MonoBehaviour:
@@ -6790,7 +6790,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   trackingTarget: {fileID: 0}
-  updateTime: 0
+  updateTime: 1
   physicsBody: {fileID: 0}
 --- !u!114 &114518091632540596
 MonoBehaviour:
@@ -6817,7 +6817,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   trackingTarget: {fileID: 0}
-  updateTime: 0
+  updateTime: 1
   physicsBody: {fileID: 0}
 --- !u!114 &114535023197883580
 MonoBehaviour:
@@ -6831,7 +6831,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   trackingTarget: {fileID: 0}
-  updateTime: 0
+  updateTime: 1
   physicsBody: {fileID: 0}
 --- !u!114 &114539832441254634
 MonoBehaviour:
@@ -6885,7 +6885,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   trackingTarget: {fileID: 0}
-  updateTime: 0
+  updateTime: 1
   physicsBody: {fileID: 0}
 --- !u!114 &114631786047247726
 MonoBehaviour:
@@ -6970,13 +6970,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   connectionMethod: 1
   autoConnect: 1
-  sendHaptics: 1
   FFB_Enabled: 1
   buzz_Enabled: 1
   OnGloveLoad:
     m_PersistentCalls:
       m_Calls: []
-    m_TypeName: SGEvent, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    m_TypeName: SG.SGEvent, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
 --- !u!114 &114737019322446708
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -7026,7 +7025,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   trackingTarget: {fileID: 0}
-  updateTime: 0
+  updateTime: 1
   physicsBody: {fileID: 0}
 --- !u!114 &114822689630902054
 MonoBehaviour:
@@ -7104,7 +7103,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   trackingTarget: {fileID: 0}
-  updateTime: 0
+  updateTime: 1
   physicsBody: {fileID: 0}
 --- !u!114 &114968575626835274
 MonoBehaviour:

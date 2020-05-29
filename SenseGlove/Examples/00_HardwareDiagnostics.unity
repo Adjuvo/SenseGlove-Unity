@@ -697,14 +697,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   connectionMethod: 0
   autoConnect: 1
-  sendHaptics: 2
   FFB_Enabled: 1
   buzz_Enabled: 1
-  solver: 0
   OnGloveLoad:
     m_PersistentCalls:
       m_Calls: []
-    m_TypeName: SGEvent, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    m_TypeName: SG.SGEvent, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
 --- !u!1 &509859685
 GameObject:
   m_ObjectHideFlags: 0

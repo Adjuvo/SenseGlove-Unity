@@ -12,7 +12,9 @@ namespace SG
             /// <summary> Custom tracking hardware is used, so offsets are calculated during Start(). </summary>
             Custom,
             /// <summary> SenseGlove Vive Tracker Mount </summary>
-            ViveTracker
+            ViveTracker,
+            /// <summary> Oculus Rift S Controller using 3D Printed SG Mount; trackedObject should be the Left/RightControllerAnchor in the OVRCameraRig plugin. </summary>
+            RiftSController
         }
 
         /// <summary> The way the tracking is estableshed. </summary>
@@ -155,7 +157,13 @@ namespace SG
                     {
                         posOffs = new Vector3(0.01f * LR, 0.04f, -0.085f);
                         rotOffs = Quaternion.Euler(0, -90, -90);
-                        Debug.Log("Setting up right hand for Vive Tracker");
+                        Debug.Log("Setting up " + (rightHand ? "right" : "left") + " hand for Vive Tracker");
+                    }
+                    else if (trackingHardware == TrackingHardware.RiftSController)
+                    {
+                        posOffs = new Vector3(LR*-0.03f, -0.125f, -0.065f);
+                        rotOffs = Quaternion.Euler(0, -90, 20);
+                        Debug.Log("Setting up " + (rightHand ? "right" : "left") + " hand for Oculus Rift S Controller");
                     }
                     this.positionOffset = posOffs;
                     this.rotationOffset = rotOffs;

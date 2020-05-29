@@ -3763,14 +3763,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   connectionMethod: 0
   autoConnect: 1
-  sendHaptics: 2
   FFB_Enabled: 1
   buzz_Enabled: 1
-  solver: 0
   OnGloveLoad:
     m_PersistentCalls:
       m_Calls: []
-    m_TypeName: SGEvent, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    m_TypeName: SG.SGEvent, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
 --- !u!1 &457191033
 GameObject:
   m_ObjectHideFlags: 0
@@ -7736,9 +7734,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6a59efe191885e04bb489dbddd7a79e0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  senseGlove: {fileID: 454333727}
-  handAnimation: {fileID: 2093887953}
-  grabScript: {fileID: 0}
+  senseGloveHand: {fileID: 894572050}
   calibrateWristKey: 112
   releaseObjectKey: 101
 --- !u!1 &904074964
@@ -8117,9 +8113,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6a59efe191885e04bb489dbddd7a79e0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  senseGlove: {fileID: 454333727}
-  handAnimation: {fileID: 967899748}
-  grabScript: {fileID: 0}
+  senseGloveHand: {fileID: 0}
   calibrateWristKey: 112
   releaseObjectKey: 101
 --- !u!114 &967899748
@@ -8843,9 +8837,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6a59efe191885e04bb489dbddd7a79e0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  senseGlove: {fileID: 454333727}
-  handAnimation: {fileID: 2063645311}
-  grabScript: {fileID: 0}
+  senseGloveHand: {fileID: 1049140636}
   calibrateWristKey: 112
   releaseObjectKey: 101
 --- !u!1 &1049870613
@@ -14085,7 +14077,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 967899747}
-        m_MethodName: CallibrateWrist
+        m_MethodName: TryCallibrateWrist
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -14213,19 +14205,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   wireFrame: {fileID: 967899748}
+  stage: 0
+  subStage: 0
   instrText: {fileID: 1649617302}
   refinementMenu: {fileID: 1293029219}
   generalButtonTxt: {fileID: 1403063097}
   skipButton: {fileID: 236290598}
   saveButton: {fileID: 1405736192}
-  nextStepKey: 32
-  stage: 0
-  subStage: 0
-  stableDistance: 10
-  stableTime: 1
   endPopup: {fileID: 1798033829}
   openHandEx: {fileID: 201732454}
   closedHandEx: {fileID: 521027688}
+  nextStepKey: 32
+  hiddenBeforeStart:
+  - {fileID: 1837419004}
   leftAnimation: {fileID: 1049140635}
   rightAnimation: {fileID: 894572049}
   rightHands:
@@ -14237,9 +14229,6 @@ MonoBehaviour:
   - {fileID: 2103844316}
   - {fileID: 1834942031}
   - {fileID: 328521717}
-  hiddenBeforeStart:
-  - {fileID: 1837419004}
-  changes: 0
 --- !u!114 &1840165376
 MonoBehaviour:
   m_ObjectHideFlags: 0

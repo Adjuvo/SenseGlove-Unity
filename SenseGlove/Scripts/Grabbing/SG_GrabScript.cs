@@ -201,6 +201,8 @@ namespace SG
                 this.heldObjects[i].EndInteraction(this);
             }
             this.heldObjects.Clear();
+            paused = true;
+            elapsedTime = 0;
         }
 
         /// <summary> Check if this GrabScript is allowed to release an object, based on its release parameters. </summary>

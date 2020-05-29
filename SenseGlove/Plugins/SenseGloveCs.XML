@@ -2194,8 +2194,14 @@
         <member name="F:SenseGloveCs.Diagnostics.ExitCodes.DevScn_Clear">
             <summary> A developer has forced DeviceScanner to clean up this communicator outside of its main loop. </summary>
         </member>
+        <member name="F:SenseGloveCs.Diagnostics.ExitCodes.Device_Idle">
+            <summary> This device has indicated it needs more time to intialize. </summary>
+        </member>
         <member name="F:SenseGloveCs.Diagnostics.ExitCodes.Device_Request">
             <summary> The Device has requested to terminate the connection. </summary>
+        </member>
+        <member name="F:SenseGloveCs.Diagnostics.ExitCodes.Devive_NoPackets">
+            <summary> When a device's packets-per-second remains at 0 for 5 seconds, we should clear the connection itself. </summary>
         </member>
         <member name="F:SenseGloveCs.Diagnostics.ExitCodes.Test">
             <summary> Test </summary>
