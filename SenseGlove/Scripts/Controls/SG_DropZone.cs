@@ -5,13 +5,14 @@ using UnityEngine;
 namespace SG
 {
 
-    /// <summary> Detects SenseGlove_Grabables within its volume. </summary>
+    /// <summary> A collider that detects SenseGlove_Grabable objects within its volume. </summary>
     [RequireComponent(typeof(Collider))]
     public class SG_DropZone : MonoBehaviour
     {
         //--------------------------------------------------------------------------------------------------------------------------
         // Event Arguments
 
+        /// <summary> Arguments to pass a detected object with events. </summary>
         public class DropZoneArgs : System.EventArgs
         {
             /// <summary> The object that was detected or removed. </summary>
@@ -64,11 +65,11 @@ namespace SG
         /// <summary> Fires when an Object is Detected. </summary>
         [Header("Events")]
         [Tooltip("Fires when an object is detected.")]
-        [SerializeField] protected SGEvent OnObjectDetected;
+        [SerializeField] protected SG.Util.SGEvent OnObjectDetected;
 
         /// <summary> Fires when an Object is Removed. </summary>
         [Tooltip("Fires when an object is removed.")]
-        [SerializeField] protected SGEvent OnObjectRemoved;
+        [SerializeField] protected SG.Util.SGEvent OnObjectRemoved;
 
 
         /// <summary> An optional highlight for this snapzone that can be turned on or off. </summary>
@@ -108,6 +109,7 @@ namespace SG
             get { return this.objectsInside.ToArray(); }
         }
 
+        /// <summary> Returns a list of objects that this zone is supposed to detect. If it's empty, this zone detects any Grabable. </summary>
         public SG_Grabable[] TargetObjects
         {
             get { return this.objectsToGet.ToArray(); }
@@ -121,11 +123,23 @@ namespace SG
             get { return this.objectsInside.Count; }
         }
 
-        /// <summary> Check if all desired objects have been detected. </summary>
+
+        /// <summary> Check if all desired objects have been detected. If ObjectsToGet is empty, it will return true, always. </summary>
         /// <returns></returns>
         public bool AllObjectsDetected
         {
-            get { return this.objectsInside.Count == this.objectsToGet.Count; }
+            get
+            {
+                if (objectsInside.Count >= objectsToGet.Count)
+                {
+                    for (int i=0; i<dropProperties.Count; i++)
+                    {
+                        if (!dropProperties[i].detected) { return false; }
+                    }
+                    return true;
+                }
+                return false;
+            }
         }
 
         #endregion Properties
@@ -224,7 +238,7 @@ namespace SG
             return SG_DropZone.ListIndex(obj, this.objectsInside) > -1;
         }
 
-        /// <summary> Check if this SG_SenseGloveHardware is one of the "goal" objects; </summary>
+        /// <summary> Check if this SG_HapticGlove is one of the "goal" objects; </summary>
         /// <param name="obj"></param>
         /// <returns></returns>
         public bool IsTarget(SG_Grabable obj)
@@ -303,6 +317,8 @@ namespace SG
                 this.AddObject(grabableScript);
         }
 
+        /// <summary> Echeck if an exiting object belongs to one of the object we have. </summary>
+        /// <param name="obj"></param>
         protected virtual void CheckObjectExit(GameObject obj)
         {
             SG_Grabable grabableScript = obj.GetComponent<SG_Grabable>();
@@ -335,6 +351,7 @@ namespace SG
 
         #endregion Detection
 
+
         // Other Logic
 
         /// <summary> Turn the Highlighter(s) of this DropZone on or off. </summary>
@@ -355,6 +372,7 @@ namespace SG
 
             this.ClearObjects();
         }
+
 
         //---------------------------------------------------------------------------------------------------------------------------
         // Events

@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 using System.IO;
 
 namespace SG.Util
@@ -8,7 +6,7 @@ namespace SG.Util
     /// <summary> Ensures that .txt files are properly handled by Unity. </summary>
     public static class FileIO
     {
-        
+
         /// <summary> Attempt to save a string[] to a filename within a desired directory. Returns true if succesful. </summary>
         /// <remarks> Directory is added as a separate variable so we can more easily check for its existence. </remarks>
         /// <param name="dir"></param>
@@ -30,7 +28,7 @@ namespace SG.Util
 
                 using (StreamWriter file = new StreamWriter(path, append)) //using keyword to ensu
                 {
-                    for (int i=0; i<lines.Length; i++)
+                    for (int i = 0; i < lines.Length; i++)
                     {
                         file.WriteLine(lines[i]);
                     }
@@ -65,6 +63,21 @@ namespace SG.Util
                 Debug.LogError(Ex.Message);
             }
             lines = new string[0];
+            return false;
+        }
+
+
+
+        /// <summary> Creates a new directory. Returns  false if it already existed. </summary>
+        /// <param name="dir"></param>
+        /// <returns></returns>
+        public static bool CreateDirectory(string dir)
+        {
+            if (!Directory.Exists(dir))
+            {
+                Directory.CreateDirectory(dir);
+                return true;
+            }
             return false;
         }
 

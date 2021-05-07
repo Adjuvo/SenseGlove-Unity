@@ -201,7 +201,7 @@ namespace SG
         /// <param name="grabable"></param>
         protected void AttachObject(SG_Grabable grabable)
         {
-            grabable.SnapMeTo(this.snapPoint);
+            grabable.SnapMeTo(this.snapPoint, true);
             grabable.InteractionBegun += Grabable_InteractionBegun;
             grabable.ObjectReset += Grabable_ObjectReset;
 
@@ -301,15 +301,8 @@ namespace SG
         // Used for initialization.
         protected virtual void Start()
         {
-            if (this.snapPoint == null)
-                this.snapPoint = this.transform;
+            if (this.snapPoint == null) { this.snapPoint = this.transform; }
         }
-
-        ////Called when I'm destroyed..
-        //private void OnDestroy()
-        //{
-        //    //this.ClearObjects();
-        //}
 
     }
 

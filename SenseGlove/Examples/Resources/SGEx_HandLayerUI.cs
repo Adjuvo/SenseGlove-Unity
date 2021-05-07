@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -16,6 +17,7 @@ namespace SG.Examples
             GrabLayer,
             RigidbodyLayer,
             PhysicsLayer,
+            GestureLayer,
             All
         }
 
@@ -69,6 +71,8 @@ namespace SG.Examples
             "The Rigidbody layer adds rigidbodies that allow one to push and hold other rigidbody objects. This gameobject and its children can be placed on their own layer, or be told to ignore certain colliders.",
 
             "The PhysicsTracking layer contains non-trigger colliders that prevent the SG_TrackedHand from passing through non-grabable objects, provided that its 'trackingMethod' property is set to be 'PhysicsBased'.",
+            
+            "The Gesture layer can recognize different static hand poses, used to activate certain functions using just the hand based on finger flexion.",
 
              "This separation of layers allows for a hand model that can be adjusted to your needs, and which allows different physics behaviours wihout touching the actual 3D Model.",
         };
@@ -87,6 +91,7 @@ namespace SG.Examples
             ShowingLayer.GrabLayer,
             ShowingLayer.RigidbodyLayer,
             ShowingLayer.PhysicsLayer,
+            ShowingLayer.GestureLayer,
             ShowingLayer.All,
         };
 
@@ -94,6 +99,9 @@ namespace SG.Examples
         public GameObject[] grabLayerObjects = new GameObject[0];
         public GameObject[] rigidBodyObjects = new GameObject[0];
         public GameObject[] physicsObjects = new GameObject[0];
+        public GameObject[] GestureObjects = new GameObject[0];
+
+        public SGEx_DebugGesture gestureUI;
 
         private GameObject[][] layerObjects = new GameObject[0][];
 
@@ -184,7 +192,7 @@ namespace SG.Examples
                 this.showing = layer;
                 if (activeHand != null)
                 {
-                    SG_Util.SetChildren(activeHand.transform, false); //all layers are off
+                    SG.Util.SG_Util.SetChildren(activeHand.transform, false); //all layers are off
                     SetAllObjects(false);
                     if (layer >= ShowingLayer.None)
                     {
@@ -202,12 +210,12 @@ namespace SG.Examples
                     {
                         activeHand.handAnimation.updateWrist = true;
                         activeHand.handAnimation.CalibrateWrist();
-                        activeHand.handAnimation.UpdateWrist(activeHand.hardware.GloveData);
+                        activeHand.handAnimation.UpdateWrist(activeHand.GetIMURotation());
                     }
                     if (!updateWrist)
                     {
                         activeHand.handAnimation.CalibrateWrist();
-                        activeHand.handAnimation.UpdateWrist(activeHand.hardware.GloveData);
+                        activeHand.handAnimation.UpdateWrist(activeHand.GetIMURotation());
                     }
                     activeHand.handAnimation.updateWrist = updateWrist;
 
@@ -215,6 +223,7 @@ namespace SG.Examples
                     if (layer == ShowingLayer.GrabLayer || layer == ShowingLayer.All) { activeHand.grabScript.gameObject.SetActive(true); }
                     if (layer == ShowingLayer.RigidbodyLayer || layer == ShowingLayer.All) { activeHand.rigidBodyLayer.gameObject.SetActive(true); }
                     if (layer == ShowingLayer.PhysicsLayer) { activeHand.physicsTrackingLayer.gameObject.SetActive(true); }
+                    if (layer == ShowingLayer.GestureLayer) { activeHand.gestureLayer.gameObject.SetActive(true); }
                 }
                 SetLayerObjects((int)layer, true);
                 UpdateOverview(layer);
@@ -256,19 +265,20 @@ namespace SG.Examples
             layerObjects[(int)ShowingLayer.RigidbodyLayer] = this.rigidBodyObjects;
             layerObjects[(int)ShowingLayer.PhysicsLayer] = this.physicsObjects;
             layerObjects[(int)ShowingLayer.GrabLayer] = this.grabLayerObjects;
+            layerObjects[(int)ShowingLayer.GestureLayer] = this.GestureObjects;
 
             SetAllObjects(false);
             GoToStep(0);
 
             //allow both hands to at least call Awake, then turn them off for now.
-            SG_Util.SetChildren(leftHand.transform, true);
-            SG_Util.SetChildren(leftHand.transform, false);
-            SG_Util.SetChildren(rightHand.transform, true);
-            SG_Util.SetChildren(rightHand.transform, false);
+            SG.Util.SG_Util.SetChildren(leftHand.transform, true);
+            SG.Util.SG_Util.SetChildren(leftHand.transform, false);
+            SG.Util.SG_Util.SetChildren(rightHand.transform, true);
+            SG.Util.SG_Util.SetChildren(rightHand.transform, false);
 
-            SG_Util.AppendButtonText(prevBtn, "\r\n(" + prevKey.ToString() + ")");
-            SG_Util.AppendButtonText(nextBtn, "\r\n(" + nextKey.ToString() + ")");
-            SG_Util.AppendButtonText(calibrateWristBtn, "\r\n(" + wristKey.ToString() + ")");
+            SG.Util.SG_Util.AppendButtonText(prevBtn, "\r\n(" + prevKey.ToString() + ")");
+            SG.Util.SG_Util.AppendButtonText(nextBtn, "\r\n(" + nextKey.ToString() + ")");
+            SG.Util.SG_Util.AppendButtonText(calibrateWristBtn, "\r\n(" + wristKey.ToString() + ")");
 
 
         }
@@ -278,15 +288,16 @@ namespace SG.Examples
         {
             if (activeHand == null)
             {
-                if (leftHand.hardware.GloveReady || rightHand.hardware.GloveReady)
+                if (leftHand.gloveHardware.IsConnected || rightHand.gloveHardware.IsConnected)
                 {
-                    activeHand = rightHand.hardware.GloveReady ? rightHand : leftHand;
+                    activeHand = rightHand.gloveHardware.IsConnected ? rightHand : leftHand;
 
                     activeHand.handModel.gameObject.SetActive(true);
                     activeHand.handAnimation.updateWrist = true;
                     activeHand.handAnimation.CalibrateWrist();
-                    activeHand.handAnimation.UpdateWrist(activeHand.hardware.GloveData);
-                    activeHand.handAnimation.UpdateHand(activeHand.hardware.GloveData);
+                    activeHand.handAnimation.UpdateWrist(activeHand.GetIMURotation());
+
+                    activeHand.handAnimation.UpdateHand(SG_HandPose.Idle(activeHand.TracksRightHand));
                     activeHand.feedbackScript.DebugEnabled = true;
                     activeHand.grabScript.DebugEnabled = true;
                     activeHand.rigidBodyLayer.DebugEnabled = true;
@@ -295,6 +306,11 @@ namespace SG.Examples
                     if (this.showing != ShowingLayer.PhysicsLayer)
                     {
                         activeHand.physicsTrackingLayer.gameObject.SetActive(false);
+                    }
+                    gestureUI.gestureLayer = activeHand.gestureLayer;
+                    if (gestureUI.gestureLayer != null)
+                    {
+                        gestureUI.gestureToCheck = activeHand.gestureLayer.gestures.Length > 0 ? activeHand.gestureLayer.gestures[0] : null;
                     }
                 }
             }

@@ -1,23 +1,19 @@
-﻿using UnityEngine;
+﻿using JetBrains.Annotations;
+using SGCore.Kinematics;
+using System;
+using UnityEngine;
 
 namespace SG
 {
-    /// <summary> A hand model with different layers, that follows a GameObject with a configurable offset </summary>
+
+    
+    /// <summary> A hand model with different layers, that follows one of the hands in the GloveList </summary>
     public class SG_TrackedHand : MonoBehaviour
     {
+        //----------------------------------------------------------------------------------------------
+        // Tracking Method Enum
 
-        /// <summary> The hardware this hand is tracked with. Used to calculate offsets. </summary>
-        public enum TrackingHardware
-        {
-            /// <summary> Custom tracking hardware is used, so offsets are calculated during Start(). </summary>
-            Custom,
-            /// <summary> SenseGlove Vive Tracker Mount </summary>
-            ViveTracker,
-            /// <summary> Oculus Rift S Controller using 3D Printed SG Mount; trackedObject should be the Left/RightControllerAnchor in the OVRCameraRig plugin. </summary>
-            RiftSController
-        }
-
-        /// <summary> The way the tracking is estableshed. </summary>
+        /// <summary> The way this TrackedHand follows its TargetPosition </summary>
         public enum TrackingMethod
         {
             /// <summary> The hand matches the trackedObject's position and rotations, with offsets. </summary>
@@ -28,22 +24,27 @@ namespace SG
             Disabled
         }
 
-        /// <summary> The hand tracking hardware used to animae / link this TrackedHand. </summary>
-        public SG_SenseGloveHardware hardware;
+        //----------------------------------------------------------------------------------------------
+        // Member Variables
 
-        /// <summary> The object that this script will attempt to follow. </summary>
-        [SerializeField] protected Transform trackedObject;
+        /// <summary> The SG_HapticGlove that this TrackedHand pulls its data from. </summary>
+        [Header("Hand Tracking")]
+        public SG_HapticGlove gloveHardware;
 
-        /// <summary> The hardware that controls the trackedObject's position. Used to calultae offsets. </summary>
-        public TrackingHardware trackingHardware = TrackingHardware.ViveTracker;
+        /// <summary> The Object that we're trying to track the position / rotation of. Can be auto-assinged via the SG_User script. </summary>
+        [Header("Positional Tracking")]
+        public Transform trackedObject;
+        /// <summary> The tracking hardware used to determine the TrackedObject' position. Can be auto-assinged via the SG_User script. </summary>
+        public SGCore.PosTrackingHardware trackingHardware = SGCore.PosTrackingHardware.ViveTracker;
+
         /// <summary> How the position of this TrackedHand is determined. </summary>
         public TrackingMethod trackingMethod = TrackingMethod.Default;
 
+
+        [Header("Hand Layers")]
         /// <summary> Information of the 3D model of the hand this script represents. </summary>
         public SG_HandModelInfo handModel;
-
         /// <summary> The script that animates this trackedHand </summary>
-        [Header("Hand Layers")]
         public SG_HandAnimator handAnimation;
         /// <summary> The script responsble for collecting force-feedback from objects to this hardware. </summary>
         public SG_HandFeedback feedbackScript;
@@ -53,34 +54,70 @@ namespace SG
         public SG_HandRigidBodies rigidBodyLayer;
         /// <summary> The script that prevents this hand from passing through non-trigger colliders. </summary>
         public SG_HandRigidBodies physicsTrackingLayer;
+        /// <summary> The script that prevents this hand from passing through non-trigger colliders. </summary>
+        public SG_GestureLayer gestureLayer;
+        /// <summary> A visual indication of the hand state. </summary>
+        public SG_HandStateIndicator statusIndicator;
+        /// <summary> A script to handle calibration of a HapticGlove. </summary>
+        public SG_CalibrationSequence calibration;
+
+        // Internal properties 
 
         /// <summary> If set to true, this hand will ignore collisions with SG_Interactable objects that its rigidbody collides with.</summary>
         /// <remarks> The PhysicsTrackingLayer bodies have no rigidbodies of their own, and so their OnCollisionEnter events fire here. </remarks>
         protected bool ignoreGrabables = false;
+        
+        /// <summary> Whether or not this glove was connected when we last checked. </summary>
+        protected bool wasConnected = false;
 
         /// <summary> The position offset between this trackedHand and its trackedObject. </summary>
-        protected Vector3 positionOffset = Vector3.zero;
+        protected Vector3 customPosOffset = Vector3.zero;
         /// <summary> The rotation offset between this trackedHand and its trackedObject. </summary>
-        protected Quaternion rotationOffset = Quaternion.identity;
+        protected Quaternion customRotOffset = Quaternion.identity;
 
         /// <summary> This object's Rigidbody, used when dealing with Physics-based tracking. </summary>
         protected Rigidbody handRB = null;
         /// <summary> The rotation speed of the Rigidbody, when using Physics-based tracking. </summary>
         protected static float physRotationSpeed = 25;
 
+        /// <summary> Whether or not we still need to grab a Wirst location this frame. </summary>
+        protected bool wristThisFrame = true;
+        /// <summary> The last wrist position determined </summary>
+        protected Vector3 lastWristPosition = Vector3.zero;
+        /// <summary> The last wrist rotation determined </summary>
+        protected Quaternion lastWristRotation = Quaternion.identity;
 
-        /// <summary> The position that this trackedHand should be in, based on its trackedObject and offsets. </summary>
-        public Vector3 TargetPosition
+        /// <summary> Distance in m, before the hand snaps to the targer Position / Rotation </summary>
+        public static float handSnapDist = 1.0f;
+        /// <summary> If the hand too far from the targetPosition (handSnapDist), it will reset after this time. </summary>
+        public static float handSnapTime = 0.5f;
+        /// <summary> Individual timer to keep track if the hand needs to snap to the targetPosition </summary>
+        protected float snapTimer = 0;
+
+
+        //----------------------------------------------------------------------------------------------
+        // Accessors
+
+        /// <summary> Is true if this TrackedHand can determine its position using SenseGlove methods. </summary>
+        public bool HasPositionalTracking
         {
-            get { return trackedObject != null ? trackedObject.transform.position + (this.trackedObject.rotation * positionOffset) : this.transform.position; }
+            get; protected set;
         }
 
-        /// <summary> The rotation that this trackedHand should be in, based on its trackedObject and offsets. </summary>
-        public Quaternion TargetRotation
-        {
-            get { return trackedObject != null ? trackedObject.transform.rotation * rotationOffset : this.transform.rotation; }
-        }
 
+        /// <summary> Enables / Disables all TrackedHand  functionalities. </summary>
+        public bool HandEnabled
+        {
+            get 
+            {
+                bool handModel = this.handModel != null && this.handModel.gameObject.activeSelf;
+                return handModel;
+            }
+            set 
+            {
+                if (this.handModel != null) { this.handModel.gameObject.SetActive(value); }
+            }
+        }
 
         /// <summary> Returns true if this Script is set up to track a right hand. </summary>
         /// <returns></returns>
@@ -88,18 +125,272 @@ namespace SG
         {
             get
             {
-                if (hardware != null)
+                return this.handModel != null
+                    && (this.handModel.handSide != HandSide.LeftHand);
+                //return this.hardware != null && this.hardware.hand == GloveSide.Right;
+            }
+        }
+
+        //----------------------------------------------------------------------------------------------
+        // Hand Tracking Methods
+
+        /// <summary> Returns the HandPose from the Glove Hardware linked to this TrackedHand. </summary>
+        /// <param name="hand"></param>
+        /// <param name="pose"></param>
+        /// <returns></returns>
+        public virtual bool GetHandPose(out SG_HandPose pose)
+        {
+            if (this.gloveHardware != null && this.handModel != null)
+            {
+                SGCore.Kinematics.BasicHandModel HM = handModel.HandKinematics;
+                //Debug.Log("TrackedHand: " + HM.ToString());
+                return this.gloveHardware.GetHandPose(this.handModel.HandKinematics, out pose, true);
+            }
+            pose = SG_HandPose.Idle(this.TracksRightHand);
+            return false;
+        }
+
+        /// <summary> Returns the IMU rotation of the Glove Hardware linked to this TrackedHand. </summary>
+        /// <returns></returns>
+        public virtual Quaternion GetIMURotation()
+        {
+            Quaternion res = Quaternion.identity;
+            if (this.gloveHardware != null && gloveHardware.GetIMURotation(out res))
+            {
+                return res;
+            }
+            return res;
+        }
+
+        /// <summary> Retrieve the finger flexions for the linked GloveHarware. </summary>
+        /// <param name="flexions"></param>
+        /// <returns></returns>
+        public virtual bool GetNormalizedFlexions(out float[] flexions)
+        {
+            if (this.gloveHardware != null && this.handModel != null)
+            {
+                return this.gloveHardware.GetNormalizedFlexion(out flexions);
+            }
+            flexions = new float[5];
+            return false;
+        }
+
+
+
+        //----------------------------------------------------------------------------------------------
+        // Positional Tracking Methods
+
+
+        /// <summary> The position that this trackedHand should be in, based on its trackedObject and offsets. </summary>
+        public virtual Vector3 TargetPosition
+        {
+            get
+            {
+                UpdateWristLocation();
+                return lastWristPosition;
+            }
+        }
+
+        /// <summary> The rotation that this trackedHand should be in, based on its trackedObject and offsets. </summary>
+        public virtual Quaternion TargetRotation
+        {
+            get
+            {
+                UpdateWristLocation();
+                return lastWristRotation;
+            }
+        }
+
+        /// <summary> Access both target position and rotation of the hand </summary>
+        /// <param name="targetPosition"></param>
+        /// <param name="targetRotation"></param>
+        /// <returns></returns>
+        public void GetTargets(out Vector3 targetPosition, out Quaternion targetRotation)
+        {
+            UpdateWristLocation();
+            targetPosition = this.lastWristPosition;
+            targetRotation = this.lastWristRotation;
+        }
+
+        /// <summary> Updates the location of the TrackedHand, based on it's TrackedObject and -Hardware. </summary>
+        protected void UpdateWristLocation()
+        {
+            if (wristThisFrame)
+            {
+                if (this.trackingHardware == SGCore.PosTrackingHardware.Custom)
                 {
-                    if (Application.isPlaying && hardware.GloveReady)
+                    HasPositionalTracking = this.trackedObject != null;
+                    if (HasPositionalTracking)
                     {
-                        return this.hardware.IsRight;
-                    }
-                    else
-                    {   //we're in the editor, so lets base if off the SG_SenseGloveHardware
-                        return this.hardware.connectionMethod != SG_SenseGloveHardware.ConnectionMethod.NextLeftHand;
+                        this.lastWristRotation = SG.Util.SG_Util.CalculateTargetRotation(this.trackedObject, this.customRotOffset);
+                        this.lastWristPosition = SG.Util.SG_Util.CalculateTargetPosition(this.trackedObject, this.customPosOffset, this.customRotOffset);
+                        //Debug.Log("Updating hand with Custom! Offsets: " + customPosOffset.ToString() + ", " + customRotOffset.eulerAngles.ToString());
                     }
                 }
-                return this.name.ToLower().Contains("right"); //last ditch effort
+                else if (this.gloveHardware != null)
+                {
+                    HasPositionalTracking = gloveHardware.GetWristLocation(this.trackedObject, this.trackingHardware, out this.lastWristPosition, out this.lastWristRotation);
+                }
+                else
+                {
+                    lastWristPosition = this.trackedObject != null ? trackedObject.position : Vector3.zero;
+                    lastWristRotation = this.trackedObject != null ? trackedObject.rotation : Quaternion.identity;
+                    HasPositionalTracking = false;
+                }
+                wristThisFrame = false;
+            }
+        }
+
+
+
+        /// <summary> Setup and/or change the tracking variables of this hand. </summary>
+        /// <param name="newTarget"></param>
+        /// <param name="trackType"></param>
+        /// <param name="trackMethod"></param>
+        /// <param name="rightHand"></param>
+        public virtual void SetTrackingMethod(TrackingMethod trackMethod)
+        {
+            this.trackingMethod = trackMethod;
+
+            //Ignore collisions of the hand itself
+            if (this.rigidBodyLayer != null)
+            {
+                if (this.physicsTrackingLayer != null) { this.physicsTrackingLayer.SetIgnoreCollision(this.rigidBodyLayer, true); }
+                if (this.feedbackScript != null) { this.feedbackScript.SetIgnoreCollision(this.rigidBodyLayer, true); }
+                if (this.grabScript != null) { this.grabScript.SetIgnoreCollision(this.rigidBodyLayer, true); }
+            }
+            if (this.physicsTrackingLayer != null)
+            {
+                if (this.rigidBodyLayer != null) { this.rigidBodyLayer.SetIgnoreCollision(this.physicsTrackingLayer, true); }
+                if (this.feedbackScript != null) { this.feedbackScript.SetIgnoreCollision(this.physicsTrackingLayer, true); }
+                if (this.grabScript != null) { this.grabScript.SetIgnoreCollision(this.physicsTrackingLayer, true); }
+            }
+
+            //Apply the appropriate RB method
+            if (trackingMethod == TrackingMethod.PhysicsBased && physicsTrackingLayer != null)
+            {
+                physicsTrackingLayer.RemoveRigidBodies();
+                this.handRB = SG.Util.SG_Util.TryAddRB(this.gameObject, false, false);
+                ignoreGrabables = true;
+                if (physicsTrackingLayer != null) { physicsTrackingLayer.gameObject.SetActive(true); }
+            }
+            else
+            {
+                ignoreGrabables = false;
+                SG.Util.SG_Util.TryRemoveRB(this.gameObject); //should prevent calling OnCollisionEnter
+                this.handRB = null;
+                if (physicsTrackingLayer != null) { physicsTrackingLayer.gameObject.SetActive(false); }
+            }
+        }
+
+        /// <summary> Update the TrackedObject of this TrackedHand </summary>
+        /// <param name="trackedObj"></param>
+        public virtual void SetTrackingHardware(Transform trackedObj)
+        {
+            SetTrackingHardware(trackedObject, this.trackingHardware);
+        }
+
+        /// <summary> Update the TrackedObject and -Hardware of this TrackedHand </summary>
+        /// <param name="trackedObj"></param>
+        /// <param name="hardware"></param>
+        public virtual void SetTrackingHardware(Transform trackedObj, SGCore.PosTrackingHardware hardware)
+        {
+            this.trackedObject = trackedObj;
+            this.trackingHardware = hardware;
+            //Calculate custom offstes if these are used.
+            if (trackedObject != null)
+            {
+                SG.Util.SG_Util.CalculateOffsets(this.transform, this.trackedObject, out this.customPosOffset, out this.customRotOffset);
+            }
+        }
+
+
+
+        /// <summary> Swap the tracking targets between this hand an another one. </summary>
+        /// <param name="otherHand"></param>
+        public virtual void SwapTracking(SG_TrackedHand otherHand)
+        {
+            if (otherHand != null)
+            {
+                Transform myTrackedObject = this.trackedObject;
+                this.trackedObject = otherHand.trackedObject;
+                otherHand.trackedObject = myTrackedObject;
+            }
+        }
+
+        /// <summary> Update this script's transform by applying a position and rotation directly. </summary>
+        public virtual void UpdateTransformDefault()
+        {
+            if (this.trackedObject != null)
+            {
+                this.transform.rotation = TargetRotation;
+                this.transform.position = TargetPosition;
+            }
+        }
+
+        /// <summary> Update this script's transform by applying a velocity to its rigidbody. </summary>
+        public virtual void UpdateTransformPhysics()
+        {
+            if (this.trackedObject != null && this.handRB != null)
+            {
+                Vector3 targetPos = this.TargetPosition;
+                if ((this.handRB.position - targetPos).magnitude >= handSnapDist)
+                {
+                    snapTimer += Time.fixedDeltaTime;
+                    if (snapTimer >= handSnapTime)
+                    {
+                        Debug.Log("Snapping hand because it was too far away (> " + handSnapDist + "m for " + handSnapTime + "s.");
+                        snapTimer = 0;
+                        this.transform.rotation = TargetRotation;
+                        this.transform.position = TargetPosition;
+                    }
+                    else
+                    {
+                        SG.Util.SG_Util.TransformRigidBody(ref this.handRB, targetPos, this.TargetRotation, physRotationSpeed);
+                    }
+                }
+                else
+                {
+                    snapTimer = 0;
+                    SG.Util.SG_Util.TransformRigidBody(ref this.handRB, targetPos, this.TargetRotation, physRotationSpeed);
+                }
+            }
+        }
+
+
+
+        //----------------------------------------------------------------------------------------------
+        // Utility Scripts
+
+
+        /// <summary> Ensure hand layers don't collide with one another. </summary>
+        protected virtual void SetupCollisions()
+        {
+            //Ignore collisions of the hand itself
+            if (this.rigidBodyLayer != null)
+            {
+                if (this.physicsTrackingLayer != null) { this.rigidBodyLayer.SetIgnoreCollision(this.physicsTrackingLayer, true); }
+                if (this.feedbackScript != null) { this.feedbackScript.SetIgnoreCollision(this.rigidBodyLayer, true); }
+            }
+            if (this.feedbackScript != null && this.physicsTrackingLayer != null)
+            {
+                this.feedbackScript.SetIgnoreCollision(this.physicsTrackingLayer, true);
+            }
+
+            //Apply the appropriate RB method
+            if (trackingMethod == TrackingMethod.PhysicsBased && physicsTrackingLayer != null)
+            {
+                physicsTrackingLayer.RemoveRigidBodies();
+                this.handRB = SG.Util.SG_Util.TryAddRB(this.gameObject, false, false);
+                ignoreGrabables = true;
+                if (physicsTrackingLayer != null) { physicsTrackingLayer.gameObject.SetActive(true); }
+            }
+            else
+            {
+                ignoreGrabables = false;
+                SG.Util.SG_Util.TryRemoveRB(this.gameObject); //should prevent calling OnCollisionEnter
+                this.handRB = null;
+                if (physicsTrackingLayer != null) { physicsTrackingLayer.gameObject.SetActive(false); }
             }
         }
 
@@ -107,12 +398,14 @@ namespace SG
         /// <summary> Link relevant scripts to this trackedHand, if they have not been assinged yet. </summary>
         protected void CheckForScripts()
         {
-            if (this.hardware == null) { this.hardware = this.gameObject.GetComponent<SG_SenseGloveHardware>(); }
+            //if (this.hardware == null) { this.hardware = this.gameObject.GetComponent<SG_HapticGlove>(); }
             if (this.handModel == null) { this.handModel = this.GetComponentInChildren<SG_HandModelInfo>(); }
 
             if (this.grabScript == null) { this.grabScript = this.GetComponentInChildren<SG_GrabScript>(); }
             if (this.feedbackScript == null) { this.feedbackScript = this.GetComponentInChildren<SG_HandFeedback>(); }
             if (this.handAnimation == null) { this.handAnimation = this.GetComponentInChildren<SG_HandAnimator>(); }
+            if (this.gestureLayer == null) { this.gestureLayer = this.GetComponentInChildren<SG_GestureLayer>(); }
+            if (this.statusIndicator == null) { this.statusIndicator = this.GetComponentInChildren<SG_HandStateIndicator>(); }
 
             //Since both RB and PhysicsTrackingLayers have the same component, assing whichever one we haven't done yet.
             if (this.rigidBodyLayer == null || this.physicsTrackingLayer == null)
@@ -134,110 +427,81 @@ namespace SG
             }
         }
 
-        /// <summary> Setup and/or change the tracking variables of this hand. </summary>
-        /// <param name="newTarget"></param>
-        /// <param name="trackType"></param>
-        /// <param name="trackMethod"></param>
-        /// <param name="rightHand"></param>
-        protected virtual void SetupTracking(Transform newTarget, TrackingHardware trackType, TrackingMethod trackMethod, bool rightHand)
+        /// <summary> Updates the TrackedHand layers based on the HandState of the linked glove. Called when the CalibrationStage changes. </summary>
+        public void UpdateHandState()
         {
-            this.trackedObject = newTarget;
-            this.trackingHardware = trackType;
-            this.trackingMethod = trackMethod;
-
-            //Calculate appropriate offsets
-            if (trackedObject != null)
+            if (gloveHardware != null)
             {
-                if (trackingHardware != TrackingHardware.Custom)
+                if (this.statusIndicator != null)
                 {
-                    int LR = rightHand ? 1 : -1;
-                    Vector3 posOffs = Vector3.zero;
-                    Quaternion rotOffs = Quaternion.identity;
-                    if (trackingHardware == TrackingHardware.ViveTracker)
+                    //Debug.Log(this.name + ": Have to change hand state to " + gloveHardware.CalibrationStage.ToString());
+                    if (gloveHardware.IsConnected)
                     {
-                        posOffs = new Vector3(0.01f * LR, 0.04f, -0.085f);
-                        rotOffs = Quaternion.Euler(0, -90, -90);
-                        Debug.Log("Setting up " + (rightHand ? "right" : "left") + " hand for Vive Tracker");
+                        switch (this.gloveHardware.CalibrationStage)
+                        {
+                            case SGCore.Calibration.CalibrationStage.MoveFingers:
+                                this.statusIndicator.SetMaterials(SG_HandStateIndicator.HandState.CheckRanges);
+                                break;
+                            case SGCore.Calibration.CalibrationStage.CalibrationNeeded:
+                                this.statusIndicator.SetMaterials(SG_HandStateIndicator.HandState.CalibrationNeeded);
+                                break;
+                            case SGCore.Calibration.CalibrationStage.Calibrating:
+                                this.statusIndicator.SetMaterials(SG_HandStateIndicator.HandState.Calibrating);
+                                break;
+                            default:
+                                this.statusIndicator.SetMaterials(SG_HandStateIndicator.HandState.Default);
+                                break;
+                        }
                     }
-                    else if (trackingHardware == TrackingHardware.RiftSController)
+                    else { this.statusIndicator.SetMaterials(SG_HandStateIndicator.HandState.Disconnected); }
+
+                    //Update Text
+                    if (gloveHardware != null && gloveHardware.CalibrationStage == SGCore.Calibration.CalibrationStage.MoveFingers)
                     {
-                        posOffs = new Vector3(LR*-0.03f, -0.125f, -0.065f);
-                        rotOffs = Quaternion.Euler(0, -90, 20);
-                        Debug.Log("Setting up " + (rightHand ? "right" : "left") + " hand for Oculus Rift S Controller");
+                        statusIndicator.WristText = "Please move\r\nyour fingers";
                     }
-                    this.positionOffset = posOffs;
-                    this.rotationOffset = rotOffs;
+                    else
+                    {
+                        statusIndicator.WristText = "";
+                    }
                 }
-                else
+                //Update Animaytion
+                if (this.handAnimation != null)
                 {
-                    SG_Util.CalculateOffsets(this.transform, this.trackedObject, out this.positionOffset, out this.rotationOffset);
+                    if (this.gloveHardware.CalibrationStage == SGCore.Calibration.CalibrationStage.Done)
+                    {
+                        //Debug.Log("Re-enabled Hand Tracking as calibration works again");
+                        this.handAnimation.enabled = true;
+                    }
+                    else
+                    {
+                        //Debug.Log("Disabled hand animation for a reason");
+                        this.handAnimation.enabled = false; //diable automated animation
+                        this.handAnimation.UpdateHand(SG_HandPose.Idle(this.TracksRightHand));
+                    }
                 }
             }
-
-            //Ignore collisions of the hand itself
-            if (this.rigidBodyLayer != null)
-            {
-                if (this.physicsTrackingLayer != null) { this.rigidBodyLayer.SetIgnoreCollision(this.physicsTrackingLayer, true); }
-                if (this.feedbackScript != null) { this.feedbackScript.SetIgnoreCollision(this.rigidBodyLayer, true); }
-            }
-            if (this.feedbackScript != null && this.physicsTrackingLayer != null)
-            {
-                this.feedbackScript.SetIgnoreCollision(this.physicsTrackingLayer, true);
-            }
-
-            //Apply the appropriate RB method
-            if (trackingMethod == TrackingMethod.PhysicsBased && physicsTrackingLayer != null)
-            {
-                physicsTrackingLayer.RemoveRigidBodies();
-                this.handRB = SG_Util.TryAddRB(this.gameObject, false, false);
-                ignoreGrabables = true;
-                if (physicsTrackingLayer != null) { physicsTrackingLayer.gameObject.SetActive(true); }
-            }
-            else
-            {
-                ignoreGrabables = false;
-                SG_Util.TryRemoveRB(this.gameObject); //should prevent calling OnCollisionEnter
-                this.handRB = null;
-                if (physicsTrackingLayer != null) { physicsTrackingLayer.gameObject.SetActive(false); }
-            }
         }
 
 
-        /// <summary> Swap the tracking targets between this hand an another one. </summary>
-        /// <param name="otherHand"></param>
-        public virtual void SwapTracking(SG_TrackedHand otherHand)
+        //----------------------------------------------------------------------------------------------
+        // Monobehaviour
+
+
+        protected virtual void OnEnable()
         {
-            if (otherHand != null)
+            if (this.gloveHardware != null) 
             {
-                Transform myTrackedObject = this.trackedObject;
-                this.trackedObject = otherHand.trackedObject;
-                otherHand.trackedObject = myTrackedObject;
+                this.gloveHardware.CalibrationStateChanged.AddListener(UpdateHandState);
+                this.gloveHardware.DeviceConnected.AddListener(UpdateHandState);
             }
         }
 
-
-
-        /// <summary> Update this script's transform by applying a position and rotation directly. </summary>
-        public void UpdateTransformDefault()
+        protected virtual void OnDisable()
         {
-            if (trackedObject != null)
-            {
-                this.transform.rotation = TargetRotation;
-                this.transform.position = TargetPosition;
-            }
+            this.gloveHardware.CalibrationStateChanged.RemoveListener(UpdateHandState);
+            this.gloveHardware.DeviceConnected.RemoveListener(UpdateHandState);
         }
-
-        /// <summary> Update this script's transform by applying a velocity to its rigidbody. </summary>
-        public void UpdateTransformPhysics()
-        {
-            if (this.trackedObject != null && this.handRB != null)
-            {
-                SG_Util.TransformRigidBody(ref this.handRB, this.TargetPosition, this.TargetRotation, physRotationSpeed);
-            }
-        }
-
-
-
 
         protected virtual void Awake()
         {
@@ -246,21 +510,32 @@ namespace SG
 
         protected virtual void Start()
         {
-            if (this.handAnimation != null && trackingHardware != TrackingHardware.Custom) { handAnimation.updateWrist = false; }
-            SetupTracking(this.trackedObject, this.trackingHardware, this.trackingMethod, this.TracksRightHand);
-
-            if (this.handAnimation != null) { this.handAnimation.senseGlove = this.hardware; }
-            if (this.grabScript != null) { this.grabScript.hardware = this.hardware; }
-            if (this.feedbackScript != null) { this.feedbackScript.connectedGlove = this.hardware; }
-
+            SetTrackingHardware(this.trackedObject);
+            SetTrackingMethod(this.trackingMethod);
+            SetupCollisions();
+            //UpdateHandState();
         }
 
-
-        protected void Update()
+        protected virtual void Update()
         {
             if (this.trackingMethod == TrackingMethod.Default)
             {
                 UpdateTransformDefault();
+            }
+
+            if (this.gloveHardware != null)
+            {
+                bool isConnected = this.gloveHardware.IsConnected;
+                if (isConnected && !wasConnected)
+                {
+                    //glove hardware is connected for this frame
+                    if (this.handAnimation != null)
+                    {
+                        this.handAnimation.CalibrateWrist();
+                        this.SetTrackingHardware(this.trackedObject);
+                    }
+                }
+                wasConnected = isConnected;
             }
         }
 
@@ -270,6 +545,11 @@ namespace SG
             {
                 UpdateTransformPhysics();
             }
+        }
+
+        protected void LateUpdate()
+        {
+            wristThisFrame = true;
         }
 
         public void OnCollisionEnter(Collision collision)
@@ -285,13 +565,6 @@ namespace SG
                 }
             }
         }
-
-#if UNITY_EDITOR
-        protected void OnValidate()
-        {
-            CheckForScripts();
-        }
-#endif
 
     }
 }

@@ -1,28 +1,24 @@
-﻿using System.Collections.Generic;
+﻿using SG.Util;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace SG
 {
 
-    /// <summary> Represents different sections of the hand, used to determine feedback location. </summary>
-    public enum SG_HandSection
-    {
-        Thumb = 0,
-        Index,
-        Middle,
-        Ring,
-        Pinky,
-        Wrist,
-        Unknown
-    }
-
-    /// <summary> Attach to a collider and it will send haptic feedback to a SenseGlove on impact. Optionally tracks a GameObject.
+    /// <summary> Attach to a collider and it will send haptic feedback to a linked glove on impact. Optionally tracks a GameObject.
     /// Extended by SG_Finger to apply more forces. </summary>
     public class SG_BasicFeedback : SG_SimpleTracking
     {
+        //-------------------------------------------------------------------------------------------------------------------------------------------
+        // Member Variables
+
         /// <summary> Sense Glove that will receive the feedback effect </summary>
         [Header("Hand Settings")]
-        public SG_SenseGloveHardware linkedGlove;
+        public SG_HapticGlove linkedGlove;
+
+        /// <summary> Access the TrackedHand, through which one can send/receive SenseGlove data. </summary>
+        public SG_HandFeedback feedbackScript;
+
         /// <summary> The part of the hand that this script belongs to. </summary>
         public SG_HandSection handLocation = SG_HandSection.Unknown;
 
@@ -59,19 +55,14 @@ namespace SG
         protected float cooldownTimer = 0;
 
 
-
+        //-------------------------------------------------------------------------------------------------------------------------------------------
+        // Accessors
 
         /// <summary> Used to show or hide this object's collider. </summary>
         public override bool DebugEnabled
         {
-            get
-            {
-                return base.DebugEnabled;
-            }
-            set
-            {
-                base.DebugEnabled = value;
-            }
+            get { return base.DebugEnabled; }
+            set { base.DebugEnabled = value; }
         }
 
         /// <summary> Returns true if this script can send an impact vibration </summary>
@@ -84,64 +75,78 @@ namespace SG
         /// <returns></returns>
         public Vector3 SmoothedVelocity
         {
-            get
-            {
-                return SG_Util.Average(this.velocities);
-            }
+            get { return SG_Util.Average(this.velocities); }
         }
 
 
+        //-------------------------------------------------------------------------------------------------------------------------------------------
+        // Functions
 
         /// <summary> Setup the SG_BasicFeedback script components  </summary>
         public virtual void SetupSelf()
         {
+            //Debug.Log(this.name + "Calculated Offsets!");
             SG_Util.TryAddRB(this.gameObject, false, true);
             cooldownTimer = 0;
             SetTrackingTarget(this.trackingTarget, true); //updates offsets on start
             this.lastPosition = this.transform.position;
+
+            if (this.linkedGlove == null && this.feedbackScript != null && this.feedbackScript.TrackedHand != null) 
+            { 
+                this.linkedGlove = this.feedbackScript.TrackedHand.gloveHardware; 
+            }
         }
 
-        /// <summary> Send an impact vibration to this script's connected glove, based on a speed in m/s.  </summary>
+
+        /// <summary> Send impact feedback to the linked glove, based on an impact-velocity. </summary>
         /// <param name="impactVelocity"></param>
         public void SendImpactFeedback(float impactVelocity)
         {
+            SendImpactFeedback(impactVelocity, null);
+        }
+
+
+        /// <summary> Send an impact vibration to this script's connected glove, based on a speed in m/s. Checks for SG_RigidBodies. </summary>
+        /// <param name="impactVelocity"></param>
+        public void SendImpactFeedback(float impactVelocity, Collider col)
+        {
             if (handLocation != SG_HandSection.Unknown && impactVelocity >= minImpactSpeed)
             {
-                int impactLevel;
-                //evaluate the intensity
-                if (impactVelocity > maxImpactSpeed || minImpactSpeed >= maxImpactSpeed)
+                SG_TrackedBody rbScript;
+                if (col == null || (col != null && !SG_TrackedBody.GetTrackedBodyScript(col, out rbScript))) //we either don't have a collider, or we do, but it doesn't have a RigidBody script.
                 {
-                    impactLevel = maxBuzzLevel;
-                }
-                else
-                {
-                    //map the impact parameters on the speed.
-                    float mapped = Mathf.Clamp01(SG_Util.Map(impactVelocity, minImpactSpeed, maxImpactSpeed, 0, 1));
-                    //we're actually start at minBuzzLevel; that's when you can start to feel the Sense Glove vibrations
-                    impactLevel = (int)(SG_Util.Map(impactProfile.Evaluate(mapped), 0, 1, minBuzzLevel, maxBuzzLevel));
-                }
-                //actually send the effect
-                if (linkedGlove != null)
-                {
-                    if (handLocation == SG_HandSection.Wrist)
+                    int impactLevel;
+                    //evaluate the intensity
+                    if (impactVelocity > maxImpactSpeed || minImpactSpeed >= maxImpactSpeed)
                     {
-
-
-                        SenseGloveCs.ThumperEffect effect = impactLevel > 50 ? SenseGloveCs.ThumperEffect.Impact_Thump_100
-                            : SenseGloveCs.ThumperEffect.Impact_Thump_30;
-
-                        Debug.Log("Speed: " + impactVelocity + " => " + impactLevel + " => " + effect.ToString());
-                        linkedGlove.SendThumperCmd(effect);
+                        impactLevel = maxBuzzLevel;
                     }
-                    else //finger
+                    else
                     {
-                        SenseGloveCs.Finger finger = (SenseGloveCs.Finger)handLocation; //can do this since the finger indices match
-                        linkedGlove.SendBuzzCmd(finger, impactLevel, vibrationTime);
+                        //map the impact parameters on the speed.
+                        float mapped = Mathf.Clamp01(SG_Util.Map(impactVelocity, minImpactSpeed, maxImpactSpeed, 0, 1));
+                        //we're actually start at minBuzzLevel; that's when you can start to feel the Sense Glove vibrations
+                        impactLevel = (int)(SG_Util.Map(impactProfile.Evaluate(mapped), 0, 1, minBuzzLevel, maxBuzzLevel));
                     }
-                    cooldownTimer = 0; //reset cooldown for this finger.
+                    //actually send the effect
+                    if (linkedGlove != null && vibrationTime > 0)
+                    {
+                        if (handLocation == SG_HandSection.Wrist) //it's a wrist.
+                        {
+                            linkedGlove.SendCmd(new TimedThumpCmd(impactLevel, vibrationTime / 1000.0f));
+                        }
+                        else //finger
+                        {
+                            SGCore.Finger finger = (SGCore.Finger)handLocation; //can do this since the finger indices match
+                            SGCore.Haptics.SG_TimedBuzzCmd buzzCmd = new SGCore.Haptics.SG_TimedBuzzCmd(finger, impactLevel, vibrationTime);
+                            linkedGlove.SendCmd(buzzCmd);
+                        }
+                        cooldownTimer = 0; //reset cooldown for this finger.
+                    }
                 }
             }
         }
+
 
         /// <summary> Update this collider's position, and register its velocity. </summary>
         protected override void UpdatePosition()
@@ -156,6 +161,9 @@ namespace SG
             lastPosition = currPos;
         }
 
+
+        //-------------------------------------------------------------------------------------------------------------------------------------------
+        // Monobehaviour
 
 
         protected override void Awake()
@@ -178,7 +186,8 @@ namespace SG
             if (impactFeedbackEnabled && CanImpact && !other.isTrigger)
             {
                 Vector3 currentVelocity = this.SmoothedVelocity;
-                SendImpactFeedback(this.SmoothedVelocity.magnitude);
+                //Debug.Log(this.name + " bumping " + other.name);
+                SendImpactFeedback(this.SmoothedVelocity.magnitude, other);
             }
         }
 

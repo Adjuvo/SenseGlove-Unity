@@ -1,15 +1,15 @@
-﻿using System.Collections;
+﻿using SG.Util;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace SG.Examples
 {
-
     /// <summary> A script to rotate an object around a specified axis </summary>
     public class SGEx_RotateSimple : MonoBehaviour
     {
 
-        public MovementAxis moveAround = MovementAxis.Y;
+        public SG_Util.MoveAxis moveAround = SG_Util.MoveAxis.Y;
         public float rotationSpeed = 10f;
         public bool resetOnEnable = false;
 
@@ -34,7 +34,7 @@ namespace SG.Examples
         void Update()
         {
             float dAngle = Time.deltaTime * rotationSpeed;
-            this.transform.rotation = this.transform.rotation * Quaternion.AngleAxis(dAngle, SG_Util.GetAxis(this.moveAround));
+            this.transform.rotation = this.transform.rotation * Quaternion.AngleAxis(dAngle, SG.Util.SG_Util.GetAxis(this.moveAround));
         }
     }
 }

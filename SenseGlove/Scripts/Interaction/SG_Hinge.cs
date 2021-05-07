@@ -295,7 +295,7 @@ namespace SG
                 angle = localAngles.z;
             }
 
-            return SG_Util.NormalizeAngle(angle);
+            return SG.Util.SG_Util.NormalizeAngle(angle);
         }
 
         /// <summary> Retrieve the angle that the hinge should face to reach the chosen position. </summary>
@@ -331,11 +331,11 @@ namespace SG
                 res = Mathf.Atan2(proj.y, proj.x);
             }
 
-            res = SenseGloveCs.Values.Degrees(res);
+            res = SGCore.Kinematics.Values.Rad2Deg*res;
 
             //  SenseGlove_Debugger.Log("Position " + SG_Util.ToString(absPosition) + " ==> " + res);
 
-            res = SG_Util.NormalizeAngle(res);
+            res = SG.Util.SG_Util.NormalizeAngle(res);
 
             return res;
         }
@@ -376,7 +376,7 @@ namespace SG
         /// <returns></returns>
         public float HingeRatio()
         {
-            return Mathf.Clamp01(SenseGloveCs.Values.Interpolate(this.GetHingeAngle(), this.minAngle, this.maxAngle, 0, 1));
+            return Mathf.Clamp01(SGCore.Kinematics.Values.Map(this.GetHingeAngle(), this.minAngle, this.maxAngle, 0, 1));
         }
 
         #endregion HingeMethods

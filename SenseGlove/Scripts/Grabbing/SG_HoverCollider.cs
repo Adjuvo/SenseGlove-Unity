@@ -7,33 +7,112 @@ namespace SG
     /// <summary> A script that keeps track of multiple SG_Interactable objects it collides with. </summary>
     public class SG_HoverCollider : SG_SimpleTracking
     {
-        /// <summary> The list of interactables that are currently being touched. </summary>
-        protected List<SG_Interactable> interactablesTouched = new List<SG_Interactable>();
-        /// <summary> The number of colliders for each interactable that this script is touching. </summary>
-        protected List<int> collidersInside = new List<int>();
+        //----------------------------------------------------------------------------------------------
+        // Detection Arguments
 
+        /// <summary> A class containing everything related to a SG_Interactable we're touching.  </summary>
+        public class DetectionArgs
+        {
+            /// <summary> The interactable we're currently hovering over. </summary>
+            public SG_Interactable Interactable
+            {
+                get; private set;
+            }
+
+            /// <summary> How many colliders of Interactable we're currently touching. </summary>
+            public int CollidersInside
+            {
+                get; private set;
+            }
+
+            /// <summary> Create a new instance of the DetectionArgs </summary>
+            /// <param name="iScript"></param>
+            /// <param name="collidersNowInside"></param>
+            public DetectionArgs(SG_Interactable iScript, int collidersNowInside = 1)
+            {
+                Interactable = iScript;
+                CollidersInside = collidersNowInside;
+            }
+
+
+            /// <summary> Returns true if our Interactable is the same as otherScript. </summary>
+            /// <remarks> Placed in a separate function so we can optionally so some checks on a script level. </remarks>
+            /// <param name="otherScript"></param>
+            /// <returns></returns>
+            public bool SameScript(SG_Interactable otherScript/*, bool debug*/)
+            {
+                //if (debug)
+                //    Debug.Log("Comparing " + Interactable.name + " to " + otherScript.name + ", result will be " + (this.Interactable == otherScript ? "TRUE" : "FALSE"));
+                return this.Interactable == otherScript;
+            }
+
+
+            /// <summary> Retruns true if we're still touching at least one collider of this same Interactable.  </summary>
+            public bool StillHovering
+            {
+                get { return CollidersInside > 0; }
+            }
+
+
+            /// <summary> Returns true if this Interactable can no longer be located, or if it is disabled. </summary>
+            public bool IsMissing
+            {
+                get
+                {
+                    if (this.Interactable != null)
+                    {
+                        return !this.Interactable.gameObject.activeInHierarchy;
+                    }
+                    return true; //otherwise it's been destroyed
+                }
+            }
+
+
+            /// <summary> Notify we're touching (another) collider of this same Interactable. </summary>
+            public void AddCollider()
+            {
+                CollidersInside = CollidersInside + 1;
+            }
+
+            /// <summary> Notify we're no longer touching a collider of this same Interactable.  </summary>
+            public void RemoveCollider()
+            {
+                CollidersInside = CollidersInside - 1;
+            }
+
+        }
+
+        //----------------------------------------------------------------------------------------------
+        // Member Variables
+
+        /// <summary> The list of interactables that are currently being touched. </summary>
+        protected List<DetectionArgs> interactablesTouched = new List<DetectionArgs>();
+
+
+        //----------------------------------------------------------------------------------------------
+        // Accessors
 
         /// <summary> The interactable objects that this script is currently touching </summary>
         public SG_Interactable[] TouchedObjects
         {
-            get { return interactablesTouched.ToArray(); }
+            get
+            {
+                SG_Interactable[] res = new SG_Interactable[interactablesTouched.Count];
+                for (int i=0; i< interactablesTouched.Count; i++)
+                {
+                    res[i] = interactablesTouched[i].Interactable;
+                }
+                return res;
+            }
         }
+
+        //----------------------------------------------------------------------------------------------
+        // Functions
 
         /// <summary> Return treu if this script is touching an object </summary>
         /// <returns></returns>
         public bool IsTouching() { return interactablesTouched.Count > 0; }
 
-        /// <summary> Returns true if this script is touching a specific GameObject. </summary>
-        /// <param name="obj"></param>
-        /// <returns></returns>
-        public bool IsTouching(GameObject obj)
-        {
-            for (int i = 0; i < interactablesTouched.Count; i++)
-            {
-                if (GameObject.ReferenceEquals(interactablesTouched[i].gameObject, obj)) { return true; }
-            }
-            return false;
-        }
 
         /// <summary> Returns true if this script is touching a specific SG_Interactable. </summary>
         /// <param name="interactable"></param>
@@ -42,7 +121,7 @@ namespace SG
         {
             for (int i = 0; i < interactablesTouched.Count; i++)
             {
-                if (interactablesTouched[i] == interactable) { return true; }
+                if (interactablesTouched[i].SameScript(interactable/*, false*/)) { return true; }
             }
             return false;
         }
@@ -65,11 +144,11 @@ namespace SG
             return bothTouch.ToArray();
         }
 
+
         /// <summary> Clear this scripts references to other scripts. </summary>
         public void ClearTouchedObjects()
         {
             interactablesTouched.Clear();
-            collidersInside.Clear();
         }
 
 
@@ -96,24 +175,6 @@ namespace SG
         }
 
 
-        /// <summary> Checks if a collider is connected to a specific touchedScript </summary>
-        /// <param name="col"></param>
-        /// <param name="touchedScript"></param>
-        /// <returns></returns>
-        public static bool SameScript(Collider col, SG_Interactable touchedScript)
-        {
-            if (touchedScript != null && col != null)
-            {
-                if (GameObject.ReferenceEquals(col.gameObject, touchedScript.gameObject))
-                    return true; //this is the touched object.
-                                 // at this line, col does not have the same material, but perhaps its attachedRigidbody does.
-                return col.attachedRigidbody != null && GameObject.ReferenceEquals(col.attachedRigidbody.gameObject,
-                    touchedScript.gameObject);
-            }
-            return false;
-        }
-
-
         /// <summary> Returns the index of an SG_Interactable in this script's touchedObjects. </summary>
         /// <param name="iScript"></param>
         /// <returns></returns>
@@ -121,74 +182,110 @@ namespace SG
         {
             for (int i = 0; i < interactablesTouched.Count; i++)
             {
-                if (GameObject.ReferenceEquals(iScript.gameObject, interactablesTouched[i].gameObject))
+                if (interactablesTouched[i].SameScript(iScript/*, this.name.Contains("Index")*/))
                 {
                     return i;
                 }
             }
             return -1;
         }
-
-
-        /// <summary> Add a new (collider of) an SG_Interactable script to this script's touchedObjects </summary>
-        /// <param name="script"></param>
-        protected void AddToList(SG_Interactable script)
+        
+        /// <summary> Remove an Interactable at this position in our list. Returns ture if succesful. </summary>
+        /// <param name="index"></param>
+        /// <returns></returns>
+        protected bool RemoveFromList(int index)
         {
-            int index = ListIndex(script);
-            if (index > -1) //different collider of existing object
+            if (index > -1 && index < interactablesTouched.Count)
             {
-                collidersInside[index] = collidersInside[index] + 1; //don;t think += 1 works here...?
+                interactablesTouched.RemoveAt(index);
+                return true;
             }
-            else //collider of a new object
-            {
-                interactablesTouched.Add(script);
-                collidersInside.Add(1);
-            }
+            return false;
         }
 
-        /// <summary> Remove a collider from this script's touchedObjects </summary>
-        /// <param name="col"></param>
-        protected void RemoveFromList(Collider col)
+
+        /// <summary> Check for missing objects (that no longer exist, etc. Clear them automatically.. </summary>
+        protected void CheckMissingObjects()
         {
-            for (int i = 0; i < interactablesTouched.Count;)
+            for (int i=0; i<this.interactablesTouched.Count; ) //no i++
             {
-                if (SameScript(col, interactablesTouched[i]))
-                {  //removed this script
-                    collidersInside[i] = collidersInside[i] - 1; //don;t think -= 1 works here...?
-                    if (collidersInside[i] <= 0)
-                    {
-                        interactablesTouched.RemoveAt(i);
-                        collidersInside.Remove(i);
-                    }
-                    else { i++; }
+                if (interactablesTouched[i].IsMissing) 
+                {
+                    bool removed = RemoveFromList(i);
+                    if ( !removed ) { i++; }  //if we were unable to remove the object, still increment, otherwise, we're stuck in a loop..
                 }
                 else { i++; }
             }
         }
 
+        /// <summary> Add (another) collider of a particular Interactable to our list. </summary>
+        /// <param name="iScript"></param>
+        public void AddCollider(SG_Interactable iScript)
+        {
+            int index = ListIndex(iScript);
+            if (index > -1) //this is an object in the list
+            {
+                this.interactablesTouched[index].AddCollider();
+            }
+            else
+            {
+                this.interactablesTouched.Add(new DetectionArgs(iScript));
+            }
+        }
 
+
+        /// <summary> Remove a collider of a particular Interactable to our list. Remove the Interactable if we're no longer touching it. </summary>
+        /// <param name="iScript"></param>
+        public void RemoveCollider(SG_Interactable iScript)
+        {
+            int index = ListIndex(iScript);
+            if (index > -1) //this is an object in the list
+            {
+                interactablesTouched[index].RemoveCollider();
+                if (!interactablesTouched[index].StillHovering)
+                {
+                    this.interactablesTouched.RemoveAt(index);
+                }
+            }
+        }
+
+
+        //----------------------------------------------------------------------------------------------
+        // Monobehaviour
 
 
         protected override void Awake()
         {
             base.Awake();
-            SG_Util.TryAddRB(this.gameObject, false, true);
+            Util.SG_Util.TryAddRB(this.gameObject, false, true);
+        }
+
+        protected override void Update()
+        {
+            base.Update();
+            CheckMissingObjects();
         }
 
 
         protected virtual void OnTriggerEnter(Collider other)
         {
-            SG_Interactable iScript;
-            if (GetInteractableScript(other, out iScript)) //this is an interactable object
+            if (other.gameObject.activeInHierarchy)
             {
-                AddToList(iScript);
+                SG_Interactable iScript;
+                if (GetInteractableScript(other, out iScript)) //this is an interactable object
+                {
+                    AddCollider(iScript);
+                }
             }
         }
 
-
         protected virtual void OnTriggerExit(Collider other)
         {
-            RemoveFromList(other);
+            SG_Interactable iScript;
+            if (GetInteractableScript(other, out iScript)) //this is an interactable object
+            {
+                RemoveCollider(iScript);
+            }
         }
 
     }

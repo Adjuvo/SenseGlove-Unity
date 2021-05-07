@@ -2,7 +2,7 @@
 
 namespace SG
 {
-    /// <summary> Attached to a GameObject to make it follow a 'target' </summary>
+    /// <summary> Attached to a GameObject to make it follow a 'target' during a specific Update function. </summary>
     public class SG_SimpleTracking : MonoBehaviour
     {
         /// <summary> When the position of this GameObject is updated. </summary>
@@ -13,6 +13,9 @@ namespace SG
             Update,
             Off
         }
+
+        //----------------------------------------------------------------------------------------------
+        // Member Variables
 
         /// <summary> A transform to follow during the simulation. Offsets are determined during Start() of this script </summary>
         [Header("Tracking Settings")]
@@ -26,16 +29,9 @@ namespace SG
         /// <summary> Rotation offset between this object and the target transform </summary>
         protected Quaternion rotationOffset = Quaternion.identity;
 
-        /// <summary> Ignore collision between this object and another collider </summary>
-        /// <param name="col"></param>
-        public virtual void SetIgnoreCollision(Collider col, bool ignoreCollision)
-        {
-            Collider[] myColliders = this.GetComponents<Collider>();
-            for (int i = 0; i < myColliders.Length; i++)
-            {
-                Physics.IgnoreCollision(col, myColliders[i], ignoreCollision);
-            }
-        }
+
+        //----------------------------------------------------------------------------------------------
+        // Accessors
 
         /// <summary> Enable/Disable the MeshRenderer connected to this script's GameObject </summary>
         public virtual bool DebugEnabled
@@ -68,6 +64,20 @@ namespace SG
         public bool HasTarget { get { return this.trackingTarget != null; } }
 
 
+        //----------------------------------------------------------------------------------------------
+        // Functions
+
+        /// <summary> Ignore collision between this object and another collider </summary>
+        /// <param name="col"></param>
+        public virtual void SetIgnoreCollision(Collider col, bool ignoreCollision)
+        {
+            //Debug.Log("Ignore Collision between " + this.name + " and " + col.name);
+            Collider[] myColliders = this.GetComponents<Collider>();
+            for (int i = 0; i < myColliders.Length; i++)
+            {
+                Physics.IgnoreCollision(col, myColliders[i], ignoreCollision);
+            }
+        }
 
 
         /// <summary> Set a new tracking target for this script, which also calculates new offsets </summary>
@@ -77,7 +87,7 @@ namespace SG
             this.trackingTarget = newTarget;
             if (trackingTarget != null && calculateNewOffsets)
             {
-                SG_Util.CalculateOffsets(this.transform, trackingTarget, out this.positionOffset, out this.rotationOffset);
+                SG.Util.SG_Util.CalculateOffsets(this.transform, trackingTarget, out this.positionOffset, out this.rotationOffset);
             }
         }
 
@@ -93,6 +103,8 @@ namespace SG
         }
 
 
+        //----------------------------------------------------------------------------------------------
+        // Monobehaviour
 
         protected virtual void Awake()
         {

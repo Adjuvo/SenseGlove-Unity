@@ -94,6 +94,7 @@ namespace SG
             {
                 this.wholeDeform.ResetMesh();
             }
+            wholeObject.EndInteraction(); //end any interaction
             this.wholeObject.gameObject.SetActive(false);
 
             if (this.brokenObject)

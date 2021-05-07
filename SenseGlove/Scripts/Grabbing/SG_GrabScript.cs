@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using SG.Util;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -6,7 +7,7 @@ namespace SG
 {
 
     /// <summary> A Grabscript that uses a number of the Sense Glove's data to start and end interactions. </summary>
-    public abstract class SG_GrabScript : MonoBehaviour
+    public abstract class SG_GrabScript : SG_HandComponent
     {
         /// <summary> Event Arguments for grabbing/releasing of objects. </summary>
         public class SG_GrabEventArgs : System.EventArgs
@@ -26,14 +27,8 @@ namespace SG
 
         #region Properties
 
-
-        /// <summary> A SG_SenseGloveHardware for gloveData related shenanigans. </summary>
-        [Header("Linked Scripts")]
-        [Tooltip("A SG_SenseGloveHardware for gloveData related shenanigans.")]
-        public SG_SenseGloveHardware hardware;
-
         /// <summary> When an object is picked up, this GameObject (Typically the wrist) is used as a reference for its movement / parent / fixedJoint. </summary>
-        [Header("Settings")]
+        [Header("GrabScript Settings")]
         [Tooltip("When an object is picked up, this GameObject (Typically the wrist) is used as a reference for its movement.")]
         public GameObject grabReference;
 
@@ -75,61 +70,6 @@ namespace SG
         protected float elapsedTime = 0;
 
         #endregion Properties
-
-        /// <summary> Show/Hide the debug elements (colliders, DrawLines) of this GrabScript. </summary>
-        public virtual bool DebugEnabled
-        {
-            set { }
-        }
-
-
-        /// <summary> The TrackedHand this GrabScript is connected to, used to access animation, hardware, etc. </summary>
-        public SG_TrackedHand Hand
-        {
-            get; protected set;
-        }
-
-
-        /// <summary> Returns true if this GrabScript is connected to Hardware that is ready to go </summary>
-        public virtual bool HardwareReady
-        {
-            get { return this.hardware != null && this.hardware.GloveReady; }
-        }
-
-
-        /// <summary> Returns true if this GrabScript is connected to Sense Glove Hardware and returns a refernce to it. Used in an if statement for safety </summary>
-        /// <param name="hardware"></param>
-        /// <returns></returns>
-        public virtual bool GetHardware(out SG_SenseGloveHardware hardware)
-        {
-            if (HardwareReady)
-            {
-                hardware = this.hardware;
-                return hardware != null;
-            }
-            hardware = null;
-            return false;
-        }
-
-
-        /// <summary> Check for relevant scripts connected to this one, that may not yet have been assigned. </summary>
-        public virtual void CheckForScripts()
-        {
-            if (this.Hand == null)
-            {
-                if (this.hardware != null) { this.Hand = this.hardware.GetComponent<SG_TrackedHand>(); }
-                if (this.Hand == null) { this.Hand = this.GetComponentInParent<SG_TrackedHand>(); }
-            }
-            if (this.hardware == null)
-            {
-                if (this.Hand != null && this.Hand.hardware != null) { this.hardware = this.Hand.hardware; }
-                else if (this.Hand != null) { this.hardware = this.Hand.gameObject.GetComponent<SG_SenseGloveHardware>(); }
-                if (this.hardware == null)
-                {
-                    this.hardware = this.gameObject.GetComponent<SG_SenseGloveHardware>();
-                }
-            }
-        }
 
 
 
@@ -177,6 +117,13 @@ namespace SG
         #endregion Dynamics
 
 
+        /// <summary>  </summary>
+        /// <param name="rigidBodies"></param>
+        /// <param name="ignoreCollisions"></param>
+        public virtual void SetIgnoreCollision(SG_HandRigidBodies rigidBodies, bool ignoreCollisions)
+        {
+            //does nothing to a default GrabLayer. Only to extensions hereof.
+        }
 
         //-----------------------------------------------------------------------------------------------------------------------------------------
         // Grabscript Methods
@@ -271,7 +218,7 @@ namespace SG
         /// <summary> If this grabscript is holding obj, end its interaction with it. </summary>
         /// <param name="obj"></param>
         /// <param name="callEvent">Call the EndInteraction on this object.</param>
-        public virtual void EndInteraction(SG_Interactable obj)
+        public virtual void EndInteraction(SG_Interactable obj, bool callObjectRelease = true)
         {
             if (obj != null)
             {
@@ -280,15 +227,27 @@ namespace SG
                     if (this.heldObjects[i].Equals(obj))
                     {
                         //we have this object
+                        if (callObjectRelease)
+                        {   //avoids a circular call to this function when coming from the object itself.
+                            this.heldObjects[i].EndInteraction(this, true);
+                        }
                         this.heldObjects.RemoveAt(i); //remove refrences to this.
-                        this.heldObjects[i].EndInteraction(this, true);
                         break;
                     }
                 }
             }
         }
 
-
+        /// <summary> Forces this GrabScript to pick up a specific object. </summary>
+        /// <param name="obj"></param>
+        public virtual void GrabObject(SG_Interactable obj)
+        {
+            if (obj != null && !this.heldObjects.Contains(obj))
+            {
+                bool grabbed = obj.BeginInteraction(this, true);
+                if (grabbed) { this.heldObjects.Add(obj); }
+            }
+        }
 
         #endregion GrabMethods
 
@@ -328,6 +287,7 @@ namespace SG
                 bool grabbed = obj.BeginInteraction(this);
                 if (grabbed)
                 {
+                    //Debug.Log(this.name + " grabbed " + obj.name);
                     this.heldObjects.Add(obj);
                     this.OnGrabbedObject(obj);
                 }
@@ -361,22 +321,19 @@ namespace SG
         }
 
 
-
         //-----------------------------------------------------------------------------------------------------------------------------------------
         // Monobehaviour
 
         //Load Resources before Start() function is called
         protected virtual void Awake()
         {
-            if (this.Hand == null)
-            {
-                this.Hand = SG_Util.CheckForTrackedHand(this.transform);
-            }
+            
         }
 
         //Runs once after Awake
         protected virtual void Start()
         {
+            this.CheckForScripts();
             this.Setup();
         }
 
@@ -419,15 +376,6 @@ namespace SG
                 this.ManualRelease(0.1f);
             }
         }
-
-
-#if UNITY_EDITOR
-        void OnValidate()
-        {
-            this.Hand = null;
-            CheckForScripts();
-        }
-#endif
 
     }
 

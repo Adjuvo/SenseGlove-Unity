@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace SG
 {
-    /// <summary>  A knob that can be twisted along its axis. Used in intricate button panels. </summary>
+    /// <summary>  A knob that can be twisted along its axis, but only by rotating the wrist. Used in intricate button panels. </summary>
     public class SG_Dial : SG_Interactable
     {
         /// <summary> Grab reference of the grabscript that is currently interacting with this Dial. </summary>
@@ -90,7 +90,7 @@ namespace SG
             Quaternion qRotOriginal = this.hingePoint.transform.rotation; //save current rotation
 
             this.hingePoint.rotation = qDesiredAbs; //perform rotation to calculate local angles
-            float angle = SG_Util.NormalizeAngle(this.hingePoint.localEulerAngles[angleIndex]) + this.anglOffset; //retrieve local angle
+            float angle = SG.Util.SG_Util.NormalizeAngle(this.hingePoint.localEulerAngles[angleIndex]) + this.anglOffset; //retrieve local angle
             this.hingePoint.rotation = qRotOriginal; //return back now that we have the angle.
 
             this.SetAngle(angle); //Apply the new rotation
@@ -122,7 +122,7 @@ namespace SG
         /// <returns></returns>
         public float ValidateAngle(float angle)
         {
-            angle = SG_Util.NormalizeAngle(angle);
+            angle = SG.Util.SG_Util.NormalizeAngle(angle);
             if (this.useLimits)
             {
                 if (angle > this.maxAngle)

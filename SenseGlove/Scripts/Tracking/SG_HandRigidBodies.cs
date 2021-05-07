@@ -2,50 +2,24 @@
 
 namespace SG
 {
-    /// <summary> A script to manage a set of Rigidbodies that represent the hand geometry. </summary>
-    public class SG_HandRigidBodies : MonoBehaviour
+    /// <summary> A script to manage a set of Rigidbodies that follow parts of the hand. Used to create a physical presence of the hand in 3D spaces. </summary>
+    public class SG_HandRigidBodies : SG_HandComponent
     {
-        /// <summary> The hand model information, used to assign tracking information. If left unassinged, you'll need to assing them manually. </summary>
-        [Header("Linked Scripts")]
-        public SG_HandModelInfo handModel;
+        //----------------------------------------------------------------------------------------------
+        // Member Variables
 
         /// <summary> The managed rigidbody of the wrist </summary>
         [Header("RigidBody Components")]
         public SG_TrackedBody wristObj;
+
         /// <summary> The managed rigidbody of the fingers, from thumb to pinky. </summary>
         public SG_TrackedBody[] fingerObjs = new SG_TrackedBody[0];
 
-
-        /// <summary> The TrackedHand this Animator takes its data from, used to access grabscript, hardware, etc. </summary>
-        public SG_TrackedHand Hand
-        {
-            get; protected set;
-        }
-
-        /// <summary> Returns true if this Animator is connected to Hardware that is ready to go </summary>
-        public virtual bool HardwareReady
-        {
-            get { return this.Hand != null && this.Hand.hardware != null && this.Hand.hardware.GloveReady; }
-        }
-
-        /// <summary> Returns true if this Animator is connected to Sense Glove Hardware. Used in an if statement for safety </summary>
-        /// <param name="hardware"></param>
-        /// <returns></returns>
-        public virtual bool GetHardware(out SG_SenseGloveHardware hardware)
-        {
-            if (HardwareReady)
-            {
-                hardware = this.Hand.hardware;
-                return hardware != null;
-            }
-            hardware = null;
-            return false;
-        }
-
-
+        //----------------------------------------------------------------------------------------------
+        // Accessors
 
         /// <summary> Show/Hide the the rigidbodies in this layer. </summary>
-        public bool DebugEnabled
+        public override bool DebugEnabled
         {
             set
             {
@@ -70,35 +44,24 @@ namespace SG
             }
         }
 
-
-        /// <summary> Assign scripts relevant to this script's functioning. </summary>
-        protected virtual void CheckForScripts()
-        {
-            SG_Util.CheckForHandInfo(this.transform, ref this.handModel);
-            if (this.Hand == null)
-            {
-                this.Hand = SG_Util.CheckForTrackedHand(this.transform);
-            }
-        }
+        //----------------------------------------------------------------------------------------------
+        // Functions
 
         /// <summary> Setup the tracking / parameters of this script's components. </summary>
         protected void SetupSelf()
         {
             CheckForScripts();
-            wristObj.SetTrackingTarget(handModel.wristTransform, true);
+            wristObj.SetTrackingTarget(TrackedHand.handModel.wristTransform, true);
             for (int f = 0; f < fingerObjs.Length; f++)
             {
                 Transform target;
-                if (handModel.GetFingerTip((SG_HandSection)f, out target))
+                if (TrackedHand.handModel.GetFingerTip((SG_HandSection)f, out target))
                 {
                     fingerObjs[f].SetTrackingTarget(target, true);
                 }
             }
             this.SetIgnoreCollision(this, true); //ignore own colliders
         }
-
-
-
 
 
         /// <summary> Set ignoreCollision between this layer and another set of rigidbodies. </summary>
@@ -167,22 +130,14 @@ namespace SG
             }
         }
 
-
-
+        //----------------------------------------------------------------------------------------------
+        // Monobehaviour
 
         // Use this for initialization
         protected void Awake()
         {
             SetupSelf();
         }
-
-#if UNITY_EDITOR
-        protected void OnValidate()
-        {
-            this.Hand = null;
-            CheckForScripts();
-        }
-#endif
 
     }
 }

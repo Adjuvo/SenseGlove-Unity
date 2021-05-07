@@ -7,6 +7,9 @@ namespace SG
     /// These scripts calculate their distance into a collider. </summary>
     public class SG_FingerFeedback : SG_BasicFeedback
     {
+        //-------------------------------------------------------------------------------------------------------------------------------------------
+        // Member Variables
+
         /// <summary> If true, the force vectors of this script are rendered into the Scene view. </summary>
         [Header("Force-Feedback Parameters")]
         public bool debugDirections = false;
@@ -15,7 +18,6 @@ namespace SG
         protected Vector3 entryOrigin = Vector3.zero;
         /// <summary> A point of the collider of the touchedObject on the moment that collision was detected. Used to determine collider normal. </summary>
         protected Vector3 entryPoint = Vector3.zero;
-
 
         /// <summary> The object that is currently touched by this SenseGlove_Touch script. </summary>
         public GameObject TouchedObject
@@ -41,7 +43,6 @@ namespace SG
             get; protected set;
         }
 
-
         /// <summary> The distance [in m] that the finger collider has penetrated into the object. </summary>
         public float DistanceInCollider
         {
@@ -55,6 +56,9 @@ namespace SG
         }
 
 
+        //-------------------------------------------------------------------------------------------------------------------------------------------
+        // Functions
+
         /// <summary> Reset the forces and distances </summary>
         public void ResetForces()
         {
@@ -62,16 +66,12 @@ namespace SG
             DistanceInCollider = 0;
         }
 
-
-
         /// <summary> Setup this collider's properties </summary>
         public override void SetupSelf()
         {
             base.SetupSelf();
             ResetForces();
         }
-
-
 
         /// <summary> Check if this collider is touching a valid GameObject </summary>
         public bool IsTouching()
@@ -227,6 +227,9 @@ namespace SG
             ResetForces();
         }
 
+
+        //-------------------------------------------------------------------------------------------------------------------------------------------
+        // Monobehaviour
 
         protected override void FixedUpdate()
         {

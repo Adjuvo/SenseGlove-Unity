@@ -1,6 +1,6 @@
 ﻿
 using UnityEngine; //used for Debug.Log()
-using SenseGloveCs.Diagnostics; // Used to access Debugger.
+using SGCore.Diagnostics; // Used to access Debugger.
 
 
 namespace SG
@@ -15,7 +15,7 @@ namespace SG
 
         /// <summary> The level of debug messages that one will recieve from the DLL. </summary>
         [Tooltip("The level of debug messages that one will recieve from the DLL.")]
-        public DebugLevel DLL_debugLevel = SenseGloveCs.Diagnostics.Debugger.defaultDebugLvl;
+        public DebugLevel DLL_debugLevel = SGCore.Diagnostics.Debugger.defaultDebugLvl;
 
 
         /// <summary> Enables or disables debug messages from the Unity SDK scripts. </summary>
@@ -28,43 +28,6 @@ namespace SG
         /// Still, I would like to be able to control my debug messages via the inspector.
         /// </remarks>
         private static bool unityEnabled_S = true;
-
-        //----------------------------------------------------------------------------------------------------
-        // Monobehaviour
-
-        // Ensure the Debugger is active before the Start() functions are called.
-        void Awake()
-        {
-            SenseGloveCs.Diagnostics.Debugger.DebugLevel = this.DLL_debugLevel;
-            SenseGloveCs.Diagnostics.Debugger.Instance.DebugMessageRecieved += Instance_DebugMessageRecieved;
-        }
-
-        //runs after all Update() methods have been called.
-        void LateUpdate()
-        {
-            //update the static variable.
-            if (SG_Debugger.unityEnabled_S != this.unityEnabled)
-            {
-                SG_Debugger.unityEnabled_S = this.unityEnabled;
-            }
-
-            //Update the internal debug level
-            if (SenseGloveCs.Diagnostics.Debugger.DebugLevel != this.DLL_debugLevel)
-            {
-                SenseGloveCs.Diagnostics.Debugger.DebugLevel = this.DLL_debugLevel;
-            }
-        }
-
-        private void OnDestroy()
-        {
-            SenseGloveCs.Diagnostics.Debugger.Instance.DebugMessageRecieved -= Instance_DebugMessageRecieved; //unsubscribe
-        }
-
-        // unsubscribe on quit.
-        private void OnApplicationQuit()
-        {
-            SenseGloveCs.Diagnostics.Debugger.Instance.DebugMessageRecieved -= Instance_DebugMessageRecieved; //unsubscribe again
-        }
 
 
         //----------------------------------------------------------------------------------------------------
@@ -109,6 +72,43 @@ namespace SG
             {
                 Debug.LogError(message);
             }
+        }
+
+        //----------------------------------------------------------------------------------------------------
+        // Monobehaviour
+
+        // Ensure the Debugger is active before the Start() functions are called.
+        void Awake()
+        {
+            SGCore.Diagnostics.Debugger.DebugLevel = this.DLL_debugLevel;
+            SGCore.Diagnostics.Debugger.Instance.DebugMessageRecieved += Instance_DebugMessageRecieved;
+        }
+
+        //runs after all Update() methods have been called.
+        void LateUpdate()
+        {
+            //update the static variable.
+            if (SG_Debugger.unityEnabled_S != this.unityEnabled)
+            {
+                SG_Debugger.unityEnabled_S = this.unityEnabled;
+            }
+
+            //Update the internal debug level
+            if (SGCore.Diagnostics.Debugger.DebugLevel != this.DLL_debugLevel)
+            {
+                SGCore.Diagnostics.Debugger.DebugLevel = this.DLL_debugLevel;
+            }
+        }
+
+        private void OnDestroy()
+        {
+            SGCore.Diagnostics.Debugger.Instance.DebugMessageRecieved -= Instance_DebugMessageRecieved; //unsubscribe
+        }
+
+        // unsubscribe on quit.
+        private void OnApplicationQuit()
+        {
+            SGCore.Diagnostics.Debugger.Instance.DebugMessageRecieved -= Instance_DebugMessageRecieved; //unsubscribe again
         }
 
     }

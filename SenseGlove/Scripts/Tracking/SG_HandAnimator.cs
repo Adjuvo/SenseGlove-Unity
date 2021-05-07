@@ -6,11 +6,10 @@ namespace SG
 {
 
     /// <summary> 
-    /// A Generic Script that can be extended to work with most hand models. 
-    /// It requires the developer to assign the correct transforms for each joint. 
-    /// All of its methods can be overridden to create custom solutions.
+    /// A script that, while active, collects SG_HandPoses from a linked Hardware and animates a hand model based on the joints in its HandModelInfo. 
+    /// Note that, in order to map joint angles properly, the fingers of the hand must be aligned along the x-axis of the WristTransform.
     /// </summary>
-    public abstract class SG_HandAnimator : MonoBehaviour
+    public class SG_HandAnimator : SG_HandComponent
     {
         //-----------------------------------------------------------------------------------------------------------------------------------------
         // Properties Variables
@@ -20,85 +19,36 @@ namespace SG
         //-----------------------------------------------------------------------------------------------------------------------------------------
         // Public Variables
 
-        /// <summary> The Sense Glove that controls this hand model. /summary>
-        [Header("Linked Scripts")]
-        [Tooltip("The Sense Glove that controls this hand model. If no glove is assigned, the script will attempt to GetComponent from this object.")]
-        public SG_SenseGloveHardware senseGlove;
+        /// <summary> HandModel information. </summary>
+        [Header("Animation Components")]
+        public SG_HandModelInfo handModelInfo;
 
         /// <summary> Whether or not to update the fingers of this Hand Model. </summary>
-        protected bool updateFingers = true;
+        public bool[] updateFingers = new bool[5] { true, true, true, true, true };
 
         /// <summary> Whether or not to update the wrist of this Hand Model. </summary>
-        [Header("Settings")]
         [Tooltip("Whether or not to update the wrist of this Hand Model.")]
         public bool updateWrist = false;
 
-        /// <summary> Whether or not to resize the fingers after calibration completes. </summary>
-        [Tooltip("Whether or not to resize the fingers after calibration completes.")]
-        protected bool resizeFingers = false;
-
-        /// <summary> The GameObject representing the Forearm. </summary>
-        [Header("Animation Components")]
-        [Tooltip("The GameObject representing the Forearm.")]
-        public Transform foreArmTransfrom;
-
-        /// <summary> The GameObject representing the Wrist, moves relative to the foreArm. </summary>
-        [Tooltip("The GameObject representing the Wrist, moves relative to the foreArm.")]
-        public Transform wristTransfrom;
-
-
-
-        /// <summary> The TrackedHand this Animator takes its data from, used to access grabscript, hardware, etc. </summary>
-        public SG_TrackedHand Hand
-        {
-            get; protected set;
-        }
-
-        /// <summary> Returns true if this Animator is connected to Hardware that is ready to go </summary>
-        public virtual bool HardwareReady
-        {
-            get { return this.senseGlove != null && this.senseGlove.GloveReady; }
-        }
-
-        /// <summary> Returns true if this Animator is connected to Sense Glove Hardware. Used in an if statement for safety </summary>
-        /// <param name="hardware"></param>
-        /// <returns></returns>
-        public virtual bool GetHardware(out SG_SenseGloveHardware hardware)
-        {
-            if (HardwareReady)
-            {
-                hardware = this.senseGlove;
-                return hardware != null;
-            }
-            hardware = null;
-            return false;
-        }
 
         /// <summary> Check for Scripts relevant for this Animator </summary>
-        protected virtual void CheckForScripts()
+        public override void CheckForScripts()
         {
-            if (this.Hand == null)
+            base.CheckForScripts();
+            if (handModelInfo == null)
             {
-                this.Hand = SG_Util.CheckForTrackedHand(this.transform);
-            }
-            if (this.senseGlove == null && this.Hand != null)
-            {
-                this.senseGlove = this.Hand.hardware;
+                if (TrackedHand != null)
+                {
+                    handModelInfo = TrackedHand.handModel;
+                }
+                SG.Util.SG_Util.CheckForHandInfo(this.transform, ref this.handModelInfo); ;
             }
         }
+
 
 
         //-----------------------------------------------------------------------------------------------------------------------------------------
         // Internal Variables.
-
-        /// <summary> The list of finger joint transforms, used to manipulate the angles. Assigned in the CollectFingerJoints() function. </summary>
-        protected Transform[][] fingerJoints = new Transform[0][];
-
-        /// <summary> The initial angles of the hand model, corresponding to (0, 0, 0) rotation of the fingers. </summary>
-        protected List<List<Quaternion>> fingerCorrection = new List<List<Quaternion>>();
-
-        /// <summary> Offset between the wrist and lower arm, used when updating the wrist transfrom. </summary>
-        protected Quaternion wristCorrection = Quaternion.identity;
 
         /// <summary> Quaternion that aligns the lower arm with the wrist at the moment of calibration. </summary>
         protected Quaternion wristCalibration = Quaternion.identity;
@@ -106,143 +56,33 @@ namespace SG
         /// <summary> The relative angles between wrist and lower arm transforms. </summary>
         protected Quaternion wristAngles = Quaternion.identity;
 
-        /// <summary> A container for the motor level debug texts to easily toggle it on/off. </summary>
-        protected GameObject debugGroup;
-
-        /// <summary> Show the motor levels as determine by the feedback colliders on the fingers. </summary>
-        protected TextMesh[] debugText;
 
         #endregion Properties
 
-        //-----------------------------------------------------------------------------------------------------------------------------------------
-        // Glove Events
-
-        /// <summary> Utility method when the Sense Glove finishes loading. Determine left / right, for example. </summary>
-        /// <param name="source"></param>
-        /// <param name="args"></param>
-        protected virtual void SenseGlove_OnGloveLoaded(object source, System.EventArgs args)
-        {
-            //If no joints or corrections were added yet, retry.
-            if (this.fingerJoints.Length == 0)
-            {
-                this.CollectFingerJoints();
-            }
-            if (this.fingerCorrection.Count == 0)
-            {
-                this.CollectCorrections();
-            }
-
-            if (this.fingerJoints.Length > 0)
-            {
-                if (this._jointPositions.Length < 0)
-                    this.CollectHandParameters();
-
-                ////TODO: Apply this to the Sense Glove
-                //if (this.senseGlove != null && senseGlove.solver == SenseGloveCs.Solver.DistanceBased)
-                //    this.senseGlove.SetHandParameters(this._jointPositions, this._handLengths);
-                ////else
-                ////    Debug.Log("Sense Glove is null. Something is wrong?");
-            }
-
-            //this.SetupDebugText();
-            this.CalibrateWrist();
-        }
-
-        /// <summary> Call the ResizeFingers function. </summary>
-        /// <param name="source"></param>
-        /// <param name="args"></param>
-        protected virtual void SenseGlove_OnCalibrationFinished(object source, SG_SenseGloveHardware.GloveCalibrationArgs args)
-        {
-            if (this.resizeFingers)
-            {
-                this.ResizeHand(args.newData.GetFingerLengths());
-            }
-        }
-
-        //-----------------------------------------------------------------------------------------------------------------------------------------
-        // Setup Methods
-
-        #region Setup
-
-        /// <summary> Collect a proper (finger x joint) array, and assign it to this.fingerJoints(). Use the handRoot variable to help you iterate. </summary>
-        protected abstract void CollectFingerJoints();
-
-
-        /// <summary> Collect the absolute angles of the fingers in their 'calibration' pose, correct these with the current wrist orientation. </summary>
-        protected virtual void CollectCorrections()
-        {
-            if (this.fingerCorrection.Count == 0 && this.fingerJoints != null && this.fingerJoints.Length > 0)
-            {
-                this.fingerCorrection.Clear();
-                for (int f = 0; f < this.fingerJoints.Length; f++)
-                {
-                    List<Quaternion> fingerAngles = new List<Quaternion>();
-                    for (int j = 0; j < this.fingerJoints[f].Length; j++)
-                    {
-                        fingerAngles.Add(Quaternion.Inverse(this.wristTransfrom.rotation) * this.fingerJoints[f][j].rotation);
-                    }
-                    this.fingerCorrection.Add(fingerAngles);
-                }
-            }
-            else
-            {
-                //SenseGlove_Debugger.Log("Warning: No finger joints were collected...");
-            }
-
-            this.wristCorrection = Quaternion.Inverse(this.foreArmTransfrom.rotation) * this.wristTransfrom.rotation;
-        }
-
-
-        protected Vector3[] _jointPositions = new Vector3[0];
-        protected Vector3[][] _handLengths = new Vector3[0][];
-
-        /// <summary> collects the starting positions and rotations of the VHM, which can later be applied to Sense Glove models </summary>
-        public virtual void CollectHandParameters()
-        {
-            if (this.fingerJoints.Length > 0)
-            {
-                this._jointPositions = new Vector3[this.fingerJoints.Length];
-                this._handLengths = new Vector3[this.fingerJoints.Length][];
-                for (int f = 0; f < this._jointPositions.Length; f++)
-                {
-                    if (fingerJoints[f].Length > 0)
-                    {
-                        Vector3 relPos = DifferenceFromWrist(this.wristTransfrom, this.fingerJoints[f][0].position);
-                        this._jointPositions[f] = new Vector3(relPos.x * 1000, relPos.y * 1000, relPos.z * 1000);
-
-                        this._handLengths[f] = new Vector3[this.fingerJoints[f].Length - 1];
-                        for (int i = 0; i < this._handLengths[f].Length; i++)
-                        {
-                            Vector3 dV = DifferenceFromWrist(this.wristTransfrom, this.fingerJoints[f][i + 1].position)
-                                - DifferenceFromWrist(this.wristTransfrom, this.fingerJoints[f][i].position);
-                            this._handLengths[f][i] = new Vector3(dV.x * 1000, dV.y * 1000, dV.z * 1000);
-                        }
-                    }
-                }
-            }
-        }
-
-        /// <summary> Calculates the difference between an absolute position and the wrist transform, without scaling. </summary>
-        /// <param name="wristTransfrom"></param>
-        /// <param name="absPos"></param>
-        /// <returns></returns>
-        public static Vector3 DifferenceFromWrist(Transform wristTransfrom, Vector3 absPos)
-        {
-            return Quaternion.Inverse(wristTransfrom.rotation) * (absPos - wristTransfrom.position);
-        }
-
-        #endregion Setup
 
         //-----------------------------------------------------------------------------------------------------------------------------------------
         // HandModel Calibration
 
         /// <summary> Calibrate the wrist model of this handModel. </summary>
-        public void CalibrateWrist()
+        public virtual void CalibrateWrist(Quaternion imuRotation)
         {
-            if (this.senseGlove != null && this.senseGlove.GloveReady && this.foreArmTransfrom != null)
+            if (handModelInfo != null && handModelInfo.foreArmTransform != null)
             {
                 // Debug.Log(this.name + ": Calibrated Wrist");
-                this.wristCalibration = this.foreArmTransfrom.rotation * Quaternion.Inverse(this.senseGlove.GloveData.absoluteWrist);
+                this.wristCalibration = handModelInfo.foreArmTransform.rotation * Quaternion.Inverse(imuRotation);
+            }
+        }
+
+        /// <summary> Calibrate the wrist model of this handModel based on the current IMU Rotation. </summary>
+        public virtual void CalibrateWrist()
+        {
+            if (this.TrackedHand != null && this.TrackedHand.gloveHardware != null)
+            {
+                Quaternion IMU;
+                if ( this.TrackedHand.gloveHardware.GetIMURotation(out IMU) )
+                {
+                    this.CalibrateWrist(IMU);
+                }
             }
         }
 
@@ -259,7 +99,24 @@ namespace SG
         /// <summary> Retrive the euler angles between this model's foreArm and Wrist.  </summary>
         public Vector3 WristAngles
         {
-            get { return SG_Util.NormalizeAngles(this.wristAngles.eulerAngles); }
+            get { return SG.Util.SG_Util.NormalizeAngles(this.wristAngles.eulerAngles); }
+        }
+
+        /// <summary> Global accessor to enable / disable all finger animations </summary>
+        public bool AnimateFingers
+        {
+            get 
+            {
+                for (int f = 0; f < this.updateFingers.Length; f++)
+                {
+                    if (!updateFingers[f]) { return false; }
+                }
+                return true;
+            }
+            set
+            {
+                for (int f = 0; f < this.updateFingers.Length; f++) { this.updateFingers[f] = value; }
+            }
         }
 
         //-----------------------------------------------------------------------------------------------------------------------------------------
@@ -272,65 +129,60 @@ namespace SG
         /// Note: This method is called after UpdateWrist() is called. 
         /// </summary>
         /// <param name="data"></param>
-        public virtual void UpdateHand(SG_SenseGloveData data)
+        public virtual void UpdateHand(SG_HandPose pose)
         {
-            if (data.dataLoaded)
+            if (pose != null)
             {
-                Quaternion[][] angles = data.handRotations;
-                for (int f = 0; f < this.fingerJoints.Length; f++)
+                Quaternion[][] angles = pose.jointRotations;
+                Quaternion[][] corrections = handModelInfo.FingerCorrections;
+                Transform[][] fingerJoints = handModelInfo.FingerJoints;
+                if (corrections != null && fingerJoints != null)
                 {
-                    for (int j = 0; j < this.fingerJoints[f].Length; j++)
+                    for (int f = 0; f < fingerJoints.Length; f++)
                     {
-                        this.fingerJoints[f][j].rotation = this.wristTransfrom.rotation * (angles[f][j] * this.fingerCorrection[f][j]);
+                        if (pose.jointRotations.Length > f)
+                        {
+                            for (int j = 0; j < fingerJoints[f].Length; j++)
+                            {
+                                if (pose.jointRotations[f].Length > j)
+                                {
+                                    fingerJoints[f][j].rotation = handModelInfo.wristTransform.rotation
+                                        * (angles[f][j] * corrections[f][j]);
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
+
 
         /// <summary> 
         /// Update the (absolute) wrist orientation, which moves realtive to the (absolute) lower arm transform. 
         /// Note: This method is called before UpdateFingers() is called.  
         /// </summary>
         /// <param name="data"></param>
-        public virtual void UpdateWrist(SG_SenseGloveData data)
+        public virtual void UpdateWrist(Quaternion imuRotation)
         {
-            if (this.updateWrist && data.dataLoaded)
+            if (updateWrist)
             {
-                if (data.dataLoaded)
-                {
-                    this.wristTransfrom.rotation = /*this.foreArmTransfrom.rotation */ this.wristCorrection * (this.wristCalibration * data.absoluteWrist);
-                    this.wristAngles = Quaternion.Inverse(this.foreArmTransfrom.rotation) * this.wristTransfrom.rotation;
-                }
+                handModelInfo.wristTransform.rotation = handModelInfo.WristCorrection * (this.wristCalibration * imuRotation);
+                this.wristAngles = Quaternion.Inverse(handModelInfo.foreArmTransform.rotation) * handModelInfo.wristTransform.rotation;
             }
             else
             {
-                this.wristTransfrom.rotation = this.wristCorrection * this.foreArmTransfrom.rotation;
+                handModelInfo.wristTransform.rotation = handModelInfo.WristCorrection * handModelInfo.foreArmTransform.rotation;
                 this.wristAngles = Quaternion.identity; //ignore wrist angle(s).
             }
         }
 
+
         /// <summary> Resize the finger lengths of this hand model to reflect that of the current user. </summary>
         /// <param name="newLengths"></param>
-        public virtual void ResizeHand(float[][] newLengths)
-        {
-            //return the hand to a position where the handAngles are 0
+        public virtual void ResizeHand(float[][] newLengths) { }
 
-            for (int f = 0; f < newLengths.Length; f++)
-            {
-                if (newLengths.Length > f && newLengths[f].Length > this.fingerJoints[f].Length)
-                {
-                    Vector3 MCP = this.fingerJoints[f][0].position;
-                    Vector3 P = MCP; // struct
-                    for (int i = 1; i < this.fingerJoints[f].Length; i++)
-                    {
-                        P = MCP + new Vector3(newLengths[f][i], 0, 0);
-                        this.fingerJoints[f][i].position = P;
-                    }
-                }
-            }
-
-            //reset the hand back to a normal position
-        }
+        /// <summary> Reset this hand size back to its original sizing. </summary>
+        public virtual void ResetHandSize() { }
 
         #endregion Update
 
@@ -342,49 +194,31 @@ namespace SG
         #region Monobehaviour
 
         // Use this for initialization
-        protected virtual void Start()
+        protected virtual void OnEnable()
         {
             CheckForScripts();
-            if (senseGlove != null)
-            {
-                senseGlove.GloveLoaded += SenseGlove_OnGloveLoaded;
-                senseGlove.CalibrationFinished += SenseGlove_OnCalibrationFinished;
-            }
+        }
 
-            if (this.foreArmTransfrom == null) { this.foreArmTransfrom = this.transform; }
-
-            this.CollectFingerJoints();
-            this.CollectCorrections();
-
-            if (this.fingerJoints.Length > 0)
-                this.CollectHandParameters();
+        protected virtual void Start()
+        {
+            //sets the animation in a starting pose.
+            SG_HandPose startPose = SG_HandPose.Idle(this.handModelInfo != null ? this.handModelInfo.handSide != HandSide.LeftHand : true);
+            this.UpdateHand(startPose);
         }
 
         // Update is called once per frame
         protected virtual void Update()
         {
-            if (this.senseGlove != null && this.senseGlove.GloveReady)
+            if (this.TrackedHand != null)
             {
-                this.UpdateWrist(this.senseGlove.GloveData);
-
-                if (this.updateFingers /*&& !(this.senseGlove != null && this.senseGlove.solver == SenseGloveCs.Solver.Custom)*/)
-                {   //in case of a custom solver, the model waits for an external UpdateHand call
-                    this.UpdateHand(this.senseGlove.GloveData);
+                this.UpdateWrist( TrackedHand.GetIMURotation() ) ;
+                SG_HandPose handPose;
+                if (this.TrackedHand.GetHandPose(out handPose))
+                {   
+                    this.UpdateHand(handPose);
                 }
             }
         }
-
-
-
-#if UNITY_EDITOR
-        void OnValidate()
-        {
-            this.Hand = null;
-            CheckForScripts();
-        }
-#endif
-
-
 
         #endregion Monobehaviour
 

@@ -43,7 +43,7 @@ namespace SG
 
 
         /// <summary> The list of touchScripts that are currently touching this object. </summary>
-        protected List<SG_SenseGloveHardware> touchedScripts = new List<SG_SenseGloveHardware>();
+        protected List<SG_HapticGlove> touchedScripts = new List<SG_HapticGlove>();
 
         /// <summary> The number of colliders of a given grabscript that are touching this Interactable. </summary>
         protected List<int> touchedColliders = new List<int>();
@@ -141,6 +141,11 @@ namespace SG
                 bool ended = this.InteractionEnd(grabScript, fromExternal);
                 if (ended)
                 {
+                    if (fromExternal && grabScript != null)
+                    {
+                        //this may not have come from the grabscript. So we need to notify it as well that the object is released.
+                        grabScript.EndInteraction(this, false);
+                    }
                     this.OnInteractEnd(grabScript, fromExternal);
                     this.originalDist = 0;
                     return true;
@@ -170,6 +175,19 @@ namespace SG
 
         //---------------------------------------------------------------------------------------------------------------------------------
         // Touch Methods
+
+        /// <summary> Get the index  </summary>
+        /// <param name="grabScript"></param>
+        /// <returns></returns>
+        protected int GetTouchIndex(SG_HapticGlove grabScript)
+        {
+            //for (int i = 0; i < this.touchedScripts.Count; i++)
+            //{
+            //    if (GameObject.ReferenceEquals(this.touchedScripts[i].gameObject, grabScript.gameObject))
+            //        return i;
+            //}
+            return -1;
+        }
 
         /// <summary> Called by SG_Feedback when it touches an interactable. Informs this Interactable that it is being touched. </summary>
         /// <param name="touchScript"></param>
@@ -213,19 +231,6 @@ namespace SG
             }
         }
 
-
-        /// <summary> Get the index  </summary>
-        /// <param name="grabScript"></param>
-        /// <returns></returns>
-        protected int GetTouchIndex(SG_SenseGloveHardware grabScript)
-        {
-            for (int i = 0; i < this.touchedScripts.Count; i++)
-            {
-                if (GameObject.ReferenceEquals(this.touchedScripts[i].gameObject, grabScript.gameObject))
-                    return i;
-            }
-            return -1;
-        }
 
         //---------------------------------------------------------------------------------------------------------------------------------
         // Utility Methods
@@ -367,6 +372,7 @@ namespace SG
         /// <summary> The interactable is only released when the EndInteraction or ResetObject functions are called. </summary>
         FunctionCall
     }
+
 
     /// <summary> Contains event arguments </summary>
     public class SG_InteractArgs : System.EventArgs

@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using SGCore.Haptics;
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -62,7 +63,7 @@ namespace SG
 
         #region ClassMethods
 
-        protected override void FireDetectEvent(SG_SenseGloveHardware model)
+        protected override void FireDetectEvent(SG_TrackedHand model)
         {
             this.SetAudio(true);
             this.SetParticles(true);
@@ -75,7 +76,7 @@ namespace SG
             base.FireDetectEvent(model); //do X, then fire
         }
 
-        protected override void FireRemoveEvent(SG_SenseGloveHardware model)
+        protected override void FireRemoveEvent(SG_TrackedHand model)
         {
             this.SetAudio(false);
             this.SetParticles(false);
@@ -138,19 +139,30 @@ namespace SG
         /// <param name="stopAll"></param>
         private void FireHapticFeedback(bool stopAll = false)
         {
-            for (int i = 0; i < this.eventFired.Count; i++)
+            for (int i = 0; i < this.detectedHands.Count; i++)
             {
-                if (this.eventFired[i] && this.detectedGloves.Count > i)
+                if (this.detectedHands[i].EventFired && this.detectedHands.Count > i)
                 {
-                    if (this.detectedGloves[i] != null)
+                    if (this.detectedHands[i] != null)
                     {
                         if (!stopAll)
                         {
-                            this.detectedGloves[i].SendBuzzCmd(this.whichFingers, this.hapticForce, this.hapticDuration);
+                            SGCore.DeviceType type = detectedHands[i].Glove.DeviceType; ;
+                            //if (detectedHands[i].Glove.GetDeviceType(out type))
+                            {
+                                if (type == SGCore.DeviceType.SENSEGLOVE)
+                                {
+                                    this.detectedHands[i].Glove.SendCmd(new SG_TimedBuzzCmd(new SG_BuzzCmd(this.whichFingers, this.hapticForce), this.hapticDuration));
+                                }
+                                else if (type == SGCore.DeviceType.NOVA)
+                                {
+                                    this.detectedHands[i].Glove.SendCmd(new TimedThumpCmd(Mathf.RoundToInt(this.hapticForce * 0.5f), this.hapticDuration / 1000.0f, -Time.deltaTime));
+                                }
+                            }
                         }
                         else
                         {
-                            this.detectedGloves[i].StopBuzzMotors();
+                            this.detectedHands[i].Glove.StopAllVibrations();
                         }
                     }
                 }
@@ -189,7 +201,7 @@ namespace SG
                     {
                         this.buzzTimer += Time.deltaTime;
                     }
-                    else if (this.detectedGloves.Count > 0)
+                    else if (this.detectedHands.Count > 0)
                     {
                         this.FireHapticFeedback();
                     }

@@ -1,12 +1,14 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
-using SenseGloveCs;
+using SG;
+using SGCore.SG;
+using SGCore.Nova;
 
 namespace SG.Examples
 {
     public class SGEx_ShowGloveAngles : MonoBehaviour
     {
-        public SG_SenseGloveHardware senseGlove;
+        public SG_HapticGlove senseGlove;
 
         public GridLayoutGroup angleCanvas;
 
@@ -30,51 +32,90 @@ namespace SG.Examples
         }
 
 
-        void SetupAngleUI()
+        protected bool GetSensorData(SG_HapticGlove hapticGlove, out float[][] sensors)
+        {
+            sensors = new float[0][];// = senseGlove.GloveData.gloveValues;
+            SGCore.HapticGlove glove;
+            if (SG_HapticGlove.GetGloveInstance(hapticGlove.connectsTo, out glove))  //hapticGlove.GetInternalObject();
+            {
+                if (glove.GetDeviceType() == SGCore.DeviceType.SENSEGLOVE)
+                {
+                    SG_SensorData sData;
+                    if (((SGCore.SG.SenseGlove)glove).GetSensorData(out sData))
+                    {
+                        sensors = new float[sData.SensorAngles.Length][];
+                        for (int f = 0; f < sensors.Length; f++)
+                        {
+                            sensors[f] = new float[sData.SensorAngles[f].Length];
+                            for (int j = 0; j < sensors[f].Length; j++)
+                            {
+                                float degr = (float)System.Math.Round(sData.SensorAngles[f][j] * Mathf.Rad2Deg, 2);
+                                sensors[f][j] = j < sensors[f].Length - 1 ? SG.Util.SG_Util.NormalizeAngle(degr)
+                                    : SG.Util.SG_Util.NormalizeAngle(degr, -60, 300);
+                            }
+                        }
+                    }
+                }
+                else if (glove.GetDeviceType() == SGCore.DeviceType.NOVA)
+                {
+                    Nova_SensorData sData;
+                    if (((SGCore.Nova.NovaGlove)glove).GetSensorData(out sData))
+                    {
+                        sensors = new float[sData.SensorValues.Length][];
+                        for (int f = 0; f < sensors.Length; f++)
+                        {
+                            sensors[f] = new float[3]
+                            {
+                            sData.SensorValues[f].x,
+                            sData.SensorValues[f].y,
+                            sData.SensorValues[f].z
+                            };
+                        }
+                    }
+                }
+            }
+            return sensors.Length > 0;
+        }
+
+
+        void SetupAngleUI(float[][] sensors)
         {
             if (angleCanvas != null)
             {
-                float[][] sensors = senseGlove.GloveData.gloveValues;
-                int columns = sensors[0].Length + 1;
-                angleCanvas.constraintCount = columns;
-
-                angleBoxes = new Text[sensors.Length][];
-                Font arialFont = (Font)Resources.GetBuiltinResource(typeof(Font), "Arial.ttf");
-                // fingers = row, sensors = column
-                for (int f = 0; f < sensors.Length; f++)
+                if (sensors.Length > 0)
                 {
-                    angleBoxes[f] = new Text[sensors[f].Length];
-                    CreateTextBox(((Finger)f).ToString(), arialFont, angleCanvas.transform);
-                    for (int j = 0; j < sensors[f].Length; j++)
+                    int columns = sensors[0].Length + 1;
+                    angleCanvas.constraintCount = columns;
+
+                    angleBoxes = new Text[sensors.Length][];
+                    Font arialFont = (Font)Resources.GetBuiltinResource(typeof(Font), "Arial.ttf");
+                    // fingers = row, sensors = column
+                    for (int f = 0; f < sensors.Length; f++)
                     {
-                        angleBoxes[f][j] = CreateTextBox("0", arialFont, angleCanvas.transform);
+                        angleBoxes[f] = new Text[sensors[f].Length];
+                        CreateTextBox(((SGCore.Finger)f).ToString(), arialFont, angleCanvas.transform);
+                        for (int j = 0; j < sensors[f].Length; j++)
+                        {
+                            angleBoxes[f][j] = CreateTextBox("0", arialFont, angleCanvas.transform);
+                        }
                     }
                 }
-
+                else
+                {
+                    Debug.LogError("This isn't a Haptic Glove, so we won't be showing glove angles.");
+                }
             }
         }
 
         void UpdateAngleUI(float[][] sensors)
         {
-            float[][] angles = new float[sensors.Length][];
-            for (int f = 0; f < sensors.Length; f++)
-            {
-                angles[f] = new float[sensors[f].Length];
-                for (int j = 0; j < sensors[f].Length; j++)
-                {
-                    float degr = Mathf.Round(sensors[f][j] * Mathf.Rad2Deg);
-                    angles[f][j] = j < sensors[f].Length - 1 ? SG_Util.NormalizeAngle(degr)
-                        : SG_Util.NormalizeAngle(degr, -60, 300);
-                }
-            }
-
             if (angleCanvas != null)
             {
-                for (int f = 0; f < angles.Length && f < angleBoxes.Length; f++)
+                for (int f = 0; f < sensors.Length && f < angleBoxes.Length; f++)
                 {
-                    for (int j = 0; j < angles[f].Length && j < angleBoxes[f].Length; j++)
+                    for (int j = 0; j < sensors[f].Length && j < angleBoxes[f].Length; j++)
                     {
-                        angleBoxes[f][j].text = angles[f][j].ToString() + "°";
+                        angleBoxes[f][j].text = sensors[f][j].ToString();
                     }
                 }
             }
@@ -82,14 +123,18 @@ namespace SG.Examples
 
         private void Update()
         {
-            if (senseGlove.GloveReady)
+            if (senseGlove != null && senseGlove.IsConnected)
             {
-                if (!setup)
+                float[][] sData;
+                if (GetSensorData(senseGlove, out sData))
                 {
-                    setup = true;
-                    SetupAngleUI();
+                    if (!setup)
+                    {
+                        setup = true;
+                        SetupAngleUI(sData);
+                    }
+                    UpdateAngleUI(sData);
                 }
-                UpdateAngleUI(senseGlove.GloveData.gloveValues);
             }
         }
 

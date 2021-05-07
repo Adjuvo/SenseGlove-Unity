@@ -4,7 +4,7 @@ namespace SG.Examples
 {
     public class SGEx_SelectHandModel : MonoBehaviour
     {
-        public SG_SenseGloveHardware leftGlove, rightGlove;
+        public SG_HapticGlove leftGlove, rightGlove;
 
         private GameObject leftHandModel, rightHandModel;
 
@@ -33,7 +33,7 @@ namespace SG.Examples
         {
             if (leftGlove != null)
             {
-                if (leftGlove.GloveReady && !leftReady)
+                if (leftGlove.IsConnected && !leftReady)
                 {
                     this.leftReady = true;
                     if (!rightReady)
@@ -44,7 +44,7 @@ namespace SG.Examples
             }
             if (rightGlove != null)
             {
-                if (rightGlove.GloveReady && !rightReady)
+                if (rightGlove.IsConnected && !rightReady)
                 {
                     this.rightReady = true;
                     if (!leftReady)
@@ -58,11 +58,6 @@ namespace SG.Examples
             {
                 SetModels(!this.leftHandModel.activeInHierarchy, !this.rightHandModel.activeInHierarchy);
             }
-        }
-
-        public void SetSolver(SenseGloveCs.Solver solv)
-        {
-
         }
 
         public void SetModels(bool left, bool right)

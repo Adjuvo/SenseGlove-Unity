@@ -32,7 +32,7 @@ namespace SG.Examples
 
         public Text objectText;
 
-
+        private static readonly float tOpen = 0.5f, iOpen = 0.5f, mOpen = 0.5f;
 
         protected void SetRelevantScripts(SG_TrackedHand hand, bool active)
         {
@@ -56,8 +56,20 @@ namespace SG.Examples
 
         public static bool CheckHandOpen(SG_TrackedHand hand)
         {
-            float[] flexions = hand.hardware.GloveData.GetFlexions();
-            return flexions.Length > 3 && flexions[0] > -45 && flexions[1] > -45 && flexions[2] > -45;
+            float[] flexions;
+            if (hand.gloveHardware.GetNormalizedFlexion(out flexions))
+            {
+                bool res = flexions.Length > 3 && flexions[0] < tOpen && flexions[1] < iOpen && flexions[2] < mOpen;
+                //Debug.Log(((int)flexions[0]).ToString() + " / " + tOpen.ToString()
+                //        + "\t"
+                //        + ((int)flexions[1]).ToString() + " / " + iOpen.ToString()
+                //        + "\t"
+                //        + ((int)flexions[2]).ToString() + " / " + mOpen.ToString()
+                //        + "\t" + res
+                //     );
+                return res;
+            }
+            return true;
         }
 
 
@@ -140,8 +152,8 @@ namespace SG.Examples
         // Use this for initialization
         void Start()
         {
-            SG_Util.SetChildren(leftHand.transform, false);
-            SG_Util.SetChildren(rightHand.transform, false);
+            SG.Util.SG_Util.SetChildren(leftHand.transform, false);
+            SG.Util.SG_Util.SetChildren(rightHand.transform, false);
             if (objectText != null) { objectText.text = ""; }
             if (nextButton != null)
             {
@@ -176,9 +188,9 @@ namespace SG.Examples
         {
             if (activeHand == null)
             {
-                if (rightHand.hardware.IsConnected || leftHand.hardware.IsConnected)
+                if (rightHand.gloveHardware.IsConnected || leftHand.gloveHardware.IsConnected)
                 {
-                    activeHand = rightHand.hardware.IsConnected ? rightHand : leftHand;
+                    activeHand = rightHand.gloveHardware.IsConnected ? rightHand : leftHand;
                     SetRelevantScripts(activeHand, true);
                     ConnectObjects(activeHand);
                     ButtonsActive = true;

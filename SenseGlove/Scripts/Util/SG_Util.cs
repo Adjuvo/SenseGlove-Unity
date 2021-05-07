@@ -3,21 +3,68 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 
-namespace SG
+namespace SG.Util
 {
+    /// <summary> A basic Unity Event that is re-used for simple UNity calls </summary>
+    [Serializable] public class SGEvent : UnityEvent { }
 
-    [Serializable]
-    public class SGEvent : UnityEvent { }
 
-    /// <summary> Contains methods that make the SenseGloveCs library work with Unity. </summary>
+    /// <summary> Contains methods we use in verious locations to make our life easier int Unity. </summary>
     public static class SG_Util
     {
+        //--------------------------------------------------------------------------------------------------------------------
+        // Translations / Rotations around an axis
+
+        /// <summary> An enumerator to have someone choose movement axes. Used in certain interactables. </summary>
         public enum MoveAxis
         {
             X = 0, Y, Z, NegativeX, NegativeY, NegativeZ
         }
 
-        public static bool keyBindsEnabled = true;
+
+
+        /// <summary> Returns a unit vector representing the chosen movement axis. </summary>
+        /// <param name="axis"></param>
+        /// <returns></returns>
+        public static Vector3 GetAxis(MoveAxis axis)
+        {
+            Vector3 res = Vector3.zero;
+            int ax = (int)axis;
+            if (ax > 2) { ax -= 3; }
+            res[ax] = 1;
+            return res;
+        }
+
+        /// <summary> Returns true if this axis is negative </summary>
+        /// <param name="axis"></param>
+        /// <returns></returns>
+        public static bool IsNegative(MoveAxis axis)
+        {
+            return axis >= MoveAxis.NegativeX;
+        }
+
+        /// <summary> Returns an index (0, 1, 2) to access a Vector3 </summary>
+        /// <param name="axis"></param>
+        /// <returns></returns>
+        public static int AxisIndex(MoveAxis axis)
+        {
+            return IsNegative(axis) ? (int)axis - 3 : (int)axis;
+        }
+
+        /// <summary> Returns a normalized Vector repesenting this axis in 3D space. </summary>
+        /// <param name="axis"></param>
+        /// <returns></returns>
+        public static Vector3 GetVector(MoveAxis axis)
+        {
+            Vector3 res = Vector3.zero;
+            if (IsNegative(axis))
+                res[(int)axis - 3] = -1;
+            else
+                res[(int)axis] = 1;
+            return res;
+        }
+
+
 
         //--------------------------------------------------------------------------------------------------------------------
         // ToString Methods
@@ -70,108 +117,6 @@ namespace SG
 
         #endregion ToString
 
-        //-------------------------------------------------------------------------------------------------------------------------
-        // Conversion
-
-        #region Conversion
-
-
-        /// <summary>
-        /// Convert a float[3] position taken from the DLL into a Unity Position.
-        /// </summary>
-        /// <param name="pos"></param>
-        /// <returns></returns>
-        public static Vector3 ToUnityPosition(SenseGloveCs.Kinematics.Vect3D pos)
-        {
-            return new Vector3(pos.x, pos.z, pos.y);
-        }
-
-        /// <summary>
-        /// Convert an array of float[3] positions taken from the DLL into a Vector3[].
-        /// </summary>
-        /// <param name="pos"></param>
-        /// <returns></returns>
-        public static Vector3[] ToUnityPosition(SenseGloveCs.Kinematics.Vect3D[] pos)
-        {
-            if (pos != null)
-            {
-                Vector3[] res = new Vector3[pos.Length];
-                for (int f = 0; f < pos.Length; f++)
-                {
-                    res[f] = SG_Util.ToUnityPosition(pos[f]);
-                }
-                return res;
-            }
-            return new Vector3[] { };
-        }
-
-        /// <summary> Convert from a unity vector3 to a float[3] used in the DLL. </summary>
-        /// <param name="pos"></param>
-        /// <returns></returns>
-        public static SenseGloveCs.Kinematics.Vect3D ToPosition(Vector3 pos)
-        {
-            return new SenseGloveCs.Kinematics.Vect3D(pos.x, pos.z, pos.y);
-        }
-
-        /// <summary>
-        /// Convert an array of unity positions back into an array used by the DLL
-        /// </summary>
-        /// <param name="pos"></param>
-        /// <returns></returns>
-        public static SenseGloveCs.Kinematics.Vect3D[] ToPosition(Vector3[] pos)
-        {
-            SenseGloveCs.Kinematics.Vect3D[] res = new SenseGloveCs.Kinematics.Vect3D[pos.Length];
-            for (int f = 0; f < pos.Length; f++)
-            {
-                res[f] = SG_Util.ToPosition(pos[f]);
-            }
-            return res;
-        }
-
-
-
-        /// <summary>
-        /// Convert a float[4] quaternion taken from the DLL into a Unity Quaternion. 
-        /// </summary>
-        /// <param name="quat"></param>
-        /// <returns></returns>
-        public static Quaternion ToUnityQuaternion(SenseGloveCs.Kinematics.Quat quat)
-        {
-            return new Quaternion(-quat.x, -quat.z, -quat.y, quat.w);
-        }
-
-        /// <summary> Convert a unity Quaternion into a float[4] used in the DLL. </summary>
-        /// <param name="Q"></param>
-        /// <returns></returns>
-        public static SenseGloveCs.Kinematics.Quat ToQuaternion(Quaternion Q)
-        {
-            return new SenseGloveCs.Kinematics.Quat(-Q.x, -Q.z, -Q.y, Q.w);
-        }
-
-
-
-
-
-        /// <summary>
-        /// Convert a unity eulerAngles notation into one used by the DLL.
-        /// </summary>
-        /// <param name="euler"></param>
-        /// <returns></returns>
-        public static SenseGloveCs.Kinematics.Vect3D ToEuler(Vector3 euler)
-        {
-            return SenseGloveCs.Values.Radians(new SenseGloveCs.Kinematics.Vect3D(-euler.x, -euler.z, -euler.y));
-        }
-
-        /// <summary> Convert a set of euler angles from the DLL into the Unity notation. </summary>
-        /// <param name="euler"></param>
-        /// <returns></returns>
-        public static Vector3 ToUnityEuler(SenseGloveCs.Kinematics.Vect3D euler)
-        {
-            euler = SenseGloveCs.Values.Degrees(euler);
-            return new Vector3(-euler.x, -euler.z, -euler.y);
-        }
-
-        #endregion Conversion
 
         //-------------------------------------------------------------------------------------------------------------------------
         // Values 
@@ -236,7 +181,7 @@ namespace SG
         /// <returns></returns>
         public static float Map(float value, float inMin, float inMax, float outMin, float outMax)
         {
-            return SenseGloveCs.Values.Interpolate(value, inMin, inMax, outMin, outMax);
+            return SGCore.Kinematics.Values.Map(value, inMin, inMax, outMin, outMax);
         }
 
         /// <summary> Calculates the average between a list of Vector3 values </summary>
@@ -319,6 +264,17 @@ namespace SG
         }
 
 
+        public static Vector3 CalculateTargetPosition(Transform refrence, Vector3 posOffset, Quaternion rotOffset)
+        {
+            return refrence != null ? refrence.position + (refrence.rotation * posOffset) : Vector3.zero;
+        }
+
+        public static Quaternion CalculateTargetRotation(Transform refrence, Quaternion rotOffset)
+        {
+            return refrence != null ? refrence.transform.rotation * rotOffset : Quaternion.identity;
+        }
+
+
         /// <summary> Add a velocity / angularVelocity to a rigidbody to move towards a targetPosition and rotation  </summary>
         /// <param name="obj"></param>
         /// <param name="targetPosition"></param>
@@ -373,6 +329,7 @@ namespace SG
         //-------------------------------------------------------------------------------------------------------------------------
         // Linked Scripts 
 
+        
         #region LinkedScripts
 
         /// <summary> Check if an object has a SG_HandModelInfo component and assign it to the info parameter. </summary>
@@ -423,44 +380,6 @@ namespace SG
             get { return System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments) + "/SenseGlove/"; }
         }
 
-        /// <summary> Returns a unit vector representing the chosen movement axis. </summary>
-        /// <param name="axis"></param>
-        /// <returns></returns>
-        public static Vector3 GetAxis(MovementAxis axis)
-        {
-            Vector3 res = Vector3.zero;
-            res[(int)axis] = 1;
-            return res;
-        }
-
-        /// <summary> Returns true if this axis is negative </summary>
-        /// <param name="axis"></param>
-        /// <returns></returns>
-        public static bool IsNegative(MoveAxis axis)
-        {
-            return axis >= MoveAxis.NegativeX;
-        }
-
-        /// <summary> Returns an index (0, 1, 2) to access a Vector3 </summary>
-        /// <param name="axis"></param>
-        /// <returns></returns>
-        public static int AxisIndex(MoveAxis axis)
-        {
-            return IsNegative(axis) ? (int)axis - 3 : (int)axis;
-        }
-
-        /// <summary> Returns a normalized Vector repesenting this axis in 3D space. </summary>
-        /// <param name="axis"></param>
-        /// <returns></returns>
-        public static Vector3 GetVector(MoveAxis axis)
-        {
-            Vector3 res = Vector3.zero;
-            if (IsNegative(axis))
-                res[(int)axis - 3] = -1;
-            else
-                res[(int)axis] = 1;
-            return res;
-        }
 
         /// <summary> Spawn a sphere and make it a child of parent. </summary>
         /// <param name="worldDiameter"></param>
@@ -498,8 +417,65 @@ namespace SG
             }
         }
 
+        /// <summary> Set the text of an existing button text </summary>
+        /// <param name="button"></param>
+        /// <param name="addedText"></param>
+        public static void SetButtonText(UnityEngine.UI.Button button, string text)
+        {
+            if (button != null)
+            {
+                UnityEngine.UI.Text btnTxt = button.GetComponentInChildren<UnityEngine.UI.Text>();
+                if (btnTxt != null) { btnTxt.text = text; }
+            }
+        }
+
+        /// <summary> Set button text, and optionally add a hotkey indicator on the next line. </summary>
+        /// <param name="button"></param>
+        /// <param name="baseTxt"></param>
+        /// <param name="keyCode"></param>
+        public static void SetButtonText(UnityEngine.UI.Button button, string baseTxt, KeyCode keyCode)
+        {
+            if (keyCode != KeyCode.None) { SG.Util.SG_Util.SetButtonText(button, baseTxt + "\r\n[" + keyCode + "]"); }
+            else { SG.Util.SG_Util.SetButtonText(button, baseTxt); }
+        }
+
         #endregion
 
+
+        /// <summary> get an absulute position relative to a transform. </summary>
+        /// <param name="objPosWorld"></param>
+        /// <param name="reference"></param>
+        /// <returns></returns>
+        public static Vector3 CaluclateLocalPos(Vector3 objPosWorld, Vector3 refPosWorld, Quaternion refRotWorld)
+        {
+            Vector3 diff = objPosWorld - refPosWorld;
+            //now we have the absolute differemce, and should rotate it to match
+            return Quaternion.Inverse(refRotWorld) * diff;
+        }
+
+        public static Vector3 CalculateAbsWithOffset(Vector3 objWorldPos, Quaternion objWorldRot, Vector3 worldOffsets)
+        {
+            Vector3 dWorld = objWorldRot * worldOffsets;
+            return objWorldPos + dWorld;
+        }
+
+        /// <summary> Get an absolure position's coordinates relative to another transform (without scaling) </summary>
+        /// <param name="absPos"></param>
+        /// <returns></returns>
+        public static Vector3 ProjectOnTranform(Vector3 absPos, Transform relativeTo)
+        {
+            return Quaternion.Inverse(relativeTo.rotation) * (absPos - relativeTo.position);
+        }
+
+        /// <summary> Project an absolute position onto the plane formed by the Hing Joint's normal. </summary>
+        /// <returns></returns>
+        public static Vector3 ProjectOnTranform2D(Vector3 absPos, Transform relativeTo, MovementAxis normal)
+        {
+            Vector3 res = ProjectOnTranform(absPos, relativeTo);
+            res[(int)normal] = 0;
+            return res;
+        }
+        
     }
 
 }

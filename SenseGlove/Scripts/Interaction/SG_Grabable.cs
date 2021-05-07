@@ -2,6 +2,27 @@
 
 namespace SG
 {
+
+    /// <summary> The way in which this Grabscript picks up SG_Interactable objects. </summary>
+    public enum GrabType
+    {
+        /// <summary> The grabbed object's transform follows that of the GrabReference through world coordinates. Does not interfere with VRTK scripts. </summary>
+        Follow = 0,
+        /// <summary> A FixedJoint is created between the grabbed object and the GrabReference, which stops it from passing through rigidbodies. </summary>
+        FixedJoint,
+        /// <summary> The object becomes a child of the Grabreference. Its original parent is restored upon release. </summary>
+        Parent
+    }
+
+    /// <summary> The way that this SG_Grabable attaches to a GrabScript that tries to pick it up. </summary>
+    public enum AttachType
+    {
+        /// <summary> Default. The object keeps its current position. </summary>
+        Default = 0,
+        /// <summary> The object snaps to the Grabscript in a predefined position and orientation; useful for tools etc. </summary>
+        SnapToAnchor,
+    }
+
     /// <summary> An object that can be picked up and dropped by the SenseGlove. </summary>
     public class SG_Grabable : SG_Interactable
     {
@@ -19,9 +40,13 @@ namespace SG
         [Tooltip("The way this object connects itself to the grabscript")]
         public AttachType attachMethod = AttachType.Default;
 
+        /// <summary> The actual snapReference, based on if the hand is left or right. </summary>
+        protected Transform snapReference = null;
+
         /// <summary> If this object has an attachType of SnapToAnchor, this transform is used as a refrence. </summary>
         [Tooltip("If this object has an attachType of SnapToAnchor, this transform is used as a refrence.")]
-        public Transform snapReference;
+        public Transform leftSnapPoint = null, rightSnapPoint = null;
+
 
         /// <summary> Whether or not this object can be picked up by another Grabscript while it is being held. </summary>
         [Tooltip("Whether or not this object can be picked up from the Sense Glove by another Grabscript.")]
@@ -85,19 +110,23 @@ namespace SG
                 if (!alreadyBeingHeld || (alreadyBeingHeld && this.canTransfer))
                 {
                     //todo release?
+                    if (GrabScript != null)
+                    {
+                        this.GrabScript.EndInteraction(this, false);
+                    }
 
                     this.grabReference = grabScript.grabReference;
                     this._grabScript = grabScript;
 
                     this.originalDist = (grabScript.grabReference.transform.position - this.pickupReference.transform.position).magnitude;
 
-                    if (this.attachMethod != AttachType.Default && this.snapReference != null)
+                    if (this.attachMethod != AttachType.Default)
                     {
-                        if (this.attachMethod != AttachType.Default && this.snapReference != null)
+                        if (this.attachMethod != AttachType.Default)
                         {
                             if (this.attachMethod == AttachType.SnapToAnchor)
                             {
-                                this.SnapMeTo(grabScript.grabAnchor.transform);
+                                this.SnapMeTo(grabScript.grabAnchor.transform, grabScript.TrackedHand.TracksRightHand);
                             }
                             //other attachmethods.
                         }
@@ -193,8 +222,11 @@ namespace SG
 
         /// <summary> Moves this Grbabale such that its snapRefrence matches the rotation and position of the originToMatch. </summary>
         /// <param name="originToMatch"></param>
-        public void SnapMeTo(Transform originToMatch)
+        public void SnapMeTo(Transform originToMatch, bool rightHand)
         {
+            if (rightSnapPoint == null || leftSnapPoint == null) { CheckPickupRef(); }
+            this.snapReference = rightHand ? rightSnapPoint : leftSnapPoint;
+
             Quaternion Qto = originToMatch.rotation;
             Quaternion Qmain = this.pickupReference.transform.rotation;
             Quaternion Qsub = this.snapReference.transform.rotation;
@@ -221,7 +253,7 @@ namespace SG
         {
             this.OnObjectReset();
             this.CheckPickupRef();
-
+            
             this.BreakJoint();
 
             this.pickupReference.parent = originalParent;
@@ -344,9 +376,19 @@ namespace SG
             {
                 this.pickupReference = this.transform;
             }
-            if (this.snapReference == null)
+
+            if (leftSnapPoint == null && rightSnapPoint == null)
             {
-                this.snapReference = this.transform;
+                this.rightSnapPoint = this.transform;
+                this.leftSnapPoint = this.transform;
+            }
+            if (leftSnapPoint == null && rightSnapPoint != null)
+            {
+                leftSnapPoint = rightSnapPoint;
+            }
+            else if (leftSnapPoint != null && rightSnapPoint == null)
+            {
+                rightSnapPoint = leftSnapPoint;
             }
         }
 
@@ -374,6 +416,16 @@ namespace SG
         public virtual void Awake()
         {
             this.CheckPickupRef();
+
+            //Temp fix where a grabable is registered twice when it doesn't have a RigidBody...
+            if (!this.physicsBody) { this.physicsBody = this.pickupReference.GetComponent<Rigidbody>(); }
+            if (this.pickupMethod == GrabType.Parent && physicsBody == null) 
+            {
+                this.physicsBody = this.pickupReference.gameObject.AddComponent<Rigidbody>();
+                this.physicsBody.isKinematic = true;
+                this.physicsBody.useGravity = false;
+            }
+
             this.SaveRBParameters();
             this.SaveTransform();
         }
@@ -390,25 +442,4 @@ namespace SG
 
 
 
-    /// <summary> The way in which this Grabscript picks up SG_Interactable objects. </summary>
-    public enum GrabType
-    {
-        /// <summary> The grabbed object's transform follows that of the GrabReference through world coordinates. Does not interfere with VRTK scripts. </summary>
-        Follow = 0,
-        /// <summary> A FixedJoint is created between the grabbed object and the GrabReference, which stops it from passing through rigidbodies. </summary>
-        FixedJoint,
-        /// <summary> The object becomes a child of the Grabreference. Its original parent is restored upon release. </summary>
-        Parent
-    }
-
-    /// <summary> The way that this SG_Grabable attaches to a GrabScript that tries to pick it up. </summary>
-    public enum AttachType
-    {
-        /// <summary> Default. The object keeps its current position. </summary>
-        Default = 0,
-        /// <summary> The object snaps to the Grabscript in a predefined position and orientation; useful for tools etc. </summary>
-        SnapToAnchor,
-        // /// <summary> (BETA) Same as SnapToAnchor; but the object reaches its desired destination with a smooth animation. </summary>
-        // FlowToAnchor
-    }
 }

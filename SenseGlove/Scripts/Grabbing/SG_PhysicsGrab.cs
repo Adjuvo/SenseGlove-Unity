@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using SG.Util;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -7,6 +8,9 @@ namespace SG
     /// <summary> A simplified version of the original SenseGlove_PhysGrab script; If an object is touched by finger-thumb or by palm-finger </summary>
     public class SG_PhysicsGrab : SG_GrabScript
     {
+        //----------------------------------------------------------------------------------------------
+        // Member Variables
+
         /// <summary> The Hand Model info to which to link this script's colliders. If left unassigned, one needs to assign tracking to the colliders manually. </summary>
         [Header("PhysicsGrab Components")]
         public SG_HandModelInfo handModel;
@@ -23,15 +27,16 @@ namespace SG
         /// <summary> Keeps track of the 'grabbing' pose of fingers </summary>
         protected bool[] wantsGrab = new bool[3];
         /// <summary> Above these flexions, the hand is considered 'open' </summary>
-        protected static float[] openHandThresholds = new float[5] { -20, -20, -20, -20, -90 };
+        protected static float[] openHandThresholds = new float[5] { 0.2f, 0.2f, 0.2f, 0.2f, 0.2f };
         /// <summary> below these flexions, the hand is considered 'open' </summary>
-        protected static float[] closedHandThresholds = new float[5] { -360, -360, -360, -360, -360 }; //set to -360 so it won;t trigger for now
+        protected static float[] closedHandThresholds = new float[5] { 2, 2, 2, 2, 2 }; //set to -360 so it won;t trigger for now
 
         /// <summary> The touchscript collection that is easier to iterate through. </summary>
         protected SG_HoverCollider[] touchScripts = new SG_HoverCollider[0];
 
 
-
+        //----------------------------------------------------------------------------------------------
+        // Accessors
 
         /// <summary> Show / Hide the hover colliders of this script. </summary>
         public override bool DebugEnabled
@@ -45,6 +50,9 @@ namespace SG
                 }
             }
         }
+
+        //----------------------------------------------------------------------------------------------
+        // GrabScript Overrides
 
         /// <summary> Retruns true if this GrabScript is ready to grab objects </summary>
         /// <returns></returns>
@@ -74,22 +82,21 @@ namespace SG
             return true;
         }
 
-
-        /// <summary> Returns true if an SG_Interactable is inside a list of other SG_Interactables </summary>
-        /// <param name="heldObject"></param>
-        /// <param name="objectsToGrab"></param>
-        /// <returns></returns>
-        public static bool IsInside(SG_Interactable heldObject, List<SG_Interactable> objectsToGrab)
+        /// <summary> Ignore collision between this layer and another. </summary>
+        /// <param name="rigidBodies"></param>
+        /// <param name="ignoreCollisions"></param>
+        public override void SetIgnoreCollision(SG_HandRigidBodies rigidBodies, bool ignoreCollisions)
         {
-            for (int i = 0; i < objectsToGrab.Count; i++)
+            if (rigidBodies != null)
             {
-                if (GameObject.ReferenceEquals(objectsToGrab[i].gameObject, heldObject.gameObject))
-                {
-                    return true;
-                }
+                if (palmTouch != null) { rigidBodies.SetIgnoreCollision(this.palmTouch.gameObject, ignoreCollisions); }
+                if (thumbTouch != null) { rigidBodies.SetIgnoreCollision(this.thumbTouch.gameObject, ignoreCollisions); }
+                if (indexTouch != null) { rigidBodies.SetIgnoreCollision(this.indexTouch.gameObject, ignoreCollisions); }
+                if (middleTouch != null) { rigidBodies.SetIgnoreCollision(this.middleTouch.gameObject, ignoreCollisions); }
             }
-            return false;
         }
+
+
 
 
         /// <summary> Setup and check for connected scripts </summary>
@@ -103,7 +110,7 @@ namespace SG
         /// <summary> Grab new objects and release objects taht are no longer touched. </summary>
         public override void UpdateGrabScript()
         {
-            if (this.HardwareReady)
+            //if (this.HardwareReady)
             {
                 CheckGestures();
                 List<SG_Interactable> objectsToGrab = GetGrabables();
@@ -114,8 +121,9 @@ namespace SG
                     if (heldObjects[i] != null)
                     {
                         if (!IsInside(heldObjects[i], objectsToGrab)
-                            && ((this.CanRelease(heldObjects[i]) && heldObjects[i].EndInteractAllowed())
-                                || heldObjects[i].MustBeReleased()))
+                            && ( !heldObjects[i].gameObject.activeInHierarchy 
+                                || (this.CanRelease(heldObjects[i]) && heldObjects[i].EndInteractAllowed())
+                                || heldObjects[i].MustBeReleased()) )
                         {
                             i = ReleaseObjectAt(i); //if actually removed, is not updated
                         }
@@ -157,6 +165,27 @@ namespace SG
         }
 
 
+        //----------------------------------------------------------------------------------------------
+        // PhysicsGrab Functions
+
+
+        /// <summary> Returns true if an SG_Interactable is inside a list of other SG_Interactables </summary>
+        /// <param name="heldObject"></param>
+        /// <param name="objectsToGrab"></param>
+        /// <returns></returns>
+        public static bool IsInside(SG_Interactable heldObject, List<SG_Interactable> objectsToGrab)
+        {
+            for (int i = 0; i < objectsToGrab.Count; i++)
+            {
+                if (GameObject.ReferenceEquals(objectsToGrab[i].gameObject, heldObject.gameObject))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+
         /// <summary> Returns all grabables that both fingers are touching </summary>
         /// <param name="finger1"></param>
         /// <param name="finger2"></param>
@@ -183,14 +212,28 @@ namespace SG
         /// <summary> Updates grab gestures specific to this script. </summary>
         public void CheckGestures()
         {
-            SG_SenseGloveHardware hardware;
-            if (this.GetHardware(out hardware))
+            if (this.handModel != null && this.Hardware != null)
             {
-                float[] currAngles = hardware.GloveData.GetFlexions();
-                for (int f = 0; f < wantsGrab.Length && f < currAngles.Length; f++)
+                float[] currAngles;
+                if (Hardware.GetNormalizedFlexion(out currAngles))
                 {
-                    wantsGrab[f] = currAngles[f] < openHandThresholds[f] && currAngles[f] > closedHandThresholds[f];
+                    for (int f = 0; f < wantsGrab.Length && f < currAngles.Length; f++)
+                    {
+                        wantsGrab[f] = currAngles[f] > openHandThresholds[f] && currAngles[f] < closedHandThresholds[f];
+                    }
                 }
+                else
+                {
+                    bool isConnected = Hardware.IsConnected;
+                    for (int f = 0; f < wantsGrab.Length; f++)
+                    {
+                        wantsGrab[f] = isConnected; //if we're still connected we're grabbing, if not, we cannot grab.
+                    }
+                }
+            }
+            else
+            {
+                wantsGrab = new bool[5]; //no grabs if we have no hardware to poll
             }
         }
 
@@ -227,7 +270,8 @@ namespace SG
         }
 
 
-
+        //----------------------------------------------------------------------------------------------
+        // Monobehaviour
 
         protected override void Awake()
         {
