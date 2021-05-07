@@ -10,7 +10,7 @@ When importing a new version of the Sense Glove SDK, the best practice is to del
 Starting from v0.20 and onwards, the SDK is no longer compatible out of the box with the old, white, lasercut prototypes (released before DK1). If you have such a device and wish to continue using it with the latest SDK, contact the Sense Glove team.
 
 ## Platform Compatability
-The SenseGlove Unity API is compatible with Windows, with Linux support coming soon.
+The SenseGlove Unity API is compatible with Windows, with Linux support coming soon. It is also compatible with Android devices, such as the Oculus Quest and Pico Neo 2.
 
 ## Getting Started
 The first thing one should do is ensure that their Sense Glove is working.
