@@ -296,21 +296,36 @@ namespace SG
             {
                 if (forceUpdate || newPoseNeeded) //we need a new pose
                 {
-                    SGCore.HandPose iPose;
-                    if (lastGlove.GetHandPose(handDimensions, userProfile, out iPose))
+                    lastHandModel = handDimensions;
+                    if (this.CalibrationStage == CalibrationStage.MoveFingers)
                     {
-                        lastHandPose = new SG_HandPose(iPose);
-                        lastHandModel = handDimensions;
+                        lastHandPose = SG_HandPose.Idle(this.IsRight);
                         newPoseNeeded = false; //we don't need a new pose this frame, thank you.
                     }
+                    else if (this.CalibrationLocked && this.currentSequence != null)
+                    {
+                        //we should gram it from the calibrationSequence instead.
+                        if (this.currentSequence.GetCalibrationPose(out lastHandPose))
+                        {
+                            newPoseNeeded = false;
+                        }
+                    }
+                    else
+                    {
+                        SGCore.HandPose iPose;
+                        if (lastGlove.GetHandPose(handDimensions, userProfile, out iPose))
+                        {
+                            lastHandPose = new SG_HandPose(iPose);
+                            newPoseNeeded = false; //we don't need a new pose this frame, thank you.
+                        }
+                    }
                 }
-                else //we already have one, and don't want to force-update.
-                {
-                    if (lastHandPose == null) { lastHandPose = SG_HandPose.Idle(this.IsRight); }
-                }
+                // else we already have one, and don't want to force-update.
                 pose = lastHandPose;
-                return true;
+                return lastHandPose != null;
             }
+            else if (lastHandPose == null) { lastHandPose = SG_HandPose.Idle(this.IsRight); } //only if we dont yet have a LastHandPose.
+
             //otherwise we shouldn't bother
             pose = lastHandPose;
             return false;
@@ -586,7 +601,7 @@ namespace SG
             {
                 this.CalibrationStage = CalibrationStage.Done;
             }
-            CalibrationLocked = this.CalibrationStage == CalibrationStage.MoveFingers;
+            //CalibrationLocked = this.CalibrationStage == CalibrationStage.Calibrating; //only locked if we're calibrating
             this.CalibrationStateChanged.Invoke();
         }
 
@@ -616,7 +631,7 @@ namespace SG
         /// <returns></returns>
         public bool LockCalibration(SG_CalibrationSequence sequence)
         {
-            if (this.CalibrationStage != CalibrationStage.MoveFingers && sequence != null)
+            if (sequence != null && !CalibrationLocked)
             {
                 this.currentSequence = sequence;
                 this.CalibrationLocked = true;

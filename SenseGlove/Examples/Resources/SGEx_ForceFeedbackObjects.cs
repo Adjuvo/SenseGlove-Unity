@@ -12,10 +12,10 @@ namespace SG.Examples
 
         public KeyCode nextObjKey = KeyCode.D;
         public KeyCode prevObjKey = KeyCode.A;
-        public KeyCode calibrateWristKey = KeyCode.P;
+        public KeyCode calibrateKey = KeyCode.C;
 
         public Button nextButton, previousButton;
-        public Button wristButton;
+        public Button calibrateBtn;
 
         public GameObject[] ffbObjects = new GameObject[0];
         // protected SG_SimpleTracking[] trackScripts = new SG_SimpleTracking[0];
@@ -121,6 +121,14 @@ namespace SG.Examples
             this.SetObject(this.objIndex, true);
         }
 
+        public void ResetCalibration()
+        {
+            if (activeHand != null && activeHand.calibration != null)
+            {
+                activeHand.calibration.StartCalibration(true);
+            }
+        }
+
 
         public bool ButtonsActive
         {
@@ -129,7 +137,7 @@ namespace SG.Examples
             {
                 if (previousButton != null) { previousButton.gameObject.SetActive(value); }
                 if (nextButton != null) { nextButton.gameObject.SetActive(value); }
-                if (wristButton != null) { wristButton.gameObject.SetActive(value); }
+                if (calibrateBtn != null) { calibrateBtn.gameObject.SetActive(value); }
             }
         }
 
@@ -144,6 +152,8 @@ namespace SG.Examples
         }
 
 
+
+
         void Awake()
         {
 
@@ -154,6 +164,17 @@ namespace SG.Examples
         {
             SG.Util.SG_Util.SetChildren(leftHand.transform, false);
             SG.Util.SG_Util.SetChildren(rightHand.transform, false);
+            if (leftHand.calibration != null) 
+            { 
+                leftHand.calibration.gameObject.SetActive(true);
+                leftHand.calibration.startCondition = SG_CalibrationSequence.StartCondition.WhenNeeded;
+            }
+            if (rightHand.calibration != null) 
+            { 
+                rightHand.calibration.gameObject.SetActive(true);
+                rightHand.calibration.startCondition = SG_CalibrationSequence.StartCondition.WhenNeeded;
+            }
+
             if (objectText != null) { objectText.text = ""; }
             if (nextButton != null)
             {
@@ -165,10 +186,10 @@ namespace SG.Examples
                 Text btnText = previousButton.GetComponentInChildren<Text>();
                 if (btnText != null) { btnText.text = btnText.text + "\r\n(" + this.prevObjKey.ToString() + ")"; }
             }
-            if (wristButton != null)
+            if (calibrateBtn != null)
             {
-                Text btnText = wristButton.GetComponentInChildren<Text>();
-                if (btnText != null) { btnText.text = btnText.text + "\r\n(" + this.calibrateWristKey.ToString() + ")"; }
+                Text btnText = calibrateBtn.GetComponentInChildren<Text>();
+                if (btnText != null) { btnText.text = btnText.text + "\r\n(" + this.calibrateKey.ToString() + ")"; }
             }
 
             ButtonsActive = false;
@@ -198,7 +219,7 @@ namespace SG.Examples
             }
             else
             {
-                if (Input.GetKeyDown(calibrateWristKey)) { this.CalibrateWrist(); }
+                if (Input.GetKeyDown(calibrateKey)) { this.ResetCalibration(); }
 
                 bool handOpen = this.objIndex > -1 ? !activeHand.feedbackScript.TouchingMaterial() : CheckHandOpen(this.activeHand);
                 if (handOpen)

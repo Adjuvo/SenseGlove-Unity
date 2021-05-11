@@ -7557,7 +7557,7 @@ MonoBehaviour:
   linkedGlove: {fileID: 114782683388115006}
   linkedHand: {fileID: 114471053371264404}
   calibrationType: 0
-  autoStartWhenNeeded: 1
+  startCondition: 1
   nextStepKey: 0
   cancelKey: 0
   resetCalibrationKey: 0
@@ -7915,7 +7915,7 @@ MonoBehaviour:
   linkedGlove: {fileID: 114897249816132158}
   linkedHand: {fileID: 114824109960994836}
   calibrationType: 0
-  autoStartWhenNeeded: 1
+  startCondition: 1
   nextStepKey: 0
   cancelKey: 0
   resetCalibrationKey: 0

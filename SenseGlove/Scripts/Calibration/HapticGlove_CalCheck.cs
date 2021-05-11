@@ -232,19 +232,20 @@ namespace SGCore.Calibration
         /// <returns></returns>
         public static bool MovedMinimum(Vect3D[] currentRange, SGCore.DeviceType type)
         {
-            float minMovement = type == DeviceType.NOVA ? novaMinFlex : sgMinFlex;
+            float minFlex = type == DeviceType.NOVA ? novaMinFlex : sgMinFlex;
+            float minAdb = type == DeviceType.NOVA ? novaMinAbd : sgMinAbd;
             for (int f = 0; f < currentRange.Length; f++)
             {
-                if (currentRange[f].y < minMovement)
+                if (currentRange[f].y < minFlex)
                 {
                     //Debug.Log( ((SGCore.Finger)f).ToString() + " has not moved enough");
                     return false;
                 }
             }
-            if (currentRange.Length > 0) //check adduction
+            if (currentRange.Length > 0 && currentRange[0].z < minAdb) //check adduction
             {
                 //Debug.Log("Thumb has not adducted moved enough");
-                return currentRange[0].z < minMovement;
+                return false;
             }//else we're not checking the thumb?
             return true;
         }

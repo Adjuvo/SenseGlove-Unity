@@ -292,6 +292,7 @@ namespace SGCore.Calibration
         {
             sensorRange = SensorRange.ForCalibration();
             tempProfile = iGlove != null ? SGCore.HandProfile.Default(iGlove.IsRight()) : null;
+            CanAnimate = false;
             movedTime = 0;
             base.Reset();
         }
@@ -332,6 +333,7 @@ namespace SGCore.Calibration
             //can we animate?
             if (!CanAnimate)
             {
+                //Debug.Log("CanAnimate?? " + this.sensorRange.RangeString());
                 //CanAnimate = true;
                 this.CanAnimate = iGlove != null && HapticGlove_CalCheck.MovedMinimum(this.sensorRange.Range, iGlove.GetDeviceType());
             }

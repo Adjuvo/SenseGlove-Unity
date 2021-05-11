@@ -430,6 +430,7 @@ namespace SG
         /// <summary> Updates the TrackedHand layers based on the HandState of the linked glove. Called when the CalibrationStage changes. </summary>
         public void UpdateHandState()
         {
+            //Debug.Log(this.name + ": HandState has changed to " + this.gloveHardware.CalibrationStage.ToString());
             if (gloveHardware != null)
             {
                 if (this.statusIndicator != null)
@@ -463,21 +464,6 @@ namespace SG
                     else
                     {
                         statusIndicator.WristText = "";
-                    }
-                }
-                //Update Animaytion
-                if (this.handAnimation != null)
-                {
-                    if (this.gloveHardware.CalibrationStage == SGCore.Calibration.CalibrationStage.Done)
-                    {
-                        //Debug.Log("Re-enabled Hand Tracking as calibration works again");
-                        this.handAnimation.enabled = true;
-                    }
-                    else
-                    {
-                        //Debug.Log("Disabled hand animation for a reason");
-                        this.handAnimation.enabled = false; //diable automated animation
-                        this.handAnimation.UpdateHand(SG_HandPose.Idle(this.TracksRightHand));
                     }
                 }
             }

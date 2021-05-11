@@ -15,6 +15,7 @@ namespace SG
 		[Header("Visual Components")]
 		public SG_HapticGlove glove;
 		public SG.Util.SG_WireFrame wireFrame;
+        public SG_CalibrationSequence calibrationSequence;
 		public SG_TrackedHand leftHandModel, rightHandModel;
 
 		[Header("UI Components")]
@@ -32,6 +33,7 @@ namespace SG
 		[Header("KeyBinds")]
 		public KeyCode resetWristKey = KeyCode.P;
 		public KeyCode testThumperKey = KeyCode.T;
+		public KeyCode resetCalibrKey = KeyCode.C;
 		public KeyCode testBuzzKey = KeyCode.B;
 		public KeyCode testFFbKey = KeyCode.F;
 
@@ -142,8 +144,24 @@ namespace SG
 		private void SetupAfterConnect()
         {
 			//Show the right HandModels
-			if (glove.IsRight) { rightHandModel.gameObject.SetActive(true); }
-			else { leftHandModel.gameObject.SetActive(true); }
+			if (glove.IsRight)
+            {
+                rightHandModel.gameObject.SetActive(true);
+                if (calibrationSequence != null) 
+				{ 
+					calibrationSequence.linkedHand = rightHandModel; 
+				}
+				rightHandModel.UpdateHandState();
+			}
+			else
+            {
+                leftHandModel.gameObject.SetActive(true);
+                if (calibrationSequence != null) 
+				{ 
+					calibrationSequence.linkedHand = leftHandModel; 
+				}
+				leftHandModel.UpdateHandState();
+			}
 			if (wireFrame != null) { wireFrame.HandVisible = true; }
 
 			hapticGlove = (SGCore.HapticGlove)glove.InternalGlove;
@@ -194,6 +212,13 @@ namespace SG
 			}
 		}
 
+		public void ResetCalibration()
+        {
+			if (this.calibrationSequence != null)
+            {
+				this.calibrationSequence.StartCalibration(true);
+            }
+        }
 
 
 		// Use this for initialization
@@ -313,6 +338,10 @@ namespace SG
 				if (Input.GetKeyDown(this.testThumperKey))
 				{
 					this.TestThumperSG();
+				}
+				if (Input.GetKeyDown(this.resetCalibrKey))
+				{
+					this.ResetCalibration();
 				}
 
 			}

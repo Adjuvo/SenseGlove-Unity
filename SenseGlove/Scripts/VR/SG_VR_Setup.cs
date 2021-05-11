@@ -65,12 +65,19 @@ namespace SG.VR
 		/// <param name="headsetName"></param>
 		public void CheckForHeadset(string headsetName)
         {
-			if (headsetName.Length > 0)
+			if (!HeadsetDetected && headsetName.Length > 0)
 			{
 				headsetName = headsetName.ToLower();
 				//At this point, two things can happen: we either have a relevant rig, or we do not.
-				HeadsetDetected = true;
+
 				if (debugTxt != null) { debugTxt.text = "Detected \"" + headsetName + "\""; }
+
+				//Stap 0 - If we have but one Rig, we'll always use that one to avoid confusion.
+				if (this.vrSetups.Length == 1)
+                {
+					this.AssignHeadset(0);
+					return;
+                }
 
 				//Step 1 - Do we have an exact match?
 				for (int i = 0; i < this.vrSetups.Length; i++)
