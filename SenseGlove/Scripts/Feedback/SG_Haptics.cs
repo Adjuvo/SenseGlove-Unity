@@ -22,13 +22,13 @@ namespace SG
         protected bool[] _fingers;
 
         /// <summary> Update the timing of this Haptic Signal, using a deltatime in milliseconds. </summary>
-        /// <param name="ms_dT"></param>
-        public override void UpdateTiming(int ms_dT)
+        /// <param name="dT_seconds"></param>
+        public override void UpdateTiming(float dT_seconds)
         {
-            base.UpdateTiming(ms_dT);
+            base.UpdateTiming(dT_seconds);
             if (elapsedTime > 0)
             {
-                float normalizedTime = elapsedTime / buzzTime;
+                float normalizedTime = elapsedTime / dT_seconds;
                 float eval01 = _timeline.Evaluate(normalizedTime);
                 int finalLevel = Mathf.RoundToInt(eval01 * _amplitude);
                 for (int f = 0; f < this.levels.Length; f++)
@@ -50,7 +50,7 @@ namespace SG
         {
             _amplitude = maxMagn;
             _timeline = timeLine;
-            buzzTime = Mathf.RoundToInt(duration_s * 1000);
+            duration = duration_s;
             _fingers = new bool[5]
             {
                 fingers.Length > 0 ? fingers[0] : false,
@@ -67,7 +67,7 @@ namespace SG
         /// <returns></returns>
         public override string ToString()
         {
-            string res = _amplitude + " for " + this.buzzTime + "ms";
+            string res = _amplitude + " for " + this.duration + "ms";
             return res;
         }
 
@@ -77,7 +77,7 @@ namespace SG
         {
             SG_WaveFormCmd res =  new SG_WaveFormCmd(this._timeline, 0, this._amplitude, this._fingers, 0);
             res.elapsedTime = this.elapsedTime;
-            res.buzzTime = this.buzzTime;
+            res.duration = this.duration;
             return res;
         }
     }

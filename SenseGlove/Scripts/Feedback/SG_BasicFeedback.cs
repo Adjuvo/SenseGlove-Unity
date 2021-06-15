@@ -40,7 +40,7 @@ namespace SG
         /// <summary> The maximum vibration level to represent an impact. </summary>
         protected static int maxBuzzLevel = 80;
         /// <summary> The time to vibrate the buzz motors for. </summary>
-        protected static int vibrationTime = 100;
+        protected static float vibrationTime = 0.100f;
 
         /// <summary> The maximum frames for which to keep track of velocity. </summary>
         public static int maxVelocityPoints = 10;
@@ -133,7 +133,7 @@ namespace SG
                     {
                         if (handLocation == SG_HandSection.Wrist) //it's a wrist.
                         {
-                            linkedGlove.SendCmd(new TimedThumpCmd(impactLevel, vibrationTime / 1000.0f));
+                            linkedGlove.SendCmd(new TimedThumpCmd(impactLevel, vibrationTime));
                         }
                         else //finger
                         {

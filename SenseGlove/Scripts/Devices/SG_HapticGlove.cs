@@ -18,7 +18,6 @@ namespace SG
         Any
     }
 
-
     /// <summary> Interface for a left- or right handed glove built by SenseGlove. Usually either a SenseGlove DK1 or a Nova Glove. </summary>
     public class SG_HapticGlove : MonoBehaviour
 	{
@@ -94,7 +93,7 @@ namespace SG
         protected SGCore.Haptics.ThumperCmd lastThumpCmd = ThumperCmd.Off;
 
         /// <summary> Used to check if your Haptic Glove needs calibration. </summary>
-        protected SGCore.Calibration.HapticGlove_CalCheck calibrationCheck = new HapticGlove_CalCheck(null);
+        protected SGCore.Calibration.HG_CalCheck calibrationCheck = new HG_CalCheck(null);
 
 
         /// <summary> The DeviceType of this glove. Use this to distinguish between SenseGlove and Nova. Is unknown if the glove is not connected. </summary>
@@ -405,7 +404,7 @@ namespace SG
             if (this.isActiveAndEnabled)
             {
                 this.buzzQueue.Add((SGCore.Haptics.SG_TimedBuzzCmd)buzz.Copy());
-                buzzQueue[buzzQueue.Count - 1].elapsedTime = -(Time.deltaTime * 1000); //since the time is in ms, and we will be adding deltatime for the first update.
+                buzzQueue[buzzQueue.Count - 1].elapsedTime = -Time.deltaTime; //since the time is in ms, and we will be adding deltatime for the first update.
                 if (this.buzzQueue.Count > maxQueue) { buzzQueue.RemoveAt(0); }
             }
         }
@@ -522,10 +521,12 @@ namespace SG
 
                 ffbQueue.Clear(); //clear buffer for next frame.
 
-                int dT = (int)(Time.deltaTime * 1000);
+                float dTSec = Time.deltaTime;
+
+                //Buzz motor
                 for (int i = 0; i < buzzQueue.Count;)
                 {
-                    buzzQueue[i].UpdateTiming(dT);
+                    buzzQueue[i].UpdateTiming(dTSec);
                     if (buzzQueue[i].TimeElapsed()) //no more relevant cmds
                     {
                         buzzQueue.RemoveAt(i); //do nothing
@@ -538,7 +539,6 @@ namespace SG
                 }
 
                 //evaluate thumper
-                float dTSec = Time.deltaTime;
                 int finalThump = 0;
                 for (int i = 0; i < thumperQueue.Count;)
                 {
@@ -581,7 +581,7 @@ namespace SG
         /// <summary> Checks the calibration stage of this glove when it connects. </summary>
         protected void CheckForCalibration()
         {
-            if (this.checkCalibrationOnStart && SGCore.Calibration.HapticGlove_CalCheck.NeedsCheck(this.DeviceType))
+            if (this.checkCalibrationOnStart && SGCore.Calibration.HG_CalCheck.NeedsCheck(this.DeviceType))
             {
                 SGCore.Calibration.SensorRange lastRange;
                 if (SG_HandProfiles.LoadLastRange(this.lastGlove, out lastRange))
@@ -589,7 +589,7 @@ namespace SG
                     //Debug.Log("Loaded Last Range: " + lastRange.ToString(true));
                     Debug.Log("Please move your " + (this.IsRight ? "right" : "left") + " hand so we can determine of calibration is required");
                     this.CalibrationStage = CalibrationStage.MoveFingers; //todo: Check for Nova or SenseGlove DK1
-                    this.calibrationCheck = new HapticGlove_CalCheck(lastRange);
+                    this.calibrationCheck = new HG_CalCheck(lastRange);
                 }
                 else
                 {
@@ -665,7 +665,7 @@ namespace SG
         public bool CalibrateHand(SGCore.Calibration.SensorRange range)
         {
             SGCore.HandProfile newProfile;
-            SGCore.Calibration.HapticGlove_CalibrationSequence.CompileProfile(range, this.DeviceType, this.IsRight, out newProfile);
+            SGCore.Calibration.HG_CalibrationSequence.CompileProfile(range, this.DeviceType, this.IsRight, out newProfile);
             SG_HandProfiles.SetProfile(newProfile);
 
             //this.lastRange = new SGCore.Calibration.SensorRange(range); //deep copy

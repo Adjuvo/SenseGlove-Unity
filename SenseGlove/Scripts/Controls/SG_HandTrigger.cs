@@ -36,7 +36,7 @@ namespace SG
         public int hapticForce = 100;
 
         /// <summary> The duration of a haptic feedback pulse. </summary>
-        public int hapticDuration = 200; //don't show if looping.
+        public float hapticDuration = 0.200f; //don't show if looping.
 
         /// <summary> Which fingers to apply the Haptic feedback to </summary>
         public bool[] whichFingers = new bool[5] { true, false, false, false, false };
@@ -156,7 +156,7 @@ namespace SG
                                 }
                                 else if (type == SGCore.DeviceType.NOVA)
                                 {
-                                    this.detectedHands[i].Glove.SendCmd(new TimedThumpCmd(Mathf.RoundToInt(this.hapticForce * 0.5f), this.hapticDuration / 1000.0f, -Time.deltaTime));
+                                    this.detectedHands[i].Glove.SendCmd(new TimedThumpCmd(Mathf.RoundToInt(this.hapticForce * 0.5f), this.hapticDuration, -Time.deltaTime));
                                 }
                             }
                         }
@@ -186,7 +186,7 @@ namespace SG
 
             if (this.loop)
             {
-                this.hapticDuration = (int)(this.buzz_CMD_Time * 1000);
+                this.hapticDuration = (this.buzz_CMD_Time);
             }
 
         }
@@ -217,6 +217,8 @@ namespace SG
     //   Custom Editor
 
     #region CustomInspector
+
+    /*
 
 #if UNITY_EDITOR
 
@@ -297,7 +299,7 @@ namespace SG
                 if (!triggerClass.loop && !_loop.hasMultipleDifferentValues)
                 {
                     //duration (if loop is not checked)
-                    CreateIntSlider(ref triggerClass.hapticDuration, ref _dur, 0, 1500, l_dur);
+                    CreateFloatSlider(ref triggerClass.hapticDuration, ref _dur, 0, 1500, l_dur);
                 }
 
                 //which fingers to apply it to
@@ -348,7 +350,7 @@ namespace SG
     }
 
 #endif
-
+        */
     #endregion CustomInspector
 
 }

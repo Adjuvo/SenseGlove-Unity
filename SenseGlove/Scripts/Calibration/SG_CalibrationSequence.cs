@@ -22,6 +22,13 @@ namespace SG
 		}
 
 
+
+		public enum CalibrationType
+		{
+			Quick,
+			//GuidedSteps
+		}
+
 		//------------------------------------------------------------------------------------------------------------------
 		// Member Variables
 
@@ -32,13 +39,13 @@ namespace SG
 		public SG.SG_TrackedHand linkedHand;
 
 		/// <summary> Calibration Sequence inside the .dll, can be any kind of combination of gestures or movements. </summary>
-		public SGCore.Calibration.HapticGlove_CalibrationSequence internalSequence = null;
+		public SGCore.Calibration.HG_CalibrationSequence internalSequence = null;
 		
 		/// <summary> Last calibration stage, used to check for changes. </summary>
 		protected int lastStage = -1;
 
 		/// <summary> Which calibration algorithm to use for this sequence. </summary>
-		public SGCore.Calibration.CalibrationType calibrationType = SGCore.Calibration.CalibrationType.Quick;
+		public CalibrationType calibrationType = CalibrationType.Quick;
 
 		///// <summary> If true, this hand calibration starts itself automatically when the linkedGlove indicates it's needed. </summary>
 		//public bool autoStartWhenNeeded = false;
@@ -283,14 +290,14 @@ namespace SG
 			if (linkedGlove != null && internalSequence == null && linkedGlove.IsConnected)
 			{
 				SGCore.HapticGlove lastGlove = this.linkedGlove.InternalGlove;
-				if (calibrationType == SGCore.Calibration.CalibrationType.Quick)
+				if (calibrationType == CalibrationType.Quick)
 				{
-					this.internalSequence = new SGCore.Calibration.HapticGlove_QuickCalibration(lastGlove);
+					this.internalSequence = new SGCore.Calibration.HG_QuickCalibration(lastGlove);
 				}
-				else
-				{
-					this.internalSequence = new SGCore.Calibration.Nova_GuidedCalibrationSequence(lastGlove);
-				}
+				//else
+				//{
+				//	this.internalSequence = new SGCore.Calibration.Nova_GuidedCalibrationSequence(lastGlove);
+				//}
 				//Debug.Log("Linked a glove to this Calibration Sequence. Ready to start when you are! [" + nextStepKey.ToString() + "]");
 			}
 		}

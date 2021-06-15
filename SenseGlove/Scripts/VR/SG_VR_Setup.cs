@@ -46,14 +46,35 @@ namespace SG.VR
         /// <returns></returns>
         public static string GetCurrentHeadsetName()
         {
-            return UnityEngine.XR.XRDevice.model;
-        }
+			string headset = "";
+#if UNITY_2021 || UNITY_2020 || UNITY_2019
+			//Needs both XR Plug-in Management and OpenVR for the appropriate Headset name detection.
+            UnityEngine.XR.InputDevice hmd = UnityEngine.XR.InputDevices.GetDeviceAtXRNode(UnityEngine.XR.XRNode.Head); //this takes a few seconds to initialize!
+            if (hmd != null && hmd.name != null) { headset = hmd.name; }
+            else
+            {
+                Debug.LogError("SG_VR_Setup could not find a headset name. Please ensure that XR Plug-in Management and the appropriate SDK are installed.");
+            }
+            if (headset.Contains("OpenXR"))
+            {
+                Debug.LogError("Looks like you're using OpenXR, which does not allow us to detect which headset is used (yet). It's therefore not possible to use this script. :(");
+            }
+#elif UNITY_2017 || UNITY_2018       //Unity 2017 & Unity 2018
+
+			headset = UnityEngine.XR.XRDevice.model;
+			if (headset.Length == 0)
+			{
+				Debug.LogError("SG_VR_Setup could not find a headset name. Please ensure that 'XR enabled' is set 'true' in Player Settings.");
+			}
+#endif
+			//Debug.Log("Name = \"" + headset + "\"");
+			return headset.ToLower();
+		}
 
         /// <summary> Checks which SG_VR_Rig to activate, based on UnityEngine.XR.XRDevice.model </summary>
         public void CheckForHeadset()
         {
             string headsetName = GetCurrentHeadsetName();
-
             if (headsetName.Length == 0)
             {
 				headsetName = fallbackHeadsetName;
@@ -65,47 +86,49 @@ namespace SG.VR
 		/// <param name="headsetName"></param>
 		public void CheckForHeadset(string headsetName)
         {
-			if (!HeadsetDetected && headsetName.Length > 0)
+			if (!HeadsetDetected)
 			{
-				headsetName = headsetName.ToLower();
 				//At this point, two things can happen: we either have a relevant rig, or we do not.
-
 				if (debugTxt != null) { debugTxt.text = "Detected \"" + headsetName + "\""; }
 
 				//Stap 0 - If we have but one Rig, we'll always use that one to avoid confusion.
 				if (this.vrSetups.Length == 1)
-                {
+				{
 					this.AssignHeadset(0);
 					return;
-                }
-
-				//Step 1 - Do we have an exact match?
-				for (int i = 0; i < this.vrSetups.Length; i++)
-				{
-					if (this.vrSetups[i].xrDeviceName.ToLower().Equals(headsetName))
-					{
-						this.AssignHeadset(i, headsetName);
-						return;
-					}
 				}
-
-				//Step 2 - Do we at least match a family
-				for (int i = 0; i < this.vrSetups.Length; i++)
+				if (headsetName.Length > 0)
 				{
-					if (this.vrSetups[i].xrDeviceFamily.Length > 0 && headsetName.Contains(this.vrSetups[i].xrDeviceFamily.ToLower()))
-					{
-						this.AssignHeadset(i, headsetName);
-						return;
-					}
-				}
+					headsetName = headsetName.ToLower();
 
-				//Step 3 - we don't have that Headset supported by SG devices... What now?
-				Debug.LogError("Detected " + headsetName + ", which is not in our list.");
+					//Step 1 - Do we have an exact match?
+					for (int i = 0; i < this.vrSetups.Length; i++)
+					{
+						if (this.vrSetups[i].xrDeviceName.ToLower().Equals(headsetName))
+						{
+							this.AssignHeadset(i, headsetName);
+							return;
+						}
+					}
+
+					//Step 2 - Do we at least match a family
+					for (int i = 0; i < this.vrSetups.Length; i++)
+					{
+						if (this.vrSetups[i].xrDeviceFamily.Length > 0 && headsetName.Contains(this.vrSetups[i].xrDeviceFamily.ToLower()))
+						{
+							this.AssignHeadset(i, headsetName);
+							return;
+						}
+					}
+					//Step 3 - we don't have that Headset supported by SG devices... What now?
+					Debug.LogError("Detected " + headsetName + ", which is not in our list.");
+				}
+				else
+				{
+					Debug.LogError("Could not find a headsetName, and no fallback is specified.");
+				}
+				HeadsetDetected = true; //we're done.
 			}
-			else
-            {
-				Debug.LogError("Could not find a headsetName, and no fallback is specified.");
-            }
 		}
 
 
@@ -137,12 +160,6 @@ namespace SG.VR
 				vrSetups[i].RigEnabled = false;
             }
         }
-
-		// Use this for initialization
-		void Start()
-		{
-			CheckForHeadset();
-		}
 
 		// Update is called once per frame
 		void Update()

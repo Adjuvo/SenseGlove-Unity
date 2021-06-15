@@ -443,9 +443,17 @@
         <member name="M:SGCore.Kinematics.Quat.IsIdentity">
             <summary> Check if this Quaternion is the identity quaternion (meaning it does not rotate anything.) </summary>
         </member>
+        <member name="M:SGCore.Kinematics.Quat.Magnitude">
+            <summary> Returns the magnitude of this Quaternion. Used in normalization. </summary>
+            <returns></returns>
+        </member>
         <member name="M:SGCore.Kinematics.Quat.Invert(SGCore.Kinematics.Quat)">
             <summary> Returns the inverse if q (a.k.a. a rotation in the other direction) </summary>
             <param name="q"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Kinematics.Quat.Normalize(SGCore.Kinematics.Quat)">
+            <summary> Normalizes a quaternion to have a lenght of 1. </summary>
             <returns></returns>
         </member>
         <member name="M:SGCore.Kinematics.Quat.op_Multiply(SGCore.Kinematics.Quat,SGCore.Kinematics.Quat)">
@@ -747,6 +755,118 @@
         </member>
         <member name="M:SGCore.Haptics.FFBStream.ResetAfterSend">
             <summary> Resets the force back to zero. Call after you've sent the force-feedback command. </summary>
+        </member>
+        <member name="T:SGCore.Haptics.HG_HapticStream">
+            <summary> A class to pile Force- and vibrotactile feedback into a single point, then flush them to a particular Glove. </summary>
+        </member>
+        <member name="F:SGCore.Haptics.HG_HapticStream.maxFFBCmds">
+            <summary> The base maximum amount of Force-Feedback Commands that can be in a queue. </summary>
+        </member>
+        <member name="F:SGCore.Haptics.HG_HapticStream.maxBuzzCmds">
+            <summary> The base maximum amount of Vibrotactile Commands that can be in a queue. </summary>
+        </member>
+        <member name="F:SGCore.Haptics.HG_HapticStream.maxThumpCmds">
+            <summary> The base maximum amount of Thumper Commands that can be in a queue. </summary>
+        </member>
+        <member name="F:SGCore.Haptics.HG_HapticStream.ffbQueue">
+            <summary> All FFB Commands that have been received this 'frame'. Will be flattened into a single command during FlushHapitcs. </summary>
+        </member>
+        <member name="F:SGCore.Haptics.HG_HapticStream.buzzQueue">
+            <summary> All timed Buzz Commands that have been received this 'frame'. Will be flattened into a single command during FlushHapitcs. </summary>
+        </member>
+        <member name="F:SGCore.Haptics.HG_HapticStream.thumperQueue">
+            <summary> All FFB Commands that have been received this 'frame'. Will be flattened into a single command during FlushHapitcs. </summary>
+        </member>
+        <member name="M:SGCore.Haptics.HG_HapticStream.#ctor">
+            <summary> Create a new HapticsStream for a Haptic Glove. </summary>
+        </member>
+        <member name="M:SGCore.Haptics.HG_HapticStream.ClearFFB">
+            <summary> Clears only the Force-Feedback Queue. </summary>
+        </member>
+        <member name="M:SGCore.Haptics.HG_HapticStream.ClearVibrations">
+            <summary> Clears all vibrations in the queue(s) </summary>
+        </member>
+        <member name="M:SGCore.Haptics.HG_HapticStream.Clear">
+            <summary> Clear all ongaoing effects to this stream. </summary>
+        </member>
+        <member name="M:SGCore.Haptics.HG_HapticStream.AddCmd(SGCore.Haptics.SG_FFBCmd)">
+            <summary> Add a new Force-Feedback command to the queue. Does not actually send it. </summary>
+            <param name="ffbCmd"></param>
+        </member>
+        <member name="M:SGCore.Haptics.HG_HapticStream.AddCmd(SGCore.Haptics.SG_TimedBuzzCmd)">
+            <summary> Add a new vibrotactile command to the queue. Does not actually send it. </summary>
+            <param name="buzzCmd"></param>
+        </member>
+        <member name="M:SGCore.Haptics.HG_HapticStream.AddCmd(SGCore.Haptics.TimedThumpCmd)">
+            <summary> Add a new Thumper command to the queue. Does not actually send it. Does not work with SenseGlove, only for Nova's </summary>
+            <param name="thumpCmd"></param>
+        </member>
+        <member name="M:SGCore.Haptics.HG_HapticStream.UpdateTimedCommands(System.Single)">
+            <summary> Update the active commands, using a deltaTime since last update, in seconds. Any timedCommands that are elapsed will be removed from the list. </summary>
+            <param name="dT_seconds"></param>
+        </member>
+        <member name="M:SGCore.Haptics.HG_HapticStream.TotalFFBLevels(SGCore.Haptics.SG_FFBCmd)">
+            <summary> Compiles all FFB Levels in the queue into a single one. Does not clear the queue. Returns lastFFBCmd if no FFB commands are given. </summary>
+            <param name="lastFFB"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Haptics.HG_HapticStream.TotalFFBLevels">
+            <summary> Compiles all FFB Levels in the queue into a single one. Does not clear the queue. </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Haptics.HG_HapticStream.TotalBuzzLevels">
+            <summary> Compiles all active vibrotactile in the queue into a single list of levels. Does not clear the queue. </summary>
+        </member>
+        <member name="M:SGCore.Haptics.HG_HapticStream.TotalThumperLevels">
+            <summary> Compiles all active vibrotactile in the queue into a single list of levels. Does not clear the queue. </summary>
+        </member>
+        <member name="M:SGCore.Haptics.HG_HapticStream.FlushHaptics(SGCore.Haptics.SG_FFBCmd,SGCore.Haptics.SG_FFBCmd@,SGCore.Haptics.SG_BuzzCmd@,SGCore.Haptics.ThumperCmd@,System.Boolean)">
+            <summary> Compile all commands in the queue(s) into a single set of commands that can be sent to the glove. Only clears the FFB queue, and only if you want it to. </summary>
+            <param name="lastBrakeLvl"></param>
+            <param name="ffbCmd"></param>
+            <param name="buzzCmd"></param>
+            <param name="thumperCmd"></param>
+            <param name="clearFFBqueue"></param>
+            <returns></returns>
+        </member>
+        <!-- Badly formed XML comment ignored for member "M:SGCore.Haptics.HG_HapticStream.FlushHaptics(System.Single,SGCore.Haptics.SG_FFBCmd,SGCore.Haptics.SG_FFBCmd@,SGCore.Haptics.SG_BuzzCmd@,SGCore.Haptics.ThumperCmd@)" -->
+        <member name="T:SGCore.Haptics.TimedThumpCmd">
+            <summary> A vibration command for the thumper. A pulse for a specific time in seconds.  </summary>
+        </member>
+        <member name="F:SGCore.Haptics.TimedThumpCmd.magnitude">
+            <summary> Magnitude in % </summary>
+        </member>
+        <member name="F:SGCore.Haptics.TimedThumpCmd.duration">
+            <summary> duration in seconds </summary>
+        </member>
+        <member name="F:SGCore.Haptics.TimedThumpCmd.elapsedTime">
+            <summary> The elapsed time so far. </summary>
+        </member>
+        <member name="P:SGCore.Haptics.TimedThumpCmd.Elapsed">
+            <summary> Returns true if the timed command has elapsed. </summary>
+        </member>
+        <member name="M:SGCore.Haptics.TimedThumpCmd.#ctor">
+            <summary> Internal, empty, for extended classes. </summary>
+        </member>
+        <member name="M:SGCore.Haptics.TimedThumpCmd.#ctor(System.Int32,System.Single,System.Single)">
+            <summary> Create a new Timed Thumper Command. </summary>
+            <param name="amplitude">Value between 0 .. 1 representing the magnitude of the system.</param>
+            <param name="duration_seconds"></param>
+            <param name="startTime_seconds"></param>
+        </member>
+        <member name="M:SGCore.Haptics.TimedThumpCmd.#ctor(SGCore.Haptics.ThumperCmd,System.Single,System.Single)">
+            <summary> Create a new Timed Thumper Command. </summary>
+            <param name="baseCmd"></param>
+            <param name="duration_seconds"></param>
+            <param name="startTime_seconds"></param>
+        </member>
+        <member name="M:SGCore.Haptics.TimedThumpCmd.Update(System.Single)">
+            <summary> Update the timing on this Thumper Command </summary>
+            <param name="dT_seconds"></param>
+        </member>
+        <member name="M:SGCore.Haptics.TimedThumpCmd.Copy(System.Boolean)">
+            <summary> Copy the parameters of this ThumperCommand into another instance. </summary>
+            <returns></returns>
         </member>
         <member name="T:SGCore.Haptics.WaveformType">
             <summary> Waveform type for an advanced Buzz Command </summary>
@@ -1088,7 +1208,7 @@
         <member name="F:SGCore.Haptics.SG_TimedBuzzCmd.baseCmd">
             <summary> The Buzz Motor command used to create the timing. </summary>
         </member>
-        <member name="F:SGCore.Haptics.SG_TimedBuzzCmd.buzzTime">
+        <member name="F:SGCore.Haptics.SG_TimedBuzzCmd.duration">
             <summary> The total time [millisecons] each buzz motor should be vibrating for. </summary>
         </member>
         <member name="F:SGCore.Haptics.SG_TimedBuzzCmd.elapsedTime">
@@ -1101,16 +1221,16 @@
             <summary> Create a new TimeBuzzCommand for a single finger. </summary>
             <param name="finger"></param>
             <param name="magnitude"></param>
-            <param name="time_ms"></param>
-            <param name="startTime_ms"></param>
+            <param name="duration_seconds"></param>
+            <param name="startTime_seconds"></param>
         </member>
         <member name="M:SGCore.Haptics.SG_TimedBuzzCmd.#ctor(SGCore.Haptics.SG_BuzzCmd,System.Single,System.Single)">
             <summary>
             Create a new buzz motor command that expires after timing_ms
             </summary>
             <param name="command"></param>
-            <param name="time_ms"></param>
-            <param name="startTime_ms">Optional, starts the effect at a certain time</param>
+            <param name="duration_seconds"></param>
+            <param name="startTime_seconds">Optional, starts the effect at a certain time</param>
         </member>
         <member name="M:SGCore.Haptics.SG_TimedBuzzCmd.GetBaseCommand">
             <summary> Access the base command, which indicates the buzz levels to keep untill time elapses. </summary>
@@ -1128,18 +1248,408 @@
             <summary> Copy this Buzz Command's values into a new object. </summary>
             <returns></returns>
         </member>
+        <member name="M:SGCore.Haptics.SG_TimedBuzzCmd.Merge(SGCore.Haptics.SG_BuzzCmd)">
+            <summary> Merges this basecommand with another command </summary>
+            <param name="other"></param>
+            <returns></returns>
+        </member>
         <member name="M:SGCore.Haptics.SG_TimedBuzzCmd.ResetTiming">
             <summary> Reset the timings of this BuzzCmd, allowing us to re-use it. </summary>
         </member>
-        <member name="M:SGCore.Haptics.SG_TimedBuzzCmd.UpdateTiming(System.Int32)">
+        <member name="M:SGCore.Haptics.SG_TimedBuzzCmd.UpdateTiming(System.Single)">
             <summary> Update the elapsed time to check if the buzz motors should stop. </summary>
-            <param name="ms_dT"></param>
+            <param name="dT_seconds"></param>
+        </member>
+        <member name="T:SGCore.Haptics.ThumperCmd">
+            <summary> A command that is sent to the wrist vibrotactile actuator, a.k.a. the "Thumper". </summary>
+        </member>
+        <member name="F:SGCore.Haptics.ThumperCmd.magnitude">
+            <summary> Value between 0 and 100% </summary>
+        </member>
+        <member name="F:SGCore.Haptics.ThumperCmd.maxThump">
+            <summary> Minimum allowed thumper magnitude. At this level, it's off </summary>
+        </member>
+        <member name="F:SGCore.Haptics.ThumperCmd.minThump">
+            <summary> Maximum allowed thumper magnitude. At this level, it's at maximum intensity </summary>
+        </member>
+        <member name="P:SGCore.Haptics.ThumperCmd.Off">
+            <summary> A command that represents turning the Thumper off. </summary>
+        </member>
+        <member name="M:SGCore.Haptics.ThumperCmd.#ctor(System.Int32)">
+            <summary> Create a new Thumper Command </summary>
+            <param name="intensity"></param>
+        </member>
+        <member name="M:SGCore.Haptics.ThumperCmd.Validate(System.Int32)">
+            <summary> Validate the input values(s) of the ThumperCommand. </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Haptics.ThumperCmd.Merge(SGCore.Haptics.ThumperCmd)">
+            <summary> Merge two ThumperCommands into one. </summary>
+            <param name="other"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Haptics.ThumperCmd.Copy">
+            <summary> Deep coop a thumper command </summary>
+            <returns></returns>
         </member>
         <member name="T:SGCore.Haptics.WaveformStream">
             <summary> Streams waveforms to hapticGloves. </summary>
         </member>
         <member name="F:SGCore.Haptics.WaveformStream.maxActiveWavefroms">
             <summary> The maximum amount of Waveforms that can be active at one time. </summary>
+        </member>
+        <member name="T:SGCore.Calibration.CalibrationStage">
+            <summary> Startup Stage used to indicate where of not a glove must be recalibrated. </summary>
+        </member>
+        <member name="F:SGCore.Calibration.CalibrationStage.MoveFingers">
+            <summary> We've only just started up. User needs to move their hands so we know if we're still in the same sensor range. </summary>
+        </member>
+        <member name="F:SGCore.Calibration.CalibrationStage.CalibrationNeeded">
+            <summary> After moving, we've determined that a calibration must happen for proper hand tracking to happen. </summary>
+        </member>
+        <member name="F:SGCore.Calibration.CalibrationStage.Calibrating">
+            <summary> After moving, we've determined that a calibration must happen for proper hand tracking to happen. </summary>
+        </member>
+        <member name="F:SGCore.Calibration.CalibrationStage.Done">
+            <summary> We've determined that this needs no (more) calibration to function as intended. </summary>
+        </member>
+        <member name="T:SGCore.Calibration.HG_CalCheck">
+            <summary> An algorithm that checks whether or not our current user is running in the same calibration range as last time. </summary>
+        </member>
+        <member name="P:SGCore.Calibration.HG_CalCheck.CalibrationStage">
+            <summary> The current stage of this algorithm </summary>
+        </member>
+        <member name="F:SGCore.Calibration.HG_CalCheck.lastRange">
+            <summary> The calibration range from last time, that we are checking against. </summary>
+        </member>
+        <member name="F:SGCore.Calibration.HG_CalCheck.currentRange">
+            <summary> The calibration range measured as of right now. </summary>
+        </member>
+        <member name="F:SGCore.Calibration.HG_CalCheck.perfectThresholdTime">
+            <summary> If we're 'around' the lastRange for this amount of time, we're calling it 'done'. </summary>
+        </member>
+        <member name="F:SGCore.Calibration.HG_CalCheck.timer_atThreshold">
+            <summary> Time that we've been around the last range for. </summary>
+        </member>
+        <member name="F:SGCore.Calibration.HG_CalCheck.movedMinimum">
+            <summary> Whether or not we've moved a minimum amount. Something that even someone with the smallest hands can do. </summary>
+        </member>
+        <member name="F:SGCore.Calibration.HG_CalCheck.minMoveTime">
+            <summary> After moving the minimum amount of time but not reaching the perivous range, we'll say the hand is too small. </summary>
+        </member>
+        <member name="F:SGCore.Calibration.HG_CalCheck.timer_MinMove">
+            <summary> Time since we made the minumum amount of movement </summary>
+        </member>
+        <member name="F:SGCore.Calibration.HG_CalCheck.outOfBoundsTime">
+            <summary> The amount of time the current values can be out of range for. Catches a minor case where sensor jitter causes us to be outside of the range. </summary>
+        </member>
+        <member name="F:SGCore.Calibration.HG_CalCheck.timer_outOfBounds">
+            <summary> Time we've been out of bounds for. </summary>
+        </member>
+        <member name="P:SGCore.Calibration.HG_CalCheck.ReachedConclusion">
+            <summary> Whether or not his algorithm has determined if calibration is required. </summary>
+        </member>
+        <member name="M:SGCore.Calibration.HG_CalCheck.#ctor(SGCore.Calibration.SensorRange)">
+            <summary> The last calibration range can be null, at which point you defnitely need calibration. </summary>
+            <param name="lastCalibrationRange"></param>
+        </member>
+        <member name="M:SGCore.Calibration.HG_CalCheck.Reset">
+            <summary> Reset the calibrationCheck. so it may be used again. This does not reset the LastRange. </summary>
+        </member>
+        <member name="M:SGCore.Calibration.HG_CalCheck.CheckRange(SGCore.Kinematics.Vect3D[],System.Single,SGCore.DeviceType)">
+            <summary> Using the currently received Sensor Values, check if calibration is required. This function will have to be called until a conclusion can be reached. </summary>
+            <param name="currentValues"></param>
+            <param name="deltaTime_s"></param>
+            <param name="deviceType"></param>
+        </member>
+        <member name="F:SGCore.Calibration.HG_CalCheck.sgThreshold">
+            <summary> SenseGlove: How far from the threshold one can be where we would still call it 'the same as before' </summary>
+        </member>
+        <member name="F:SGCore.Calibration.HG_CalCheck.novaThreshold">
+            <summary> Nova: How far from the threshold one can be where we would still call it 'the same as before' </summary>
+        </member>
+        <member name="F:SGCore.Calibration.HG_CalCheck.sgMinFlex">
+            <summary> SenseGlove: The minumum amount of sensor flexion movement before we start testing for a smaller hand. </summary>
+        </member>
+        <member name="F:SGCore.Calibration.HG_CalCheck.novaMinFlex">
+            <summary> Nova: The minumum amount of sensor flexion movement before we start testing for a smaller hand. </summary>
+        </member>
+        <member name="F:SGCore.Calibration.HG_CalCheck.sgMinAbd">
+            <summary> SenseGlove: The minumum amount of sensor movement on the thumb abduction before we start testing for a smaller hand. </summary>
+        </member>
+        <member name="F:SGCore.Calibration.HG_CalCheck.novaMinAbd">
+            <summary> Nova: The minumum amount of sensor movement on the thumb abduction before we start testing for a smaller hand. </summary>
+        </member>
+        <member name="M:SGCore.Calibration.HG_CalCheck.NeedsCheck(SGCore.DeviceType)">
+            <summary> Returns true if this DeviceType requires a calibration check. </summary>
+            <param name="device"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Calibration.HG_CalCheck.OutOfBounds(SGCore.Calibration.SensorRange,SGCore.Kinematics.Vect3D[],SGCore.DeviceType)">
+            <summary> Checks if current values are operating out of the previous range. Returns -1 if all is fine. 0...4 to indicate which finger is out of bounds. </summary>
+            <param name="previousRange"></param>
+            <param name="currentValues"></param>
+            <param name="type"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Calibration.HG_CalCheck.MovedMinimum(SGCore.Kinematics.Vect3D[],SGCore.DeviceType)">
+            <summary> Returns true if the user has moved enough in both flexion and thumb abduction movement to be considered 'active' </summary>
+            <param name="currentRange"></param>
+            <param name="type"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Calibration.HG_CalCheck.MatchesLast(SGCore.Kinematics.Vect3D[],SGCore.Kinematics.Vect3D[],SGCore.DeviceType)">
+            <summary> Returns true if the current sensor values have moved roughly as much as last time. </summary>
+            <param name="currentRange"></param>
+            <param name="lastRange"></param>
+            <param name="type"></param>
+            <returns></returns>
+        </member>
+        <member name="T:SGCore.Calibration.CalDataPoint">
+            <summary> A data point for Calibration, stored in a separate class so we can add / tweak it wihtout affecting the function calls. </summary>
+        </member>
+        <member name="F:SGCore.Calibration.CalDataPoint.calibrationValues">
+            <summary> Actual calibration values. </summary>
+        </member>
+        <member name="F:SGCore.Calibration.CalDataPoint.stage">
+            <summary> The Calibration stage this belongs to. </summary>
+        </member>
+        <member name="M:SGCore.Calibration.CalDataPoint.#ctor(System.Int32,SGCore.Kinematics.Vect3D[])">
+            <summary> Create a new data point </summary>
+            <param name="currSate"></param>
+            <param name="calVals"></param>
+        </member>
+        <member name="M:SGCore.Calibration.CalDataPoint.ToLogData(System.String)">
+            <summary> Log Calibration values for storing on disk </summary>
+            <param name="delim"></param>
+            <returns></returns>
+        </member>
+        <member name="T:SGCore.Calibration.HG_CalibrationSequence">
+            <summary> A sequence which collects data points untill specific criteria have been met. It must be 'fed' an Update command from your program in order to work. </summary>
+        </member>
+        <member name="F:SGCore.Calibration.HG_CalibrationSequence.iGlove">
+            <summary> Glove linked to this calibration sequence. Will attempt to gram data from this glove evey time Update() is called. </summary>
+        </member>
+        <member name="F:SGCore.Calibration.HG_CalibrationSequence.calibrationPoints">
+            <summary> Calibration points colledted during this calibration process. One is added every thme the "Update()" function is called.
+            Used to create a profile after the calibration finishes. </summary>
+        </member>
+        <member name="F:SGCore.Calibration.HG_CalibrationSequence.maxDataPoints">
+            <summary> The maximum buffer size for calibration points. Once calibrationPoints exceeds this value, the  </summary>
+        </member>
+        <member name="F:SGCore.Calibration.HG_CalibrationSequence.elapsedTime">
+            <summary> How much time has elapsed during this calibration sequence. Useful for logging or for automated functions. </summary>
+        </member>
+        <member name="P:SGCore.Calibration.HG_CalibrationSequence.ManualCompleted">
+            <summary> Used to determine if the user has manually ended the sequence, to prevent us from adding any more calibration points. </summary>
+        </member>
+        <member name="P:SGCore.Calibration.HG_CalibrationSequence.HandModel">
+            <summary> Kinematic information to generate a calibration preview pose. </summary>
+        </member>
+        <member name="M:SGCore.Calibration.HG_CalibrationSequence.#ctor">
+            <summary> Basic constructor for subclasses to inherit from </summary>
+        </member>
+        <member name="M:SGCore.Calibration.HG_CalibrationSequence.#ctor(SGCore.HapticGlove)">
+            <summary> Create a new instance of a base HapitcGlove Calibration Sequence. </summary>
+            <param name="gloveToCalibrate"></param>
+        </member>
+        <member name="P:SGCore.Calibration.HG_CalibrationSequence.CurrentStageInt">
+            <summary> If a sequence consists of multiple stages, this integer will show you which one is currently active. </summary>
+        </member>
+        <member name="P:SGCore.Calibration.HG_CalibrationSequence.LinkedGlove">
+            <summary> The Glove linked to this Calibration Sequence. Can be changed or re-assigned. </summary>
+        </member>
+        <member name="P:SGCore.Calibration.HG_CalibrationSequence.DataPointCount">
+            <summary> Returns the amount of calibration points collected so far </summary>
+        </member>
+        <member name="P:SGCore.Calibration.HG_CalibrationSequence.AutoCompleted">
+            <summary> Whether or not this sequence was completed as per it's own rules </summary>
+            <returns></returns>
+        </member>
+        <member name="P:SGCore.Calibration.HG_CalibrationSequence.Completed">
+            <summary> Returns true if this sequence is marked as 'complete' and can begin compiling a profile. </summary>
+        </member>
+        <member name="M:SGCore.Calibration.HG_CalibrationSequence.Reset">
+            <summary> Resets this calibration sequence's data, but not it's LinkedGlove. </summary>
+        </member>
+        <member name="M:SGCore.Calibration.HG_CalibrationSequence.AddDataPoint(SGCore.Kinematics.Vect3D[])">
+            <summary> Safely adds calibration data. Automatically done within 'Update' </summary>
+            <param name="calibrationData"></param>
+        </member>
+        <member name="M:SGCore.Calibration.HG_CalibrationSequence.Update(System.Single)">
+            <summary> Update this calibration sequence with new data. We use deltaTime to check for things like stability. </summary>
+            <param name="deltaTime_s"></param>
+        </member>
+        <member name="M:SGCore.Calibration.HG_CalibrationSequence.ConfirmCurrentStep">
+            <summary> Manual confirmation of whatever step we're supposed to making at the moment. </summary>
+        </member>
+        <member name="M:SGCore.Calibration.HG_CalibrationSequence.CompileRange(SGCore.Calibration.SensorRange@)">
+            <summary> Compile a min/max range from the datapoints collected by this sequence. Returns true if it's actually possible. </summary>
+            <param name="range"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Calibration.HG_CalibrationSequence.CompileProfile(SGCore.DeviceType,System.Boolean,SGCore.HandProfile@)">
+            <summary> Compile a profile from the datapoints collected by this sequence. Returns true if it's actually possible.  </summary>
+            <param name="forDevice"></param>
+            <param name="rightHand"></param>
+            <param name="profile"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Calibration.HG_CalibrationSequence.CompileProfile(SGCore.Calibration.SensorRange,SGCore.DeviceType,System.Boolean,SGCore.HandProfile@)">
+            <summary> Converts a calibration range taken from a Calibration sequence, and converts it into a profile. Use this if you're not actually using the sequence. </summary>
+            <param name="range"></param>
+            <param name="forDevice"></param>
+            <param name="rightHand"></param>
+            <param name="profile"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Calibration.HG_CalibrationSequence.GetHandPose(SGCore.HandPose@)">
+            <summary> Returns the current HandPose; either the one we should be making, or what it would look like at the moment.  </summary>
+            <param name="currentPose"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Calibration.HG_CalibrationSequence.GetHandPose(System.Boolean,SGCore.HandPose@)">
+            <summary> Returns the current HandPose; either the one we should be making, or what it would look like at the moment.  </summary>
+            <param name="rightHand"></param>
+            <param name="currentPose"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Calibration.HG_CalibrationSequence.GetCurrentInstuction(System.String)">
+            <summary> Retrieve instructions on what to do during the current step. </summary>
+            <returns></returns>
+        </member>
+        <member name="T:SGCore.Calibration.HG_QuickCalibration">
+            <summary> A quick version that just requires you to open / close your hand for a few seconds, and compiles a profile out of that. </summary>
+        </member>
+        <member name="F:SGCore.Calibration.HG_QuickCalibration.autoEndAfter">
+            <summary> time, in seconds, after which this sequence stops gathering data. Based on the DeltaTime variable passed in the Update() function. </summary>
+        </member>
+        <member name="F:SGCore.Calibration.HG_QuickCalibration.autoEndTime">
+            <summary> Default time in seconds, to end this sequence. 15 seconds is very quick for some people. </summary>
+        </member>
+        <member name="F:SGCore.Calibration.HG_QuickCalibration.smoothingSamples">
+            <summary> When compiling the final profile, we use a Weighted Moving Average filter with this period to filer out some outliers. </summary>
+        </member>
+        <member name="F:SGCore.Calibration.HG_QuickCalibration.movedTime">
+            <summary> Time after you've first started moving. </summary>
+        </member>
+        <member name="F:SGCore.Calibration.HG_QuickCalibration.sensorRange">
+            <summary> The min/max values recorded during this calibration sequence. </summary>
+        </member>
+        <member name="F:SGCore.Calibration.HG_QuickCalibration.tempProfile">
+            <summary> A temporary profile to apply the sensorRange to. Used to generate a 'preview' HandPose. </summary>
+        </member>
+        <member name="P:SGCore.Calibration.HG_QuickCalibration.CanAnimate">
+            <summary> Determines if the user has moved enough so that we can animate. </summary>
+        </member>
+        <member name="M:SGCore.Calibration.HG_QuickCalibration.#ctor(SGCore.HapticGlove,System.Single)">
+            <summary> Create a new instance of a QuickCalibration for Haptic Gloves. </summary>
+            <param name="gloveToCalibrate"></param>
+            <param name="endAfter_s"></param>
+        </member>
+        <member name="P:SGCore.Calibration.HG_QuickCalibration.AutoCompleted">
+            <summary> This sequence autocmpletes after its autoEndTime has elapsed. </summary>
+        </member>
+        <member name="M:SGCore.Calibration.HG_QuickCalibration.ConfirmCurrentStep">
+            <summary> After we confirm the current step, we're basically done. </summary>
+        </member>
+        <member name="M:SGCore.Calibration.HG_QuickCalibration.Reset">
+            <summary> Resets datapoints, min/max ranges and profile. </summary>
+        </member>
+        <member name="M:SGCore.Calibration.HG_QuickCalibration.Update(System.Single)">
+            <summary> Update this calibration sequence with new data. We use deltaTime to check for things like stability. </summary>
+            <param name="deltaTime_s"></param>
+        </member>
+        <member name="M:SGCore.Calibration.HG_QuickCalibration.AddDataPoint(SGCore.Kinematics.Vect3D[])">
+            <summary> Add a new datapoint to this sequence's collection. Updates the range and profile used to generate a preview. </summary>
+            <param name="calibrationData"></param>
+        </member>
+        <member name="M:SGCore.Calibration.HG_QuickCalibration.CompileRange(SGCore.Calibration.SensorRange@)">
+            <summary> Compile a sensor range from the data points collected while the sequence was running. Smoothed by a Moving Average Filter. </summary>
+            <param name="range"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Calibration.HG_QuickCalibration.GetCurrentInstuction(System.String)">
+            <summary> Retrieve instructions on what to do during the current step.  </summary>
+            <param name="nextStepKey"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Calibration.HG_QuickCalibration.GetHandPose(System.Boolean,SGCore.HandPose@)">
+            <summary> Returns a 'preview' of what a HandPose with this sequence's current settings would look like.  </summary>
+            <param name="rightHand"></param>
+            <param name="currentPose"></param>
+            <returns></returns>
+        </member>
+        <member name="T:SGCore.Calibration.SensorRange">
+            <summary> A calibrationRange that contains minimum / maximum sensor values of a HapticGlove. Used in calibration </summary>
+        </member>
+        <member name="F:SGCore.Calibration.SensorRange.minVals">
+            <summary> The minimum sensor values of this sensor range </summary>
+        </member>
+        <member name="F:SGCore.Calibration.SensorRange.maxVals">
+            <summary> The maximum sensor values of this sensor range </summary>
+        </member>
+        <member name="P:SGCore.Calibration.SensorRange.Range">
+            <summary> The difference between min and max values in this Sensor Range. </summary>
+        </member>
+        <member name="M:SGCore.Calibration.SensorRange.#ctor">
+            <summary> Create a new instance of a SensorRange with values at 0, 0 </summary>
+        </member>
+        <member name="M:SGCore.Calibration.SensorRange.#ctor(SGCore.Kinematics.Vect3D[],SGCore.Kinematics.Vect3D[])">
+            <summary> Create a new SensorRange with predefined Min/Max values. </summary>
+            <param name="min"></param>
+            <param name="max"></param>
+        </member>
+        <member name="M:SGCore.Calibration.SensorRange.#ctor(SGCore.Calibration.SensorRange)">
+            <summary> Deep copy another calibration range into a new instance. </summary>
+            <param name="copy"></param>
+        </member>
+        <member name="M:SGCore.Calibration.SensorRange.ForCalibration">
+            <summary> Generates a Sensor Range where minumum values are float.MaxValue and maximum values are float.MinValue. </summary>
+            <returns></returns>
+        </member>
+        <member name="P:SGCore.Calibration.SensorRange.MinValues">
+            <summary> Access the lowest values values of this range. </summary>
+        </member>
+        <member name="P:SGCore.Calibration.SensorRange.MaxValues">
+            <summary> Access the highest values values of this range. </summary>
+        </member>
+        <member name="M:SGCore.Calibration.SensorRange.UpdateRange">
+            <summary> Update the Range based on the current minVals and MaxVals. </summary>
+        </member>
+        <member name="M:SGCore.Calibration.SensorRange.CheckForExtremes(SGCore.Kinematics.Vect3D[])">
+            <summary> In otherValues are greater/small than the current range, update to them </summary>
+            <param name="otherValues"></param>
+        </member>
+        <member name="M:SGCore.Calibration.SensorRange.ToString(System.Boolean)">
+            <summary> Convert this SensorRange into a string rotation [min ... max] </summary>
+            <param name="yOnly"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Calibration.SensorRange.RangeString(System.Boolean)">
+            <summary> Report the Range value of this SensorRange, separated by a comma </summary>
+            <param name="yOnly"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Calibration.SensorRange.CheckMax(SGCore.Kinematics.Vect3D,SGCore.Kinematics.Vect3D@)">
+            <summary> Evaluate maxVals so that it contains the highest x, y, and z values between currVals and maxVals. </summary>
+            <param name="currVals"></param>
+            <param name="maxVals"></param>
+        </member>
+        <member name="M:SGCore.Calibration.SensorRange.CheckMin(SGCore.Kinematics.Vect3D,SGCore.Kinematics.Vect3D@)">
+            <summary> Evaluate minVals so that it contains the lowest x, y, and z values between currVals and minVals. </summary>
+            <param name="currVals"></param>
+            <param name="minVals"></param>
+        </member>
+        <member name="M:SGCore.Calibration.SensorRange.Serialize">
+            <summary> Serialize this SensorRange into a string representation, that can be deserialized later. </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Calibration.SensorRange.Deserialize(System.String)">
+            <summary> Convert a serialized SensorRange back into the appropriate class. </summary>
+            <param name="serializedString"></param>
+            <returns></returns>
         </member>
         <member name="T:SGCore.Nova.Nova_Calibration">
             <summary> Contain utility code to assist in calibrating your Nova Glove. </summary>
@@ -1635,8 +2145,14 @@
         <member name="F:SGCore.Diagnostics.DebugLevel.ErrorsOnly">
             <summary> Send only messages if errors are caught. </summary>
         </member>
+        <member name="F:SGCore.Diagnostics.DebugLevel.CalibrationMessages">
+            <summary> Send messages from calibration algorithms </summary>
+        </member>
         <member name="F:SGCore.Diagnostics.DebugLevel.DeviceParsing">
             <summary> Send messages from device Parsing. </summary>
+        </member>
+        <member name="F:SGCore.Diagnostics.DebugLevel.Backend_Communication">
+            <summary> Send messages related to backed communications. Mostly relevant when using Ports / Android Strings. </summary>
         </member>
         <member name="F:SGCore.Diagnostics.DebugLevel.ALL">
             <summary> For those we have no place for yet. </summary>
