@@ -35,6 +35,8 @@ namespace SG.VR
 		/// <summary> So that Initialize() is called only once. </summary>
 		protected bool init = true;
 
+
+
 		//--------------------------------------------------------------------------------------------------------------------------
 		// Accessors
 
@@ -73,7 +75,15 @@ namespace SG.VR
 				ShowRightController = true;
 			}
         }
-		
+
+
+		/// <summary> Check if this VR Set has controller events </summary>
+		public bool HasControllerEvents
+		{
+			get { return hardwareFamily != SGCore.PosTrackingHardware.ViveTracker; }
+		}
+
+
 		//--------------------------------------------------------------------------------------------------------------------------
 		// Monobehaviour
 
@@ -82,6 +92,7 @@ namespace SG.VR
 			if (rigRoot == null) { rigRoot = this.gameObject; }
 			Initialize();
 		}
+
 
 	}
 }

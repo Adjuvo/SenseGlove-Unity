@@ -52,6 +52,32 @@ namespace SG
 			get { return rightHand != null && rightHand.HandEnabled; }
 			set { if (rightHand != null) { rightHand.HandEnabled = value; } }
 		}
+
+
+		/// <summary> retruns true is this user's left hand is connected </summary>
+		public bool LeftHandConnected
+		{
+			get { return leftHand != null && leftHand.gloveHardware != null && leftHand.gloveHardware.IsConnected; }
+        }
+
+		/// <summary> Returns true if this user's right hand is connected </summary>
+		public bool RightHandConnected
+		{
+			get { return rightHand != null && rightHand.gloveHardware != null && rightHand.gloveHardware.IsConnected; }
+		}
+
+
+		/// <summary> Returns the amount of gloves connected to this user [0 .. 1] </summary>
+		public int ConnectedGloves
+        {
+			get
+            {
+				int n = 0;
+				if (LeftHandConnected) { n++; }
+				if (RightHandConnected) { n++; }
+				return n;
+            }
+        }
 		
 
 		//--------------------------------------------------------------------------------------------------------------------------
@@ -103,8 +129,8 @@ namespace SG
         {
 			//for every non-connected glove, just show the controller model (if any exists).
 			//for every connected glove; show the hand (model) and hide the controller;
-			bool rightConnected = rightHand != null && rightHand.gloveHardware != null && rightHand.gloveHardware.IsConnected;
-			bool leftConnected = leftHand != null && leftHand.gloveHardware != null && leftHand.gloveHardware.IsConnected;
+			bool rightConnected = RightHandConnected;
+			bool leftConnected = LeftHandConnected;
 
 			if (this.vrRig != null && !vrInit) //we have been assigned a VR rig. Hurray!
             {
@@ -123,6 +149,14 @@ namespace SG
 			LeftHandEnabled = leftConnected;
 			RightHandEnabled = rightConnected;
 		}
+
+		/// <summary> Utility method to grab a left- or right hand when you only have a boolean value. </summary>
+		/// <param name="rightHand"></param>
+		/// <returns></returns>
+		public SG_TrackedHand GetHand(bool rightHand)
+        {
+			return rightHand ? this.rightHand : leftHand;
+        }
 
 
 		//--------------------------------------------------------------------------------------------------------------------------
@@ -180,6 +214,19 @@ namespace SG
 				LeftHandEnabled = false;
 			}
 		}
+
+		void Start()
+        {
+			// Scan for VRRigs in case you load this User into an existing scene.
+			if (this.vrRig == null && headsetDetection == null)
+			{   // nothing's been assigned, so let's try
+				this.headsetDetection = GameObject.FindObjectOfType<SG_VR_Setup>();
+				if (headsetDetection == null) //still null
+                {
+					this.vrRig = GameObject.FindObjectOfType<SG_VR_Rig>();
+                }
+            }
+        }
 
 		// Update is called once per frame
 		void Update()

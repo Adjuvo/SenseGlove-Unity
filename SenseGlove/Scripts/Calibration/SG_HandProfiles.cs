@@ -91,7 +91,7 @@ namespace SG
 				}
 				else
                 {
-					Debug.LogError("There was an error while saving the right hand Profile!");
+					Debug.LogError("There was an error while saving the left hand Profile!");
 				}
 			}
         }
@@ -158,11 +158,11 @@ namespace SG
         {
 			if (!LoadProfile(ProfileDirectory + leftHandFile, ref leftProfile)) //returns false if it couldn't be loaded.
             {
-				leftProfile = SGCore.HandProfile.Default(false);
+				if (leftProfile == null) { leftProfile = SGCore.HandProfile.Default(false); }
             }
 			if (!LoadProfile(ProfileDirectory + rightHandFile, ref rightProfile)) //returns false if it couldn't be loaded.
 			{
-				rightProfile = SGCore.HandProfile.Default(true);
+				if (rightProfile == null) { rightProfile = SGCore.HandProfile.Default(true); }
 			}
 			triedLoading = true;
 		}

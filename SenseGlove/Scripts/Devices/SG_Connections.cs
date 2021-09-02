@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace SG.Util
 {
@@ -25,11 +26,21 @@ namespace SG.Util
 		private static int maxQueue = 5;
 		/// <summary> Optional 3D Text element on which to project the last few messages. </summary>
 		private static TextMesh debugElement = null;
+		/// <summary> Optional 2D UI element on which to project the last few messages. </summary>
+		private static Text debugUIElement = null;
+
+		/// <summary> Whether or not to load profiles on focus </summary>
+		private static bool loadProfilesOnFocus = true;
+
+		/// <summary> If set to true, we're also upding ConnectionStates. This is mainly relevant to SenseCom, so it's false by default. </summary>
+		public static bool andr_checkConnectionStates = false;
 
 		// Instance Members
 
 		/// <summary> When added into the scene manually, you can assign a 3D text to host any debug messages. </summary>
 		public TextMesh debugText;
+		/// <summary> When added into the scene manually, you can assign a 2D UI text to host any debug messages. </summary>
+		public Text debugUIText;
 
 
 #if UNITY_ANDROID && !UNITY_EDITOR
@@ -86,8 +97,15 @@ namespace SG.Util
 					SGCore.Util.SGConnect_Android.An_PostSensorData(i, sData);
 				}
 			}
+			if (andr_checkConnectionStates)
+            {
+				string serializedStates;
+				if (SG.Util.SG_IAndroid.Andr_GetConnectionStates(out serializedStates))
+                {
+					SGCore.Util.SGConnect_Android.An_PostDeviceStates(serializedStates);
+				}
+            }
 		}
-
 #endif
 
 		/// <summary> If true, an instance of SG_Connections exists within the scene. </summary>
@@ -165,7 +183,7 @@ namespace SG.Util
 			if (msgQueue.Count + 1 > maxQueue) { msgQueue.RemoveAt(0); }
 			msgQueue.Add(message);
 
-			if (debugElement != null)
+			if (debugElement != null || debugUIElement != null)
             {
 				string msg = "";
 				for (int i=0; i<msgQueue.Count; i++)
@@ -173,7 +191,8 @@ namespace SG.Util
 					msg += msgQueue[i];
 					if (i < msgQueue.Count - 1) { msg += "\r\n"; } 
                 }
-				debugElement.text = msg;
+				if (debugElement != null) { debugElement.text = msg; }
+				if (debugUIElement != null) { debugUIElement.text = msg; }
             }
         }
 
@@ -254,6 +273,7 @@ namespace SG.Util
 				//Log("Linked SenseGlove Connections to " + this.name);
 				instance = this;
 				debugElement = this.debugText;
+				debugUIElement = this.debugUIText;
 				Initialize(); //initialized me!
 			}
 		}
@@ -265,6 +285,7 @@ namespace SG.Util
             {
 				//Log("Unlinked SenseGlove Connections from " + this.name);
 				debugElement = null;
+				debugUIElement = null;
 				instance = null; //clear my refernce to the instance, so another can take its place.
             }
         }
@@ -278,6 +299,15 @@ namespace SG.Util
 			}
         }
 
+		//Fires when tabbing in / out of this application
+		void OnApplicationFocus(bool hasFocus)
+		{
+			if (hasFocus && loadProfilesOnFocus)
+            {
+				//Debug.Log("Reloaded SenseGlove Profiles from disk...");
+				SG_HandProfiles.TryLoadFromDisk(); //reload profiles. Done here because this script is always there when using SenseGlove scripts.
+            }
+		}
 
 		void Update()
         {

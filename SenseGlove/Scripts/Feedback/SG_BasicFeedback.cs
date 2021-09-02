@@ -133,7 +133,7 @@ namespace SG
                     {
                         if (handLocation == SG_HandSection.Wrist) //it's a wrist.
                         {
-                            linkedGlove.SendCmd(new TimedThumpCmd(impactLevel, vibrationTime));
+                            linkedGlove.SendCmd(new SGCore.Haptics.TimedThumpCmd(impactLevel, vibrationTime));
                         }
                         else //finger
                         {

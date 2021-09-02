@@ -21,7 +21,10 @@ namespace SG.Util
 		/// <remarks> Placed in a static function so we can call it from anywhere. </remarks>
 		public static void ResetScene()
 		{
-			UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
+			if (Application.isPlaying)
+			{
+				UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
+			}
 		}
 
 

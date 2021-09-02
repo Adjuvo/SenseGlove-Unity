@@ -346,6 +346,14 @@ namespace SG
 
 			}
 		}
+
+		void OnApplicationQuit()
+        {
+			if (this.hapticGlove != null)
+            {
+				this.hapticGlove.StopHaptics(); //end Haptics(!)
+            }
+        }
 		
 	}
 }

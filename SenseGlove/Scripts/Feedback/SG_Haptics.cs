@@ -28,7 +28,7 @@ namespace SG
             base.UpdateTiming(dT_seconds);
             if (elapsedTime > 0)
             {
-                float normalizedTime = elapsedTime / dT_seconds;
+                float normalizedTime = duration != 0 ? elapsedTime / duration : 0;
                 float eval01 = _timeline.Evaluate(normalizedTime);
                 int finalLevel = Mathf.RoundToInt(eval01 * _amplitude);
                 for (int f = 0; f < this.levels.Length; f++)
@@ -36,7 +36,7 @@ namespace SG
                     this.levels[f] = _fingers[f] ? finalLevel : 0;
                 }
                 this.baseCmd.Levels = this.levels;
-                //Debug.Log("Time " + elapsedTime + " / " + buzzTime + " > " + normalizedTime + " > " + eval01 + " > " + finalLevel);
+               // Debug.Log("Time " + elapsedTime + " / " + this.duration + " > " + normalizedTime + " > " + eval01 + " > " + finalLevel);
             }
         }
 
@@ -63,11 +63,12 @@ namespace SG
             elapsedTime = -dT; //-dT so the first time we check it after Update(dT), it starts at 0.
         }
 
+
         /// <summary> Used for logging. </summary>
         /// <returns></returns>
         public override string ToString()
         {
-            string res = _amplitude + " for " + this.duration + "ms";
+            string res = "Curve with max " + _amplitude + "% for " + this.duration + "s";
             return res;
         }
 
@@ -80,59 +81,12 @@ namespace SG
             res.duration = this.duration;
             return res;
         }
+
+        public override SG_BuzzCmd Merge(SG_BuzzCmd other)
+        {
+            return this.baseCmd.Merge(other);
+        }
     }
-
-    //-------------------------------------------------------------------------------------------------------------------------------------------
-    // Timed Thumper Command
-
-    /// <summary> A vibration command for the thumper. A pulse for a specific time in seconds.  </summary>
-    public class TimedThumpCmd
-    {
-        /// <summary> Magnitude in % </summary>
-        public int magnitude;
-
-        /// <summary> duration in seconds </summary>
-        public float duration;
-
-        /// <summary> The elapsed time so far. </summary>
-        public float elapsedTime;
-
-        /// <summary> Returns true if the timed command has elapsed. </summary>
-        public bool Elapsed
-        {
-            get { return elapsedTime >= duration; }
-        }
-
-        
-        /// <summary> Internal, empty, for extended classes. </summary>
-        protected TimedThumpCmd() { }
-
-        /// <summary> Create a new Timed Thumper Command. </summary>
-        /// <param name="amplitude"></param>
-        /// <param name="duration_s"></param>
-        public TimedThumpCmd(int amplitude, float duration_s, float startTime = 0)
-        {
-            magnitude = amplitude;
-            duration = duration_s;
-            elapsedTime = startTime;
-        }
-
-        /// <summary> Update the timing on this Thumper Command </summary>
-        /// <param name="dT"></param>
-        public virtual void Update(float dT)
-        {
-            this.elapsedTime += dT;
-        }
-
-        /// <summary> Copy the parameters of this ThumperCommand into another instance. </summary>
-        /// <returns></returns>
-        public virtual TimedThumpCmd Copy()
-        {
-            return new TimedThumpCmd(this.magnitude, this.duration, this.elapsedTime);
-        }
-
-    }
-
 
     //-------------------------------------------------------------------------------------------------------------------------------------------
     // Combination of TimedThumpCmd & SG_WaveFormCmd
@@ -166,13 +120,14 @@ namespace SG
             base.Update(dT);
             float normalTime = duration != 0 ? elapsedTime / duration : 0;
             this.magnitude = Mathf.RoundToInt(_timeline.Evaluate(normalTime) * this.maxAmplitude);
+            Debug.Log("MAGN " + this.magnitude);
+
         }
 
-        /// <summary> Copy this ThumperWaveForm into a new instance. </summary>
-        /// <returns></returns>
-        public override TimedThumpCmd Copy()
+        public override TimedThumpCmd Copy(bool copyElapsed = true)
         {
-            ThumperWaveForm form = new ThumperWaveForm(this.maxAmplitude, this.duration, this._timeline, this.elapsedTime);
+            float el = copyElapsed ? this.elapsedTime : 0;
+            ThumperWaveForm form = new ThumperWaveForm(this.maxAmplitude, this.duration, this._timeline, el);
             form.magnitude = this.magnitude;
             return form;
         }

@@ -139,7 +139,7 @@ namespace SG
         /// <returns></returns>
         protected bool ObjectDisabled()
         {
-            return (TouchedObject != null && !TouchedObject.activeInHierarchy)
+            return TouchedObject == null || (TouchedObject != null && !TouchedObject.activeInHierarchy)
                 || (TouchedCollider != null && !TouchedCollider.enabled);
         }
 
@@ -234,10 +234,10 @@ namespace SG
         protected override void FixedUpdate()
         {
             base.FixedUpdate();
+            if (ObjectDisabled()) { DetachScript(); }
             if (this.IsTouching())
             {
-                if (ObjectDisabled()) { DetachScript(); }
-                else if (entryPoint.Equals(entryOrigin)) { FindForceDirection(TouchedCollider); }
+                if (entryPoint.Equals(entryOrigin)) { FindForceDirection(TouchedCollider); }
                 else { UpdateFeedback(); }
             }
         }

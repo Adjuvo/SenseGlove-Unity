@@ -1,7 +1,4 @@
-﻿using JetBrains.Annotations;
-using SGCore.Kinematics;
-using System;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace SG
 {
@@ -217,6 +214,10 @@ namespace SG
         {
             if (wristThisFrame)
             {
+                if (this.gloveHardware != null)
+                {
+                    HasPositionalTracking = this.gloveHardware.GetWristLocation(this.trackedObject, this.trackingHardware, out this.lastWristPosition, out lastWristRotation);
+                }
                 if (this.trackingHardware == SGCore.PosTrackingHardware.Custom)
                 {
                     HasPositionalTracking = this.trackedObject != null;
@@ -485,8 +486,11 @@ namespace SG
 
         protected virtual void OnDisable()
         {
-            this.gloveHardware.CalibrationStateChanged.RemoveListener(UpdateHandState);
-            this.gloveHardware.DeviceConnected.RemoveListener(UpdateHandState);
+            if (this.gloveHardware != null)
+            {
+                this.gloveHardware.CalibrationStateChanged.RemoveListener(UpdateHandState);
+                this.gloveHardware.DeviceConnected.RemoveListener(UpdateHandState);
+            }
         }
 
         protected virtual void Awake()

@@ -12,6 +12,9 @@ namespace SG.Util
     /// <summary> Contains methods we use in verious locations to make our life easier int Unity. </summary>
     public static class SG_Util
     {
+        /// <summary> 2*Pi </summary>
+        public static readonly float PI_2 = Mathf.PI * 2;
+
         //--------------------------------------------------------------------------------------------------------------------
         // Translations / Rotations around an axis
 
@@ -184,6 +187,16 @@ namespace SG.Util
             return SGCore.Kinematics.Values.Map(value, inMin, inMax, outMin, outMax);
         }
 
+        public static Vector3 Map(float x, float x0, float x1, Vector3 y0, Vector3 y1)
+        {
+            return new Vector3
+            (
+                SG.Util.SG_Util.Map(x, x0, x1, y0.x, y1.x),
+                SG.Util.SG_Util.Map(x, x0, x1, y0.y, y1.y),
+                SG.Util.SG_Util.Map(x, x0, x1, y0.z, y1.z)
+            );
+        }
+
         /// <summary> Calculates the average between a list of Vector3 values </summary>
         /// <param name="values"></param>
         /// <returns></returns>
@@ -225,6 +238,19 @@ namespace SG.Util
                 return values[0];
             }
             return 0;
+        }
+
+        /// <summary> Generate a sine signal </summary>
+        /// <param name="frequency"></param>
+        /// <param name="amplitude"></param>
+        /// <param name="atTime"></param>
+        /// <returns></returns>
+        public static float GetSine(float frequency, float amplitude, float atTime)
+        {
+            // a normal sine wave completes a full period in 2Pi / s.
+            // y = a * sin(b * x), where x is 0..2Pi (mod).
+            float b = PI_2 * frequency;
+            return amplitude * Mathf.Sin(b * atTime);
         }
 
         #endregion

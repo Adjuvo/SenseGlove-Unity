@@ -73,6 +73,22 @@ namespace SG
             return this.isBroken;
         }
 
+        /// <summary> Set whether or not this material is broken. </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public void SetBroken(bool newBroken)
+        {
+            if (newBroken != this.isBroken)
+            {
+                if (this.isBroken && newBroken)
+                {
+                    this.UnBreak();
+                }
+                this.isBroken = newBroken;
+            }
+
+        }
+
         /// <summary> Unbreak the material, allowing it to give feedback and raise the break event again. </summary>
         public void UnBreak()
         {

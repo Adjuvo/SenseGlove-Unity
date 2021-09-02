@@ -109,6 +109,18 @@ namespace SG
 			}
 		}
 
+		public bool CanAnimate
+        {
+			get
+			{
+				if (internalSequence != null && internalSequence is SGCore.Calibration.HG_QuickCalibration)
+                {
+					return ((SGCore.Calibration.HG_QuickCalibration)internalSequence).CanAnimate;
+                }
+				return false;
+			}
+        }
+
 		//------------------------------------------------------------------------------------------------------------------
 		// Functions
 
@@ -183,6 +195,7 @@ namespace SG
 			if (this.CalibrationActive)
 			{
 				internalSequence.ConfirmCurrentStep();
+				Debug.Log("Confirmed Calibration Step");
 			}
 			else
             {

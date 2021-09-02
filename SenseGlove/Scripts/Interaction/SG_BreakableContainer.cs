@@ -90,7 +90,9 @@ namespace SG
         /// <summary> Called when the breakable material of the wholeObject is broken </summary>
         public override void Break()
         {
-            base.Break(); //make sure it boke first
+            if (this.IsBroken()) { return; }
+
+            base.Break(); //make sure it broke first
 
             this.SpawnContents();
             this.SpawnShards();
@@ -124,9 +126,12 @@ namespace SG
         {
             for (int i = 0; i < this.brokenShards.Length; i++)
             {
-                this.brokenShards[i].transform.parent = null;
-                SetRB(this.brokenShards[i], true, false);
-                this.brokenShards[i].SetActive(true); //let them do their thing
+                if (brokenShards[i] != null)
+                {
+                    this.brokenShards[i].transform.parent = null;
+                    SetRB(this.brokenShards[i], true, false);
+                    this.brokenShards[i].SetActive(true); //let them do their thing
+                }
             }
         }
 
@@ -135,11 +140,14 @@ namespace SG
         {
             for (int i = 0; i < this.brokenShards.Length; i++)
             {
-                this.brokenShards[i].SetActive(false); //now turn them off.
-                SetRB(this.brokenShards[i], false, true); //stops them from moving
-                this.brokenShards[i].transform.parent = this.shardContainer.transform; //reset parent
-                this.brokenShards[i].transform.localPosition = this.shardPositions[i]; //and local position / rotation
-                this.brokenShards[i].transform.localRotation = this.shardRotations[i];
+                if (brokenShards[i] != null)
+                {
+                    this.brokenShards[i].SetActive(false); //now turn them off.
+                    SetRB(this.brokenShards[i], false, true); //stops them from moving
+                    this.brokenShards[i].transform.parent = this.shardContainer.transform; //reset parent
+                    this.brokenShards[i].transform.localPosition = this.shardPositions[i]; //and local position / rotation
+                    this.brokenShards[i].transform.localRotation = this.shardRotations[i];
+                }
             }
         }
 

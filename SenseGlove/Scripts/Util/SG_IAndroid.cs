@@ -27,6 +27,7 @@ namespace SG.Util
         private static readonly string fn_SendHaptics = "WriteHaptics";
         private static readonly string fn_LibVer = "GetLibraryVersion";
         private static readonly string fn_paired = "GetPaired_Serialized";
+        private static readonly string fn_ConnStates = "GetConnectionStates";
 
         /// <summary> Singleton instance - There should only be one of this class. </summary>
         private static SG_IAndroid instance = new SG_IAndroid();
@@ -254,6 +255,14 @@ namespace SG.Util
             return successfulCall;
         }
 
+        /// <summary> Retrieve a string containing serialzied Connection States. </summary>
+        /// <param name="statesSerialized"></param>
+        /// <returns></returns>
+        public static bool Andr_GetConnectionStates(out string statesSerialized)
+        {
+            bool successfulCall = CallFunctionGet<string>(fn_ConnStates, out statesSerialized);
+            return successfulCall;
+        }
 
 
     }

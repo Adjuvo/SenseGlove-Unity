@@ -21,6 +21,17 @@ namespace SG
     /// <summary> Interface for a left- or right handed glove built by SenseGlove. Usually either a SenseGlove DK1 or a Nova Glove. </summary>
     public class SG_HapticGlove : MonoBehaviour
 	{
+        /// <summary> How much of the CV tracking is being used. </summary>
+        public enum CV_Tracking_Depth
+        {
+            /// <summary> No computer-vision is enabled. </summary>
+            Disabled = 0,
+            /// <summary> Use CV only for the wrist position / rotation </summary>
+            WristOnly,
+            /// <summary> Use CV for both the wirst location and Hand Position  </summary>
+            WristAndHandPose
+        }
+
         //--------------------------------------------------------------------------------------------------------
         // Variables
 
@@ -74,6 +85,10 @@ namespace SG
         /// <summary> The last handKinematcs used for the GetHandPose function. Used so you can request HandPoses without needing access to HandKinematics. </summary>
 		protected SGCore.Kinematics.BasicHandModel lastHandModel = null;
 
+        // Internal cv stuff
+
+        /// <summary> How much of the CV we're using for Tracking. </summary>
+        protected CV_Tracking_Depth cvLevel = CV_Tracking_Depth.WristOnly;
 
 
         // Internal haptics Stuff.
@@ -276,7 +291,6 @@ namespace SG
         }
 
 
-
         /// <summary> Returns a Hand Pose containing everything you'd want to animate a hand model in Unity. Using the global HandProfile. </summary>
         /// <param name="handModel"></param>
         /// <param name="pose"></param>
@@ -401,6 +415,7 @@ namespace SG
         /// <param name="buzz"></param>
         public void SendCmd(SGCore.Haptics.SG_TimedBuzzCmd buzz)
         {
+            
             if (this.isActiveAndEnabled)
             {
                 this.buzzQueue.Add((SGCore.Haptics.SG_TimedBuzzCmd)buzz.Copy());
@@ -465,14 +480,16 @@ namespace SG
         {
             if (this.isActiveAndEnabled && this.lastGlove != null && buzz != null)
             {
-                if (buzz.wrist)
+                if (buzz.wrist && this.DeviceType != SGCore.DeviceType.SENSEGLOVE)
                 {
+                    //Debug.Log("Converted a Waveform into a thumper cmd");
                     ThumperWaveForm cmd = new ThumperWaveForm(magnitude, duration_s, buzz.waveForm, -Time.deltaTime);
                     this.thumperQueue.Add(cmd);
                     if (this.thumperQueue.Count > maxQueue) { thumperQueue.RemoveAt(0); }
                 }
                 else
                 {
+                    //Debug.Log("Converted a Waveform into a buzzCmd");
                     SG_WaveFormCmd iCmd = new SG_WaveFormCmd(buzz.waveForm, duration_s, magnitude, overrideFingers, -Time.deltaTime);
                     this.buzzQueue.Add(((SGCore.Haptics.SG_TimedBuzzCmd)iCmd.Copy()));
                     if (this.buzzQueue.Count > maxQueue) { buzzQueue.RemoveAt(0); }
@@ -710,6 +727,11 @@ namespace SG
         {
             newPoseNeeded = true; //next frame we're allowed to update the pose again.
             UpdateHaptics();
+        }
+
+        void OnApplicationQuit()
+        {
+            StopHaptics();
         }
 
     }

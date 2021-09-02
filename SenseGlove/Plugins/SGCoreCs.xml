@@ -8,16 +8,64 @@
             <summary> "Database" of anatomical values, such as joint limits. </summary>
         </member>
         <member name="F:SGCore.Kinematics.Anatomy.LIMIT_MIN">
-            <summary> Index of minimum value </summary>
+            <summary> Index of the minimum value in the array(s) </summary>
         </member>
         <member name="F:SGCore.Kinematics.Anatomy.LIMIT_MAX">
-            <summary> Index of maximum value </summary>
+            <summary> Index of the maximum value in the array(s) </summary>
         </member>
         <member name="F:SGCore.Kinematics.Anatomy.thumbLimits">
             <summary> Hard Coded thumb limits, in radians </summary>
         </member>
         <member name="F:SGCore.Kinematics.Anatomy.fingerLimits">
             <summary> Hard Coded finger limits, in radians </summary>
+        </member>
+        <member name="F:SGCore.Kinematics.Anatomy.totalFingerFlexion">
+            <summary> Total finger flexion that is associated with '1' for normalized flexion </summary>
+        </member>
+        <member name="F:SGCore.Kinematics.Anatomy.totalFingerExtension">
+            <summary> Total finger flexion that is associated with '0' for normalized flexion </summary>
+        </member>
+        <member name="F:SGCore.Kinematics.Anatomy.totalThumbFlexion">
+            <summary> Total thumb flexion that is associated with '1' for normalized flexion </summary>
+        </member>
+        <member name="F:SGCore.Kinematics.Anatomy.totalThumbExtension">
+            <summary> Total thumb flexion that is associated with '0' for normalized flexion </summary>
+        </member>
+        <member name="F:SGCore.Kinematics.Anatomy.iPronation">
+            <summary> Movement indices with which to access specific motions. Usage: movement == Anatomy.iFlexion </summary>
+        </member>
+        <member name="F:SGCore.Kinematics.Anatomy.iSupination">
+            <summary> Movement indices with which to access specific motions. Usage: movement == Anatomy.iFlexion </summary>
+        </member>
+        <member name="F:SGCore.Kinematics.Anatomy.iFlexion">
+            <summary> Movement indices with which to access specific motions. Usage: movement == Anatomy.iFlexion </summary>
+        </member>
+        <member name="F:SGCore.Kinematics.Anatomy.iExtension">
+            <summary> Movement indices with which to access specific motions. Usage: movement == Anatomy.iFlexion </summary>
+        </member>
+        <member name="F:SGCore.Kinematics.Anatomy.iAbduction">
+            <summary> Movement indices with which to access specific motions. Usage: movement == Anatomy.iFlexion </summary>
+        </member>
+        <member name="F:SGCore.Kinematics.Anatomy.iAdduction">
+            <summary> Movement indices with which to access specific motions. Usage: movement == Anatomy.iFlexion </summary>
+        </member>
+        <member name="M:SGCore.Kinematics.Anatomy.ClampJointAngle(System.Single,SGCore.Finger,System.Boolean,System.Int32,System.Int32)">
+            <summary> Limit a value between specific joint angles. </summary>
+            <param name="value"></param>
+            <param name="finger"></param>
+            <param name="rightHand"></param>
+            <param name="joint"></param>
+            <param name="movement"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Kinematics.Anatomy.ClampJointAngle(System.Single,System.Int32,System.Boolean,System.Int32,System.Int32)">
+            <summary> Limit a value between specific joint angles. </summary>
+            <param name="value"></param>
+            <param name="finger"></param>
+            <param name="rightHand"></param>
+            <param name="joint"></param>
+            <param name="movement"></param>
+            <returns></returns>
         </member>
         <member name="M:SGCore.Kinematics.Anatomy.GetFingerJointLimit(System.Boolean,System.Int32,System.Int32,System.Boolean)">
             <summary> Retrieve one of the limits of a finger joint's movement. </summary>
@@ -247,19 +295,15 @@
             <param name="value"></param>
             <returns></returns>
         </member>
-        <member name="M:SGCore.Kinematics.HandInterpolator.SetInterpolation(System.Int32,System.Int32,System.Single,System.Single,System.Single,System.Single)">
-            <summary> Updates a particular joint movement interpolation, without changing its limits. </summary>
-            <param name="finger"></param>
+        <member name="M:SGCore.Kinematics.HandInterpolator.CalculateAngle(SGCore.Kinematics.ThumbMovement,System.Single)">
+            <summary> Calculate a thumb movement's rotation, using an input value </summary>
             <param name="movement"></param>
-            <param name="inputAt0"></param>
-            <param name="inputAt1"></param>
-            <param name="angleAt0"></param>
-            <param name="angleAt1"></param>
+            <param name="value"></param>
+            <returns></returns>
         </member>
-        <member name="M:SGCore.Kinematics.HandInterpolator.GetInterpolation(System.Int32,System.Int32)">
-            <summary> Returns an interpolationSet </summary>
-            <param name="finger"></param>
-            <param name="movement"></param>
+        <member name="M:SGCore.Kinematics.HandInterpolator.Equals(SGCore.Kinematics.HandInterpolator)">
+            <summary> Check if this handInterpolator matches another. </summary>
+            <param name="other"></param>
             <returns></returns>
         </member>
         <member name="M:SGCore.Kinematics.HandInterpolator.InterpolateFingerAngles(SGCore.Finger,SGCore.Kinematics.HandInterpolator,SGCore.Kinematics.Vect3D)">
@@ -279,6 +323,53 @@
             <summary> Calculate all hand angles based on an interpolator and total xyz angles. </summary>
             <param name="profile"></param>
             <param name="totalAngles"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Kinematics.HandInterpolator.SetInterpolation(System.Int32,System.Int32,System.Single,System.Single,System.Single,System.Single)">
+            <summary> Updates a particular joint movement interpolation, without changing its limits. </summary>
+            <param name="finger"></param>
+            <param name="movement"></param>
+            <param name="inputAt0"></param>
+            <param name="inputAt1"></param>
+            <param name="angleAt0"></param>
+            <param name="angleAt1"></param>
+        </member>
+        <member name="M:SGCore.Kinematics.HandInterpolator.SetInterpolation(SGCore.Finger,SGCore.Kinematics.FingerMovement,System.Single,System.Single,System.Single,System.Single)">
+            <summary> Updates a particular joint movement interpolation, without changing its limits </summary>
+            <param name="finger"></param>
+            <param name="movement"></param>
+            <param name="inputAt0"></param>
+            <param name="inputAt1"></param>
+            <param name="angleAt0"></param>
+            <param name="angleAt1"></param>
+        </member>
+        <member name="M:SGCore.Kinematics.HandInterpolator.SetInterpolation(SGCore.Kinematics.ThumbMovement,System.Single,System.Single,System.Single,System.Single)">
+            <summary> Updates a particular joint movement interpolation, without changing its limits </summary>
+            <param name="movement"></param>
+            <param name="inputAt0"></param>
+            <param name="inputAt1"></param>
+            <param name="angleAt0"></param>
+            <param name="angleAt1"></param>
+        </member>
+        <member name="M:SGCore.Kinematics.HandInterpolator.GetInterpolation(System.Int32,System.Int32)">
+            <summary> Returns an interpolationSet </summary>
+            <param name="finger"></param>
+            <param name="movement"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Kinematics.HandInterpolator.Serialize">
+            <summary> Serialize this HandInterpolator into a string representation. </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Kinematics.HandInterpolator.Deserialize(System.String)">
+            <summary> Convert a serialized HandInterpolator back into a class representation. </summary>
+            <param name="serializedString"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Kinematics.HandInterpolator.BetweenPoses(SGCore.HandPose,SGCore.HandPose)">
+            <summary> Generates a HandInterpolator that returns PoseAt0's handAngles at input 0, and PoseAt1's handAngles at input 1. </summary>
+            <param name="poseAt0"></param>
+            <param name="poseAt1"></param>
             <returns></returns>
         </member>
         <member name="T:SGCore.Kinematics.InterpolationSet">
@@ -545,6 +636,16 @@
             <param name="to2"></param>
             <returns></returns>
         </member>
+        <member name="M:SGCore.Kinematics.Values.Map(System.Single,System.Single,System.Single,System.Single,System.Single,System.Boolean)">
+            <summary> Clamp the values beween the input and output values. </summary>
+            <param name="value"></param>
+            <param name="from1"></param>
+            <param name="from2"></param>
+            <param name="to1"></param>
+            <param name="to2"></param>
+            <param name="clampOutput"></param>
+            <returns></returns>
+        </member>
         <member name="M:SGCore.Kinematics.Values.Map(System.Single,System.Single,System.Single,System.Single,System.Single,System.Single,System.Single)">
             <summary> Map a value from one range [from1...from2] to another range [to1 .. to2],
             while ensuring it stays within the [min...max] range. </summary>
@@ -616,6 +717,24 @@
         </member>
         <member name="M:SGCore.Kinematics.Vect3D.ToString">
             <summary> Create a string representation of this Vector. </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Kinematics.Vect3D.DotProduct(SGCore.Kinematics.Vect3D,SGCore.Kinematics.Vect3D)">
+            <summary> Calculate the dot product between two vectors. If they're at 90 degree angles, the DP is 0. </summary>
+            <param name="a"></param>
+            <param name="b"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Kinematics.Vect3D.CrossProduct(SGCore.Kinematics.Vect3D,SGCore.Kinematics.Vect3D)">
+            <summary> Caluculate the Croos product between two vectors. THe result is an orthagonal vector. </summary>
+            <param name="a"></param>
+            <param name="b"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Kinematics.Vect3D.AngleBetween(SGCore.Kinematics.Vect3D,SGCore.Kinematics.Vect3D)">
+            <summary>   </summary>
+            <param name="v1"></param>
+            <param name="v2"></param>
             <returns></returns>
         </member>
         <member name="M:SGCore.Kinematics.Vect3D.op_Addition(SGCore.Kinematics.Vect3D,SGCore.Kinematics.Vect3D)">
@@ -1299,6 +1418,348 @@
         <member name="F:SGCore.Haptics.WaveformStream.maxActiveWavefroms">
             <summary> The maximum amount of Waveforms that can be active at one time. </summary>
         </member>
+        <member name="T:SGCore.Util.ConnectionStatus">
+            <summary> Indictaes the status of a connection within the SGConnect library. </summary>
+        </member>
+        <member name="P:SGCore.Util.ConnectionStatus.Address">
+            <summary> The Connection's COM or MAC address. </summary>
+        </member>
+        <member name="P:SGCore.Util.ConnectionStatus.ConnectionType">
+            <summary> The type of connection this address is using. </summary>
+        </member>
+        <member name="P:SGCore.Util.ConnectionStatus.IsConnected">
+            <summary> Whether or not this connection is active. </summary>
+        </member>
+        <member name="P:SGCore.Util.ConnectionStatus.LastConnectionCode">
+            <summary> The latest Connection code. </summary>
+        </member>
+        <member name="P:SGCore.Util.ConnectionStatus.LastExitCode">
+            <summary> The last exit code </summary>
+        </member>
+        <member name="P:SGCore.Util.ConnectionStatus.LastTestState">
+            <summary> The latest testing stage, in case this isn't a SenseGlove Device </summary>
+        </member>
+        <member name="P:SGCore.Util.ConnectionStatus.DeviceType">
+            <summary> The DeviceType connected to this port. </summary>
+        </member>
+        <member name="F:SGCore.Util.ConnectionStatus.connDelimm">
+            <summary> Used in parsing. </summary>
+        </member>
+        <member name="M:SGCore.Util.ConnectionStatus.#ctor(System.String,SGCore.SGDevice.ConnectionType,System.Boolean,System.Int32,System.Int32,System.Int32,System.Int32)">
+            <summary> Create a new ConnectionStstus </summary>
+            <param name="address"></param>
+            <param name="connType"></param>
+            <param name="connected"></param>
+            <param name="connCode"></param>
+            <param name="exitCode"></param>
+            <param name="testStage"></param>
+            <param name="devType"></param>
+        </member>
+        <member name="M:SGCore.Util.ConnectionStatus.ToString">
+            <summary> A reportable string. </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Util.ConnectionStatus.Parse(System.String)">
+            <summary> Parse a ConnectionStatus into a proper data class. </summary>
+            <param name="single"></param>
+            <returns></returns>
+        </member>
+        <member name="T:SGCore.Util.FileIO">
+            <summary> Ensures that .txt files are properly handled by Unity. </summary>
+        </member>
+        <member name="M:SGCore.Util.FileIO.SaveTxtFile(System.String,System.String,System.String[],System.Boolean)">
+            <summary> Attempt to save a string[] to a filename within a desired directory. Returns true if succesful. </summary>
+            <remarks> Directory is added as a separate variable so we can more easily check for its existence. </remarks>
+            <param name="dir"></param>
+            <param name="fileName"></param>
+            <param name="lines"></param>
+            <param name="append"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Util.FileIO.ReadTxtFile(System.String,System.String[]@)">
+            <summary> Attempt to read all lines from a file and place them in the string[]. Returns true if succesful. If unable to open the file, the string[] will be empty.</summary>
+            <param name="path"></param>
+            <param name="lines"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Util.FileIO.CreateDirectory(System.String)">
+            <summary> Creates a new directory. Returns  false if it already existed. </summary>
+            <param name="dir"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Util.FileIO.GetMyDocumentsPath">
+            <summary> Get the Path ot MyDocuments for Profiles </summary>
+            <returns></returns>
+        </member>
+        <member name="T:SGCore.Util.ListFormat">
+            <summary> Indices to access DeviceList data in Shared Memory </summary>
+        </member>
+        <member name="T:SGCore.Util.SensorFormat">
+            <summary> Indices to access Sensor Data in Shared Memory </summary>
+        </member>
+        <member name="T:SGCore.Util.Communications">
+            <summary> "Database" containing communications bytes and conversions. </summary>
+        </member>
+        <member name="F:SGCore.Util.Communications.cmdOpen">
+            <summary> Byte indicating the start of a new command. </summary>
+        </member>
+        <member name="F:SGCore.Util.Communications.cmdClose">
+            <summary> Byte indicating the end of a command. </summary>
+        </member>
+        <member name="F:SGCore.Util.Communications.senseOpen">
+            <summary> Byte indicating the start of a new sensor data package. </summary>
+        </member>
+        <member name="F:SGCore.Util.Communications.senseClose">
+            <summary> Byte indicating the end of a sensor data package. </summary>
+        </member>
+        <member name="F:SGCore.Util.Communications.listDelimiter">
+            <summary> Denotes a block section of a DeviceList section. </summary>
+        </member>
+        <member name="F:SGCore.Util.Communications.sectionDelimiter">
+            <summary> ':' - Used to split a set of different contant values into individual groups. </summary>
+        </member>
+        <member name="F:SGCore.Util.Communications.colDelimiter">
+            <summary> ';' - Used to separate individual values </summary>
+        </member>
+        <member name="F:SGCore.Util.Communications.rowDelimiter">
+            <summary> '|' - Used to group a set of values, for example per finger. </summary>
+        </member>
+        <member name="M:SGCore.Util.Communications.ToSGByte(System.Int32)">
+            <summary> Convert a value between 0..100 to a Sense Glove char/byte </summary>
+            <param name="lvl"></param>
+            <remarks> Placed here so that external parties do not get direct access to this. </remarks>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Util.Communications.EncodeLinear(System.Single,System.Single,System.Single,System.Int32,System.Int32)">
+            <summary> Encode a single value into a character into a range of bytes. Will alsways clamp! </summary>
+            <param name="value"></param>
+            <param name="minValue"></param>
+            <param name="maxValue"></param>
+            <param name="minByte"></param>
+            <param name="maxByte"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Util.Communications.DecodeLinear(System.Int32,System.Single,System.Single,System.Int32,System.Int32)">
+            <summary> Convert a decoded byte back into its original floating value. Useful for decoding. </summary>
+            <param name="byteFromChar"></param>
+            <param name="minValue"></param>
+            <param name="maxValue"></param>
+            <param name="minByte"></param>
+            <param name="maxByte"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Util.Serializer.FilterSpaces(System.String)">
+            summary[ Filters spaces from a a string. /summary[
+        </member>
+        <member name="M:SGCore.Util.Serializer.SplitBlocks(System.String,System.Boolean)">
+            summary[ Split a serialized string by its top level blocks /summary[
+        </member>
+        <member name="T:SGCore.Util.ServerData.Packet">
+            <summary> Internal enumerator to parse packets </summary>
+        </member>
+        <member name="F:SGCore.Util.ServerData.dataDelim">
+            <summary> Delimiter to parse data </summary>
+        </member>
+        <member name="M:SGCore.Util.ServerData.Update(System.String)">
+            <summary> Updates data only </summary>
+            <param name="fullGloveString"></param>
+        </member>
+        <member name="T:SGCore.Util.SGConnect_Android">
+            <summary> Interface for the Android Library </summary>
+            Since there is no Native Bluetooth SDK for Android, we have to use .aar files for now.
+            There is no way to import such methods in C#, nor easily in C++. So instead, our Unity back-end handles Sending/Receiving to the API, and data ends up in this class.
+        </member>
+        <member name="T:SGCore.Util.SGConnect_Android.AndrSGDevice">
+            <summary> Represents a block of memory for one SGDevice </summary>
+        </member>
+        <member name="F:SGCore.Util.SGConnect_Android.devices">
+            <summary> The devices currently in memory </summary>
+        </member>
+        <member name="F:SGCore.Util.SGConnect_Android.scanningActive">
+            <summary> Whether or not the devices have been initialized </summary>
+        </member>
+        <member name="F:SGCore.Util.SGConnect_Android.instance">
+            <summary> Singleton instance of the android interface so we can access it statically.. </summary>
+        </member>
+        <member name="M:SGCore.Util.SGConnect_Android.#ctor">
+            <summary> Default constructor for Instance </summary>
+        </member>
+        <member name="M:SGCore.Util.SGConnect_Android.Cs_ActiveDevices">
+            <summary> Check the number of devices detected by the system </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Util.SGConnect_Android.Cs_ConnectionsRunning">
+            <summary> Returns true if a device is currently posting data to this Interface. </summary>
+            <returns></returns>
+        </member>
+        <!-- Badly formed XML comment ignored for member "M:SGCore.Util.SGConnect_Android.Cs_GetDeviceString(System.Int32,System.String@)" -->
+        <member name="M:SGCore.Util.SGConnect_Android.Cs_GetSensorString(System.Int32,System.String@)">
+            <summary> Retrieve lastes sensor data of a device </summary>
+            <param name="deviceIndex"></param>
+            <param name="sensorString"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Util.SGConnect_Android.Cs_SendHaptics(System.Int32,System.String)">
+            <summary> Write a raw haptic command </summary>
+            <param name="deviceIndex"></param>
+            <param name="haptics"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Util.SGConnect_Android.CS_GetConnectionStates(System.String@)">
+            <summary> Retrieve states of each connection on this system.  </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Util.SGConnect_Android.An_PostDeviceString(System.Int32,System.String)">
+            <summary> Android-Only: Post a deviceString </summary>
+            <param name="deviceIndex"></param>
+            <param name="deviceString"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Util.SGConnect_Android.An_PostSensorData(System.Int32,System.String)">
+            <summary> Android-Only: Post latest sensor data </summary>
+            <param name="deviceIndex"></param>
+            <param name="sensorData"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Util.SGConnect_Android.An_GetHaptics(System.Int32,System.String@)">
+            <summary> Adnroid-only: Retrieve Haptic commands to send. </summary>
+            <param name="deviceIndex"></param>
+            <param name="hapticCmd"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Util.SGConnect_Android.An_Init">
+            <summary> (Android Only) Let the software know we're active </summary>
+        </member>
+        <member name="M:SGCore.Util.SGConnect_Android.An_Dispose">
+            <summary> (Android Only) Once done with the devices, clear them from memory </summary>
+        </member>
+        <member name="M:SGCore.Util.SGConnect_Android.An_PostDeviceStates(System.String)">
+            <summary> Android-Only: Post a Device State String if needed.  </summary>
+        </member>
+        <member name="T:SGCore.Util.StrStuff">
+            <summary> Utility class to convert strings into useable values. </summary>
+        </member>
+        <member name="M:SGCore.Util.StrStuff.ToInt(System.String,System.Int32)">
+            <summary> Convert a string into an integer value </summary>
+            <param name="str"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Util.StrStuff.ToFloat(System.String,System.Single)">
+            <summary> Convert a string into a decimal value. </summary>
+            <param name="str"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Util.StrStuff.DegString(System.Single)">
+            <summary> Convert a radian notation into a readable degrees string.  </summary>
+            <param name="rad"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Util.StrStuff.QuickSplit(System.String,System.Char,System.Int32)">
+            <summary> 
+            Retrieve a single section from a delimited string at a specific index.
+            It is much faster at lower indices.
+            Use when only one section of a string is interesting to you.
+            </summary>
+            <param name="input"></param>
+            <param name="delim"></param>
+            <param name="getIndex"></param>
+            <returns></returns>
+        </member>
+        <member name="T:SGCore.Util.UDPSocket">
+            <summary> Contains common functions for UPD Sockets </summary>
+        </member>
+        <member name="F:SGCore.Util.UDPSocket.client">
+            <summary> Actual UDPClient to do work </summary>
+        </member>
+        <member name="F:SGCore.Util.UDPSocket.remoteEndPoint">
+            <summary> used to access data. </summary>
+        </member>
+        <member name="P:SGCore.Util.UDPSocket.Port">
+            <summary> Port that was created for this Socket </summary>
+        </member>
+        <member name="P:SGCore.Util.UDPSocket.IP">
+            <summary> IP (default localHost) </summary>
+        </member>
+        <member name="P:SGCore.Util.UDPSocket.Connected">
+            <summary> Whether or not this socket is conencted </summary>
+        </member>
+        <member name="P:SGCore.Util.UDPSocket.Address">
+            <summary> The IP address of this socket. </summary>
+        </member>
+        <member name="M:SGCore.Util.UDPSocket.#ctor">
+            <summary> Basic Constructor </summary>
+        </member>
+        <member name="M:SGCore.Util.UDPSocket.Finalize">
+            <summary> Ensure Dispose is called </summary>
+        </member>
+        <member name="M:SGCore.Util.UDPSocket.Connect(System.Int32,System.String)">
+            <summary> Connect to a specific IP Port. </summary>
+            <param name="_port"></param>
+            <param name="_IP"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Util.UDPSocket.Dispose">
+            <summary> Dispose Unmanaged Resources </summary>
+        </member>
+        <member name="T:SGCore.Util.UDPReceiver">
+            <summary> A UDPReceiver which reads data in a readthread (since it's blocking) </summary>
+        </member>
+        <member name="F:SGCore.Util.UDPReceiver.receiveThread">
+            <summary> Thread to receive data </summary>
+        </member>
+        <member name="F:SGCore.Util.UDPReceiver.getData">
+            <summary> Keeps the thread alive </summary>
+        </member>
+        <member name="F:SGCore.Util.UDPReceiver.lastReceivedUDPPacket">
+            <summary> Last data received by UDP </summary>
+        </member>
+        <member name="F:SGCore.Util.UDPReceiver.sf_Packet">
+            <summary> Semaphore to protect simultaneous access </summary>
+        </member>
+        <member name="P:SGCore.Util.UDPReceiver.pingTime_ms">
+            <summary> Time in between data received </summary>
+        </member>
+        <member name="P:SGCore.Util.UDPReceiver.LastData">
+            <summary> Accessor for the last data received from UDP Socket </summary>
+        </member>
+        <member name="M:SGCore.Util.UDPReceiver.#ctor">
+            <summary> Basic Constructor </summary>
+        </member>
+        <member name="M:SGCore.Util.UDPReceiver.Finalize">
+            <summary> Ensure stuff gets disposed </summary>
+        </member>
+        <member name="M:SGCore.Util.UDPReceiver.Connect(System.Int32,System.String)">
+            <summary> Connect to a specific IP address and start up the Readthread. </summary>
+            <param name="_port"></param>
+            <param name="_IP"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Util.UDPReceiver.Dispose">
+            <summary> Dispose of unmanaged resources. </summary>
+        </member>
+        <member name="M:SGCore.Util.UDPReceiver.ReceiveData">
+            <summary> Is run by the Thread. </summary>
+        </member>
+        <member name="T:SGCore.Util.UDPSender">
+            <summary> Sends Strings over UDP. </summary>
+        </member>
+        <member name="M:SGCore.Util.UDPSender.#ctor">
+            <summary> Basic constructor </summary>
+        </member>
+        <member name="M:SGCore.Util.UDPSender.Finalize">
+            <summary> Ensure stuff gets disposed </summary>
+        </member>
+        <member name="M:SGCore.Util.UDPSender.Connect(System.Int32,System.String)">
+            <summary> Connects to a specific IP address </summary>
+            <param name="_port"></param>
+            <param name="_IP"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Util.UDPSender.SendString(System.String)">
+            <summary> Send a string over the socket. </summary>
+            <param name="msg"></param>
+            <returns></returns>
+        </member>
         <member name="T:SGCore.Calibration.CalibrationStage">
             <summary> Startup Stage used to indicate where of not a glove must be recalibrated. </summary>
         </member>
@@ -1543,6 +2004,10 @@
         <member name="P:SGCore.Calibration.HG_QuickCalibration.CanAnimate">
             <summary> Determines if the user has moved enough so that we can animate. </summary>
         </member>
+        <member name="M:SGCore.Calibration.HG_QuickCalibration.#ctor(SGCore.HapticGlove)">
+            <summary> Create a new instance of a QuickCalibration for Haptic Gloves. </summary>
+            <param name="gloveToCalibrate"></param>
+        </member>
         <member name="M:SGCore.Calibration.HG_QuickCalibration.#ctor(SGCore.HapticGlove,System.Single)">
             <summary> Create a new instance of a QuickCalibration for Haptic Gloves. </summary>
             <param name="gloveToCalibrate"></param>
@@ -1649,6 +2114,82 @@
         <member name="M:SGCore.Calibration.SensorRange.Deserialize(System.String)">
             <summary> Convert a serialized SensorRange back into the appropriate class. </summary>
             <param name="serializedString"></param>
+            <returns></returns>
+        </member>
+        <member name="T:SGCore.HG_HandProfiles">
+            <summary> A helpful class to store / access calibration profiles on / off disk. </summary>
+        </member>
+        <member name="F:SGCore.HG_HandProfiles.leftProfile">
+            <summary> Profile for the left hand </summary>
+        </member>
+        <member name="F:SGCore.HG_HandProfiles.rightProfile">
+            <summary> Profile for the right hand </summary>
+        </member>
+        <member name="F:SGCore.HG_HandProfiles.profileDir">
+            <summary> The location on disk where the profiles are stoed and retrieved from. Differs in Windows and Android. </summary>
+        </member>
+        <member name="F:SGCore.HG_HandProfiles.leftHandFile">
+            <summary> Name of the file containing the left-hand profile in ProfileDirectory </summary>
+        </member>
+        <member name="F:SGCore.HG_HandProfiles.rightHandFile">
+            <summary> Name of the file containing the right-hand profile in ProfileDirectory </summary>
+        </member>
+        <member name="F:SGCore.HG_HandProfiles.rangeDir">
+            <summary> A SubDirectory of ProfileDirectory to store the last calibration ranges used for a device. </summary>
+        </member>
+        <member name="F:SGCore.HG_HandProfiles.triedLoading">
+            <summary> Determines if we hava tried to load a profile from disk yet. If yes, and it still doesn't exist, we generate one. </summary>
+        </member>
+        <member name="P:SGCore.HG_HandProfiles.ProfileDirectory">
+            <summary> Returns the directory where our HandProfiles are stored. </summary>
+        </member>
+        <member name="P:SGCore.HG_HandProfiles.RightHandProfile">
+            <summary> Access the latest Right Hand Profile </summary>
+        </member>
+        <member name="P:SGCore.HG_HandProfiles.LeftHandProfile">
+            <summary> Access the latest Left Hand Profile </summary>
+        </member>
+        <member name="M:SGCore.HG_HandProfiles.GetProfile(System.Boolean)">
+            <summary> Retrieve a left- or right handed profile. </summary>
+            <param name="rightHand"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.HG_HandProfiles.SetProfile(SGCore.HandProfile)">
+            <summary> Store a profile in the global variables and on disk. The profile determines if this is a left- or right hand. </summary>
+            <param name="profile"></param>
+        </member>
+        <member name="M:SGCore.HG_HandProfiles.SetProfile(SGCore.HandProfile,System.Boolean)">
+            <summary> Store a profile in the global variables and on disk. You determine if this is a left- or right hand. </summary>
+            <param name="profile"></param>
+            <param name="rightHand"></param>
+        </member>
+        <member name="M:SGCore.HG_HandProfiles.RestoreDefaults">
+            <summary> Restore both profiles back to their default values. </summary>
+        </member>
+        <member name="M:SGCore.HG_HandProfiles.RestoreDefaults(System.Boolean)">
+            <summary> Restore the left- or right hand profiles back to their default values. </summary>
+            <param name="rightHand"></param>
+        </member>
+        <member name="M:SGCore.HG_HandProfiles.TryLoadFromDisk">
+            <summary> Load the latest profiles from disk. Automatically called when you first try to access a profile.
+            Exposed so you can force-reload profiles. </summary>
+        </member>
+        <member name="M:SGCore.HG_HandProfiles.LoadProfile(System.String,SGCore.HandProfile@)">
+            <summary> Load a profile form a file, return true if it was succesfully deserialized. </summary>
+            <param name="filePath"></param>
+            <param name="currProfile"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.HG_HandProfiles.SaveLastRange(SGCore.Calibration.SensorRange,SGCore.HapticGlove)">
+            <summary> Stores the last sensor range of a glove. </summary>
+            <param name="currentRange"></param>
+            <param name="forGlove"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.HG_HandProfiles.LoadLastRange(SGCore.HapticGlove,SGCore.Calibration.SensorRange@)">
+            <summary> Loads the last sensor range of a glove. </summary>
+            <param name="forGlove"></param>
+            <param name="lastRange"></param>
             <returns></returns>
         </member>
         <member name="T:SGCore.Nova.Nova_Calibration">
@@ -1763,6 +2304,9 @@
             <param name="encodedVal"></param>
             <returns></returns>
         </member>
+        <member name="T:SGCore.Nova.NovaGlove">
+            <summary> A soft glove with detachable force-feedback and sensor module. </summary>
+        </member>
         <member name="F:SGCore.Nova.NovaGlove.hapticsByte">
             <summary> Byte indicating a new Sense Glove haptic command. </summary>
         </member>
@@ -1771,6 +2315,19 @@
         </member>
         <member name="M:SGCore.Nova.NovaGlove.GetGloveModel">
             <summary> Access DeviceInfo of this Nova </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Nova.NovaGlove.HasBattery">
+            <summary> Returns true if this device operates on a battery </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Nova.NovaGlove.IsCharging">
+            <summary> Returns true if this device is currently charging </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Nova.NovaGlove.GetBatteryLevel(System.Single@)">
+            <summary> Returns the device's battery level, as a value between 0 (empty) and 1 (full). </summary>
+            <param name="battLvl"></param>
             <returns></returns>
         </member>
         <member name="M:SGCore.Nova.NovaGlove.GetSensorData(SGCore.Nova.Nova_SensorData@)">
@@ -1784,17 +2341,24 @@
         </member>
         <member name="M:SGCore.Nova.NovaGlove.GetHandPose(SGCore.Kinematics.BasicHandModel,SGCore.Nova.Nova_Profile,SGCore.HandPose@)">
             <summary> Retrieve a new hand pose using this glove, based on (calibrated) user data. </summary>
+            <param name="handModel"></param>
             <param name="profile"></param>
-            <param name="solver"></param>
+            <param name="handPose"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Nova.NovaGlove.GetHandPose(SGCore.Kinematics.BasicHandModel,SGCore.HandProfile,SGCore.HandPose@)">
+            <summary> Retrieve a new hand pose using this glove, based on (calibrated) user data. </summary>
+            <param name="handGeometry"></param>
+            <param name="handProfile"></param>
             <param name="handPose"></param>
             <returns></returns>
         </member>
         <member name="M:SGCore.Nova.NovaGlove.CalculateHandPose(SGCore.Kinematics.BasicHandModel,SGCore.Nova.Nova_SensorData,SGCore.Nova.Nova_Profile)">
             <summary> Calculate a HandPose based on a glovePose and a solver. </summary>
             <remarks> Use this when you already have a GlovePose </remarks>
-            <param name="glovePose"></param>
+            <param name="handModel"></param>
+            <param name="novaData"></param>
             <param name="profile"></param>
-            <param name="solver"></param>
             <returns></returns>
         </member>
         <member name="M:SGCore.Nova.NovaGlove.Parse(System.String)">
@@ -1834,12 +2398,22 @@
             <param name="glovePos">The 3D Position of the glove, in mm, relative to your origin</param>
             <param name="gloveRot">The 3D Rotation of the glove, relative to your origin</param>
         </member>
-        <member name="M:SGCore.Nova.NovaGlove.CalculateGloveLocation(SGCore.Kinematics.Vect3D,SGCore.Kinematics.Quat,SGCore.PosTrackingHardware,System.Boolean,SGCore.Kinematics.Vect3D@,SGCore.Kinematics.Quat@)">
+        <member name="M:SGCore.Nova.NovaGlove.CalculateGloveLocation(SGCore.Kinematics.Vect3D,SGCore.Kinematics.Quat,SGCore.PosTrackingHardware,System.Boolean,System.String,SGCore.Kinematics.Vect3D@,SGCore.Kinematics.Quat@)">
             <summary> Retrieve the location of the glove origin, based on a reference location without requiring an object reference.. </summary>
             <param name="refPosition">Position of the tracked object, in mm, relative to your origin</param>
             <param name="refRotation">Rotation of the tracked object relative to your origin</param>
             <param name="trackingHardware">The hardware mounted on the SenseGlove.</param>
             <param name="rightHand">Whether or not this is a left or right handed glove.</param>
+            <param name="hardwareVersion">Can be left blank for DK 1 offsets</param>
+            <param name="glovePos">The 3D Position of the glove, in mm, relative to your origin</param>
+            <param name="gloveRot">The 3D Rotation of the glove, relative to your origin</param>
+        </member>
+        <member name="M:SGCore.Nova.NovaGlove.CalculateGloveLocation(SGCore.Kinematics.Vect3D,SGCore.Kinematics.Quat,SGCore.PosTrackingHardware,SGCore.Nova.Nova_GloveInfo,SGCore.Kinematics.Vect3D@,SGCore.Kinematics.Quat@)">
+            <summary> Retrieve the location of the glove origin, based on a reference location without requiring an object reference.. </summary>
+            <param name="refPosition">Position of the tracked object, in mm, relative to your origin</param>
+            <param name="refRotation">Rotation of the tracked object relative to your origin</param>
+            <param name="trackingHardware">The hardware mounted on the SenseGlove.</param>
+            <param name="gloveInfo">Glove information.</param>
             <param name="glovePos">The 3D Position of the glove, in mm, relative to your origin</param>
             <param name="gloveRot">The 3D Rotation of the glove, relative to your origin</param>
         </member>
@@ -1852,15 +2426,26 @@
             <param name="wristPos">The 3D Position of the wrist, in mm, relative to your origin</param>
             <param name="wristRot">The 3D Rotation of the wrist, relative to your origin</param>
         </member>
-        <member name="M:SGCore.Nova.NovaGlove.CalculateWristLocation(SGCore.Kinematics.Vect3D,SGCore.Kinematics.Quat,SGCore.PosTrackingHardware,System.Boolean,SGCore.Kinematics.Vect3D@,SGCore.Kinematics.Quat@)">
+        <member name="M:SGCore.Nova.NovaGlove.CalculateWristLocation(SGCore.Kinematics.Vect3D,SGCore.Kinematics.Quat,SGCore.PosTrackingHardware,SGCore.Nova.Nova_GloveInfo,SGCore.Kinematics.Vect3D@,SGCore.Kinematics.Quat@)">
             <summary> Retrieve the location of the wrist, based on a reference location and default glove-hand offsets, without needing an object reference. </summary>
             <remarks> The simplest interface, using default offsets </remarks>
             <param name="refPosition">Position of the tracked object, in mm, relative to your origin</param>
             <param name="refRotation">Rotation of the tracked object relative to your origin</param>
             <param name="trackingHardware">The hardware mounted on the SenseGlove.</param>
-            <param name="rightHand">Whether this is right or left hand</param>
+            <param name="gloveInfo">Whether this is right or left hand</param>
             <param name="wristPos">The 3D Position of the wrist, in mm, relative to your origin</param>
             <param name="wristRot">The 3D Rotation of the wrist, relative to your origin</param>
+        </member>
+        <member name="M:SGCore.Nova.NovaGlove.GetNovaGlove(System.Boolean,SGCore.Nova.NovaGlove@)">
+            <summary> Retrieve the first connected Nova Glove, for a specific hand. </summary>
+            <param name="rightHand"></param>
+            <param name="glove"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Nova.NovaGlove.GetNovaGlove(SGCore.Nova.NovaGlove@)">
+            <summary> Retrieve the first connected Nova Glove</summary>
+            <param name="glove"></param>
+            <returns></returns>
         </member>
         <member name="P:SGCore.Nova.Nova_GloveInfo.IsRight">
             <summary> Determines if this is a right-handed Nova. </summary>
@@ -1874,266 +2459,65 @@
         <member name="M:SGCore.Nova.Nova_Profile.Reset">
             <summary> Resets this profile to default values. </summary>
         </member>
-        <member name="T:SGCore.Util.ListFormat">
-            <summary> Indices to access DeviceList data in Shared Memory </summary>
+        <member name="T:SGCore.Nova.Nova_SensorData">
+            <summary> Sensor Data coming from a Fino, converted into useful values. </summary>
         </member>
-        <member name="T:SGCore.Util.SensorFormat">
-            <summary> Indices to access Sensor Data in Shared Memory </summary>
+        <member name="T:SGCore.Nova.Nova_SensorData.NovaData">
+            <summary> Enumerators for Nova Data position in the parseable string. </summary>
         </member>
-        <member name="T:SGCore.Util.Communications">
-            <summary> "Database" containing communications bytes and conversions. </summary>
+        <member name="P:SGCore.Nova.Nova_SensorData.SensorValues">
+            <summary> Pronation/Supination, Flexion/Extension and Abduction/Adduction values for each finger. </summary>
         </member>
-        <member name="F:SGCore.Util.Communications.cmdOpen">
-            <summary> Byte indicating the start of a new command. </summary>
+        <member name="P:SGCore.Nova.Nova_SensorData.IMURotation">
+            <summary> Quaternion rotation relative to magnetic north. </summary>
         </member>
-        <member name="F:SGCore.Util.Communications.cmdClose">
-            <summary> Byte indicating the end of a command. </summary>
+        <member name="P:SGCore.Nova.Nova_SensorData.ParsedValues">
+            <summary> The number of values that were parsed from the sensor string. </summary>
         </member>
-        <member name="F:SGCore.Util.Communications.senseOpen">
-            <summary> Byte indicating the start of a new sensor data package. </summary>
+        <member name="P:SGCore.Nova.Nova_SensorData.IMUParsed">
+            <summary> Whether or not the IMU values were all succesfully parsed. </summary>
         </member>
-        <member name="F:SGCore.Util.Communications.senseClose">
-            <summary> Byte indicating the end of a sensor data package. </summary>
+        <member name="P:SGCore.Nova.Nova_SensorData.IsCharging">
+            <summary> Returns true if this NovaGlove is connected to a power source </summary>
         </member>
-        <member name="F:SGCore.Util.Communications.listDelimiter">
-            <summary> Denotes a block section of a DeviceList section. </summary>
+        <member name="P:SGCore.Nova.Nova_SensorData.BatteryLevel">
+            <summary> A value between 0..1 that represents the battery level of this Nova Glove (0 .. 100%). Returns -1 if the value wasn't received. </summary>
         </member>
-        <member name="F:SGCore.Util.Communications.sectionDelimiter">
-            <summary> ':' - Used to split a set of different contant values into individual groups. </summary>
+        <member name="M:SGCore.Nova.Nova_SensorData.#ctor(SGCore.Kinematics.Vect3D[],System.Int32,SGCore.Kinematics.Quat,System.Boolean,System.Single,System.Boolean)">
+            <summary>  </summary>
+            <param name="values"></param>
+            <param name="numberOfVals"></param>
+            <param name="imuRot"></param>
+            <param name="imuComplete"></param>
+            <param name="battLvl"></param>
+            <param name="charging"></param>
         </member>
-        <member name="F:SGCore.Util.Communications.colDelimiter">
-            <summary> ';' - Used to separate individual values </summary>
-        </member>
-        <member name="F:SGCore.Util.Communications.rowDelimiter">
-            <summary> '|' - Used to group a set of values, for example per finger. </summary>
-        </member>
-        <member name="M:SGCore.Util.Communications.ToSGByte(System.Int32)">
-            <summary> Convert a value between 0..100 to a Sense Glove char/byte </summary>
-            <param name="lvl"></param>
-            <remarks> Placed here so that external parties do not get direct access to this. </remarks>
+        <member name="M:SGCore.Nova.Nova_SensorData.Empty">
+            <summary> Generates empty data </summary>
             <returns></returns>
         </member>
-        <member name="M:SGCore.Util.Communications.EncodeLinear(System.Single,System.Single,System.Single,System.Int32,System.Int32)">
-            <summary> Encode a single value into a character into a range of bytes. Will alsways clamp! </summary>
-            <param name="value"></param>
-            <param name="minValue"></param>
-            <param name="maxValue"></param>
-            <param name="minByte"></param>
-            <param name="maxByte"></param>
+        <member name="M:SGCore.Nova.Nova_SensorData.ToString">
+            <summary> Create a readable string representation of this Sensor Data </summary>
             <returns></returns>
         </member>
-        <member name="M:SGCore.Util.Communications.DecodeLinear(System.Int32,System.Single,System.Single,System.Int32,System.Int32)">
-            <summary> Convert a decoded byte back into its original floating value. Useful for decoding. </summary>
-            <param name="byteFromChar"></param>
-            <param name="minValue"></param>
-            <param name="maxValue"></param>
-            <param name="minByte"></param>
-            <param name="maxByte"></param>
+        <member name="M:SGCore.Nova.Nova_SensorData.Equals(SGCore.Nova.Nova_SensorData)">
+            <summary> Returns true if this sensor data contains the same values as another. </summary>
+            <param name="other"></param>
             <returns></returns>
         </member>
-        <member name="M:SGCore.Util.Serializer.FilterSpaces(System.String)">
-            summary[ Filters spaces from a a string. /summary[
-        </member>
-        <member name="M:SGCore.Util.Serializer.SplitBlocks(System.String,System.Boolean)">
-            summary[ Split a serialized string by its top level blocks /summary[
-        </member>
-        <member name="T:SGCore.Util.ServerData.Packet">
-            <summary> Internal enumerator to parse packets </summary>
-        </member>
-        <member name="F:SGCore.Util.ServerData.dataDelim">
-            <summary> Delimiter to parse data </summary>
-        </member>
-        <member name="M:SGCore.Util.ServerData.Update(System.String)">
-            <summary> Updates data only </summary>
-            <param name="fullGloveString"></param>
-        </member>
-        <member name="T:SGCore.Util.SGConnect_Android">
-            <summary> Interface for the Android Library </summary>
-            Since there is no Native Bluetooth SDK for Android, we have to use .aar files for now.
-            There is no way to import such methods in C#, nor easily in C++. So instead, our Unity back-end handles Sending/Receiving to the API, and data ends up in this class.
-        </member>
-        <member name="T:SGCore.Util.SGConnect_Android.AndrSGDevice">
-            <summary> Represents a block of memory for one SGDevice </summary>
-        </member>
-        <member name="F:SGCore.Util.SGConnect_Android.devices">
-            <summary> The devices currently in memory </summary>
-        </member>
-        <member name="F:SGCore.Util.SGConnect_Android.scanningActive">
-            <summary> Whether or not the devices have been initialized </summary>
-        </member>
-        <member name="F:SGCore.Util.SGConnect_Android.instance">
-            <summary> Singleton instance of the android interface so we can access it statically.. </summary>
-        </member>
-        <member name="M:SGCore.Util.SGConnect_Android.#ctor">
-            <summary> Default constructor for Instance </summary>
-        </member>
-        <member name="M:SGCore.Util.SGConnect_Android.Cs_ActiveDevices">
-            <summary> Check the number of devices detected by the system </summary>
+        <member name="M:SGCore.Nova.Nova_SensorData.Parse(System.String,SGCore.Nova.Nova_GloveInfo@)">
+            <summary> Parse the bytes as they come in from the device into useable values. </summary>
+            <param name="rawData"></param>
+            <param name="gloveInfo"></param>
             <returns></returns>
         </member>
-        <member name="M:SGCore.Util.SGConnect_Android.Cs_ConnectionsRunning">
-            <summary> Returns true if a device is currently posting data to this Interface. </summary>
+        <member name="M:SGCore.Nova.Nova_SensorData.Serialize">
+            <summary> Convert this sensor data into a string so it can be stored on disk. </summary>
             <returns></returns>
         </member>
-        <!-- Badly formed XML comment ignored for member "M:SGCore.Util.SGConnect_Android.Cs_GetDeviceString(System.Int32,System.String@)" -->
-        <member name="M:SGCore.Util.SGConnect_Android.Cs_GetSensorString(System.Int32,System.String@)">
-            <summary> Retrieve lastes sensor data of a device </summary>
-            <param name="deviceIndex"></param>
-            <param name="sensorString"></param>
-            <returns></returns>
-        </member>
-        <member name="M:SGCore.Util.SGConnect_Android.Cs_SendHaptics(System.Int32,System.String)">
-            <summary> Write a raw haptic command </summary>
-            <param name="deviceIndex"></param>
-            <param name="haptics"></param>
-            <returns></returns>
-        </member>
-        <member name="M:SGCore.Util.SGConnect_Android.An_PostDeviceString(System.Int32,System.String)">
-            <summary> Android-Only: Post a deviceString </summary>
-            <param name="deviceIndex"></param>
-            <param name="deviceString"></param>
-            <returns></returns>
-        </member>
-        <member name="M:SGCore.Util.SGConnect_Android.An_PostSensorData(System.Int32,System.String)">
-            <summary> Android-Only: Post latest sensor data </summary>
-            <param name="deviceIndex"></param>
-            <param name="sensorData"></param>
-            <returns></returns>
-        </member>
-        <member name="M:SGCore.Util.SGConnect_Android.An_GetHaptics(System.Int32,System.String@)">
-            <summary> Adnroid-only: Retrieve Haptic commands to send. </summary>
-            <param name="deviceIndex"></param>
-            <param name="hapticCmd"></param>
-            <returns></returns>
-        </member>
-        <member name="M:SGCore.Util.SGConnect_Android.An_Init">
-            <summary> (Android Only) Let the software know we're active </summary>
-        </member>
-        <member name="M:SGCore.Util.SGConnect_Android.An_Dispose">
-            <summary> (Android Only) Once done with the devices, clear them from memory </summary>
-        </member>
-        <member name="T:SGCore.Util.StrStuff">
-            <summary> Utility class to convert strings into useable values. </summary>
-        </member>
-        <member name="M:SGCore.Util.StrStuff.ToInt(System.String,System.Int32)">
-            <summary> Convert a string into an integer value </summary>
-            <param name="str"></param>
-            <returns></returns>
-        </member>
-        <member name="M:SGCore.Util.StrStuff.ToFloat(System.String,System.Single)">
-            <summary> Convert a string into a decimal value. </summary>
-            <param name="str"></param>
-            <returns></returns>
-        </member>
-        <member name="M:SGCore.Util.StrStuff.DegString(System.Single)">
-            <summary> Convert a radian notation into a readable degrees string.  </summary>
-            <param name="rad"></param>
-            <returns></returns>
-        </member>
-        <member name="M:SGCore.Util.StrStuff.QuickSplit(System.String,System.Char,System.Int32)">
-            <summary> 
-            Retrieve a single section from a delimited string at a specific index.
-            It is much faster at lower indices.
-            Use when only one section of a string is interesting to you.
-            </summary>
-            <param name="input"></param>
-            <param name="delim"></param>
-            <param name="getIndex"></param>
-            <returns></returns>
-        </member>
-        <member name="T:SGCore.Util.UDPSocket">
-            <summary> Contains common functions for UPD Sockets </summary>
-        </member>
-        <member name="F:SGCore.Util.UDPSocket.client">
-            <summary> Actual UDPClient to do work </summary>
-        </member>
-        <member name="F:SGCore.Util.UDPSocket.remoteEndPoint">
-            <summary> used to access data. </summary>
-        </member>
-        <member name="P:SGCore.Util.UDPSocket.Port">
-            <summary> Port that was created for this Socket </summary>
-        </member>
-        <member name="P:SGCore.Util.UDPSocket.IP">
-            <summary> IP (default localHost) </summary>
-        </member>
-        <member name="P:SGCore.Util.UDPSocket.Connected">
-            <summary> Whether or not this socket is conencted </summary>
-        </member>
-        <member name="P:SGCore.Util.UDPSocket.Address">
-            <summary> The IP address of this socket. </summary>
-        </member>
-        <member name="M:SGCore.Util.UDPSocket.#ctor">
-            <summary> Basic Constructor </summary>
-        </member>
-        <member name="M:SGCore.Util.UDPSocket.Finalize">
-            <summary> Ensure Dispose is called </summary>
-        </member>
-        <member name="M:SGCore.Util.UDPSocket.Connect(System.Int32,System.String)">
-            <summary> Connect to a specific IP Port. </summary>
-            <param name="_port"></param>
-            <param name="_IP"></param>
-            <returns></returns>
-        </member>
-        <member name="M:SGCore.Util.UDPSocket.Dispose">
-            <summary> Dispose Unmanaged Resources </summary>
-        </member>
-        <member name="T:SGCore.Util.UDPReceiver">
-            <summary> A UDPReceiver which reads data in a readthread (since it's blocking) </summary>
-        </member>
-        <member name="F:SGCore.Util.UDPReceiver.receiveThread">
-            <summary> Thread to receive data </summary>
-        </member>
-        <member name="F:SGCore.Util.UDPReceiver.getData">
-            <summary> Keeps the thread alive </summary>
-        </member>
-        <member name="F:SGCore.Util.UDPReceiver.lastReceivedUDPPacket">
-            <summary> Last data received by UDP </summary>
-        </member>
-        <member name="F:SGCore.Util.UDPReceiver.sf_Packet">
-            <summary> Semaphore to protect simultaneous access </summary>
-        </member>
-        <member name="P:SGCore.Util.UDPReceiver.pingTime_ms">
-            <summary> Time in between data received </summary>
-        </member>
-        <member name="P:SGCore.Util.UDPReceiver.LastData">
-            <summary> Accessor for the last data received from UDP Socket </summary>
-        </member>
-        <member name="M:SGCore.Util.UDPReceiver.#ctor">
-            <summary> Basic Constructor </summary>
-        </member>
-        <member name="M:SGCore.Util.UDPReceiver.Finalize">
-            <summary> Ensure stuff gets disposed </summary>
-        </member>
-        <member name="M:SGCore.Util.UDPReceiver.Connect(System.Int32,System.String)">
-            <summary> Connect to a specific IP address and start up the Readthread. </summary>
-            <param name="_port"></param>
-            <param name="_IP"></param>
-            <returns></returns>
-        </member>
-        <member name="M:SGCore.Util.UDPReceiver.Dispose">
-            <summary> Dispose of unmanaged resources. </summary>
-        </member>
-        <member name="M:SGCore.Util.UDPReceiver.ReceiveData">
-            <summary> Is run by the Thread. </summary>
-        </member>
-        <member name="T:SGCore.Util.UDPSender">
-            <summary> Sends Strings over UDP. </summary>
-        </member>
-        <member name="M:SGCore.Util.UDPSender.#ctor">
-            <summary> Basic constructor </summary>
-        </member>
-        <member name="M:SGCore.Util.UDPSender.Finalize">
-            <summary> Ensure stuff gets disposed </summary>
-        </member>
-        <member name="M:SGCore.Util.UDPSender.Connect(System.Int32,System.String)">
-            <summary> Connects to a specific IP address </summary>
-            <param name="_port"></param>
-            <param name="_IP"></param>
-            <returns></returns>
-        </member>
-        <member name="M:SGCore.Util.UDPSender.SendString(System.String)">
-            <summary> Send a string over the socket. </summary>
-            <param name="msg"></param>
+        <member name="M:SGCore.Nova.Nova_SensorData.Deserialize(System.String)">
+            <summary> Convert this sensor data into ta string representation.  </summary>
+            <param name="serializedString"></param>
             <returns></returns>
         </member>
         <member name="T:SGCore.Diagnostics.DebugLevel">
@@ -2227,11 +2611,14 @@
         <member name="F:SGCore.DeviceList.devices">
             <summary> A list of all devices that have been detected via the SenseComm executable. </summary>
         </member>
+        <member name="F:SGCore.DeviceList.connStateDelim">
+            <summary> Delimiter for the connection state </summary>
+        </member>
         <member name="M:SGCore.DeviceList.ActiveDevices">
             <summary> Retrieve the number of devices that have been detected by the SenseComm executable. </summary>
         </member>
         <member name="M:SGCore.DeviceList.GetDevices">
-            <summary> Retrieve all Sense Glove Devices connected to this system. </summary>
+            <summary> Retrieve all Sense Glove Devices that were once connected to this system. </summary>
         </member>
         <member name="M:SGCore.DeviceList.GetDevices``1">
             <summary> Retrieve a list of SGDevices of a specific class. </summary>
@@ -2274,8 +2661,13 @@
             <param name="output"></param>
             <returns></returns>
         </member>
+        <member name="M:SGCore.DeviceList.GetConnectionStates">
+            <summary> Retrieve the Connection States inside the SGConnect Library. </summary>
+            <returns></returns>
+        </member>
         <member name="M:SGCore.DeviceList.SendHaptics(System.Int32,System.String,System.String)">
             <summary> Send command(s) in string format to the device at ipcAddress. </summary>
+            <param name="ipcIndex"></param>
             <param name="ipcAddress"></param>
             <param name="commands"></param>
             <returns> Returns true if the command has been sent succesfully. </returns>
@@ -2300,6 +2692,7 @@
         </member>
         <member name="M:SGCore.DeviceList.GetDeviceStringAt(System.Int32,System.String,System.Int32)">
             <summary> Grab data from the Device string (connected/pps/type) at a specific index. </summary>
+            <param name="ipcIndex"></param>
             <param name="ipcAddress"></param>
             <param name="index"></param>
             <returns></returns>
@@ -2398,6 +2791,39 @@
             <summary> Returns the total flexion the fingers as a value between 0 (fully extended) and 1 (fully flexed). </summary>
             <remarks> Useful for animation or for detecting gestures </remarks>
         </member>
+        <member name="M:SGCore.HandPose.ToJointIndex(SGCore.Kinematics.FingerMovement)">
+            <summary> Check which joint index a particlar finger movement is linked to. </summary>
+            <param name="movement"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.HandPose.ToJointIndex(SGCore.Kinematics.ThumbMovement)">
+            <summary> Check which joint index a particlar thumb movement is linked to. </summary>
+            <param name="movement"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.HandPose.GetJointAngle(SGCore.Kinematics.FingerMovement,SGCore.Finger)">
+            <summary> Returns a specific Joint Angle of a finger, in radians. </summary>
+            <param name="movement"></param>
+            <param name="finger"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.HandPose.GetJointAngle(SGCore.Kinematics.FingerMovement,System.Int32)">
+            <summary> Returns a specific Joint Angle of a finger, in radians. This version is useful for iteration. </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.HandPose.GetThumbAngle(SGCore.Kinematics.ThumbMovement)">
+            <summary> Returns a specific Joint Angle of the thumb, in radians </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.HandPose.Serialize">
+            <summary> Create a string representation of this HandPose to store on disk. It can later be deserialized. </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.HandPose.Deserialize(System.String)">
+            <summary> Unpack a HandPose back into its Class representation. </summary>
+            <param name="serializedString"></param>
+            <returns></returns>
+        </member>
         <member name="M:SGCore.HandPose.ToString">
             <summary> Returns a string representation of this HandPose. </summary>
             <returns></returns>
@@ -2436,6 +2862,41 @@
         <member name="T:SGCore.HandProfile">
             <summary> Generic HandProfile that works for both ann HapticGloves. </summary>
         </member>
+        <member name="F:SGCore.HandProfile.rhFileName">
+            <summary> The name of the .txt file containing the right hand profile. </summary>
+        </member>
+        <member name="F:SGCore.HandProfile.lhFileName">
+            <summary> The name of the .txt file containing the left hand profile. </summary>
+        </member>
+        <member name="M:SGCore.HandProfile.GetProfileDir">
+            <summary> Retrieve the directory where HandProfiles are commonly stored. </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.HandProfile.GetProfileFileName(System.Boolean)">
+            <summary> Returns the filename for a profile for a particular hand. </summary>
+            <param name="isRight"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.HandProfile.GetLatestProfile(System.Boolean,SGCore.HandProfile@)">
+            <summary> Retrieve the latest profile from disk. If none exists or if the profile Directory does not exist, latestProfile will be the default. </summary>
+            <param name="rightHand"></param>
+            <param name="latestProfile"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.HandProfile.StoreProfile(SGCore.HandProfile)">
+            <summary> Store a profile on disk for other programs to use. The profile's isRight parameter determines where it's saved.. </summary>
+            <param name="profileToStore"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.HandProfile.ResetCalibration(System.Boolean,System.Boolean)">
+            <summary> Resets the profile for a particular hand, also on disk. </summary>
+            <param name="rightHand"></param>
+            <param name="onDisk"></param>
+            <returns></returns>
+        </member>
+        <member name="T:SGCore.HapticGlove">
+            <summary> A type of glove that includes finger tracking and/or force-feedback methods. </summary>
+        </member>
         <member name="F:SGCore.HapticGlove.lastFFBCmd">
             <summary> The last Force-Feedback command sent by this Sense Glove. </summary>
         </member>
@@ -2445,20 +2906,78 @@
         <member name="F:SGCore.HapticGlove.lastThumper">
             <summary>  </summary>
         </member>
+        <member name="F:SGCore.HapticGlove.minValues">
+            <summary> The minimum calibration values measured by this glove. </summary>
+        </member>
+        <member name="F:SGCore.HapticGlove.maxValues">
+            <summary> The maximum calibration values measured by this glove. </summary>
+        </member>
+        <member name="M:SGCore.HapticGlove.GetDeviceType">
+            <summary> Retrieve this HapticGlove's DeviceType. Used to distinguish between SenseGove and Nova Gloves. </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.HapticGlove.GetDeviceID">
+            <summary> Return this HapitcGlove's unique identifier. </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.HapticGlove.GetHardwareVersion">
+            <summary> Retrieve this glove's hardwareversion (DK1, etc). </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.HapticGlove.GetFirmwareVersion">
+            <summary> Retrieve this device's main firmware version. v4.12 returns 4. </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.HapticGlove.GetSubFirmwareVersion">
+            <summary> Retrieve this device's sub firmware version. v4.12 returns 12. </summary>
+        </member>
+        <member name="M:SGCore.HapticGlove.IsRight">
+            <summary> Returns true if this glove is made for a right hand. If false, it's a left hand. </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.HapticGlove.GetIMURotation(SGCore.Kinematics.Quat@)">
+            <summary> Retrieve this glove's IMU rotation, if if has any </summary>
+            <param name="IMU"></param>
+            <returns></returns>
+        </member>
         <member name="M:SGCore.HapticGlove.GetHandPose(SGCore.Kinematics.BasicHandModel,SGCore.HandProfile,SGCore.HandPose@)">
             <summary> Calculate the Hand Pose of this device, provided it has Hand Tracking available  </summary>
-            <param name="profile"></param>
+            <param name="handGeometry"></param>
+            <param name="handProfile"></param>
             <param name="handPose"></param>
             <returns></returns>
         </member>
         <member name="M:SGCore.HapticGlove.GetHandPose(SGCore.HandProfile,SGCore.HandPose@)">
-            <summary> using a default hand geometry. </summary>
+            <summary> Calculate the Hand Pose of this device, provided it has Hand Tracking available, using a default hand geometry. </summary>
             <param name="handProfile"></param>
             <param name="handPose"></param>
             <returns></returns>
         </member>
         <member name="M:SGCore.HapticGlove.StopHaptics">
             <summary> Stops all Haptic effects if any are currently playing. Useful at the end of simulations or when resetting. </summary>
+        </member>
+        <member name="M:SGCore.HapticGlove.StopVibrations">
+            <summary> Stops all vibrations, but does not affect the force-feedback </summary>
+        </member>
+        <member name="M:SGCore.HapticGlove.SendHaptics(SGCore.Haptics.SG_FFBCmd)">
+            <summary> Send Haptic Commands to this Glove. </summary>
+            <param name="ffb"></param>
+        </member>
+        <member name="M:SGCore.HapticGlove.SendHaptics(SGCore.Haptics.SG_BuzzCmd)">
+            <summary> Send Haptic Commands to this Glove. </summary>
+            <param name="ffb"></param>
+        </member>
+        <member name="M:SGCore.HapticGlove.SendHaptics(SGCore.Haptics.ThumperCmd)">
+            <summary> Send Haptic Commands to this Glove. </summary>
+            <param name="ffb"></param>
+        </member>
+        <member name="M:SGCore.HapticGlove.SendHaptics(SGCore.Haptics.SG_FFBCmd,SGCore.Haptics.SG_BuzzCmd)">
+            <summary> Send Haptic Commands to this Glove. </summary>
+            <param name="ffb"></param>
+        </member>
+        <member name="M:SGCore.HapticGlove.SendHaptics(SGCore.Haptics.SG_FFBCmd,SGCore.Haptics.SG_BuzzCmd,SGCore.Haptics.ThumperCmd)">
+            <summary> Send Haptic Commands to this Glove. </summary>
+            <param name="ffb"></param>
         </member>
         <member name="M:SGCore.HapticGlove.GetHapticGloves">
             <summary> Get all Haptic Gloves connected to this system. They may or may not be connected </summary>
@@ -2515,7 +3034,6 @@
             <param name="refPosition">Position of the tracked object, in mm, relative to your origin</param>
             <param name="refRotation">Rotation of the tracked object relative to your origin</param>
             <param name="trackingHardware">The hardware mounted on the SenseGlove.</param>
-            <param name="mountedOn">Which finger module the hardware is mounted on.</param>
             <param name="glovePos">The 3D Position of the glove, in mm, relative to your origin</param>
             <param name="gloveRot">The 3D Rotation of the glove, relative to your origin</param>
         </member>
@@ -2860,6 +3378,7 @@
         </member>
         <member name="M:SGCore.SG.SG_GlovePose.#ctor(System.Boolean,SGCore.Kinematics.Vect3D[][],SGCore.Kinematics.Quat[][],SGCore.Kinematics.Vect3D[][])">
             <summary> Creates a new instance of a SG_GlovePose </summary>
+            <param name="right"></param>
             <param name="positions"></param>
             <param name="rotations"></param>
             <param name="jointAngles"></param>
@@ -2886,6 +3405,11 @@
         <member name="M:SGCore.SG.SG_GlovePose.CalculateFingerTips(SGCore.Kinematics.Vect3D[])">
             <summary> Calculate fingertip positions, knowing the offset between thimble and fingertips. </summary>
             <param name="fingerOffsets"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.SG.SG_GlovePose.Equals(SGCore.SG.SG_GlovePose)">
+            <summary> Returns true if this GlovePOse equals another. </summary>
+            <param name="other"></param>
             <returns></returns>
         </member>
         <member name="M:SGCore.SG.SG_GlovePose.Serialize">
@@ -2999,7 +3523,8 @@
             <summary> Create a new Sense Glove device model </summary>
             <param name="ID"></param>
             <param name="hwVer"></param>
-            <param name="fwVer"></param>
+            <param name="fwVerMain"></param>
+            <param name="fwVerSub"></param>
             <param name="rightHand"></param>
             <param name="noSensors"></param>
             <param name="imuCorr"></param>
@@ -3144,6 +3669,10 @@
             <summary> The only class within the DLL to allow access to the SGComm C++ library. </summary>
             <remarks> Should therefore only contain static methods. </remarks>
         </member>
+        <member name="M:SGCore.SGConnect.I_GetSGConnectionInfo(System.Boolean,System.Text.StringBuilder)">
+            <summary> Retrieve the devices detected by the SenseComm. </summary>
+            <returns></returns>
+        </member>
         <member name="M:SGCore.SGConnect.I_ActiveDevices">
             <summary> Retrieve the devices detected by the SenseComm. </summary>
             <returns></returns>
@@ -3174,12 +3703,25 @@
             <summary> Check if the SenseCom scanning is running. </summary>
             <returns></returns>
         </member>
+        <member name="M:SGCore.SGConnect.I_GetConnectionStates(System.Text.StringBuilder)">
+            <summary> Check if the SenseCom scanning is running. </summary>
+            <returns></returns>
+        </member>
         <member name="M:SGCore.SGConnect.I_Init">
             <summary> Internal Init </summary>
             <returns></returns>
         </member>
         <member name="M:SGCore.SGConnect.I_Dispose">
             <summary> Internal Dispose </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.SGConnect.I_SetDebugLevel(System.Int32)">
+            <summary> Internal SetDebugLvl </summary>
+            <param name="level"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.SGConnect.I_GetDebugLevel">
+            <summary> Internal GetDebugLvl </summary>
             <returns></returns>
         </member>
         <member name="M:SGCore.SGConnect.InitCommunications">
@@ -3193,6 +3735,28 @@
         <member name="M:SGCore.SGConnect.GetSGConnectVersion(System.String@)">
             <summary> Retrieve the library version of SGConnect that is paired with this DLL. </summary>
             <param name="version"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.SGConnect.SetDebugLevel(System.Int32)">
+            <summary> Set the internal debug level of the SGConnect library. 0 .. 6.  </summary>
+            <param name="newLevel"></param>
+        </member>
+        <member name="M:SGCore.SGConnect.GetDebugLevel">
+            <summary> Get the debug level of the current Library </summary>
+        </member>
+        <member name="M:SGCore.SGConnect.GetConnectionStates(System.String@)">
+            <summary> Retrieve the connection states in a list </summary>
+            <param name="connectionsList"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.SGConnect.GetSGConnectionInfo(System.Boolean,System.String[]@)">
+            <summary> Retrieve the connection states in a list </summary>
+            <param name="withBT"></param>
+            <param name="output"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.SGConnect.Validate_DLLs">
+            <summary> Returns true if SenseCom and it's relevant C++ Redistibutables have been succesfully connected. </summary>
             <returns></returns>
         </member>
         <member name="T:SGCore.Library">
@@ -3351,7 +3915,19 @@
         <member name="T:SGCore.Tracking">
             <summary> Utility class containing tracking offset information </summary>
         </member>
-        <!-- Badly formed XML comment ignored for member "M:SGCore.Tracking.CalulateLocation(SGCore.Kinematics.Vect3D,SGCore.Kinematics.Quat,SGCore.Kinematics.Vect3D,SGCore.Kinematics.Quat,SGCore.Kinematics.Vect3D@,SGCore.Kinematics.Quat@)" -->
+        <member name="F:SGCore.Tracking.zeroOffset_trackerPos">
+            <summary> If true, we set glove-tracker position offsets to zero - used for debugging </summary>
+        </member>
+        <member name="F:SGCore.Tracking.zeroOffset_trackerRot">
+            <summary> If true, we set glove-tracker rotation offsets to zero - used for debugging </summary>
+        </member>
+        <member name="F:SGCore.Tracking.zeroOffset_handPos">
+            <summary> If true, we set glove-hand position offsets to zero - used for debugging </summary>
+        </member>
+        <member name="F:SGCore.Tracking.zeroOffset_handRot">
+            <summary> If true, we set glove-hand position offsets to zero - used for debugging </summary>
+        </member>
+        <!-- Badly formed XML comment ignored for member "M:SGCore.Tracking.CalculateLocation(SGCore.Kinematics.Vect3D,SGCore.Kinematics.Quat,SGCore.Kinematics.Vect3D,SGCore.Kinematics.Quat,SGCore.Kinematics.Vect3D@,SGCore.Kinematics.Quat@)" -->
         <member name="F:SGCore.Tracking.sg_fingerToGloveOrigin_Pos">
             <summary> Positional offset from each finger to the glove origin </summary>
         </member>
@@ -3391,16 +3967,31 @@
         <member name="F:SGCore.Tracking.sg_ocTouchToAttach_Rot">
             <summary> Oculus Touch origin to Finger rotational offset </summary>
         </member>
-        <member name="M:SGCore.Tracking.GetNovaOffset_Glove_Wrist(System.Boolean,SGCore.Kinematics.Vect3D@,SGCore.Kinematics.Quat@)">
-            <summary> Returns the Offsets that will bring us from the Nova origin to the wrist position </summary>
+        <member name="M:SGCore.Tracking.GetNovaOffset_Glove_Wrist(System.Boolean,System.String,SGCore.Kinematics.Vect3D@,SGCore.Kinematics.Quat@)">
+            <summary> Returns the Offsets that will bring us from the Nova origin to the wrist position. </summary>
             <param name="rightHand"></param>
+            <param name="hardwareVersion"></param>
             <param name="posOffset"></param>
             <param name="rotOffset"></param>
         </member>
-        <member name="M:SGCore.Tracking.GetNovaOffset_Tracker_Glove(SGCore.PosTrackingHardware,System.Boolean,SGCore.Kinematics.Vect3D@,SGCore.Kinematics.Quat@)">
+        <member name="M:SGCore.Tracking.GetNovaOffset_Glove_Wrist(SGCore.Nova.Nova_GloveInfo,SGCore.Kinematics.Vect3D@,SGCore.Kinematics.Quat@)">
+            <summary> Returns the Offsets that will bring us from the Nova origin to the wrist position. </summary>
+            <param name="gloveInfo"></param>
+            <param name="posOffset"></param>
+            <param name="rotOffset"></param>
+        </member>
+        <member name="M:SGCore.Tracking.GetNovaOffset_Tracker_Glove(SGCore.PosTrackingHardware,System.Boolean,System.String,SGCore.Kinematics.Vect3D@,SGCore.Kinematics.Quat@)">
             <summary> Retrieves Offsets for a particular device. </summary>
             <param name="hardware"></param>
             <param name="rightHand"></param>
+            <param name="hardwareVersion"></param>
+            <param name="posOffset"></param>
+            <param name="rotOffset"></param>
+        </member>
+        <member name="M:SGCore.Tracking.GetNovaOffset_Tracker_Glove(SGCore.PosTrackingHardware,SGCore.Nova.Nova_GloveInfo,SGCore.Kinematics.Vect3D@,SGCore.Kinematics.Quat@)">
+            <summary>  Retrieves Offsets for a particular device. </summary>
+            <param name="hardware"></param>
+            <param name="gloveInfo"></param>
             <param name="posOffset"></param>
             <param name="rotOffset"></param>
         </member>

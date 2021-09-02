@@ -87,6 +87,8 @@ namespace SG
         /// <summary> Break the object: Hide the whole object, optionally show the broken one and play the particle effect(s) </summary>
         public virtual void Break()
         {
+            if (this.IsBroken()) { return; }
+
             SG_Interactable senseScript = this.wholeObject.GetComponent<SG_Interactable>();
             if (senseScript) { senseScript.EndInteraction(); }
 
@@ -94,6 +96,7 @@ namespace SG
             {
                 this.wholeDeform.ResetMesh();
             }
+            wholeMaterial.SetBroken(true);
             wholeObject.EndInteraction(); //end any interaction
             this.wholeObject.gameObject.SetActive(false);
 
@@ -201,7 +204,6 @@ namespace SG
 
         #endregion BreakLogic;
 
-
         //--------------------------------------------------------------------------------------------
         // Monobehaviour 
 
@@ -230,6 +232,7 @@ namespace SG
         {
             this.CheckUnbreak();
         }
+
 
         #endregion Monobehaviour
 

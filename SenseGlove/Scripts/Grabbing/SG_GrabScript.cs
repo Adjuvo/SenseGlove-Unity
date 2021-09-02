@@ -69,6 +69,8 @@ namespace SG
         /// <summary> The amount of time that has elpased since the Manual Release function was called. </summary>
         protected float elapsedTime = 0;
 
+        protected bool grabEnabled = true;
+
         #endregion Properties
 
 
@@ -127,6 +129,21 @@ namespace SG
 
         //-----------------------------------------------------------------------------------------------------------------------------------------
         // Grabscript Methods
+
+        /// <summary> Enables / Disables object grasping. Releases any objects it is holding </summary>
+        public bool GrabEnabled
+        {
+            get
+            {
+                return this.grabEnabled;
+            }
+            set
+            {
+                if (!value) { this.ManualRelease(0); }
+                this.grabEnabled = value;
+            }
+        }
+
 
         #region GrabMethods
 
@@ -348,7 +365,7 @@ namespace SG
                     if (this.elapsedTime < this.pauseTime) { this.elapsedTime += Time.deltaTime; }
                     else { this.paused = false; }
                 }
-                else
+                else if (grabEnabled)
                 {
                     this.UpdateGrabScript();
                 }
