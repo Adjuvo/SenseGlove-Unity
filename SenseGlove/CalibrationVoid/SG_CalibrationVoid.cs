@@ -850,7 +850,12 @@ namespace SG
 
         private void OnEnable()
         {
-            if (resetSphere != null)
+			if (user != null)
+			{
+				if (user.leftHand != null && user.leftHand.feedbackScript != null) { user.leftHand.feedbackScript.gameObject.SetActive(false); }
+				if (user.rightHand != null && user.rightHand.feedbackScript != null) { user.rightHand.feedbackScript.gameObject.SetActive(false); }
+			}
+			if (resetSphere != null)
             {
                 resetSphere.Activated += ResetSphere_Activated;
             }

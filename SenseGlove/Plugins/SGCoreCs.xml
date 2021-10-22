@@ -2453,6 +2453,11 @@
         <member name="P:SGCore.Nova.Nova_GloveInfo.ImuCorrection">
             <summary> The IMU correction of this Nova. </summary>
         </member>
+        <member name="M:SGCore.Nova.Nova_GloveInfo.Equals(SGCore.Nova.Nova_GloveInfo)">
+            <summary> Returns true if one Nova has the same properties as another. </summary>
+            <param name="other"></param>
+            <returns></returns>
+        </member>
         <member name="F:SGCore.Nova.Parsing.Nova_CVar.AllC">
             <summary> Utility value used in iteration / checking lengths </summary>
         </member>
@@ -2697,6 +2702,13 @@
             <param name="index"></param>
             <returns></returns>
         </member>
+        <member name="M:SGCore.DeviceList.GetHapticString(System.Int32,System.String,System.String@)">
+            <summary> Retrieve the string that SenseCom wants to send to the device. </summary>
+            <param name="ipcIndex"></param>
+            <param name="ipcAddress"></param>
+            <param name="hapticStr"></param>
+            <returns></returns>
+        </member>
         <member name="T:SGCore.DeviceModel">
             <summary> Base class containing the minimum amount of data for device models. </summary>
         </member>
@@ -2897,13 +2909,13 @@
         <member name="T:SGCore.HapticGlove">
             <summary> A type of glove that includes finger tracking and/or force-feedback methods. </summary>
         </member>
-        <member name="F:SGCore.HapticGlove.lastFFBCmd">
+        <member name="P:SGCore.HapticGlove.LastFFBCmd">
             <summary> The last Force-Feedback command sent by this Sense Glove. </summary>
         </member>
-        <member name="F:SGCore.HapticGlove.lastBuzzCmd">
+        <member name="P:SGCore.HapticGlove.LastBuzzCmd">
             <summary> The last Force-Feedback command sent by this Sense Glove. </summary>
         </member>
-        <member name="F:SGCore.HapticGlove.lastThumper">
+        <member name="P:SGCore.HapticGlove.LastThumperCmd">
             <summary>  </summary>
         </member>
         <member name="F:SGCore.HapticGlove.minValues">
@@ -2953,6 +2965,14 @@
             <param name="handPose"></param>
             <returns></returns>
         </member>
+        <member name="M:SGCore.HapticGlove.GetLastSentCmds(SGCore.Haptics.SG_FFBCmd@,SGCore.Haptics.SG_BuzzCmd@,SGCore.Haptics.ThumperCmd@,System.Boolean)">
+            <summary> Retrieve the last commands sent to this glove.  </summary>
+            <param name="ffbLvls"></param>
+            <param name="buzzLvls"></param>
+            <param name="thumperLvls"></param>
+            <param name="fromIPC">If true, we decode from IPC instead of what was sent to this glove.</param>
+            <returns></returns>
+        </member>
         <member name="M:SGCore.HapticGlove.StopHaptics">
             <summary> Stops all Haptic effects if any are currently playing. Useful at the end of simulations or when resetting. </summary>
         </member>
@@ -2976,7 +2996,7 @@
             <param name="ffb"></param>
         </member>
         <member name="M:SGCore.HapticGlove.SendHaptics(SGCore.Haptics.SG_FFBCmd,SGCore.Haptics.SG_BuzzCmd,SGCore.Haptics.ThumperCmd)">
-            <summary> Send Haptic Commands to this Glove. </summary>
+            <summary> Send Haptic Commands to this Glove. Updates Last Commands. </summary>
             <param name="ffb"></param>
         </member>
         <member name="M:SGCore.HapticGlove.GetHapticGloves">
@@ -3695,6 +3715,12 @@
             <param name="commands"></param>
             <returns></returns>
         </member>
+        <member name="M:SGCore.SGConnect.I_GetHapticString(System.String,System.Text.StringBuilder)">
+            <summary> Retrives a Haptic String </summary>
+            <param name="deviceAddress"></param>
+            <param name="output"></param>
+            <returns></returns>
+        </member>
         <member name="M:SGCore.SGConnect.I_ScanningActive">
             <summary> Scheck if the SenseCom scanning is running. </summary>
             <returns></returns>
@@ -3757,6 +3783,12 @@
         </member>
         <member name="M:SGCore.SGConnect.Validate_DLLs">
             <summary> Returns true if SenseCom and it's relevant C++ Redistibutables have been succesfully connected. </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.SGConnect.GetHapticString(System.String,System.String@)">
+            <summary> Wrapper for the extenal method. </summary>
+            <param name="deviceAddress"></param>
+            <param name="output"></param>
             <returns></returns>
         </member>
         <member name="T:SGCore.Library">

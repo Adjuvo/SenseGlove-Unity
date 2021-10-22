@@ -19,19 +19,27 @@ namespace SG
                 get; private set;
             }
 
+            /// <summary> All colliders of this interactable that has been touched. </summary>
+            protected List<Collider> colliders = new List<Collider>();
+
             /// <summary> How many colliders of Interactable we're currently touching. </summary>
             public int CollidersInside
             {
-                get; private set;
+                get { return colliders.Count; }
             }
 
             /// <summary> Create a new instance of the DetectionArgs </summary>
             /// <param name="iScript"></param>
             /// <param name="collidersNowInside"></param>
-            public DetectionArgs(SG_Interactable iScript, int collidersNowInside = 1)
+            public DetectionArgs(SG_Interactable iScript)
             {
                 Interactable = iScript;
-                CollidersInside = collidersNowInside;
+            }
+
+            public DetectionArgs(SG_Interactable iScript, Collider firstCollider)
+            {
+                Interactable = iScript;
+                this.AddCollider(firstCollider);
             }
 
 
@@ -69,15 +77,17 @@ namespace SG
 
 
             /// <summary> Notify we're touching (another) collider of this same Interactable. </summary>
-            public void AddCollider()
+            public void AddCollider(Collider col)
             {
-                CollidersInside = CollidersInside + 1;
+                if (this.colliders.Contains(col))
+                    return;
+                colliders.Add(col);
             }
 
             /// <summary> Notify we're no longer touching a collider of this same Interactable.  </summary>
-            public void RemoveCollider()
+            public void RemoveCollider(Collider col)
             {
-                CollidersInside = CollidersInside - 1;
+                this.colliders.Remove(col);
             }
 
         }
@@ -88,6 +98,7 @@ namespace SG
         /// <summary> The list of interactables that are currently being touched. </summary>
         protected List<DetectionArgs> interactablesTouched = new List<DetectionArgs>();
 
+        protected int hoveredCount = 0;
 
         //----------------------------------------------------------------------------------------------
         // Accessors
@@ -98,7 +109,7 @@ namespace SG
             get
             {
                 SG_Interactable[] res = new SG_Interactable[interactablesTouched.Count];
-                for (int i=0; i< interactablesTouched.Count; i++)
+                for (int i = 0; i < interactablesTouched.Count; i++)
                 {
                     res[i] = interactablesTouched[i].Interactable;
                 }
@@ -189,7 +200,7 @@ namespace SG
             }
             return -1;
         }
-        
+
         /// <summary> Remove an Interactable at this position in our list. Returns ture if succesful. </summary>
         /// <param name="index"></param>
         /// <returns></returns>
@@ -207,12 +218,12 @@ namespace SG
         /// <summary> Check for missing objects (that no longer exist, etc. Clear them automatically.. </summary>
         protected void CheckMissingObjects()
         {
-            for (int i=0; i<this.interactablesTouched.Count; ) //no i++
+            for (int i = 0; i < this.interactablesTouched.Count;) //no i++
             {
-                if (interactablesTouched[i].IsMissing) 
+                if (interactablesTouched[i].IsMissing)
                 {
                     bool removed = RemoveFromList(i);
-                    if ( !removed ) { i++; }  //if we were unable to remove the object, still increment, otherwise, we're stuck in a loop..
+                    if (!removed) { i++; }  //if we were unable to remove the object, still increment, otherwise, we're stuck in a loop..
                 }
                 else { i++; }
             }
@@ -220,31 +231,33 @@ namespace SG
 
         /// <summary> Add (another) collider of a particular Interactable to our list. </summary>
         /// <param name="iScript"></param>
-        public void AddCollider(SG_Interactable iScript)
+        public void AddCollider(SG_Interactable iScript, Collider col)
         {
             int index = ListIndex(iScript);
             if (index > -1) //this is an object in the list
             {
-                this.interactablesTouched[index].AddCollider();
+                this.interactablesTouched[index].AddCollider(col);
             }
             else
             {
-                this.interactablesTouched.Add(new DetectionArgs(iScript));
+                this.interactablesTouched.Add(new DetectionArgs(iScript, col));
             }
+            hoveredCount = this.interactablesTouched.Count;
         }
 
 
         /// <summary> Remove a collider of a particular Interactable to our list. Remove the Interactable if we're no longer touching it. </summary>
         /// <param name="iScript"></param>
-        public void RemoveCollider(SG_Interactable iScript)
+        public void RemoveCollider(SG_Interactable iScript, Collider col)
         {
             int index = ListIndex(iScript);
             if (index > -1) //this is an object in the list
             {
-                interactablesTouched[index].RemoveCollider();
+                interactablesTouched[index].RemoveCollider(col);
                 if (!interactablesTouched[index].StillHovering)
                 {
                     this.interactablesTouched.RemoveAt(index);
+                    hoveredCount = this.interactablesTouched.Count;
                 }
             }
         }
@@ -264,6 +277,7 @@ namespace SG
         {
             base.Update();
             CheckMissingObjects();
+            hoveredCount = this.interactablesTouched.Count;
         }
 
 
@@ -274,7 +288,7 @@ namespace SG
                 SG_Interactable iScript;
                 if (GetInteractableScript(other, out iScript)) //this is an interactable object
                 {
-                    AddCollider(iScript);
+                    AddCollider(iScript, other);
                 }
             }
         }
@@ -284,7 +298,7 @@ namespace SG
             SG_Interactable iScript;
             if (GetInteractableScript(other, out iScript)) //this is an interactable object
             {
-                RemoveCollider(iScript);
+                RemoveCollider(iScript, other);
             }
         }
 

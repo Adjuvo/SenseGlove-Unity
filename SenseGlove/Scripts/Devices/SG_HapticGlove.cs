@@ -1,4 +1,6 @@
-﻿using SGCore.Calibration;
+﻿//#define UNFINISHED_FEATURES
+
+using SGCore.Calibration;
 using SGCore.Haptics;
 using System.Collections;
 using System.Collections.Generic;
@@ -20,7 +22,7 @@ namespace SG
 
     /// <summary> Interface for a left- or right handed glove built by SenseGlove. Usually either a SenseGlove DK1 or a Nova Glove. </summary>
     public class SG_HapticGlove : MonoBehaviour
-	{
+    {
         /// <summary> How much of the CV tracking is being used. </summary>
         public enum CV_Tracking_Depth
         {
@@ -79,17 +81,25 @@ namespace SG
 
 
         /// <summary> If true, we can retrieve a new HandPose this frame. </summary>
-        private bool newPoseNeeded = true;
+        protected bool newPoseNeeded = true;
         /// <summary> HandPose as calculated in the first GetHandPose function of this frame. Used to prevent redundant calculations. </summary>
 		protected SG_HandPose lastHandPose = null;
         /// <summary> The last handKinematcs used for the GetHandPose function. Used so you can request HandPoses without needing access to HandKinematics. </summary>
 		protected SGCore.Kinematics.BasicHandModel lastHandModel = null;
 
+
+        /// <summary> If true, we haven't yet retrieved a new CV data point this frame </summary>
+        protected bool newCVNeeded = true;
+
+#if UNFINISHED_FEATURES
+        /// <summary> The last calculated CV pose. Kept in memory so we only calculate it one per frame (since time since last sample doesn't change). </summary>
+        protected SGCore.CV.HandDataPoint lastCVData = null;
+
         // Internal cv stuff
 
         /// <summary> How much of the CV we're using for Tracking. </summary>
         protected CV_Tracking_Depth cvLevel = CV_Tracking_Depth.WristOnly;
-
+#endif
 
         // Internal haptics Stuff.
 
@@ -101,11 +111,11 @@ namespace SG
         protected static readonly int maxQueue = 25;
         protected List<SGCore.Haptics.SG_FFBCmd> ffbQueue = new List<SGCore.Haptics.SG_FFBCmd>(maxQueue);
         protected List<SGCore.Haptics.SG_TimedBuzzCmd> buzzQueue = new List<SGCore.Haptics.SG_TimedBuzzCmd>(maxQueue);
-        protected SGCore.Haptics.SG_FFBCmd lastFFB = SGCore.Haptics.SG_FFBCmd.Off;
-        protected SGCore.Haptics.SG_BuzzCmd lastBuzz = SGCore.Haptics.SG_BuzzCmd.Off;
+        public SGCore.Haptics.SG_FFBCmd lastFFB = SGCore.Haptics.SG_FFBCmd.Off;
+        public SGCore.Haptics.SG_BuzzCmd lastBuzz = SGCore.Haptics.SG_BuzzCmd.Off;
 
         protected List<TimedThumpCmd> thumperQueue = new List<TimedThumpCmd>();
-        protected SGCore.Haptics.ThumperCmd lastThumpCmd = ThumperCmd.Off;
+        public SGCore.Haptics.ThumperCmd lastThumpCmd = ThumperCmd.Off;
 
         /// <summary> Used to check if your Haptic Glove needs calibration. </summary>
         protected SGCore.Calibration.HG_CalCheck calibrationCheck = new HG_CalCheck(null);
@@ -123,7 +133,7 @@ namespace SG
 
 
         /// <summary> Returns true if this HapticGlove is currently connected. </summary>
-        public bool IsConnected
+        public virtual bool IsConnected
         {
             get
             {
@@ -133,7 +143,7 @@ namespace SG
 
 
         /// <summary> Returns true if this HapticGlove is currently connected to a right hand. </summary>
-        public bool IsRight
+        public virtual bool IsRight
         {
             get
             {
@@ -149,7 +159,7 @@ namespace SG
         /// <summary> The Internal HapticGlove that this glove is linked to. Is null when not connected. </summary>
         public SGCore.HapticGlove InternalGlove
         {
-            get  { return this.lastGlove; }
+            get { return this.lastGlove; }
         }
 
 
@@ -245,7 +255,7 @@ namespace SG
         /// <param name="wristPos"></param>
         /// <param name="wristRot"></param>
         /// <returns></returns>
-        public bool GetGloveLocation(Transform trackedObject, SGCore.PosTrackingHardware hardware, out Vector3 glovePos, out Quaternion gloveRot)
+        public virtual bool GetGloveLocation(Transform trackedObject, SGCore.PosTrackingHardware hardware, out Vector3 glovePos, out Quaternion gloveRot)
         {
             if (this.lastGlove != null)
             {
@@ -271,8 +281,16 @@ namespace SG
         /// <param name="wristPos"></param>
         /// <param name="wristRot"></param>
         /// <returns></returns>
-        public bool GetWristLocation(Transform trackedObject, SGCore.PosTrackingHardware hardware, out Vector3 wristPos, out Quaternion wristRot)
+        public virtual bool GetWristLocation(Transform trackedObject, SGCore.PosTrackingHardware hardware, out Vector3 wristPos, out Quaternion wristRot)
         {
+#if UNFINISHED_FEATURES
+            if (CVDataAvailable())
+            {
+                wristPos = SG.Util.SG_Conversions.ToUnityPosition(this.lastCVData.wristWorldPosition);
+                wristRot = SG.Util.SG_Conversions.ToUnityQuaternion(this.lastCVData.wristWorldRotation);
+                return true;
+            }
+#endif
             if (this.lastGlove != null)
             {
                 SGCore.Kinematics.Vect3D trackedPos = SG.Util.SG_Conversions.ToPosition(trackedObject.position, true);
@@ -290,13 +308,57 @@ namespace SG
             return false;
         }
 
+#if UNFINISHED_FEATURES
+
+        /// <summary> Attemo to retieve Computer Vision data for this frame; which will contain a smoothed set of HandAngles, wirstPosition and rotation. </summary>
+        /// <param name="cvData"></param>
+        /// <returns></returns>
+        public bool GetCVData(out SGCore.CV.HandDataPoint cvData, bool forceUpdate = false)
+        {
+            cvData = null;
+            if (CVDataAvailable(forceUpdate))
+            {
+                cvData = this.lastCVData;
+            }
+            return cvData != null;
+        }
+
+        /// <summary> Check if CV data is available this frame.  </summary>
+        /// <param name="forceUpdate"></param>
+        /// <returns></returns>
+        public bool CVDataAvailable(bool forceUpdate = false)
+        {
+            UpdateCVData(false);
+            return this.lastCVData != null;
+        }
+
+        /// <summary> Calculate CV hand pose and position if we haven't already this frame. </summary>
+        /// <param name="forceUpdate"></param>
+        /// <returns></returns>
+        protected void UpdateCVData(bool forceUpdate = false)
+        {
+            if (forceUpdate || newCVNeeded) //we need a new pose
+            {
+                newCVNeeded = false; //we'll only check once per frame.
+                SGCore.CV.HandDataPoint cvData;
+                if (SGCore.CV.CV_HandLayer.TryGetPose(this.IsRight, SGCore.DeviceType.NOVA, "", out cvData)) //NOVA FOR NOW BUT THIS MUST BE THE ACTUAL DEVICE!
+                {
+                    lastCVData = cvData;
+                }
+                else
+                {
+                    lastCVData = null; //so that the GetData knows it's not (or no longer) available.
+                }
+            }
+        }
+#endif
 
         /// <summary> Returns a Hand Pose containing everything you'd want to animate a hand model in Unity. Using the global HandProfile. </summary>
         /// <param name="handModel"></param>
         /// <param name="pose"></param>
         /// <param name="forceUpdate"></param>
         /// <returns></returns>
-		public bool GetHandPose(SGCore.Kinematics.BasicHandModel handModel, out SG_HandPose pose, bool forceUpdate = false)
+        public virtual bool GetHandPose(SGCore.Kinematics.BasicHandModel handModel, out SG_HandPose pose, bool forceUpdate = false)
         {
             return GetHandPose(handModel, SG_HandProfiles.GetProfile(this.IsRight), out pose, forceUpdate);
         }
@@ -305,6 +367,16 @@ namespace SG
         /// <returns></returns>
         public bool GetHandPose(SGCore.Kinematics.BasicHandModel handDimensions, SGCore.HandProfile userProfile, out SG_HandPose pose, bool forceUpdate = false)
         {
+#if UNFINISHED_FEATURES
+            if (this.CVDataAvailable(forceUpdate)) //we are able to get CV data. Yay
+            {
+                pose = new SG_HandPose( SGCore.HandPose.FromHandAngles(lastCVData.handAngles, lastCVData.rightHand, handDimensions) );
+                newPoseNeeded = false; //we don't need a new pose this frame, thank you.
+                lastHandModel = handDimensions;
+                lastHandPose = pose;
+                return true;
+            }
+#endif
             if (this.lastGlove != null)
             {
                 if (forceUpdate || newPoseNeeded) //we need a new pose
@@ -349,7 +421,7 @@ namespace SG
         /// <param name="flexions"></param>
         /// <param name="forceUpdate"></param>
         /// <returns></returns>
-		public bool GetNormalizedFlexion(out float[] flexions, bool forceUpdate = false)
+		public virtual bool GetNormalizedFlexion(out float[] flexions, bool forceUpdate = false)
         {
             if (lastHandModel == null) { lastHandModel = SGCore.Kinematics.BasicHandModel.Default(this.IsRight); }
             //if (lastProfile == null) { lastProfile = SGCore.HandProfile.Default(this.IsRight); }
@@ -363,7 +435,7 @@ namespace SG
         /// <param name="flexions"></param>
         /// <param name="forceUpdate"></param>
         /// <returns></returns>
-        public bool GetNormalizedFlexion(SGCore.Kinematics.BasicHandModel handModel, SGCore.HandProfile userProfile, out float[] flexions, bool forceUpdate = false)
+        public virtual bool GetNormalizedFlexion(SGCore.Kinematics.BasicHandModel handModel, SGCore.HandProfile userProfile, out float[] flexions, bool forceUpdate = false)
         {
             SG_HandPose pose;
             if (GetHandPose(handModel, userProfile, out pose, forceUpdate))
@@ -379,7 +451,7 @@ namespace SG
         /// <summary> Retrieve the IMU rotation of this glove. </summary>
         /// <param name="imuRotation"></param>
         /// <returns></returns>
-		public bool GetIMURotation(out Quaternion imuRotation)
+		public virtual bool GetIMURotation(out Quaternion imuRotation)
         {
             if (this.lastGlove != null)
             {
@@ -401,7 +473,7 @@ namespace SG
 
         /// <summary> Send a new Force-Feedback command for this frame. </summary>
         /// <param name="ffb"></param>
-        public void SendCmd(SGCore.Haptics.SG_FFBCmd ffb)
+        public virtual void SendCmd(SGCore.Haptics.SG_FFBCmd ffb)
         {
             if (this.isActiveAndEnabled)
             {
@@ -413,9 +485,9 @@ namespace SG
 
         /// <summary> Send a new timed vibration command for this frame. </summary>
         /// <param name="buzz"></param>
-        public void SendCmd(SGCore.Haptics.SG_TimedBuzzCmd buzz)
+        public virtual void SendCmd(SGCore.Haptics.SG_TimedBuzzCmd buzz)
         {
-            
+
             if (this.isActiveAndEnabled)
             {
                 this.buzzQueue.Add((SGCore.Haptics.SG_TimedBuzzCmd)buzz.Copy());
@@ -427,7 +499,7 @@ namespace SG
 
         /// <summary> Send a so-called Timed Thumper Command, like a finger vibrotactile command, but for the Nova Glove's wrist actuator. </summary>
         /// <param name="thumper"></param>
-        public void SendCmd(TimedThumpCmd thumper)
+        public virtual void SendCmd(TimedThumpCmd thumper)
         {
             if (this.isActiveAndEnabled)
             {
@@ -440,7 +512,7 @@ namespace SG
 
         /// <summary> Send a vibration command based on an AnimationCurve. With optional override parameters. </summary>
         /// <param name="buzz"></param>
-        public void SendCmd(SG_Waveform buzz)
+        public virtual void SendCmd(SG_Waveform buzz)
         {
             if (buzz != null)
             {
@@ -451,7 +523,7 @@ namespace SG
         /// <summary> Send a vibration command based on an AnimationCurve. With optional override parameters. </summary>
         /// <param name="buzz"></param>
         /// <param name="overrideFingers"></param>
-        public void SendCmd(SG_Waveform buzz, bool[] overrideFingers)
+        public virtual void SendCmd(SG_Waveform buzz, bool[] overrideFingers)
         {
             if (buzz != null)
             {
@@ -463,7 +535,7 @@ namespace SG
         /// <param name="buzz"></param>
         /// <param name="overrideFingers"></param>
         /// <param name="magnitude"></param>
-        public void SendCmd(SG_Waveform buzz, bool[] overrideFingers, int magnitude)
+        public virtual void SendCmd(SG_Waveform buzz, bool[] overrideFingers, int magnitude)
         {
             if (buzz != null)
             {
@@ -476,7 +548,7 @@ namespace SG
         /// <param name="overrideFingers"></param>
         /// <param name="magnitude"></param>
         /// <param name="duration_s"></param>
-        public void SendCmd(SG_Waveform buzz, bool[] overrideFingers, int magnitude, float duration_s)
+        public virtual void SendCmd(SG_Waveform buzz, bool[] overrideFingers, int magnitude, float duration_s)
         {
             if (this.isActiveAndEnabled && this.lastGlove != null && buzz != null)
             {
@@ -502,14 +574,14 @@ namespace SG
 
 
         /// <summary> Ceases all vibrotactile feedback only </summary>
-        public void StopAllVibrations()
+        public virtual void StopAllVibrations()
         {
             this.buzzQueue.Clear();
             if (this.lastGlove != null) { lastGlove.SendHaptics(SGCore.Haptics.SG_BuzzCmd.Off); }
         }
 
         /// <summary> Ceases all haptics on this glove. </summary>
-        public void StopHaptics()
+        public virtual void StopHaptics()
         {
             this.ffbQueue.Clear();
             this.buzzQueue.Clear();
@@ -518,7 +590,7 @@ namespace SG
 
 
         /// <summary> Go through any active haptic effects this frame, update any timers and flush everything as a single set of commands. </summary>
-        protected void UpdateHaptics()
+        protected virtual void UpdateHaptics()
         {
             if (this.ffbQueue.Count > 0 || this.buzzQueue.Count > 0 || thumperQueue.Count > 0)
             {
@@ -583,6 +655,9 @@ namespace SG
                 finalBuzzCmd.Levels = fBuzzLevels;
 
                 //ToDo: Only send if there is a change?
+                lastBuzz = finalBuzzCmd;
+                lastFFB = finalBrakeCmd;
+                lastThumpCmd = new ThumperCmd(finalThump);
 
                 if (this.lastGlove != null)
                 {
@@ -596,7 +671,7 @@ namespace SG
         // Calibration
 
         /// <summary> Checks the calibration stage of this glove when it connects. </summary>
-        protected void CheckForCalibration()
+        protected virtual void CheckForCalibration()
         {
             if (this.checkCalibrationOnStart && SGCore.Calibration.HG_CalCheck.NeedsCheck(this.DeviceType))
             {
@@ -625,7 +700,7 @@ namespace SG
 
         /// <summary> If the user needs to move their fingers, determine if they need calibration or not. </summary>
         /// <param name="deltaTime"></param>
-        protected void CheckFingerMovement(float deltaTime)
+        protected virtual void CheckFingerMovement(float deltaTime)
         {
             if (this.lastGlove != null && this.CalibrationStage == CalibrationStage.MoveFingers)
             {
@@ -646,7 +721,7 @@ namespace SG
         /// <summary> Lock this glove to a SG_ClibrationSequence so that no others can interfere. Also lets us know this glove is currently being calibrated. </summary>
         /// <param name="sequence"></param>
         /// <returns></returns>
-        public bool LockCalibration(SG_CalibrationSequence sequence)
+        public virtual bool LockCalibration(SG_CalibrationSequence sequence)
         {
             if (sequence != null && !CalibrationLocked)
             {
@@ -662,7 +737,7 @@ namespace SG
         /// <summary> Unlocks the glove from this calibration sequence, and let others know it's finished. </summary>
         /// <param name="sequence"></param>
         /// <returns></returns>
-        public bool UnlockCalibraion(SG_CalibrationSequence sequence)
+        public virtual bool UnlockCalibraion(SG_CalibrationSequence sequence)
         {
             if (this.currentSequence == null || this.currentSequence == sequence)
             {
@@ -679,7 +754,7 @@ namespace SG
         /// <summary> Takes a sensor range taked from a Calibration sequence and calibrates the hand accordingly.. </summary>
         /// <param name="range"></param>
         /// <returns></returns>
-        public bool CalibrateHand(SGCore.Calibration.SensorRange range)
+        public virtual bool CalibrateHand(SGCore.Calibration.SensorRange range)
         {
             SGCore.HandProfile newProfile;
             SGCore.Calibration.HG_CalibrationSequence.CompileProfile(range, this.DeviceType, this.IsRight, out newProfile);
@@ -706,7 +781,7 @@ namespace SG
 
 
         // Use this for initialization
-        void Start()
+        protected virtual void Start()
         {
             if (this.DeviceConnected == null) { this.DeviceConnected = new UnityEvent(); }
             if (this.DeviceDisconnected == null) { this.DeviceDisconnected = new UnityEvent(); }
@@ -716,20 +791,21 @@ namespace SG
             checkTime = hwTimer; //ensures we check it next frame!
         }
 
-        void Update()
+        protected virtual void Update()
         {
             checkTime += Time.deltaTime;
             if (checkTime >= hwTimer) { UpdateConnection(); checkTime = 0; }
             CheckFingerMovement(Time.deltaTime);
         }
 
-        void LateUpdate()
+        protected virtual void LateUpdate()
         {
             newPoseNeeded = true; //next frame we're allowed to update the pose again.
+            newCVNeeded = true; //new frame we're allowed ot get CV data again
             UpdateHaptics();
         }
 
-        void OnApplicationQuit()
+        protected virtual void OnApplicationQuit()
         {
             StopHaptics();
         }

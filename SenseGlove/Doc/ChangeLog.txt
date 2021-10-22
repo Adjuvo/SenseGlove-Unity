@@ -1,7 +1,19 @@
 # Changelog
 All notable changes to the SenseGlove Prefabs will be documented in this file.
 
-You are currently using version 2.0
+You are currently using version 2.1
+
+## [v2.1] - 2021-10-22
+SenseCom Updates, Minor bug fixes.
+
+### Added
+- SenseCom "Help" button in the top left, which is used to debug your system connections. When your gloves are not recognized by Windows, for example.
+- SenseCom support for Linux (beta).
+- SenseCom .apk for Android devices. Useful for debugging connections within your Quest 2 or Pico Neo 2.
+
+### Fixed
+- Bug where the basic CalibrationVoid was missing a reference to the ResetSphere.
+- Nova Gloves can now properly parse IMU corrections in Quaternions. Before, they only accepted Euler angles, resulting in odd IMU rotations.
 
 ## [v2.0] - 2021-05-07
 Communications overhaul, Nova Integration.

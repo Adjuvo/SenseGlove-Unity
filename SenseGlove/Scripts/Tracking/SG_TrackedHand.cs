@@ -214,7 +214,11 @@ namespace SG
         {
             if (wristThisFrame)
             {
+#if UNFINISHED_FEATURES
+                if (this.gloveHardware != null && this.gloveHardware.CVDataAvailable())
+#else
                 if (this.gloveHardware != null)
+#endif
                 {
                     HasPositionalTracking = this.gloveHardware.GetWristLocation(this.trackedObject, this.trackingHardware, out this.lastWristPosition, out lastWristRotation);
                 }
@@ -322,7 +326,11 @@ namespace SG
         /// <summary> Update this script's transform by applying a position and rotation directly. </summary>
         public virtual void UpdateTransformDefault()
         {
+#if UNFINISHED_FEATURES
+            if (this.trackedObject != null || (this.gloveHardware != null && this.gloveHardware.CVDataAvailable()))
+#else
             if (this.trackedObject != null)
+#endif
             {
                 this.transform.rotation = TargetRotation;
                 this.transform.position = TargetPosition;
