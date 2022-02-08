@@ -121,7 +121,8 @@ namespace SG.VR
 						}
 					}
 					//Step 3 - we don't have that Headset supported by SG devices... What now?
-					Debug.LogError("Detected " + headsetName + ", which is not in our list.");
+					Debug.LogError("Detected " + headsetName + ", which is not in our list. Defaulting back to the first one");
+					AssignHeadset(0);
 				}
 				else
 				{

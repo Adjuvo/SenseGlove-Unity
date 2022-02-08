@@ -3,389 +3,711 @@ using UnityEngine;
 
 namespace SG
 {
-    /// <summary> Represents an object that a SenseGlove Grabscript can interact with. Extended by most of the Interaction scripts. </summary>
-    public abstract class SG_Interactable : MonoBehaviour
+    //-------------------------------------------------------------------------------------------------------------------------------------
+    // Hover Arguments
+
+	/// <summary> Contains any hovering arguments, which happens when a hand hovers above an object </summary>
+	public class HoverArguments
+	{
+		/// <summary> The GrabScript that is hovering above this Interactable. </summary>
+		public SG_GrabScript GrabScript { get; set; }
+
+        /// <summary> The trackedHand linked to the Grabscript. </summary>
+        public SG_TrackedHand TrackedHand
+        {
+            get { return this.GrabScript.TrackedHand; }
+        }
+
+        /// <summary> Protected default constructor for extension properties. </summary>
+		protected HoverArguments() { }
+
+        /// <summary> Create new Hover Arguments </summary>
+        /// <param name="hoveredBy"></param>
+		public HoverArguments(SG_GrabScript hoveredBy)
+        {
+			GrabScript = hoveredBy;
+        }
+	}
+
+    //-------------------------------------------------------------------------------------------------------------------------------------
+    // Grab Arguments
+
+    /// <summary> Contains any grabbing arguments, which happens when an SG_GrabScript actually grabs an object </summary>
+    public class GrabArguments : HoverArguments
     {
-        //----------------------------------------------------------------------------------------------------------------------------
-        // Properties
+		/// <summary> The position of the GrabScript's "Grab Refrence" relative to this GameObject when the grabbing occured </summary>
+		public Vector3 GrabOffset_Position { get; set; }
+		/// <summary> The rotation of the GrabScript's "Grab Refrence" relative to this GameObject when the grabbing occured </summary>
+		public Quaternion GrabOffset_Rotation { get; set; }
 
-        /// <summary> Indicates if this object can be interacted with at this moment. </summary>
-        [Tooltip("Indicates if this object can be interacted with at this moment.")]
-        protected bool isInteractable = true;
+        /// <summary> The position of the grabbed object when the grba occured </summary>
+        public Vector3 MyPosAtGrab { get; set; }
+        /// <summary> The rotation of the grabbed object when the grba occured </summary>
+        public Quaternion MyRotAtGrab { get; set; }
 
-        /// <summary> This object can be picked up between a thumb and finger collider. </summary>
-        [Tooltip("This object can be picked up between a thumb and finger collider.")]
-        public bool fingerThumb = true;
-
-        /// <summary> This object can be picked up between the palm collider and a finger (including the thumb). </summary>
-        [Tooltip("This object can be picked up between the palm collider and a finger (including the thumb).")]
-        public bool fingerPalm = true;
-
-        /// <summary> Determines special conditions that must be fulfilled to release this object. </summary>
-        [Tooltip("Determines special conditions that must be fulfilled to release this object. ")]
-        public ReleaseMethod releaseMethod = ReleaseMethod.Default;
-
-        /// <summary> Force then EndInteraction if the handModel ever passes more than this distance (in m) from the original grab location. </summary>
-        /// <remarks> Mostly relevant for drawers and levers, or other controls that move along a specific path. </remarks>
-        protected float releaseDistance = 0.10f;
-
-        /// <summary> A reference to the GrabScript that is currently interacting with this SenseGlove. </summary>
-        protected SG_GrabScript _grabScript;
-
-        /// <summary> The original (absolute) position of this GameObject, stored on Awake() </summary>
-        protected Vector3 originalPos;
-
-        /// <summary>  The original (absolute) rotation of this GameObject, stored on Awake() </summary>
-        protected Quaternion originalRot;
-
-        /// <summary> The original distance between grabrefrence and my pickupRefrence. </summary>
-        protected float originalDist;
-
-
-        /// <summary> The list of touchScripts that are currently touching this object. </summary>
-        protected List<SG_HapticGlove> touchedScripts = new List<SG_HapticGlove>();
-
-        /// <summary> The number of colliders of a given grabscript that are touching this Interactable. </summary>
-        protected List<int> touchedColliders = new List<int>();
-
-        //---------------------------------------------------------------------------------------------------------------------------------
-        // Public Interaction Methods
-
-        /// <summary> Sets the object to be interactable (or not). </summary>
-        /// <remarks> May be overridden by sub-classes. </remarks>
-        /// <param name="canInteract"></param>
-        public virtual void SetInteractable(bool canInteract)
+		/// <summary> Calculates the target position of an object that was grabbed by this grabScript. A.k.a. The current GrabAnchor Location + offsets at grab </summary>
+		/// <param name="obj"></param>
+		/// <param name="objTargetPos"></param>
+		/// <param name="objTargetRot"></param>
+		public void CalculateObjectTarget(Transform obj, out Vector3 objTargetPos, out Quaternion objTargetRot)
         {
-            this.isInteractable = canInteract;
-            if (!this.isInteractable)
-                this.EndInteraction();
+			SG.Util.SG_Util.CalculateTargetLocation(this.GrabScript.realGrabRefrence, GrabOffset_Position, GrabOffset_Rotation, out objTargetPos, out objTargetRot);
         }
 
-        /// <summary> Check if this object can be interacted with at this moment. </summary>
-        /// <remarks> May be overridden by sub-classes. </remarks>
-        /// <returns></returns>
-        public virtual bool CanInteract()
+		/// <summary> Calculates the location of a GrabReference based on the grabbed location a.k.a. The object position - offsets at grab </summary>
+		/// <param name="obj"></param>
+		/// <param name="objTargetPos"></param>
+		/// <param name="objTargetRot"></param>
+		public void CalculateRefrenceLocation(Transform obj, out Vector3 objTargetPos, out Quaternion objTargetRot)
         {
-            return this.isInteractable;
+			SG.Util.SG_Util.CalculateRefrenceLocation(obj.position, obj.rotation, GrabOffset_Position, GrabOffset_Rotation, out objTargetPos, out objTargetRot);
         }
 
-        /// <summary> Check if this object is still within acceptable distance of the grabscript. </summary>
-        public virtual bool WithinBounds()
+
+        /// <summary> Default constructor for extension purposes. </summary>
+		protected GrabArguments() { }
+
+
+		/// <summary> Create a new GrabArguments object </summary>
+		/// <param name="hoveredBy"></param>
+		/// <param name="relativePos"></param>
+		/// <param name="relativeRot"></param>
+		public GrabArguments(SG_GrabScript hoveredBy, Vector3 relativePos, Quaternion relativeRot, Vector3 objPosition, Quaternion objRotation)
+		{
+			GrabScript = hoveredBy;
+			GrabOffset_Position = relativePos;
+			GrabOffset_Rotation = relativeRot;
+            MyPosAtGrab = objPosition;
+            MyRotAtGrab = objRotation;
+		}
+	}
+
+
+
+    //-------------------------------------------------------------------------------------------------------------------------------------
+    // Interactable Script.
+
+    /// <summary> A base class that can be overriden. It fires events and keeps track of hands, but does not manipulate the object it's attached to. </summary>
+    /// <remarks> Use this script to use make an object recognizeable by an SG_GrabScript. </remarks>
+    [DisallowMultipleComponent]
+    public class SG_Interactable : MonoBehaviour
+	{
+        /// <summary> Grab conditions for an Interactable, restricting grabbing based on certain contitions </summary>
+        public enum GrabMethod
         {
-            if (this._grabScript != null)
+            /// <summary> This object can be grabbed by one or two hands </summary>
+            Any,
+            /// <summary> This object can only be grabbed by one hand. </summary>
+            OneHandOnly,
+            /// <summary> This object can only be grabbed by the right hand </summary>
+            RightHandOnly,
+            /// <summary> This object can only be grabbed by the left hand </summary>
+            LeftHandOnly,
+            /// <summary> This object cannot be grabbed by itself. However, its GrabPoints can still be grabbed. </summary>
+            None,
+        }
+
+
+        /// <summary> Auto-assigned. The "base" of this Interactable, on which to apply Translation/Rotation when no RigidBody is attached.  </summary>
+        [Header("Interactable Options")]
+        public Transform baseTransform;
+
+        /// <summary> Auto-assigned. Optional RigidBody attached to this Interactable. Translation/Rotation will be applied to this Body if assigned. </summary>
+        public Rigidbody physicsBody;
+
+        /// <summary> Which hands are allowed to Hover and Grab this Interactable. </summary>
+        public GrabMethod allowedHands = GrabMethod.Any;
+
+
+        ///// <summary> All GrabScripts currently hovering over this interactable. </summary>
+        //public List<HoverArguments> hoveredBy = new List<HoverArguments>();
+
+
+        /// <summary> All GrabScripts currenly (attempting to) hold onto this Interactable. </summary>
+        [SerializeField] protected List<GrabArguments> grabbedBy = new List<GrabArguments>();
+
+        /// <summary> The last simulation time that this object was updated for. Used to only call Update() once, even if multiple hands call said function. Starts at -1 so it fires even at t=0. </summary>
+		protected float lastUpdateTime = -1;
+
+        /// <summary> Ensures we only search for components on this script once, even if we get multiple setup calls. </summary>
+        protected bool setup = true;
+
+        /// <summary> Optional Component to toggle when this object should be highlighted. </summary>
+        private SG_Activator highlighter = null; //TOD: Make this into a more universal script.
+        /// <summary> The Grabscripts that wish to Highlight me. Used to ensure that HighLights work properly. </summary>
+        protected List<SG_GrabScript> highlightedBy = new List<SG_GrabScript>();
+
+        /// <summary> Cached colliders linked to this Interactable, which are used to toggle physics collision between it and the hand physics. </summary>
+        protected Collider[] myColliders = null;
+
+        /// <summary> Optional Debug Element that shows which grabables are being held. </summary>
+        public TextMesh debugTxt;
+
+        /// <summary> List of linked grabPoints So I can let go of them as well. </summary>
+        protected List<SG_GrabPoint> linkedGrabPoints = new List<SG_GrabPoint>();
+
+        /// <summary> The frame wherein we last changed out IsKinematic Value. </summary>
+        protected int safeguardFrame = -1;
+
+        //---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        // Utility Functions
+
+
+        /// <summary> If we set the isKinematic value of our RigidBody, it causes PhysX in Unity 2019+ to have an anyeurism and fire OnTriggerExit/OnTriggerEnter again. If this value is true, you shouldn't need ot affect your logic </summary>
+        public bool KinematicChanged
+        {
+            get { return safeguardFrame > 0; } // > 0 so the first frame (Setup) doesn't influence detection.
+        }
+
+
+        public bool IsKinematic
+        {
+            get { return this.physicsBody == null || this.physicsBody.isKinematic; }
+            set
             {
-                float currDist = (this._grabScript.grabReference.transform.position - this.transform.position).magnitude;
-                return Mathf.Abs(currDist - this.originalDist) >= this.releaseDistance;
-            }
-            return false;
-        }
-
-        /// <summary> Returns true if this script is not longer active. </summary>
-        /// <returns></returns>
-        public virtual bool MustBeReleased()
-        {
-            return !(this.gameObject.activeInHierarchy && this.isActiveAndEnabled);
-        }
-
-        /// <summary> Check if this interactable allows a grabScript to end an interaction. </summary>
-        /// <returns></returns>
-        public virtual bool EndInteractAllowed()
-        {
-            if (this.releaseMethod != ReleaseMethod.FunctionCall)
-                return (!this.CanInteract() || !this.WithinBounds() || this.releaseMethod == ReleaseMethod.MustOpenHand);
-            else if (!this.CanInteract())
-                return true;
-            return false;
-            //    return this.releaseMethod != ReleaseMethod.FunctionCall 
-            //        && (!this.CanInteract() || (this.releaseMethod == ReleaseMethod.Default) || !this.WithinBounds());
-        }
-
-
-
-        /// <summary> Begin the interaction between this object and a GrabScript. </summary>
-        /// <param name="grabScript"></param>
-        /// <param name="fromExternal"></param>
-        public bool BeginInteraction(SG_GrabScript grabScript, bool fromExternal = false)
-        {
-            if (grabScript != null)
-            {
-                if (this.isInteractable || fromExternal) //interactions only possible through these parameters.
+                if (physicsBody != null)
                 {
-                    bool begun = this.InteractionBegin(grabScript, fromExternal);
-                    if (begun)
+                    if (value != physicsBody.isKinematic)
                     {
-                        this.originalDist = (grabScript.grabReference.transform.position - this.transform.position).magnitude;
-                        this.OnInteractBegin(grabScript, fromExternal);
-                        return true;
+                        //Debug.Log("SGKin: IsKinematic value changed on " + Time.frameCount);
+                        safeguardFrame = Time.frameCount;
                     }
+                    physicsBody.isKinematic = value;
                 }
             }
-            else
-                SG_Debugger.LogError("ERROR: You are attempting to start an interaction with " + this.name + " with grabscript set to NULL");
-            return false;
         }
 
-        /// <summary> (Manually) ends all interaction with this object's GrabScript(s) </summary>
-        public virtual void EndInteraction()
+        /// <summary> Sets up this Script with it's appropriate links and behaviours. Ensures they are performed only once. </summary>
+        public void Setup()
         {
-            this.EndInteraction(this._grabScript, true);
-        }
-
-        /// <summary> (Manually) End the interaction with this GrabScript </summary>
-        /// <param name="fromExternal"></param>
-        /// <param name="grabScript"></param>
-        public bool EndInteraction(SG_GrabScript grabScript, bool fromExternal = false)
-        {
-            if (this.IsInteracting())
+            if (setup)
             {
-                bool ended = this.InteractionEnd(grabScript, fromExternal);
-                if (ended)
+                setup = false;
+                SetupScript();
+            }
+        }
+
+        /// <summary> Properly link this script to all of its components. </summary>
+        protected virtual void SetupScript()
+        {
+            if (this.baseTransform == null)
+            {
+                this.baseTransform = this.physicsBody != null ? this.physicsBody.transform : this.transform;
+            }
+            if (this.physicsBody == null)
+            {
+                this.physicsBody = this.baseTransform.GetComponent<Rigidbody>();
+            }
+            this.highlighter = this.GetComponent<SG_Activator>(); //attempt to collect hover highlight.
+        }
+
+
+        /// <summary> Let this Grabable know that it's linked to another point, so it may be released when I am </summary>
+        /// <param name="point"></param>
+        public void LinkGrabPoint(SG_GrabPoint point)
+        {
+            if (point != this)
+            {
+                SG.Util.SG_Util.SafelyAdd(point, linkedGrabPoints);
+            }
+            else
+            {
+                Debug.LogError("ERROR: Cannot link a SnapPoint to itself!");
+            }
+        }
+
+        /// <summary> Let this interactable know this is no longer connected to this point. </summary>
+        /// <param name="point"></param>
+        public void UnlinkGrabPoint(SG_GrabPoint point)
+        {
+            SG.Util.SG_Util.SafelyRemove(point, linkedGrabPoints);
+        }
+
+        //---------------------------------------------------------------------------------------------------------------------------------
+        // Tracking Stuff
+
+        /// <summary> The transform on which to apply movement (positioning / location) if no RigidBody can be found. </summary>
+        public virtual Transform MyTransform
+        {
+            get 
+            {
+                Setup(); //ensures baseTransform is assigned
+                return this.baseTransform; 
+            }
+        }
+
+
+        /// <summary> Updates the interactable's position / rotation. This script will ensure it's only called once per frame, and that is has the proper dT. </summary>
+        public void UpdateInteractable()
+        {
+            float currTime = Time.timeSinceLevelLoad; //Doing it per level 
+            if (currTime != lastUpdateTime)
+            {
+                float dT = currTime - lastUpdateTime;
+                lastUpdateTime = currTime;
+                UpdateLocation(dT); //calculate DT first so we can't call UpdateInteractable from this gameobject.
+            }
+        }
+
+        /// <summary> Update the location of this Interactable. Override this to implement behaviour that can be called from multiple scripts, but which only needs to run once. </summary>
+        /// <param name="dT"></param>
+        protected virtual void UpdateLocation(float dT) { }
+
+
+
+        /// <summary> If you return true, this Interactable overrides the Hand Location while grabbed. At that point, GetHandlocation will be called to determine the wrist position.  </summary>
+        /// <returns></returns>
+        public virtual bool ControlsHandLocation()
+        {
+			return false;
+        }
+
+
+        /// <summary> Returns the Hand position for a particular GrabScript (mainly used to distinguish left / right). A.k.a: I'm here, and the grabScript held me there, so it need to be at the following location... </summary>
+        /// <param name="handRealPose">Optional. Is returned if this Interactable is not being held by the connectedScript.</param>
+        /// <param name="connectedScript">The script from which the function was called.</param>
+        /// <param name="wristPosition"></param>
+        /// <param name="wristRotation"></param>
+        /// <returns></returns>
+        public virtual void GetHandLocation(SG_HandPose handRealPose, SG_GrabScript connectedScript, out Vector3 wristPosition, out Quaternion wristRotation)
+        {
+			int grabIndex = ListIndex(connectedScript, this.grabbedBy);
+			if (grabIndex > -1) //we are being held by this hand.
+			{
+                Transform myTransf = this.MyTransform;
+
+				//Step 1: Calculate GrabRefrence location 
+				Vector3 grabRefPos; Quaternion grabRefRot;
+				grabbedBy[grabIndex].CalculateRefrenceLocation(myTransf, out grabRefPos, out grabRefRot); //todo: save this for later as a separate value?
+
+                //Step 2: Get offsets between GrabRefrence and whatever it's following a.k.a. "the wrist"
+                Vector3 wristToGrab_pos; Quaternion wristToGrab_rot;
+                connectedScript.GrabRefOffsets(out wristToGrab_pos, out wristToGrab_rot);
+
+                //Step3: Calculate the "wrist" location based on these offsets 
+                Util.SG_Util.CalculateRefrenceLocation(grabRefPos, grabRefRot, wristToGrab_pos, wristToGrab_rot, out wristPosition, out wristRotation);
+            }
+			else //this is not a GrabScrip that holds me.
+			{
+				//else there isn't anything special going on.
+				wristRotation = handRealPose.wristRotation;
+				wristPosition = handRealPose.wristPosition;
+			}
+        }
+
+
+		/// <summary> If you return true, this interactable forces the hand pose into a particular position. GetFingerTracking will then be called to determine what said pose will be. </summary>
+		/// <returns></returns>
+		public virtual bool ControlsFingerTracking()
+		{
+			return false;
+		}
+
+        /// <summary> Get the hand pose as determined by this grabable. Override it if you're making something that forces the hand in a particular pose. </summary>
+        /// <param name="realHandPose"></param>
+        /// <param name="overridePose"></param>
+        /// <param name="connectedScript"> The GrabScript from which the HandPose is coming.</param>
+        public virtual void GetFingerTracking(SG_HandPose realHandPose, SG_GrabScript connectedScript, out SG_HandPose overridePose)
+        {
+			overridePose = realHandPose;
+        }
+
+
+        //---------------------------------------------------------------------------------------------------------------------------------
+        // Utility Stuff
+
+        /// <summary> Debug text that shows the grabbed objects </summary>
+        public string GrabbedText
+        {
+            get { return this.debugTxt != null ? debugTxt.text : ""; }
+            set { if (debugTxt != null) { debugTxt.text = value; } }
+        }
+
+        /// <summary> Get a list of all GrabScripts that are holding onto this SG_Interactable. </summary>
+        /// <param name="delim"></param>
+        /// <returns></returns>
+        public string PrintGrabbedBy(string delim = "\n")
+        {
+            string res = "";
+            for (int i = 0; i < this.grabbedBy.Count; i++)
+            {
+                res += this.grabbedBy[i].GrabScript.name;
+                if (i < grabbedBy.Count - 1) { res += delim; }
+            }
+            return res;
+        }
+
+        /// <summary> Set the GrabbedText to show the list of GrabScripts holding on to me. </summary>
+        public void UpdateDebugger()
+        {
+            if (debugTxt != null)
+            {
+                GrabbedText = PrintGrabbedBy();
+            }
+        }
+
+
+
+        /// <summary> Access all Colliders connected to this Interactable, to Get/Set their physics behaviour. </summary>
+        /// <returns></returns>
+        public Collider[] GetPhysicsColliders()
+        {
+            if (myColliders == null)
+            {
+                myColliders = CollectPhysicsColliders().ToArray();
+            }
+            return myColliders;
+        }
+
+        /// <summary> Collect the Physics Colliders connected to this Interactable. Only done once. Passing it as a List so it's easier to add to it in override implementations. </summary>
+        /// <returns></returns>
+        protected virtual List<Collider> CollectPhysicsColliders()
+        {
+            List<Collider> res =  new List<Collider>();
+            SG.Util.SG_Util.GetAllColliders(this.gameObject, ref res, true);
+            return res;
+        }
+
+
+		/// <summary> Returns the index of a GrabScript in a list of Grab/Hover Arguments. </summary>
+		/// <param name="grabScript"></param>
+		/// <param name="args"></param>
+		/// <returns></returns>
+		public static int ListIndex<T>(SG_GrabScript grabScript, List<T> args) where T : HoverArguments
+        {
+			for (int i=0; i<args.Count; i++)
+            {
+				if (grabScript == args[i].GrabScript)
                 {
-                    if (fromExternal && grabScript != null)
-                    {
-                        //this may not have come from the grabscript. So we need to notify it as well that the object is released.
-                        grabScript.EndInteraction(this, false);
-                    }
-                    this.OnInteractEnd(grabScript, fromExternal);
-                    this.originalDist = 0;
+					return i;
+                }
+            }
+			return -1;
+        }
+
+        /// <summary> Check if any of the Arguments in listArgs has the same GrabScript as args. </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="args"></param>
+        /// <param name="listArgs"></param>
+        /// <returns></returns>
+        public static int ListIndex<T>(T args, List<T> listArgs) where T : HoverArguments
+        {
+            for (int i = 0; i < listArgs.Count; i++)
+            {
+                if (args.GrabScript == listArgs[i].GrabScript)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+
+        public Vector3 ToWorldPosition(Vector3 posRelativeToMe)
+        {
+            Transform transf = this.MyTransform;
+            return transf.position + (transf.rotation * posRelativeToMe);
+        }
+
+
+        //---------------------------------------------------------------------------------------------------------------------------------
+        // Hover Behaviour
+
+        /// <summary> Get/Set Highlight on or off. </summary>
+        public virtual bool HighlightEnabled
+        {
+            get { return this.highlighter != null && this.highlighter.Activated; }
+        }
+
+        /// <summary> Enable / Disable the highlighting of this Object, if it has any options for that. </summary>
+        /// <param name="active"></param>
+        public void SetHighLight(bool active)
+        {
+            if (this.highlighter != null)
+            {
+                this.highlighter.Activated = active; //keep it active if enough scripts want it to be highlighted.
+            }
+        }
+
+        /// <summary> If this interactable has any highlight components, set them to active. </summary>
+        /// <param name="active"></param>
+        /// <param name="script">The GrabScpt from which the function is called.</param>
+        public void SetHightLight(bool active, SG_GrabScript script)
+        {
+            //add to the list / remove from the list
+            if (active) { Util.SG_Util.SafelyAdd(script, highlightedBy); }
+            else { Util.SG_Util.SafelyRemove(script, highlightedBy); }
+            SetHighLight(highlightedBy.Count > 0); //only turn if off of we have no script hovering over me
+        }
+
+
+
+        //---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        // Grabbing / Releasing functions
+
+        /// <summary> Returns true if this Interactable can be grabbed. </summary>
+        public virtual bool GrabAllowed()
+        {
+			return this.enabled;
+        }
+
+		/// <summary> Returns true if this object is currenly being grabbed by any Grabscript. </summary>
+		/// <returns></returns>
+		public virtual bool IsGrabbed()
+        {
+			return this.grabbedBy.Count > 0;
+        }
+
+        /// <summary> Returns true if this Object is being Grabbed by a GrabScript at the moment. </summary>
+        /// <param name="grabScript"></param>
+        /// <returns></returns>
+        public virtual bool GrabbedBy(SG_GrabScript grabScript)
+        {
+			return ListIndex(grabScript, this.grabbedBy) > -1;
+        }
+
+        /// <summary> Returns a list of all scripts grabbing on to this object and their GrabArguments. </summary>
+        /// <returns></returns>
+        public virtual List<GrabArguments> ScriptsGrabbingMe()
+        {
+            return this.grabbedBy;
+        }
+
+
+        /// <summary> Return true if this object is allowed to be grabbed by a GrabScript. When returning false, it will only grab if forced. 
+        /// This should not affect behaviour - only determine if it's possible or not. </summary>
+        /// <param name="grabScript"></param>
+        /// <returns></returns>
+        public virtual bool CanBeGrabbed(SG_GrabScript grabScript)
+        {
+            switch (this.allowedHands)
+            {
+                case GrabMethod.Any:
+                    return true;
+                case GrabMethod.OneHandOnly:
+                    return this.grabbedBy.Count == 0;
+                case GrabMethod.RightHandOnly:
+                    return grabScript.IsRight;
+                case GrabMethod.LeftHandOnly:
+                    return !grabScript.IsRight;
+                case GrabMethod.None:
+                    return false;
+            }
+            return true;
+        }
+
+        //------------------------------------------------------------------------
+        // Grab Behaviour
+
+        /// <summary> Step 1: Returns true if this object was succesfully grabbed by a GrabScript. Grabbing can fail because for many reasons (e.g. already being grabbed by this script,
+        /// this is a one-handed object, etc). </summary>
+        /// <param name="grabScript"></param>
+        /// <param name="forcedGrab">If the object says no we will still grab it.</param>
+        /// <returns></returns>
+        public virtual bool TryGrab(SG_GrabScript grabScript, bool forcedGrab = false)
+        {
+			int grabbedIndex = ListIndex(grabScript, this.grabbedBy);
+			if (grabbedIndex < 0) //We are not yet grabbed by this GrabScript
+            {
+				bool canGrab = CanBeGrabbed(grabScript);
+				if (canGrab || forcedGrab)
+                {
+					GrabArguments args;
+					if (StartGrab(grabScript, out args))
+					{
+						this.grabbedBy.Add(args);
+						//Debug.Log(this.name + " Grabbed by " + grabScript.name);
+						UpdateDebugger();
+						return true;
+					}
+                }
+            }
+			return false;
+        }
+
+        /// <summary> Attempt to grab with pre-generated arguments. Used from GrabPoint to notify the Interactable from a different script. Only use call this when you know what you're doing </summary>
+        /// <param name="args"></param>
+        public virtual bool TryGrab(GrabArguments grabArgs)
+        {
+            int grabbedIndex = ListIndex(grabArgs, this.grabbedBy);
+            //is there already arguments for that grabscript in here?
+            if (grabbedIndex < 0) //We are not yet grabbed by this GrabScript
+            {
+                GrabArguments args;
+                if (StartGrab(grabArgs.GrabScript, out args)) //we call this to simulate proper behaviour (rigidBody manipulation etc).
+                {
+                    this.grabbedBy.Add(grabArgs); //add the pre-generated Grab Args as opposed to the one made by this script.
+                    //Debug.Log(this.name + " Grabbed by " + grabScript.name);
+                    UpdateDebugger();
                     return true;
                 }
             }
             return false;
         }
 
-        /// <summary> Called by the grabscript after it has updated. Ensures that the FollowObject always updates last. </summary>
-        public virtual void UpdateInteraction() { }
 
-        //---------------------------------------------------------------------------------------------------------------------------------
-        // Abstract Interaction Methods
-
-        /// <summary> Called when the Interaction begins on this Interactable. </summary>
-        /// <param name="grabScript"></param>
-        /// <param name="fromExternal"></param>
-        /// <returns> True if a succesfull connection has been established. </returns>
-        protected abstract bool InteractionBegin(SG_GrabScript grabScript, bool fromExternal);
-
-
-        /// <summary> Called when the Interaction ends on this Interactable. </summary>
-        /// <param name="grabScript"></param>
-        /// <param name="fromExternal"></param>
-        /// <returns>True if the interaction has been ended.</returns>
-        protected abstract bool InteractionEnd(SG_GrabScript grabScript, bool fromExternal);
-
-        //---------------------------------------------------------------------------------------------------------------------------------
-        // Touch Methods
-
-        /// <summary> Get the index  </summary>
-        /// <param name="grabScript"></param>
-        /// <returns></returns>
-        protected int GetTouchIndex(SG_HapticGlove grabScript)
+		/// <summary> Gets called when we determined that the Grab can happen, but before we add the GrabScript to the list.
+		/// If true is returned, the grabscript is actually added to our list. </summary>
+		/// <param name="grabScript"></param>
+		/// <param name="grabArgs">The GrabArguments as indictaed by GenerateGrabArgs. If all you're after is changing this output, it might be easier to override said function.</param>
+		/// <returns></returns>
+		protected virtual bool StartGrab(SG_GrabScript grabScript, out GrabArguments grabArgs)
         {
-            //for (int i = 0; i < this.touchedScripts.Count; i++)
-            //{
-            //    if (GameObject.ReferenceEquals(this.touchedScripts[i].gameObject, grabScript.gameObject))
-            //        return i;
-            //}
-            return -1;
+			grabArgs = GenerateGrabArgs(grabScript);
+			return grabArgs != null;
         }
 
-        /// <summary> Called by SG_Feedback when it touches an interactable. Informs this Interactable that it is being touched. </summary>
-        /// <param name="touchScript"></param>
-        public void TouchedBy(SG_BasicFeedback touchScript)
+		/// <summary> Put in a separate function so we can add more in-depth GrabArguments in later classes. </summary>
+		/// <param name="grabScript"></param>
+		/// <returns></returns>
+		public virtual GrabArguments GenerateGrabArgs(SG_GrabScript grabScript)
         {
-            if (touchScript != null && touchScript.linkedGlove != null)
-            {
-                int GI = GetTouchIndex(touchScript.linkedGlove);
-                if (GI > -1)
-                    this.touchedColliders[GI] = this.touchedColliders[GI] + 1; //++ does not work reliably...
-                else
+            Transform myTransf = this.MyTransform; //collect transform component.
+			Vector3 posOffset; Quaternion rotOffset;
+			SG.Util.SG_Util.CalculateOffsets(myTransf, grabScript.virtualGrabRefrence, out posOffset, out rotOffset); //virtualGrabReference. That's where we need to go.
+			return new GrabArguments(grabScript, posOffset, rotOffset, myTransf.position, myTransf.rotation);
+		}
+
+
+
+
+
+		//------------------------------------------------------------------------
+		// Release Behaviour
+
+
+		/// <summary> Returns true if this object is released by a GrabScript </summary>
+		/// <param name="grabScript"></param>
+		/// <param name="forcedRelease">if set to true, we will release no matter what the object says</param>
+		/// <returns></returns>
+		public virtual bool TryRelease(SG_GrabScript grabScript, bool forcedRelease = false)
+		{
+			int grabbedIndex = ListIndex(grabScript, this.grabbedBy);
+			if (grabbedIndex > -1) //We are actually grabbed by this GrabScript
+			{
+				GrabArguments beReleasedBy = grabbedBy[grabbedIndex];
+				bool canEnd = CanBeReleased(beReleasedBy);
+				if (canEnd || forcedRelease)
                 {
-                    this.touchedScripts.Add(touchScript.linkedGlove);
-                    this.touchedColliders.Add(1);
-
-                    if (this.touchedColliders.Count == 1) // Only for the first new script.
-                        this.OnTouched();
-                }
-            }
-        }
-
-
-        /// <summary> Called by SG_Feedback when it touches an interactable. Informs this Interactable that it is no longer being touched </summary>
-        /// <param name="touchScript"></param>
-        public void UnTouchedBy(SG_BasicFeedback touchScript)
-        {
-            if (touchScript != null && touchScript.linkedGlove != null)
-            {
-                int GI = GetTouchIndex(touchScript.linkedGlove);
-                if (GI > -1)
-                {
-                    this.touchedColliders[GI] = this.touchedColliders[GI] - 1; //++ does not work reliably...
-                    if (this.touchedColliders[GI] < 1) //less than one remaining
+					if (StartRelease(beReleasedBy))
                     {
-                        this.touchedScripts.RemoveAt(GI);
-                        this.touchedColliders.RemoveAt(GI);
-                        if (this.touchedScripts.Count < 1) //reduced the amount of touchedScripts to 0
-                            this.OnUnTouched();
+                        // Actually release it.
+                        this.grabbedBy.RemoveAt(grabbedIndex);
+                        //Debug.Log(this.name + " Released by " + beReleasedBy.GrabScript.name);
+                        //ToDo Fire and event with beReleasedBy;
+                        UpdateDebugger();
+                        return true;
                     }
-                }
-            }
-        }
+				}
+			}
+			return false;
+		}
 
 
-        //---------------------------------------------------------------------------------------------------------------------------------
-        // Utility Methods
-
-        /// <summary>
-        /// Reset this object to its original state.
-        /// </summary>
-        public virtual void ResetObject()
+        /// <summary> Attempt to release with pre - generated arguments.Only use this when you know what you're doing  </summary>
+        /// <param name="grabArgs"></param>
+        public virtual bool TryRelease(GrabArguments grabArgs)
         {
-            this.transform.position = this.originalPos;
-            this.transform.rotation = this.originalRot;
-        }
-
-        /// <summary> Save the current "state" of the interactable, to which it will return when ResetObject is called. </summary>
-        public virtual void SaveTransform()
-        {
-            this.originalPos = this.transform.position;
-            this.originalRot = this.transform.rotation;
-        }
-
-        /// <summary> Access the grabscript that is currently interacting with this object. </summary>
-        /// <returns></returns>
-        public virtual SG_GrabScript GrabScript
-        {
-            get { return this._grabScript; }
-        }
-
-        /// <summary>
-        /// Check if this Interactable is (already) interacting with a specified grabscript.
-        /// </summary>
-        /// <param name="grabScript"></param>
-        /// <returns></returns>
-        public virtual bool InteractingWith(SG_GrabScript grabScript)
-        {
-            if (grabScript != null && this._grabScript != null)
+            int grabbedIndex = ListIndex(grabArgs, this.grabbedBy);
+            if (grabbedIndex > -1) //We are actually grabbed by this GrabScript
             {
-                return GameObject.ReferenceEquals(grabScript, this._grabScript);
+                GrabArguments beReleasedBy = grabbedBy[grabbedIndex];
+                if (StartRelease(beReleasedBy))
+                {
+                    // Actually release it.
+                    this.grabbedBy.RemoveAt(grabbedIndex);
+                    //Debug.Log(this.name + " Released by " + beReleasedBy.GrabScript.name);
+                    //ToDo Fire and event with beReleasedBy;
+                    UpdateDebugger();
+                    return true;
+                }
             }
             return false;
         }
 
-        /// <summary> Check if this object is being interacted with. </summary>
+        /// <summary> Releases this SG_Interactable from any GrabScripts that may be grabbing it. </summary>
+        public virtual void ReleaseSelf()
+        {
+            if (this.grabbedBy.Count > 0)
+            {
+                Debug.Log("Manual Release from " + this.name + ". State = " + this.enabled);
+
+                int sanity = this.grabbedBy.Count;
+                int removals = 0;
+                do
+                {
+                    //string debug = this.name + ": Attempting to get " + this.grabbedBy[0].GrabScript.name + " (" + this.grabbedBy.Count + ") to release. Result = ";
+                    bool removed = this.grabbedBy[0].GrabScript.TryRelease(this, true); //remove the first one, thich changes grabbedBy.Count(!)
+                    if (!removed) //the grabscript doesn't think it's holding me, but I sure do!
+                    {
+                        this.StartRelease(this.grabbedBy[0]); //Call the release neatly
+                        this.grabbedBy.RemoveAt(0); //then remove this one-sided love.
+                    }
+                    //debug += removed + ", newCount = " + this.grabbedBy.Count;
+                    removals++;
+                }
+                while (this.grabbedBy.Count > 0 && removals < sanity);
+
+                //afterward, remove any refrences. they should be gone.
+                this.grabbedBy.Clear();
+            }
+            for (int i=0; i<this.linkedGrabPoints.Count; i++)
+            {
+                this.linkedGrabPoints[i].ReleaseSelf();
+            }
+        }
+
+        /// <summary> Returns true if this object is allowed to be released by a specific GrabScript. Should not affecr behaviour, only deterimen if it's allowed.
+        /// Returning false will cancel the operation. </summary>
+        /// <param name="grabbedScript"></param>
         /// <returns></returns>
-        public virtual bool IsInteracting()
+        protected virtual bool CanBeReleased(GrabArguments grabbedScript)
         {
-            return this._grabScript != null;
+			return true;
+        }
+
+		/// <summary> Called when an object is released, but before we remove it from the list. After this, it will be removed from the list. Used to perform actions such as restore RigidBody parameters. </summary>
+		/// <param name="grabScript"></param>
+		/// <returns></returns>
+		protected virtual bool StartRelease(GrabArguments grabbedScript)
+		{
+			return true;
+		}
+
+
+        //---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        // Monobehaviour
+
+        protected virtual void Awake()
+        {
+            Setup();
+        }
+
+		protected virtual void Start()
+        {
+			UpdateDebugger();
         }
 
 
-        //-------------------------------------------------------------------------------------------------------
-        // Events
-
-
-        //Begin Interaction - fires when the object starts an interaction.
-
-        public delegate void InteractBeginEventHandler(object source, SG_InteractArgs args);
-
-        /// <summary> Fires after this interactable begins an interaction with a specific Grabscript. </summary>
-        public event InteractBeginEventHandler InteractionBegun;
-
-        protected virtual void OnInteractBegin(SG_GrabScript grabScript, bool fromExternal)
+        protected void OnDisable()
         {
-            if (InteractionBegun != null)
+            this.ReleaseSelf();
+            //also disable the linked grabpoints
+            for (int i = 0; i < this.linkedGrabPoints.Count; i++)
             {
-                InteractionBegun(this, new SG_InteractArgs(grabScript, fromExternal));
+                this.linkedGrabPoints[i].enabled = false;
             }
         }
 
-
-        // End Interaction
-
-        public delegate void InteractEndEventHandler(object source, SG_InteractArgs args);
-
-        /// <summary> Fires after this interactable ends an interaction with a specific GrabScript. </summary>
-        public event InteractEndEventHandler InteractionEnded;
-
-        protected virtual void OnInteractEnd(SG_GrabScript grabScript, bool fromExternal)
+        /// <summary> When this object is destroyed. </summary>
+        protected virtual void OnDestroy()
         {
-            if (InteractionEnded != null)
-            {
-                InteractionEnded(this, new SG_InteractArgs(grabScript, fromExternal));
-            }
-        }
+			//if (Application.quitting)
+			//{
+			//	// When we're not quitting
+			//	// TODO: Remove Grabable's reference to me
+			//}
+		}
 
-
-        public delegate void ResetEventHandler(object source, System.EventArgs args);
-
-        /// <summary> Fires when this Object is reset to its original position. </summary>
-        public event ResetEventHandler ObjectReset;
-
-        protected void OnObjectReset()
-        {
-            if (ObjectReset != null)
-            {
-                ObjectReset(this, null);
-            }
-        }
-
-        // Touched
-
-        public delegate void TouchedEventHandler(object source, System.EventArgs args);
-
-        /// <summary> Fires when this Interactable is first touched by a Sense Glove_Touch collider. </summary>
-        public event TouchedEventHandler Touched;
-
-        protected virtual void OnTouched()
-        {
-            if (Touched != null)
-            {
-                Touched(this, null);
-            }
-        }
-
-        /// <summary> Fires when all colliders have stopped touching this Interactable. </summary>
-        public event TouchedEventHandler UnTouched;
-
-        protected virtual void OnUnTouched()
-        {
-            if (UnTouched != null)
-            {
-                UnTouched(this, null);
-            }
-        }
-
-
-    }
-
-
-    /// <summary> Parameter that determines how this object ends its interaction. </summary>
-    public enum ReleaseMethod
-    {
-        /// <summary> The Interactable behaves as determined by the GrabScript that interacts with it. </summary>
-        Default = 0,
-
-        /// <summary> The Interactable may only be released if the Hand is sufficiently "open". </summary>
-        /// <remarks> Used to improve interaction of objects that move along specified paths. </remarks>
-        MustOpenHand,
-
-        /// <summary> The interactable is only released when the EndInteraction or ResetObject functions are called. </summary>
-        FunctionCall
-    }
-
-
-    /// <summary> Contains event arguments </summary>
-    public class SG_InteractArgs : System.EventArgs
-    {
-        public SG_GrabScript GrabScript { get; private set; }
-
-        public bool Forced { get; private set; }
-
-        public SG_InteractArgs(SG_GrabScript script, bool fromExternal)
-        {
-            GrabScript = script;
-            Forced = fromExternal;
-        }
-
-    }
+	}
 }

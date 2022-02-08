@@ -28,19 +28,14 @@ namespace SG
 
         /// <summary> Whether or not to update the wrist of this Hand Model. </summary>
         [Tooltip("Whether or not to update the wrist of this Hand Model.")]
-        public bool updateWrist = false;
+        public bool imuForWrist = false;
 
 
         /// <summary> Check for Scripts relevant for this Animator </summary>
-        public override void CheckForScripts()
+        public void CheckForScripts()
         {
-            base.CheckForScripts();
             if (handModelInfo == null)
             {
-                if (TrackedHand != null)
-                {
-                    handModelInfo = TrackedHand.handModel;
-                }
                 SG.Util.SG_Util.CheckForHandInfo(this.transform, ref this.handModelInfo); ;
             }
         }
@@ -73,19 +68,6 @@ namespace SG
             }
         }
 
-        /// <summary> Calibrate the wrist model of this handModel based on the current IMU Rotation. </summary>
-        public virtual void CalibrateWrist()
-        {
-            if (this.TrackedHand != null && this.TrackedHand.gloveHardware != null)
-            {
-                Quaternion IMU;
-                if ( this.TrackedHand.gloveHardware.GetIMURotation(out IMU) )
-                {
-                    this.CalibrateWrist(IMU);
-                }
-            }
-        }
-
 
         //------------------------------------------------------------------------------------------------------------------------------------
         // Accessors
@@ -94,6 +76,18 @@ namespace SG
         public Quaternion RelativeWrist
         {
             get { return this.wristAngles; }
+        }
+
+        /// <summary> Retrieve the Wrist Position as determined by this HandModel. </summary>
+        public Vector3 WristPosition
+        {
+            get { return this.handModelInfo.wristTransform.position; }
+        }
+
+        /// <summary> Returns the world rotation of this hand's wrist. </summary>
+        public Quaternion WristRotation
+        {
+            get { return this.handModelInfo.wristTransform.rotation; }
         }
 
         /// <summary> Retrive the euler angles between this model's foreArm and Wrist.  </summary>
@@ -124,15 +118,22 @@ namespace SG
 
         #region Update
 
+        
         /// <summary> 
         /// Update the (absolute) finger orientations, which move realtive to the (absolute) wrist transform. 
         /// Note: This method is called after UpdateWrist() is called. 
         /// </summary>
         /// <param name="data"></param>
-        public virtual void UpdateHand(SG_HandPose pose)
+        public virtual void UpdateHand(SG_HandPose pose, bool fingersOnly = false)
         {
             if (pose != null)
             {
+                if (!fingersOnly)
+                {
+                    handModelInfo.wristTransform.rotation = pose.wristRotation;
+                    handModelInfo.wristTransform.position = pose.wristPosition;
+                }
+
                 Quaternion[][] angles = pose.jointRotations;
                 Quaternion[][] corrections = handModelInfo.FingerCorrections;
                 Transform[][] fingerJoints = handModelInfo.FingerJoints;
@@ -164,7 +165,7 @@ namespace SG
         /// <param name="data"></param>
         public virtual void UpdateWrist(Quaternion imuRotation)
         {
-            if (updateWrist)
+            if (imuForWrist)
             {
                 handModelInfo.wristTransform.rotation = handModelInfo.WristCorrection * (this.wristCalibration * imuRotation);
                 this.wristAngles = Quaternion.Inverse(handModelInfo.foreArmTransform.rotation) * handModelInfo.wristTransform.rotation;
@@ -202,22 +203,22 @@ namespace SG
         protected virtual void Start()
         {
             //sets the animation in a starting pose.
-            SG_HandPose startPose = SG_HandPose.Idle(this.handModelInfo != null ? this.handModelInfo.handSide != HandSide.LeftHand : true);
-            this.UpdateHand(startPose);
+            //SG_HandPose startPose = SG_HandPose.Idle(this.handModelInfo != null ? this.handModelInfo.handSide != HandSide.LeftHand : true);
+            //this.UpdateHand(startPose);
         }
 
         // Update is called once per frame
         protected virtual void Update()
         {
-            if (this.TrackedHand != null)
-            {
-                this.UpdateWrist( TrackedHand.GetIMURotation() ) ;
-                SG_HandPose handPose;
-                if (this.TrackedHand.GetHandPose(out handPose))
-                {   
-                    this.UpdateHand(handPose);
-                }
-            }
+            //if (this.TrackedHand != null)
+            //{
+            //    this.UpdateWrist( TrackedHand.GetIMURotation() ) ;
+            //    SG_HandPose handPose;
+            //    if (this.TrackedHand.GetHandPose(out handPose))
+            //    {   
+            //        this.UpdateHand(handPose);
+            //    }
+            //}
         }
 
         #endregion Monobehaviour

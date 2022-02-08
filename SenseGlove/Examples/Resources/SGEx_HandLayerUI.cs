@@ -8,26 +8,85 @@ namespace SG.Examples
 {
     public class SGEx_HandLayerUI : MonoBehaviour
     {
-        public enum ShowingLayer
+        public enum ShowingLayer //determines the order in which to show them.
         {
             None,
             HandModelLayer,
+            CalibrationLayer,
             AnimationLayer,
+            PassThroughLayer,
             FeedbackLayer,
             GrabLayer,
-            RigidbodyLayer,
             PhysicsLayer,
             GestureLayer,
             All
         }
 
+        /// <summary> Contains all elements to toggle / visualize a layer of one instructionStep. Generated at the start </summary>
+        public class HandLayerExample
+        {
+            public ShowingLayer layer;
 
+            public Text treeText;
+
+            public SG_Activator layerObjects;
+
+            public void SetExamples(bool active)
+            {
+                if (layerObjects != null)
+                {
+                    layerObjects.Activated = active;
+                }
+            }
+
+            public void SetText(Color newColor)
+            {
+                if (treeText != null)
+                {
+                    treeText.color = newColor;
+                }
+            }
+
+            public HandLayerExample(ShowingLayer forLayer, Text titleText, SG_Activator objects)
+            {
+                this.layer = forLayer;
+                this.treeText = titleText;
+                this.layerObjects = objects;
+            }
+        }
+
+        /// <summary> Instructions that we cycle through by pressing next / previous. </summary>
+        public class InstructionStep
+        {
+            public ShowingLayer activeLayer;
+
+            public string instructions;
+
+            public bool mustBeConnected;
+
+            public bool mustBeCalibrated;
+
+            public InstructionStep(ShowingLayer layer, bool mustConnect, bool mustCalibrate, string instr)
+            {
+                instructions = instr;
+                activeLayer = layer;
+                mustBeConnected = mustConnect;
+                mustBeCalibrated = mustCalibrate;
+            }
+        }
+
+
+
+        public SGEx_SelectHandModel handSelector;
 
         public Text instructionsUI;
+        public Text nextBtnInstr;
         public Button prevBtn, nextBtn, calibrateWristBtn;
+        public Text treeTextTemplate;
+        public Color textHLColor = Color.white;
+        public Color textDisabledColor = Color.gray;
+
         protected ShowingLayer showing = ShowingLayer.All;
-        public SG_TrackedHand leftHand;
-        public SG_TrackedHand rightHand;
 
         public KeyCode nextKey = KeyCode.D;
         public KeyCode prevKey = KeyCode.A;
@@ -35,300 +94,370 @@ namespace SG.Examples
 
 
         public int currStep = -1;
-        public int mustConnectStep = 6; //starting from this layer, our SG should be connected
+        protected int mustConnectAt = 1000;
+        protected int mustCalibrateAt = 1000;
 
-        public Button nextButton, prevButton;
+        protected int blockCode = 0;
+        //public Button nextButton, prevButton;
 
         protected SG_TrackedHand activeHand = null;
+        protected SG_HapticGlove activeGlove = null;
 
-        public Text[] overviewTexts = new Text[0];
-        public Color textHLColor = Color.white;
-        public Color textDisabledColor = Color.gray;
+        [Header("Feedback Layer Components")]
+        public SG_Activator feedbackObjects;
 
+        [Header("Grab Layer Components")]
+        public SG_Activator grabLayerObjects;
 
-        protected string[] instructionTexts = new string[]
-        {
-            "This example will run you through the SenseGlove hand prefab and its different 'layers'",
+        [Header("Physics Layer Components")]
+        public SG_Activator physicsLayerObjects;
 
-            "The SenseGlove hand consists of 7 layers: A HandModel, Animator, Feedback Layer, Grab Layer, Rigidbody Layer and PhysicsTracking layer.",
+        [Header("PassThrough Layer Components")]
+        public SG_Activator passThroughObjects;
 
-            "Each of these layers can be enabled/disabled by turning their gameobjects on/off, either code or through the inspector. Nearly all of them can be safely deleted in their entirety if their functionality is not required.",
-
-            "The TrackedHand script, attached to the root of the prefab, is your main access point to all layers. It can be set to follow a specific GameObject, with preprogrammed offsets for certain tracking hardware.",
-
-            "The HandModel layer contains the 3D assets to draw and position the hand. The SG_HandInfo script tells the other SenseGlove Scripts where the joints are located.",
-            
-            "One can swap out the hand model for another by replacing the HandModel's children, and assigning the proper transforms in the SG_HandInfo script via code or the inspector.",
-            
-            "Unless you want to manually set Tracking targets for the colliders of the other layers, the SG_HandModelInfo script is the only one that should not be deleted.",
-
-            "The animation layer is responsible for animating the hand using the SG_HandAnimation script. It can be disabled if you wish to animate the hand model yourself.",
-
-            "The Feedback layer contains colliders that respond to impacts and to SenseGlove_Material Scripts. Each frame, the SG_HandFeedback script collects the appropriate forces and sends these to the SenseGlove.",
-
-            "The Grab Layer allows one to pick up and manipulate objects with SG_Interactable scripts. If you already have manipulation scripts (such as through VRTK), you can disable this layer and replace it with your own.",
-
-            "The Rigidbody layer adds rigidbodies that allow one to push and hold other rigidbody objects. This gameobject and its children can be placed on their own layer, or be told to ignore certain colliders.",
-
-            "The PhysicsTracking layer contains non-trigger colliders that prevent the SG_TrackedHand from passing through non-grabable objects, provided that its 'trackingMethod' property is set to be 'PhysicsBased'.",
-            
-            "The Gesture layer can recognize different static hand poses, used to activate certain functions using just the hand based on finger flexion.",
-
-             "This separation of layers allows for a hand model that can be adjusted to your needs, and which allows different physics behaviours wihout touching the actual 3D Model.",
-        };
-
-        protected ShowingLayer[] linkedLayers = new ShowingLayer[]
-        {
-            ShowingLayer.None,
-            ShowingLayer.None,
-            ShowingLayer.None,
-            ShowingLayer.None,
-            ShowingLayer.HandModelLayer,
-            ShowingLayer.HandModelLayer,
-            ShowingLayer.HandModelLayer,
-            ShowingLayer.AnimationLayer,
-            ShowingLayer.FeedbackLayer,
-            ShowingLayer.GrabLayer,
-            ShowingLayer.RigidbodyLayer,
-            ShowingLayer.PhysicsLayer,
-            ShowingLayer.GestureLayer,
-            ShowingLayer.All,
-        };
-
-        public GameObject[] feedbackObjects = new GameObject[0];
-        public GameObject[] grabLayerObjects = new GameObject[0];
-        public GameObject[] rigidBodyObjects = new GameObject[0];
-        public GameObject[] physicsObjects = new GameObject[0];
-        public GameObject[] GestureObjects = new GameObject[0];
-
+        [Header("Feedback Layer")]
+        public SG_Activator gestureObjects;
         public SGEx_DebugGesture gestureUI;
 
-        private GameObject[][] layerObjects = new GameObject[0][];
+        protected HandLayerExample[] layerElements = new HandLayerExample[0];
+        protected InstructionStep[] instructions = new InstructionStep[0];
 
+        protected bool calibrationStarted = false;
+        protected bool calibratedOnce = false;
 
-        public void NextStep()
+        protected void SetupLayers()
         {
-            currStep++;
-            if (currStep >= instructionTexts.Length) { currStep = instructionTexts.Length - 1; }
-            GoToStep(currStep);
-        }
-
-        public void PreviousStep()
-        {
-            currStep--;
-            if (currStep < 0) { currStep = 0; }
-            GoToStep(currStep);
-        }
-
-        public void GoToStep(int index)
-        {
-            currStep = index;
-            SetLayer(index);
-            SetInstructions(index);
-            nextButton.interactable = index < instructionTexts.Length - 1 && (index < mustConnectStep || activeHand != null); //we can still go one more step
-            prevBtn.interactable = index > 0; //we can still go back one
-        }
-
-
-        public void SetInstructions(int index)
-        {
-            if (index < this.instructionTexts.Length)
+            if (layerElements.Length == 0)
             {
-                if (index > -1)
+                //pre-setup
+                if (gestureObjects) { gestureObjects.Add(gestureUI.gameObject); }
+
+                //layer creation
+                layerElements = new HandLayerExample[(int)ShowingLayer.All];
+                layerElements[(int)ShowingLayer.None] = new HandLayerExample(ShowingLayer.None, null, null);
+                layerElements[(int)ShowingLayer.HandModelLayer] = new HandLayerExample(ShowingLayer.HandModelLayer,     SpawnTreeText("Hand Model"),        null);
+                layerElements[(int)ShowingLayer.CalibrationLayer] = new HandLayerExample(ShowingLayer.CalibrationLayer, SpawnTreeText("Calibration Layer"), null);
+                layerElements[(int)ShowingLayer.AnimationLayer] = new HandLayerExample(ShowingLayer.AnimationLayer,     SpawnTreeText("Animation Layer"),   null);
+                layerElements[(int)ShowingLayer.PassThroughLayer] = new HandLayerExample(ShowingLayer.PassThroughLayer, SpawnTreeText("PassThrough Layer"), passThroughObjects);
+                layerElements[(int)ShowingLayer.FeedbackLayer] = new HandLayerExample(ShowingLayer.FeedbackLayer,       SpawnTreeText("Feedback Layer"),    feedbackObjects);
+                layerElements[(int)ShowingLayer.GrabLayer] = new HandLayerExample(ShowingLayer.GrabLayer,               SpawnTreeText("Grab Layer"),        grabLayerObjects);
+                layerElements[(int)ShowingLayer.PhysicsLayer] = new HandLayerExample(ShowingLayer.PhysicsLayer,         SpawnTreeText("Physics Layer"),     physicsLayerObjects);
+                layerElements[(int)ShowingLayer.GestureLayer] = new HandLayerExample(ShowingLayer.GestureLayer,         SpawnTreeText("Gesture Layer"),     gestureObjects);
+
+                for (int i=0; i<this.layerElements.Length; i++)
                 {
-                    instructionsUI.text = this.instructionTexts[index];
+                    if (layerElements[i] == null)
+                    {
+                        Debug.LogError("Missing elements for " + ((ShowingLayer)i).ToString() + "!");
+                    }
+                    else
+                    {
+                        SetLayer(((ShowingLayer)i), true); //enable once for init.
+                        SetLayer(((ShowingLayer)i), false); //they;re disabled at the start
+                    }
                 }
-                else { instructionsUI.text = ""; }
             }
         }
 
-        public void SetLayer(int index)
+        protected Text SpawnTreeText(string text = "")
         {
-            if (index < this.linkedLayers.Length)
+            GameObject cloned = GameObject.Instantiate(this.treeTextTemplate.gameObject, treeTextTemplate.transform.parent, false);
+            cloned.SetActive(true);
+            Text element = cloned.GetComponent<Text>();
+            if (text.Length > 0)
             {
-                if (index > -1)
-                {
-                    ShowLayer(linkedLayers[index]);
-                }
-                else { ShowLayer(ShowingLayer.None); }
+                element.text = text;
+            }
+            return element;
+        }
+
+        /// <summary> Activates / Deactivates layer assets </summary>
+        /// <param name="layer"></param>
+        public void SetLayer(ShowingLayer layer, bool active)
+        {
+            int index = (int)layer;
+            if (index < this.layerElements.Length && layerElements[index] != null)
+            {
+                layerElements[index].SetExamples(active);
+                layerElements[index].SetText(active ? this.textHLColor : this.textDisabledColor);
             }
         }
 
-        public void CalibrateWrist()
+
+        public void SetupInstructions()
+        {
+            if (instructions.Length == 0)
+            {
+                instructions = new InstructionStep[] //contains all instructions I want to be showing to users.
+                {
+                    new InstructionStep(ShowingLayer.None, false, false, "This example will run you through the SenseGlove hand prefab and its different 'layers'"),
+                    new InstructionStep(ShowingLayer.None, false, false, "The SenseGlove hand consists of 8 layers: A HandModel, Animator, Feedback Layer, Grab Layer, Physics layer, Gesture Layer and Calibration Layer."),
+                    new InstructionStep(ShowingLayer.None, false, false, "Each of these layers can be enabled/disabled by turning their gameobjects on/off, either code or through the inspector. Nearly all of them can be safely deleted in their entirety if their functionality is not required."),
+                    new InstructionStep(ShowingLayer.None, false, false, "The TrackedHand script, attached to the root of the prefab, is your main access point to all layers. It can take input from any script that implements the IHandPoseProvider interface."),
+                    
+                    new InstructionStep(ShowingLayer.HandModelLayer, true, false, "The HandModel layer contains the 3D assets to draw and position the hand. The SG_HandModelInfo script tells the other SenseGlove Scripts where the joints are located."),
+                    new InstructionStep(ShowingLayer.HandModelLayer, true, false, "One can swap out the hand model for another by replacing the HandModel's children, and assigning the proper transforms in the SG_HandModelInfo script via code or the inspector."),
+                    
+                    new InstructionStep(ShowingLayer.CalibrationLayer, true, false, "The Calibration Layer will start a calibration procedure to map your fingers to the digital glove."),
+                    new InstructionStep(ShowingLayer.CalibrationLayer, true, false, "Follow the instructions below then hand. Once the hand is able to move, the calibration will automatically stop in 10s."),
+
+                    new InstructionStep(ShowingLayer.AnimationLayer, true, true, "The animation layer is responsible for animating the hand using the SG_HandAnimation script. It can be disabled if you wish to animate the hand model yourself."),
+
+                    new InstructionStep(ShowingLayer.PassThroughLayer, true, true, "The PassThrough Layer ensures that your hand doesn't pass though non-trigger collders. Turning it off disables this behaviour."),
+                    
+                    new InstructionStep(ShowingLayer.FeedbackLayer, true, true, "The Feedback layer contains colliders that respond to SenseGlove_Material Scripts. Each frame, the SG_HandFeedback script collects the appropriate forces and sends these to the HapitcGlove."),
+                    
+                    new InstructionStep(ShowingLayer.GrabLayer, true, true, "The Grab Layer allows one to pick up and manipulate objects with SG_Interactable scripts. If you already have manipulation scripts (such as through VRTK), you can disable this layer and replace it with your own."),
+                    new InstructionStep(ShowingLayer.GrabLayer, true, true, "A Grab is registered when at least one finger and either the thumb or the hand palm touches the same object, and the hand is not \"open\"."),
+                    
+                    new InstructionStep(ShowingLayer.PhysicsLayer, true, true, "The Physics Layer generates RigidBody colliders for the hand, to push objects and to prevent it from passing through solid walls."),
+                    new InstructionStep(ShowingLayer.PhysicsLayer, true, true, "These Hand Bones merge with the RigidBody of any object you are holding, so both cannot pass through walls and tables."),
+                    
+                    new InstructionStep(ShowingLayer.GestureLayer, true, true, "The Gesture layer can recognize different static hand poses, used to activate certain functions using just the hand based on finger flexion."),
+                    
+                    new InstructionStep(ShowingLayer.All, true, true, "All these layers combine to create a full immersive experience."),
+                   
+                   
+                };
+
+                //now lets determine if the glove must be connected / calilbrated.
+                int connIndex = -1;
+                int calIndex = -1;
+                for (int i=0; i<this.instructions.Length; i++)
+                {
+                    if (connIndex < 0 && this.instructions[i].mustBeConnected)
+                    {
+                        connIndex = i;
+                    }
+                    if (calIndex < 0 && this.instructions[i].mustBeCalibrated)
+                    {
+                        calIndex = i;
+                    }
+
+                    //Check if both have been assigned.
+                    if (connIndex > -1 && calIndex > -1)
+                    {
+                        break; 
+                    }
+                }
+                if (connIndex > -1)
+                {
+                    mustConnectAt = connIndex - 1;
+                }
+                if (calIndex > -1)
+                {
+                    mustCalibrateAt = calIndex - 1;
+                }
+                Debug.Log("Glove must be connected by instruction " + mustConnectAt + ", and calibrated at instruction " + mustCalibrateAt);
+            }
+        }
+
+
+
+        
+        public bool ProceedConnection()
+        {
+            return currStep < mustConnectAt || activeHand != null;
+        }
+
+        public bool ProceedCalibration()
+        {
+            bool res = currStep < mustCalibrateAt || calibratedOnce;
+            if (!calibratedOnce && activeHand != null && activeHand.calibration.CalibrationActive)
+            {
+                bool canAnimate = ((SGCore.Calibration.HG_QuickCalibration)activeHand.calibration.internalSequence).CanAnimate;
+                Debug.Log("Animate : " + canAnimate);
+                res = res || canAnimate;
+            }
+            return res;
+        }
+
+        public void DisableAllNoneEssentialsExcept(ShowingLayer whichLayer)
         {
             if (this.activeHand != null)
             {
-                this.activeHand.handAnimation.CalibrateWrist();
+                this.activeHand.handModel.gameObject.SetActive(true);
+                this.activeHand.handModel.DebugEnabled = whichLayer == ShowingLayer.HandModelLayer;
+
+                this.activeHand.calibration.gameObject.SetActive(true);
+
+                this.activeHand.handAnimation.gameObject.SetActive(whichLayer >= ShowingLayer.CalibrationLayer);
+
+                this.activeHand.feedbackLayer.gameObject.SetActive(whichLayer == ShowingLayer.FeedbackLayer);
+                this.activeHand.feedbackLayer.DebugEnabled = (whichLayer == ShowingLayer.FeedbackLayer);
+
+                this.activeHand.grabScript.gameObject.SetActive(whichLayer == ShowingLayer.GrabLayer);
+                this.activeHand.grabScript.DebugEnabled = (whichLayer == ShowingLayer.GrabLayer);
+
+                this.activeHand.gestureLayer.gameObject.SetActive(whichLayer == ShowingLayer.GestureLayer);
+                this.activeHand.gestureLayer.DebugEnabled = (whichLayer == ShowingLayer.GestureLayer);
+
+                this.activeHand.handPhysics.gameObject.SetActive(whichLayer == ShowingLayer.PhysicsLayer);
+                this.activeHand.handPhysics.DebugEnabled = (whichLayer == ShowingLayer.PhysicsLayer);
+
+                this.activeHand.passThoughLayer.gameObject.SetActive(whichLayer == ShowingLayer.PassThroughLayer);
+                this.activeHand.passThoughLayer.DebugEnabled = (whichLayer == ShowingLayer.PassThroughLayer);
+
             }
         }
-        
 
-        public void SetLayerObjects(int L, bool active)
+
+        public void NextInstruction()
         {
-            if (L > 0 && layerObjects.Length > L && layerObjects[L] != null)
-            {
-                for (int i = 0; i < layerObjects[L].Length; i++)
-                {
-                    if (layerObjects[L][i] != null) { layerObjects[L][i].SetActive(active); }
-                }
-            }
+            int next = currStep + 1;
+            if (next >= instructions.Length) { next = instructions.Length - 1; }
+            GoToStep(next);
         }
 
-        public void SetAllObjects(bool active)
+        public void PreviousInstruction()
         {
-            if (layerObjects != null)
-            {
-                for (int l=0; l<layerObjects.Length; l++)
-                {
-                    SetLayerObjects(l, active);
-                }
-            }
+            int prev = currStep -1;
+            if (prev < 0) { prev = 0; }
+            GoToStep(prev);
         }
 
-        public void ShowLayer(ShowingLayer layer)
+        protected void GoToStep(int index)
         {
-            if (this.showing != layer)
+            if (currStep != index)
             {
-                this.showing = layer;
-                if (activeHand != null)
+                //these show a different layer
+                if (currStep == -1 || instructions[index].activeLayer != instructions[currStep].activeLayer) //at currset == -1, we're at Start()
                 {
-                    SG.Util.SG_Util.SetChildren(activeHand.transform, false); //all layers are off
-                    SetAllObjects(false);
-                    if (layer >= ShowingLayer.None)
+                    if (currStep > -1)
                     {
-                        activeHand.handModel.gameObject.SetActive(true);
+                        SetLayer(instructions[currStep].activeLayer, false); //disable current
                     }
-                    if (layer >= ShowingLayer.AnimationLayer)
-                    {
-                        activeHand.handAnimation.gameObject.SetActive(true);
-                    }
-                    activeHand.handModel.DebugEnabled = layer < ShowingLayer.FeedbackLayer && layer > ShowingLayer.None;
-
-                    bool updateWrist = layer >= ShowingLayer.AnimationLayer;
-
-                    if (updateWrist && !activeHand.handAnimation.updateWrist)
-                    {
-                        activeHand.handAnimation.updateWrist = true;
-                        activeHand.handAnimation.CalibrateWrist();
-                        activeHand.handAnimation.UpdateWrist(activeHand.GetIMURotation());
-                    }
-                    if (!updateWrist)
-                    {
-                        activeHand.handAnimation.CalibrateWrist();
-                        activeHand.handAnimation.UpdateWrist(activeHand.GetIMURotation());
-                    }
-                    activeHand.handAnimation.updateWrist = updateWrist;
-
-                    if (layer == ShowingLayer.FeedbackLayer || layer == ShowingLayer.All) { activeHand.feedbackScript.gameObject.SetActive(true); }
-                    if (layer == ShowingLayer.GrabLayer || layer == ShowingLayer.All) { activeHand.grabScript.gameObject.SetActive(true); }
-                    if (layer == ShowingLayer.RigidbodyLayer || layer == ShowingLayer.All) { activeHand.rigidBodyLayer.gameObject.SetActive(true); }
-                    if (layer == ShowingLayer.PhysicsLayer) { activeHand.physicsTrackingLayer.gameObject.SetActive(true); }
-                    if (layer == ShowingLayer.GestureLayer) { activeHand.gestureLayer.gameObject.SetActive(true); }
+                    SetLayer(instructions[index].activeLayer, true); //enable next
                 }
-                SetLayerObjects((int)layer, true);
-                UpdateOverview(layer);
-                
+                currStep = index;
+                this.instructionsUI.text = instructions[index].instructions;
+
+                if ( !ProceedConnection() )
+                {
+                    nextBtnInstr.text = "The Glove must be connected before proceeding...";
+                    blockCode = 1;
+                }
+                else if ( !ProceedCalibration() )
+                {
+                    nextBtnInstr.text = "The Glove must be calibrated before proceeding...";
+                    blockCode = 2;
+                }
+                else
+                {
+                    blockCode = 0;
+                    nextBtnInstr.text = ""; //nothing's wrong.
+                }
+
+                nextBtn.interactable = index < instructions.Length - 1 && blockCode == 0;
+                prevBtn.interactable = index > 0; //we can still go back one
+
+                DisableAllNoneEssentialsExcept(currStep < 0 ? ShowingLayer.None : instructions[currStep].activeLayer);
             }
         }
 
 
-        public void UpdateOverview(ShowingLayer layer)
+
+        public void TrackedHandAssigned()
         {
-            Debug.Log("Showing " + layer.ToString());
-            for (int i=0; i<this.overviewTexts.Length; i++)
+            if (activeHand == null)
             {
-                if (overviewTexts[i] != null)
-                {
-                    Color textColor;
-                    if (layer == ShowingLayer.All) { textColor = this.textHLColor; }
-                    else if (layer == ShowingLayer.None) { textColor = this.textDisabledColor; }
-                    else
-                    {
-                        textColor = ((ShowingLayer)i) == layer ? textHLColor : textDisabledColor;
-                    }
-                    overviewTexts[i].color = textColor;
-                }
+                this.activeHand = this.handSelector.ActiveHand;
+                this.activeGlove = this.handSelector.ActiveGlove;
+                Debug.Log("Connected to a hand. Yay!");
+
+                activeHand.feedbackLayer.DebugEnabled = false;
+                activeHand.handPhysics.DebugEnabled = false;
+                activeHand.grabScript.DebugEnabled = false;
+                activeHand.passThoughLayer.DebugEnabled = false;
+                activeHand.gestureLayer.DebugEnabled = false;
+
+                this.gestureUI.gestureLayer = activeHand.gestureLayer;
+                this.gestureUI.gestureToCheck = activeHand.gestureLayer.gestures.Length > 0 ? activeHand.gestureLayer.gestures[0] : null;
+                handSelector.ActiveHand.calibration.CalibrationFinished.AddListener(CalibrationFinished);
+                DisableAllNoneEssentialsExcept(this.currStep < 0 ? ShowingLayer.None : this.instructions[currStep].activeLayer);
             }
         }
 
 
 
-        // Use this for initialization
         void Start()
         {
-            prevBtn.gameObject.SetActive(true);
-            nextBtn.gameObject.SetActive(true);
-            calibrateWristBtn.gameObject.SetActive(false);
-
-            layerObjects = new GameObject[(int)ShowingLayer.All][];
-            layerObjects[(int)ShowingLayer.FeedbackLayer] = this.feedbackObjects;
-            layerObjects[(int)ShowingLayer.RigidbodyLayer] = this.rigidBodyObjects;
-            layerObjects[(int)ShowingLayer.PhysicsLayer] = this.physicsObjects;
-            layerObjects[(int)ShowingLayer.GrabLayer] = this.grabLayerObjects;
-            layerObjects[(int)ShowingLayer.GestureLayer] = this.GestureObjects;
-
-            SetAllObjects(false);
-            GoToStep(0);
-
-            //allow both hands to at least call Awake, then turn them off for now.
-            SG.Util.SG_Util.SetChildren(leftHand.transform, true);
-            SG.Util.SG_Util.SetChildren(leftHand.transform, false);
-            SG.Util.SG_Util.SetChildren(rightHand.transform, true);
-            SG.Util.SG_Util.SetChildren(rightHand.transform, false);
+            this.treeTextTemplate.gameObject.SetActive(false);
+            this.SetupLayers();
+            this.SetupInstructions();
 
             SG.Util.SG_Util.AppendButtonText(prevBtn, "\r\n(" + prevKey.ToString() + ")");
             SG.Util.SG_Util.AppendButtonText(nextBtn, "\r\n(" + nextKey.ToString() + ")");
             SG.Util.SG_Util.AppendButtonText(calibrateWristBtn, "\r\n(" + wristKey.ToString() + ")");
 
+            prevBtn.gameObject.SetActive(true);
+            nextBtn.gameObject.SetActive(true);
+            calibrateWristBtn.gameObject.SetActive(false);
+
+            nextBtn.onClick.AddListener(NextInstruction);
+            prevBtn.onClick.AddListener(PreviousInstruction);
+
+            GoToStep(0);
+
+
+            handSelector.leftHand.calibration.startCondition = SG_CalibrationSequence.StartCondition.Manual;
+            handSelector.leftGlove.checkCalibrationOnConnect = false;
+            handSelector.rightHand.calibration.startCondition = SG_CalibrationSequence.StartCondition.Manual;
+            handSelector.rightGlove.checkCalibrationOnConnect = false;
+            handSelector.ActiveHandConnect.AddListener(TrackedHandAssigned);
 
         }
 
-        // Update is called once per frame
+        public void CalibrationFinished()
+        {
+            this.calibratedOnce = true;
+        }
+
         void Update()
         {
-            if (activeHand == null)
+            if (this.activeHand != null) //we have one assinged. Yey
             {
-                if (leftHand.gloveHardware.IsConnected || rightHand.gloveHardware.IsConnected)
+                if (!calibrationStarted && this.currStep > -1 && this.instructions[currStep].activeLayer == ShowingLayer.CalibrationLayer)
                 {
-                    activeHand = rightHand.gloveHardware.IsConnected ? rightHand : leftHand;
+                    calibrationStarted = true;
+                    this.activeHand.calibration.StartCalibration(true);
+                }
 
-                    activeHand.handModel.gameObject.SetActive(true);
-                    activeHand.handAnimation.updateWrist = true;
-                    activeHand.handAnimation.CalibrateWrist();
-                    activeHand.handAnimation.UpdateWrist(activeHand.GetIMURotation());
 
-                    activeHand.handAnimation.UpdateHand(SG_HandPose.Idle(activeHand.TracksRightHand));
-                    activeHand.feedbackScript.DebugEnabled = true;
-                    activeHand.grabScript.DebugEnabled = true;
-                    activeHand.rigidBodyLayer.DebugEnabled = true;
-                    activeHand.physicsTrackingLayer.DebugEnabled = true;
-                    calibrateWristBtn.gameObject.SetActive(true);
-                    if (this.showing != ShowingLayer.PhysicsLayer)
+                if (this.nextBtnInstr.text.Length > 0) //some form of warning given about proceeding.
+                {
+                    bool canProceedNow = true;
+                    if (blockCode == 1 && !ProceedConnection()) //we were blocked by connection
                     {
-                        activeHand.physicsTrackingLayer.gameObject.SetActive(false);
+                        canProceedNow = false;
                     }
-                    gestureUI.gestureLayer = activeHand.gestureLayer;
-                    if (gestureUI.gestureLayer != null)
+                    else if (blockCode == 2 && !ProceedCalibration() ) //we were blocked by calibration
                     {
-                        gestureUI.gestureToCheck = activeHand.gestureLayer.gestures.Length > 0 ? activeHand.gestureLayer.gestures[0] : null;
+                        canProceedNow = false;
                     }
+                    if (canProceedNow)
+                    {
+                        nextBtnInstr.text = "";
+                        this.nextBtn.interactable = this.currStep < this.instructions.Length - 1;
+                        Debug.Log("Unlock the next button, we are " + (blockCode == 1 ? "connected" : "calibrated"));
+                        blockCode = 0;
+                    }
+
                 }
             }
-            else
+
+            if (Input.GetKeyDown(nextKey))
             {
-                if (Input.GetKeyDown(nextKey))
+                if (this.ProceedConnection() && this.ProceedCalibration())
                 {
-                    NextStep();
+                    NextInstruction();
                 }
-                else if (Input.GetKeyDown(prevKey))
-                {
-                    PreviousStep();
-                }
-                if (Input.GetKeyDown(wristKey))
-                {
-                    CalibrateWrist();
-                }
+            }
+            else if (Input.GetKeyDown(prevKey))
+            {
+                PreviousInstruction();
             }
         }
+
     }
 }

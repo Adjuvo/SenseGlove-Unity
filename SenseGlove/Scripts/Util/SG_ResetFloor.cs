@@ -3,7 +3,7 @@
 namespace SG.Util
 {
     /// <summary> Attach to a Trigger Collider to automatically reset SG_Grabables to their original position when they enter the zone (and aren't being held). </summary>
-    public class SG_ResetFloor : MonoBehaviour
+    public class SG_ResetFloor : SG_DropZone
     {
         //--------------------------------------------------------------------------------------------------------------------------
         // Member Variables
@@ -14,38 +14,17 @@ namespace SG.Util
         /// <summary> Enables / Diables the reset functionality (since OnTriggerEnter also fires on disabled behaviours) </summary>
         public bool resetEnabled = true;
 
-
-        //--------------------------------------------------------------------------------------------------------------------------
-        // Functions
-
-        /// <summary> Check if you can reset a collider. </summary>
-        /// <param name="other"></param>
-        protected void CheckReset(Collider other)
+        /// <summary> Upon detecting an object, reset its location. </summary>
+        /// <param name="args"></param>
+        protected override void OnObjectDetected(DropZoneArgs args)
         {
-            SG_Grabable grabable = other.gameObject.GetComponent<SG_Grabable>();
-            if (grabable == null && other.attachedRigidbody != null) { grabable = other.attachedRigidbody.GetComponent<SG_Grabable>(); }
-            if (grabable != null && !grabable.IsInteracting() && other.tag.Contains(this.resetTag) )
+            base.OnObjectDetected(args);
+            if (args.grabable.tag.Contains(this.resetTag))
             {
-                grabable.ResetObject();
+                Debug.Log("Resetting " + args.grabable.name);
+                args.grabable.ResetLocation();
             }
         }
-
-        //--------------------------------------------------------------------------------------------------------------------------
-        // Monobehaviour
-
-
-        private void OnTriggerEnter(Collider other)
-        {
-            if (resetEnabled)
-                CheckReset(other);
-        }
-
-        private void OnTriggerStay(Collider other)
-        {
-            if (resetEnabled)
-                CheckReset(other);
-        }
-
 
     }
 }

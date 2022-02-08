@@ -4,7 +4,7 @@
 namespace SG
 {
     /// <summary> A script to show the Haptic Glove status to the User. </summary>
-    public class SG_HandStateIndicator : MonoBehaviour
+    public class SG_HandStateIndicator : SG_HandComponent
     {
         //----------------------------------------------------------------------------------------------------
         // HandState Enumerator
@@ -27,13 +27,8 @@ namespace SG
         //----------------------------------------------------------------------------------------------------
         // Member variables
 
-        /// <summary> The current HandState of this Indicator. </summary>
-        public HandState CurrentState
-        {
-            get; private set;
-        }
-
         /// <summary> Optional wrist test to notify your user of something important. </summary>
+        [Header("HandState Components")]
         public TextMesh wristText = null;
 
 
@@ -50,6 +45,12 @@ namespace SG
         public Material[] mats_Calibrating = new Material[0];
         /// <summary> The materials to show when the glove is disconnected. </summary>
         public Material[] mats_Disconnected = new Material[0];
+
+        /// <summary> The current HandState of this Indicator. </summary>
+        public HandState CurrentState
+        {
+            get; private set;
+        }
 
 
         //----------------------------------------------------------------------------------------------------
@@ -104,11 +105,12 @@ namespace SG
             }
         }
 
-        //----------------------------------------------------------------------------------------------------
-        // Monobehaviour
+        //-------------------------------------------------------------------------------------
+        // HandComponent overrides
 
-        void Awake()
+        protected override void CreateComponents()
         {
+            base.CreateComponents();
             if (mats_Default.Length == 0 && handMeshes.Length > 0)
             {   //Check if we have a default material
                 Material[] dMats = handMeshes[0].materials;
@@ -116,7 +118,18 @@ namespace SG
                 for (int i = 0; i < dMats.Length; i++) { copyMats[i] = dMats[i]; }
                 mats_Default = copyMats;
             }
-            
+        }
+
+        protected override void LinkToHand(SG_TrackedHand newHand, bool firstLink)
+        {
+            base.LinkToHand(newHand, firstLink);
+            if (WristText != null)
+            {
+                SG_SimpleTracking link = Util.SG_Util.TryAddComponent<SG_SimpleTracking>(wristText.gameObject);
+                Transform wrist = newHand.GetTransform(SG_TrackedHand.TrackingLevel.RenderPose, HandJoint.Wrist);
+                link.SetTrackingTarget(wrist, true);
+                link.updateTime = SG_SimpleTracking.UpdateDuring.LateUpdate;
+            }
         }
 
     }

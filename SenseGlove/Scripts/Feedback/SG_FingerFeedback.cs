@@ -5,14 +5,37 @@ namespace SG
 
     /// <summary> Extends impact feedback to also take into account force feedback from SG_Material's.
     /// These scripts calculate their distance into a collider. </summary>
-    public class SG_FingerFeedback : SG_BasicFeedback
+    public class SG_FingerFeedback : SG_SimpleTracking
     {
+
         //-------------------------------------------------------------------------------------------------------------------------------------------
         // Member Variables
 
-        /// <summary> If true, the force vectors of this script are rendered into the Scene view. </summary>
+
         [Header("Force-Feedback Parameters")]
+        public SGCore.Finger finger;
+
+
+        /// <summary> If true, the force vectors of this script are rendered into the Scene view. </summary>    
         public bool debugDirections = false;
+
+        public TextMesh debugTextElement;
+
+        public string DebugText
+        {
+            get { return debugTextElement != null ? debugTextElement.text : ""; }
+            set { if (debugTextElement != null) { debugTextElement.text = value; } }
+        }
+
+        /// <summary> Flexible detector list that will handle most of the detection work. We're only interested in the Interactable scripts it provides. </summary>
+		public SG_ScriptDetector<SG_Material> materialsTouched = new SG_ScriptDetector<SG_Material>();
+
+        public void UpdateDebugger()
+        {
+            DebugText = (this.TouchedMaterialScript != null ? TouchedMaterialScript.name : "-") + "\n" + System.Math.Round(this.DistanceInCollider, 3) + "m\n" + this.ForceLevel + "%";
+        }
+
+
 
         /// <summary> The position of the collider the moment it entered a new object.  Used to determine collider normal. </summary>
         protected Vector3 entryOrigin = Vector3.zero;
@@ -67,9 +90,10 @@ namespace SG
         }
 
         /// <summary> Setup this collider's properties </summary>
-        public override void SetupSelf()
+        public void SetupSelf()
         {
-            base.SetupSelf();
+            //Debug.Log(this.name + "Calculated Offsets!");
+            Util.SG_Util.TryAddRB(this.gameObject, false, true); //ensure this one has a RigidBody
             ResetForces();
         }
 
@@ -95,44 +119,6 @@ namespace SG
             return collider == TouchedCollider;
         }
 
-        /// <summary> Utility function to find a SG_Material script attached to a collider. Returns true if such a script exists. </summary>
-        /// <param name="col"></param>
-        /// <param name="materialScript"></param>
-        /// <param name="favourSpecific"></param>
-        /// <returns></returns>
-        public static bool GetMaterialScript(Collider col, out SG_Material materialScript, bool favourSpecific = true)
-        {
-            SG_Material myMat = col.gameObject.GetComponent<SG_Material>();
-            if (myMat != null && favourSpecific) //we favour the 'specific' material over a global material.
-            {
-                materialScript = myMat;
-                return true;
-            }
-            //myMat might exist, but we favour the connected one if possible.
-            SG_Material connectedMat = col.attachedRigidbody != null ?
-                col.attachedRigidbody.gameObject.GetComponent<SG_Material>() : null;
-
-            if (connectedMat == null) { materialScript = myMat; } //the connected body does not have a material, so regardless we'll try the specific one.
-            else { materialScript = connectedMat; }
-            return materialScript != null;
-        }
-
-        /// <summary> Utility function to check if a collider has a specific SG_Material collider attached. </summary>
-        /// <param name="col"></param>
-        /// <param name="touchedMat"></param>
-        /// <returns></returns>
-        public static bool SameScript(Collider col, SG_Material touchedMat)
-        {
-            if (touchedMat != null && col != null)
-            {
-                if (GameObject.ReferenceEquals(col.gameObject, touchedMat.gameObject))
-                    return true; //this is the touched object.
-                                 // at this line, col does not have the same material, but perhaps its attachedRigidbody does.
-                return col.attachedRigidbody != null && GameObject.ReferenceEquals(col.attachedRigidbody.gameObject,
-                    touchedMat.gameObject);
-            }
-            return false;
-        }
 
 
         /// <summary> Returns true if this script's touchedObject has been disabled or destroyed. </summary>
@@ -152,9 +138,9 @@ namespace SG
             Vector3 Oa = transform.position;
             Vector3 Ea = col.ClosestPoint(Oa); //if something went wrong with ClosestPoint, it returns the entryPos.
 
-            //transform these to the objects local space.
-            entryOrigin = col.gameObject.transform.InverseTransformPoint(Oa);
-            entryPoint = col.gameObject.transform.InverseTransformPoint(Ea);
+            Transform colT = col.gameObject.transform;
+            entryOrigin = SG.Util.SG_Util.CaluclateLocalPos(Oa, colT.position, colT.rotation);
+            entryPoint = SG.Util.SG_Util.CaluclateLocalPos(Ea, colT.position, colT.rotation);
 
             DistanceInCollider = 0;
         }
@@ -165,14 +151,15 @@ namespace SG
         {
             if (TouchedObject != null)
             {
-                Vector3 O = TouchedObject.transform.TransformPoint(entryOrigin);  //O origin of collider on touch
-                Vector3 E = TouchedObject.transform.TransformPoint(entryPoint);   //E point where the collider touched the object
+                Transform colT = TouchedObject.transform;
+                Vector3 O = SG.Util.SG_Util.CalculateAbsWithOffset(colT.position, colT.rotation, entryOrigin);
+                Vector3 E = SG.Util.SG_Util.CalculateAbsWithOffset(colT.position, colT.rotation, entryPoint);
                 Vector3 P = transform.position;                         //P current collider position
 
                 if (debugDirections)
                 {
-                    Debug.DrawLine(O, E);
-                    Debug.DrawLine(O, P);
+                    Debug.DrawLine(O, E, Color.white);
+                    Debug.DrawLine(O, P, Color.blue);
                 }
                 Vector3 OE = (E - O).normalized;
                 Vector3 OP = P - O;
@@ -186,7 +173,7 @@ namespace SG
                 //we have calculated the distance, now for the material (if any is present)
                 if (TouchedMaterialScript != null)
                 {
-                    ForceLevel = TouchedMaterialScript.CalculateForce(DistanceInCollider, (int)this.handLocation);
+                    ForceLevel = TouchedMaterialScript.CalculateForce(DistanceInCollider, (int)this.finger);
                 }
                 //now for the deform script if it exists
                 if (TouchedDeformScript != null && DistanceInCollider > 0)
@@ -199,6 +186,7 @@ namespace SG
                     }
                     TouchedDeformScript.AddDeformation(-OE, deformPoint, DistanceInCollider);
                 }
+                UpdateDebugger();
             }
         }
 
@@ -214,6 +202,7 @@ namespace SG
             TouchedMaterialScript = material;
             TouchedDeformScript = TouchedObject.GetComponent<SG_MeshDeform>();
             ForceLevel = 0; //still 0 since OP == EO
+            UpdateDebugger();
         }
 
         /// <summary> Remove this script's reference to its SG_Material so that it is free to find another </summary>
@@ -225,11 +214,17 @@ namespace SG
             if (TouchedDeformScript != null) { TouchedDeformScript.ResetMesh(); }
             TouchedDeformScript = null;
             ResetForces();
+            UpdateDebugger();
         }
 
 
         //-------------------------------------------------------------------------------------------------------------------------------------------
         // Monobehaviour
+
+        protected void Start()
+        {
+            SetupSelf();
+        }
 
         protected override void FixedUpdate()
         {
@@ -240,13 +235,13 @@ namespace SG
                 if (entryPoint.Equals(entryOrigin)) { FindForceDirection(TouchedCollider); }
                 else { UpdateFeedback(); }
             }
+            
         }
 
-        protected override void OnTriggerEnter(Collider other)
+        protected void OnTriggerEnter(Collider other)
         {
-            base.OnTriggerEnter(other);
             SG_Material material;
-            if (!this.IsTouching() && GetMaterialScript(other, out material))
+            if (!this.IsTouching() && SG.Util.SG_Util.GetScript(other, out material))
             {
                 AttachScript(other, material);
                 FindForceDirection(other);
@@ -260,6 +255,7 @@ namespace SG
                 DetachScript();
             }
         }
+
 
     }
 

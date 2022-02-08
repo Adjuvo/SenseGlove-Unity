@@ -5,18 +5,18 @@ namespace SG
 {
 	/// <summary> Utility Script that serves as the bridge between VR RIgs and up to two hands. If no VRRigs are assigned, it can be used to  </summary>
 	public class SG_User : MonoBehaviour
-	{
-		//--------------------------------------------------------------------------------------------------------------------------
-		// Member Variables
+    {
+        //--------------------------------------------------------------------------------------------------------------------------
+        // Member Variables
 
-		/// <summary> The Left TrackedHand. Hidden until it (re)connects) </summary>
-		public SG_TrackedHand leftHand;
+        /// <summary> The Left TrackedHand.Hidden until it(re)connects) </summary>
+        public SG_TrackedHand leftHand;
 
-		/// <summary> The Right TrackedHand. Hidden until it (re)connects) </summary>
+		/// <summary> The Right TrackedHand.Hidden until it(re)connects) </summary>
 		public SG_TrackedHand rightHand;
 
-		/// <summary> Hotkey to swap SenseGlove hands. </summary>
-		public KeyCode swapHandsKey = KeyCode.None;
+        /// <summary> Hotkey to swap SenseGlove hands. </summary>
+        public KeyCode swapHandsKey = KeyCode.None;
 
 
 		/// <summary> Optional component to have the user assign the correct variables of a VR headset </summary>
@@ -35,47 +35,55 @@ namespace SG
         /// <summary> Used to check whether or not we swapped last time, which becomes relevant if we're using Vives. </summary>
         public const string swappedKey = "sgSwap";
 
+        /// <summary> HapticGlove components. Since we're no longer sure if HapticGloves are the actual TrackingSource. </summary>
+        protected SG_HapticGlove leftGlove = null, rightGlove = null;
 
-		//--------------------------------------------------------------------------------------------------------------------------
-		// Properties
-
-		/// <summary> Accesses the left TrackedHand activation state </summary>
-		public bool LeftHandEnabled
-		{
-			get { return leftHand != null && leftHand.HandEnabled; }
-			set { if (leftHand != null) { leftHand.HandEnabled = value; } }
-		}
-
-		/// <summary> Accesses the right TrackedHand activation state </summary>
-		public bool RightHandEnabled
-		{
-			get { return rightHand != null && rightHand.HandEnabled; }
-			set { if (rightHand != null) { rightHand.HandEnabled = value; } }
-		}
+        /// <summary> How ofter SG_Users check the hardware connections to see if models need switching. </summary>
+        public static float hwCheckTime = 1.0f;
+        /// <summary> The timer for this specific user. </summary>
+        protected float timer_hwChecks = 0;
 
 
-		/// <summary> retruns true is this user's left hand is connected </summary>
-		public bool LeftHandConnected
-		{
-			get { return leftHand != null && leftHand.gloveHardware != null && leftHand.gloveHardware.IsConnected; }
+        //--------------------------------------------------------------------------------------------------------------------------
+        // Properties
+
+        /// <summary> Accesses the left TrackedHand activation state </summary>
+        public bool LeftHandEnabled
+        {
+            get { return leftHand != null && leftHand.HandModelEnabled; }
+            set { if (leftHand != null) { leftHand.HandModelEnabled = value; } }
         }
 
-		/// <summary> Returns true if this user's right hand is connected </summary>
-		public bool RightHandConnected
-		{
-			get { return rightHand != null && rightHand.gloveHardware != null && rightHand.gloveHardware.IsConnected; }
-		}
+        /// <summary> Accesses the right TrackedHand activation state </summary>
+        public bool RightHandEnabled
+        {
+            get { return rightHand != null && rightHand.HandModelEnabled; }
+            set { if (rightHand != null) { rightHand.HandModelEnabled = value; } }
+        }
 
 
-		/// <summary> Returns the amount of gloves connected to this user [0 .. 1] </summary>
-		public int ConnectedGloves
+        /// <summary> retruns true is this user's left hand is connected </summary>
+        public bool LeftHandConnected
+        {
+            get { return leftHand != null && leftHand.IsConnected(); }
+        }
+
+        /// <summary> Returns true if this user's right hand is connected </summary>
+        public bool RightHandConnected
+        {
+            get { return rightHand != null && rightHand.IsConnected(); }
+        }
+
+
+        /// <summary> Returns the amount of gloves connected to this user [0 .. 1] </summary>
+        public int ConnectedGloves
         {
 			get
             {
-				int n = 0;
-				if (LeftHandConnected) { n++; }
-				if (RightHandConnected) { n++; }
-				return n;
+                int n = 0;
+                if (LeftHandConnected) { n++; }
+                if (RightHandConnected) { n++; }
+                return n;
             }
         }
 		
@@ -89,10 +97,9 @@ namespace SG
         {
             this.handsSwapped = !handsSwapped;
             PlayerPrefs.SetInt(swappedKey, handsSwapped ? 1 : 0); //let the system know we swapped before.
-
-            if (leftHand != null && rightHand != null)
+            if (leftGlove != null && rightGlove != null)
             {
-				leftHand.SwapTracking(rightHand); //swaps around the tracked objects
+                leftGlove.SwapTracking(rightGlove); //swaps around the tracked objects
             }
             UpdateVisuals();
         }
@@ -108,8 +115,8 @@ namespace SG
 				vrRig = detectedVRSet;
 				Debug.Log("Assgined " + detectedVRSet.name + " to the SenseGlove setup");
 
-				if (leftHand != null) { leftHand.SetTrackingHardware(vrRig.leftHandReference, vrRig.hardwareFamily); }
-				if (rightHand != null) { rightHand.SetTrackingHardware(vrRig.rightHandReference, vrRig.hardwareFamily); }
+                if (leftGlove != null) { leftGlove.SetTrackingHardware(vrRig.leftHandReference, vrRig.hardwareFamily); }
+                if (rightGlove != null) { rightGlove.SetTrackingHardware(vrRig.rightHandReference, vrRig.hardwareFamily); }
 
                 bool swappedBefore = PlayerPrefs.GetInt(swappedKey, 0) == 1;
                 if (swappedBefore)
@@ -127,12 +134,12 @@ namespace SG
 		/// <summary> Based on our state(s) [controllers found, devices found, calibration states], update the hand visuals? </summary>
 		public void UpdateVisuals()
         {
-			//for every non-connected glove, just show the controller model (if any exists).
-			//for every connected glove; show the hand (model) and hide the controller;
-			bool rightConnected = RightHandConnected;
-			bool leftConnected = LeftHandConnected;
+            //for every non-connected glove, just show the controller model (if any exists).
+            //for every connected glove; show the hand (model) and hide the controller;
+            bool rightConnected = RightHandConnected;
+            bool leftConnected = LeftHandConnected;
 
-			if (this.vrRig != null && !vrInit) //we have been assigned a VR rig. Hurray!
+            if (this.vrRig != null && !vrInit) //we have been assigned a VR rig. Hurray!
             {
                 if (handsSwapped)
                 {
@@ -140,79 +147,89 @@ namespace SG
                     vrRig.ShowRightController = !leftConnected;
                 }
                 else
-                { 
+                {
                     vrRig.ShowLeftController = !leftConnected;
                     vrRig.ShowRightController = !rightConnected;
                 }
-			}
+            }
 
-			LeftHandEnabled = leftConnected;
-			RightHandEnabled = rightConnected;
-		}
+            LeftHandEnabled = leftConnected;
+            RightHandEnabled = rightConnected;
+        }
 
-		/// <summary> Utility method to grab a left- or right hand when you only have a boolean value. </summary>
-		/// <param name="rightHand"></param>
-		/// <returns></returns>
-		public SG_TrackedHand GetHand(bool rightHand)
+        /// <summary> Utility method to grab a left- or right hand when you only have a boolean value. </summary>
+        /// <param name="rightHand"></param>
+        /// <returns></returns>
+        public SG_TrackedHand GetHand(bool rightHand)
         {
-			return rightHand ? this.rightHand : leftHand;
+            return rightHand ? this.rightHand : leftHand;
         }
 
 
-		//--------------------------------------------------------------------------------------------------------------------------
-		// Monobehaviour
-
-		void OnEnable()
+        public SG_HapticGlove CheckHapticGlove(SG_TrackedHand hand)
         {
-			if (this.headsetDetection != null)
-			{
-				this.headsetDetection.vrSetDetected.AddListener(AssignVRSet);
-			}
-			if (this.rightHand != null && this.rightHand.gloveHardware != null)
+            if (hand != null)
             {
-				this.rightHand.gloveHardware.DeviceConnected.AddListener(UpdateVisuals);
-				this.rightHand.gloveHardware.DeviceDisconnected.AddListener(UpdateVisuals);
+                if (hand.handTrackingSource != null) //try HandPoseProvider
+                {
+                    IHandPoseProvider provider = hand.handTrackingSource.GetComponent<IHandPoseProvider>();
+                    if (provider is SG_HapticGlove)
+                    {
+                        return (SG_HapticGlove)provider;
+                    }
+                }
+                else if (hand.hapticsSource != null) //then try the HapticGloveSource
+                {
+                    IHandFeedbackDevice feedbackDevice = hand.hapticsSource.GetComponent<IHandFeedbackDevice>();
+                    if (feedbackDevice is SG_HapticGlove)
+                    {
+                        return (SG_HapticGlove)feedbackDevice;
+                    }
+                }
             }
-			if (this.leftHand != null && this.leftHand.gloveHardware != null)
-			{
-				this.leftHand.gloveHardware.DeviceConnected.AddListener(UpdateVisuals);
-				this.leftHand.gloveHardware.DeviceDisconnected.AddListener(UpdateVisuals);
-			}
-		}
+            return null;
+        }
+
+
+        //--------------------------------------------------------------------------------------------------------------------------
+        // Monobehaviour
+
+        void OnEnable()
+        {
+            if (this.headsetDetection != null)
+            {
+                this.headsetDetection.vrSetDetected.AddListener(AssignVRSet);
+            }
+        }
 
 
 		void OnDisable()
         {
-			if (this.headsetDetection != null)
-			{
-				this.headsetDetection.vrSetDetected.RemoveListener(AssignVRSet);
-			}
-			if (this.rightHand != null && this.rightHand.gloveHardware != null)
-			{
-				this.rightHand.gloveHardware.DeviceConnected.RemoveListener(UpdateVisuals);
-				this.rightHand.gloveHardware.DeviceDisconnected.RemoveListener(UpdateVisuals);
-			}
-			if (this.leftHand != null && this.leftHand.gloveHardware != null)
-			{
-				this.leftHand.gloveHardware.DeviceConnected.RemoveListener(UpdateVisuals);
-				this.leftHand.gloveHardware.DeviceDisconnected.RemoveListener(UpdateVisuals);
-			}
-		}
+            if (this.headsetDetection != null)
+            {
+                this.headsetDetection.vrSetDetected.RemoveListener(AssignVRSet);
+            }
+        }
 
 
 
 		// Use this for initialization
 		void Awake()
 		{
-			//Ensure the user 
-			if (leftHand != null && leftHand.gloveHardware != null) { leftHand.gloveHardware.connectsTo = HandSide.LeftHand; }
-			if (rightHand != null && rightHand.gloveHardware != null) { rightHand.gloveHardware.connectsTo = HandSide.RightHand; }
+            //CEnsure the hands are setup
+            if (leftHand != null) { leftHand.Setup(); }
+            this.leftGlove = CheckHapticGlove(this.leftHand);
+            if (leftGlove != null) { leftGlove.connectsTo = HandSide.LeftHand; }
 
-			if (this.vrRig != null || this.headsetDetection != null)
-			{	//leave these alone unless we're using is for checking headsets
-				RightHandEnabled = false;
-				LeftHandEnabled = false;
-			}
+            if (rightHand != null) { rightHand.Setup(); }
+            this.rightGlove = CheckHapticGlove(this.rightHand);
+            if (rightGlove != null) { rightGlove.connectsTo = HandSide.RightHand; }
+
+            if (this.vrRig != null || this.headsetDetection != null)
+            {   //leave these alone unless we're using is for checking headsets
+                RightHandEnabled = false;
+                LeftHandEnabled = false;
+            }
 		}
 
 		void Start()
@@ -226,6 +243,11 @@ namespace SG
 					this.vrRig = GameObject.FindObjectOfType<SG_VR_Rig>();
                 }
             }
+            //ignore collisions between perticular colliders, as determined by TrackedHand.
+            if (this.leftHand != null && this.rightHand != null)
+            {
+                this.leftHand.SetIgnoreCollision(this.rightHand, true);
+            }
         }
 
 		// Update is called once per frame
@@ -235,6 +257,17 @@ namespace SG
             {
 				AssignVRSet(vrRig);
             }
+
+            if (timer_hwChecks <= hwCheckTime)
+            {
+                timer_hwChecks += Time.deltaTime;
+                if (timer_hwChecks >= hwCheckTime)
+                {
+                    timer_hwChecks = 0;
+                    UpdateVisuals();
+                }
+            }
+
 			if (Input.GetKeyDown(swapHandsKey)) { this.SwapHands(); }
 		}
 	}

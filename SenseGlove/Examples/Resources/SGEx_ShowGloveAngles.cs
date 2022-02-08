@@ -123,7 +123,7 @@ namespace SG.Examples
 
         private void Update()
         {
-            if (senseGlove != null && senseGlove.IsConnected)
+            if (senseGlove != null && senseGlove.IsConnected())
             {
                 float[][] sData;
                 if (GetSensorData(senseGlove, out sData))

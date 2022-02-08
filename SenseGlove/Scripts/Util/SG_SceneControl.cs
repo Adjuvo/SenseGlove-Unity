@@ -30,7 +30,7 @@ namespace SG.Util
 
 		/// <summary> Resets the current scene </summary>
 		/// <remarks> nonstatic function to call via Buttons / UI. </remarks>
-		public void Reset()
+		public void ResetCurrent()
 		{
 			SG_SceneControl.ResetScene();
 		}
@@ -50,6 +50,20 @@ namespace SG.Util
 			SG_SceneControl.QuitApplication();
 		}
 
+		
+
+
+		/// <summary> Reset to the first scene. </summary>
+		public static void ToFirstScene()
+        {
+			UnityEngine.SceneManagement.SceneManager.LoadScene(0);
+		}
+
+		/// <summary> Reset back to the initial Scene </summary>
+		public void ResetSimulation()
+        {
+			SG_SceneControl.ToFirstScene();
+        }
 
 		//--------------------------------------------------------------------------------------------------------------------------
 		// Monobehaviour

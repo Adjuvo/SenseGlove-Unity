@@ -29,9 +29,24 @@ namespace SG
         /// <summary> Rotation offset between this object and the target transform </summary>
         protected Quaternion rotationOffset = Quaternion.identity;
 
+        /// <summary> Which HandJoint this Tracking Script wants to be linked to. If set to none, it is ignored. </summary>
+        public HandJoint linkMeTo = HandJoint.None;
+
+        /// <summary> Returns true if we need to calculte the offsets during awake. </summary>
+        protected bool initialOffsets = true;
+
+        //protected float lastUpdateTime = -1;
 
         //----------------------------------------------------------------------------------------------
         // Accessors
+
+        /// <summary> The Tracking Starget set to this SimpleTracking Script. Get only. For Set, use SetTrackingTarget. </summary>
+        public Transform TrackingTarget { get { return this.trackingTarget; } }
+
+        /// <summary> The position offset between this object and its target. </summary>
+        public Vector3 PosOffset { get { return positionOffset; } }
+        /// <summary> The rotation offset between this object and its target. </summary>
+        public Quaternion RotOffset { get { return rotationOffset; } }
 
         /// <summary> Enable/Disable the MeshRenderer connected to this script's GameObject </summary>
         public virtual bool DebugEnabled
@@ -47,6 +62,7 @@ namespace SG
                 if (renderComponent != null) { renderComponent.enabled = value; }
             }
         }
+
 
         /// <summary> Returns the supposed, absolute position of this GameObject, based on its offsets. </summary>
         public Vector3 TargetPosition
@@ -80,20 +96,21 @@ namespace SG
         }
 
 
-        /// <summary> Set a new tracking target for this script, which also calculates new offsets </summary>
+        /// <summary> Set a new tracking target for this script, which also calculates new offsets if desired </summary>
         /// <param name="newTarget"></param>
         public virtual void SetTrackingTarget(Transform newTarget, bool calculateNewOffsets)
         {
             this.trackingTarget = newTarget;
             if (trackingTarget != null && calculateNewOffsets)
             {
+                initialOffsets = false;
                 SG.Util.SG_Util.CalculateOffsets(this.transform, trackingTarget, out this.positionOffset, out this.rotationOffset);
             }
         }
 
 
         /// <summary> Update the transform of this script to its TragetPosition and Rotation </summary>
-        protected virtual void UpdatePosition()
+        public virtual void UpdateLocation()
         {
             if (trackingTarget != null && trackingTarget.gameObject.activeInHierarchy) //don;t track if the object is disabled(?)
             {
@@ -108,22 +125,25 @@ namespace SG
 
         protected virtual void Awake()
         {
-            SetTrackingTarget(this.trackingTarget, true); //do it once during the beginning.
+            if (initialOffsets)
+            {
+                SetTrackingTarget(this.trackingTarget, true); //do it once during the beginning, but only if another script hasn't told me to do so yet.
+            }
         }
 
         protected virtual void Update()
         {
-            if (updateTime == UpdateDuring.Update) { UpdatePosition(); }
+            if (updateTime == UpdateDuring.Update) { UpdateLocation(); }
         }
 
         protected virtual void LateUpdate()
         {
-            if (updateTime == UpdateDuring.LateUpdate) { UpdatePosition(); }
+            if (updateTime == UpdateDuring.LateUpdate) { UpdateLocation(); }
         }
 
         protected virtual void FixedUpdate()
         {
-            if (updateTime == UpdateDuring.FixedUpdate) { UpdatePosition(); }
+            if (updateTime == UpdateDuring.FixedUpdate) { UpdateLocation(); }
         }
 
     }

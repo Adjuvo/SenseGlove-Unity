@@ -2,75 +2,95 @@
 
 namespace SG.Examples
 {
+    /// <summary> Selects one of two SG_TrackedHands based on which hand is connected first. </summary>
     public class SGEx_SelectHandModel : MonoBehaviour
     {
-        public SG_HapticGlove leftGlove, rightGlove;
+        public SG.Util.SGEvent ActiveHandConnect = new Util.SGEvent();
+        public SG.Util.SGEvent ActiveHandDisconnect = new Util.SGEvent();
 
-        private GameObject leftHandModel, rightHandModel;
+        [Header("Left Hand Components")]
+        public SG_TrackedHand leftHand;
+        public SG_HapticGlove leftGlove;
 
-        public KeyCode swapHandsKey = KeyCode.Return;
 
-        private bool leftReady = false, rightReady = false;
+        [Header("Right Hand Components")]
+        public SG_TrackedHand rightHand;
+        public SG_HapticGlove rightGlove;
 
-        // Use this for initialization
+
+
+
+        public SG_TrackedHand ActiveHand
+        {
+            get; private set;
+        }
+
+        public bool Connected
+        {
+            get { return this.ActiveHand != null; }
+        }
+
+        public SG_HapticGlove ActiveGlove
+        {
+            get
+            {
+                if (this.ActiveHand != null && ActiveHand.realHandSource is SG.SG_HapticGlove)
+                {
+                    return (SG.SG_HapticGlove) this.ActiveHand.realHandSource;
+                }
+                return null;
+            }
+        }
+
+
+
         void Start()
         {
-            if (leftGlove != null)
-            {
-                leftGlove.gameObject.SetActive(true);
-                leftHandModel = leftGlove.transform.GetChild(0).gameObject;
-            }
-            if (rightGlove != null)
-            {
-                rightGlove.gameObject.SetActive(true);
-                rightHandModel = rightGlove.transform.GetChild(0).gameObject;
-            }
-            SetModels(false, false);
+            leftGlove.connectsTo = HandSide.LeftHand;
+            leftHand.realHandSource = leftGlove;
+            leftHand.HandModelEnabled = false;
+
+            rightGlove.connectsTo = HandSide.RightHand;
+            rightHand.realHandSource = rightGlove;
+            rightHand.HandModelEnabled = false;
         }
 
-        // Update is called once per frame
         void Update()
         {
-            if (leftGlove != null)
+            if (this.ActiveHand == null)
             {
-                if (leftGlove.IsConnected && !leftReady)
+                if (this.rightHand.realHandSource.IsConnected())
                 {
-                    this.leftReady = true;
-                    if (!rightReady)
-                    {
-                        SetModels(true, false);
-                    }
+                    this.rightHand.HandModelEnabled = true;
+                    this.leftHand.gameObject.SetActive(false);
+                    Debug.Log("Connected to a right hand!");
+                    ActiveHand = this.rightHand;
+                    ActiveHandConnect.Invoke();
+                }
+                else if (this.leftHand.realHandSource.IsConnected())
+                {
+                    this.leftHand.HandModelEnabled = true;
+                    this.rightHand.gameObject.SetActive(false);
+                    Debug.Log("Connected to a left hand!");
+                    ActiveHand = this.leftHand;
+                    ActiveHandConnect.Invoke();
                 }
             }
-            if (rightGlove != null)
+            else
             {
-                if (rightGlove.IsConnected && !rightReady)
+                if (ActiveHand.realHandSource == null || !ActiveHand.realHandSource.IsConnected())
                 {
-                    this.rightReady = true;
-                    if (!leftReady)
-                    {
-                        SetModels(false, true);
-                    }
+                    //Disconnection
+                    Debug.Log(ActiveHand.name + " disconnected!");
+                    this.rightHand.HandModelEnabled = false;
+                    this.rightHand.gameObject.SetActive(true);
+                    this.leftHand.HandModelEnabled = false;
+                    this.leftHand.gameObject.SetActive(true);
+                    ActiveHandDisconnect.Invoke();
                 }
-            }
-
-            if (Input.GetKeyDown(swapHandsKey) && (leftReady || rightReady))
-            {
-                SetModels(!this.leftHandModel.activeInHierarchy, !this.rightHandModel.activeInHierarchy);
             }
         }
 
-        public void SetModels(bool left, bool right)
-        {
-            if (leftHandModel != null)
-            {
-                leftHandModel.SetActive(left);
-            }
-            if (rightHandModel != null)
-            {
-                rightHandModel.SetActive(right);
-            }
-        }
 
     }
 

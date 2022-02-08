@@ -74,7 +74,7 @@ namespace SG
                 {
                     this.contents[i] = this.contentsContainer.transform.GetChild(i).GetComponent<SG_Interactable>();
 
-                    this.contents[i].SetInteractable(false);
+                    this.contents[i].enabled = false;
                     SetRB(this.contents[i].gameObject, false, true);
 
                     this.contentRotations[i] = this.contents[i].transform.localRotation;
@@ -158,7 +158,7 @@ namespace SG
             for (int i = 0; i < this.contents.Length; i++)
             {
                 this.contents[i].transform.parent = null;
-                this.contents[i].SetInteractable(true);
+                this.contents[i].enabled = (true);
                 SetRB(this.contents[i].gameObject, true, false);
                 SetColliders(this.contents[i].gameObject, false);
             }
@@ -169,7 +169,7 @@ namespace SG
         {
             for (int i = 0; i < this.contents.Length; i++)
             {
-                this.contents[i].SetInteractable(false);
+                this.contents[i].enabled = (false);
                 SetColliders(this.contents[i].gameObject, true);
                 SetRB(this.contents[i].gameObject, false, true);
                 

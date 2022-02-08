@@ -1,309 +1,354 @@
-﻿using UnityEngine;
+﻿using System.Collections;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace SG
 {
-
-    /// <summary> A DropZone that snaps a Grabable to a specific SnapPoint. </summary>
+    /// <summary> A special kind of DropZone that "snaps" the Grabables it detects to a fixed point in space. </summary>
     public class SG_SnapDropZone : SG_DropZone
     {
+        //-----------------------------------------------------------------------------------------------
+        // Snap Zone Parameters
 
-        /// <summary> The way in which a SnapZone attaches objects to itself. </summary>
-        public enum SnapMethod
+        /// <summary> Additional arguments to create a smooth snapping after locking the object. </summary>
+        /// <remarks> Placed inside SnapDropZone becuase it will likely not be used outside of it. </remarks>
+        public class SnapZoneArgs : DropZoneArgs
         {
-            /// <summary> The snapzone chooses which option to use, based on the Grabable's GrabType propery </summary>
-            ObjectDependent = 0,
-            /// <summary> The Grabable becomes a child object of the dropzone. If it posesses a Rigidbody, it is marked as kinematic. </summary>
-            Parent,
-            /// <summary> The DropZone creates a PhysicsJoint connection between this dropzone and the grabable rigidBody. </summary>
-            FixedJoint
+            /// <summary> Is true once snapping has completed, and the object is securely in place. </summary>
+            public bool snapComplete = false;
+
+            /// <summary> Timer for this object. Determines how far along the movement is. </summary>
+            public float snapTimer = 0;
+
+            /// <summary> Whether or not this object was Enabled before we initiated snap. If this zone doesn't lock it, set it back to this value once snapping completes. </summary>
+            public bool wasEnabled;
+
+            /// <summary> The object's position when smoothed snapping started. </summary>
+            public Vector3 startPosition = Vector3.zero;
+            /// <summary> The object's rotation when smoothed snapping started. </summary>
+            public Quaternion startRotation = Quaternion.identity;
+
+            /// <summary> The last known parent of this object before it became attached to this script. </summary>
+            public Transform lastParent = null;
+
+            /// <summary> Whether or not the object's parent has been restored yet. </summary>
+            public bool parentRestored = false;
+
+            /// <summary> Empty Constructor for child classes. </summary>
+            protected SnapZoneArgs() { }
+
+            /// <summary> Create a new insance of SnapZoneArgs. </summary>
+            /// <param name="detectedScript"></param>
+            public SnapZoneArgs(SG_Grabable detectedScript)
+            {
+                grabable = detectedScript;
+                wasEnabled = detectedScript.enabled; //Might as well log it here for good measure. 
+                lastParent = detectedScript.MyTransform.parent;
+            }
+
+            /// <summary> Stores relevant variables and locks the object for a snap operation. </summary>
+            public void InitiateSmoothSnap()
+            {
+                this.snapTimer = 0; //reset timer either way
+                this.snapComplete = false;
+                this.startPosition = this.grabable.MyTransform.position;
+                this.startRotation = this.grabable.MyTransform.rotation;
+                this.wasEnabled = this.grabable.enabled;
+                this.lastParent = this.grabable.MyTransform.parent;
+                this.grabable.enabled = false; //lock the object nao.
+            }
+
+            /// <summary> Restore this object's parent back to where it was before snapping. </summary>
+            /// <param name="forceRestore"></param>
+            public void RestoreParent(bool forceRestore = false)
+            {
+                if (!parentRestored || forceRestore)
+                {
+                    parentRestored = true;
+                    this.grabable.MyTransform.parent = this.lastParent; //restoring the parent causes glitching if you're moving in the Editor.
+                }
+            }
+
+            /// <summary> During/After snapping; shows the snapping state. Before that, shows the detection state(s). </summary>
+            /// <param name="collidersInside"></param>
+            /// <param name="zoneScript"></param>
+            /// <returns></returns>
+            public override string Print(int collidersInside, SG_DropZone zoneScript)
+            {
+                if (!this.eventFired)
+                {
+                    return base.Print(collidersInside, zoneScript);
+                }
+                //While snapping....
+                return grabable.name + " (" + collidersInside + ") "
+                    + (snapComplete ? "Snapped!" : "Moving...")
+                    + (grabable.enabled ? " Grabable." : " Locked.");
+
+            }
         }
 
-        //--------------------------------------------------------------------------------------------------------------
-        // Snap Properties
+        //-------------------------------------------------------------------------------------------------------------------------
+        // Member Variables
 
-        #region SnapProperties
+        /// <summary> Locks Object to this zone. You're no longer allowed to grab onto it(!) until another script enables it again. </summary>
+        [Header("SnapZone Components")]
+        public bool locksObject = true;
 
-        /// <summary> Contains parameters that assist in snapping/unsnapping to a SnapZone. </summary>
-        /// <remarks> Placed inside a class to reduce the amount of List<> parameters. </remarks>
-        protected class SnapProps
-        {
-            /// <summary> Determines if this object was Interactable before it snapped to this zone. </summary>
-            public bool wasInteractable;
-            /// <summary> Determines if the RigidBody was Kinematic before it snapped. </summary>
-            public bool wasKinematic;
-            /// <summary> Determines if the RigidBody used Gravity before it snapped. </summary>
-            public bool usedGravity;
-            /// <summary> Optional PhysicsJoint that is created if the Object is picked up using FixedJoints. </summary>
-            public Joint myJoint;
-            /// <summary> The old parent of the object </summary>
-            public Transform oldParent = null;
+        /// <summary> If true, this zone becomes the new parent of the object, until it's picked back up. Useful when you're attaching it to moving objects. </summary>
+        public bool useParenting = true;
 
-            /// <summary> Lets the zone know if this object has snapped yet. False by default. </summary>
-            public bool isSnapped = false;
-
-            /// <summary> Create a new instance of SnapProps, based on a singele Grabable's properties. </summary>
-            /// <param name="grabable"></param>
-            public SnapProps(SG_Grabable grabable)
-            {
-                this.wasInteractable = grabable.CanInteract();
-                this.wasKinematic = grabable.WasKinematic;
-                this.usedGravity = grabable.UsedGravity;
-                this.oldParent = grabable.OriginalParent;
-                this.myJoint = null;
-            }
-
-
-            /// <summary> Restore properties back to their original state(s). </summary>
-            /// <param name="grabable"></param>
-            public void RestoreProperties(SG_Grabable grabable)
-            {
-                if (!grabable.IsInteracting())
-                {
-                    grabable.SetInteractable(this.wasInteractable);
-                    grabable.pickupReference.transform.parent = this.oldParent;
-                    if (grabable.physicsBody != null)
-                    {
-                        grabable.physicsBody.useGravity = this.usedGravity;
-                        grabable.physicsBody.isKinematic = this.wasKinematic;
-                    }
-                }
-                this.BreakJoint();
-            }
-
-            /// <summary> Create a Physics Joint between a grabable and a snapZone. </summary>
-            /// <param name="grabable"></param>
-            /// <param name="snapZoneBody"></param>
-            /// <param name="breakForce"></param>
-            public void CreateJoint(SG_Grabable grabable, Rigidbody snapZoneBody, float breakForce)
-            {
-                if (this.myJoint == null)
-                {
-                    if (grabable.physicsBody != null)
-                    {
-                        this.myJoint = grabable.physicsBody.gameObject.AddComponent<FixedJoint>();
-                        this.myJoint.connectedBody = snapZoneBody;
-                        this.myJoint.enableCollision = false;
-                        this.myJoint.breakForce = breakForce;
-                    }
-                }
-                else
-                    SG_Debugger.LogError("Multiple Physics connections to my Properties. Wrong index!");
-            }
-
-            /// <summary> Destroy the PhysicsJoint if it was created in the past. </summary>
-            public void BreakJoint()
-            {
-                if (this.myJoint != null)
-                {
-                    GameObject.Destroy(this.myJoint);
-                    this.myJoint = null;
-                }
-            }
-
-        }
-
-        #endregion SnapProperties
-
-        //--------------------------------------------------------------------------------------------------------------
-        // Class Properties
-
-        /// <summary> When set to true, this SnapZone automatically disables the interaction of the SenseGlove_Grabables that enter it. </summary>
-        [Header("Snap Settings")]
-        [Tooltip("When set to true, this SnapZone automatically disables the interaction of the SenseGlove_Grabables that enter it.")]
-        public bool disablesInteraction = false;
-
-        /// <summary> If set to true, this SnapZone ends the interaction between the hand and the interactable. </summary>
-        [Tooltip("If set to true, this SnapZone ends the interaction between the hand and the interactable when detected.")]
-        public bool takesFromHand = false;
-
-        /// <summary> The point to which the SenseGlove_Grabables will attempt to snap. </summary>
-        /// <remarks> If no RigidBody is attached to this zone, we will attempt to look for one here. </remarks>
-        [Tooltip("The point to which the SenseGlove_Grabables will attempt to snap. If left unassigned, it will default to this GameObject")]
+        /// <summary> If assigned, we'll snap an object's baseTransform to this origin. If not, the object stays floating in space. </summary>
         public Transform snapPoint;
 
-        /// <summary> The way in which the SnapZone attaches objects to itself. </summary>
-        [Tooltip("The way in which the SnapZone attaches objects to itself.")]
-        public SnapMethod snapMethod = SnapMethod.ObjectDependent;
+        /// <summary> If true, we snap the object(s) to this zone's snapPoint position.  </summary>
+        public bool snapToPosition = true;
 
-        /// <summary> Contains properties for before/after snapping </summary>
-        protected List<SnapProps> snapProperties = new List<SnapProps>();
+        /// <summary> if true, we snap the object(s) to this zone's snapPoint rotation </summary>
+        public bool snapToRotation = true;
 
+        /// <summary> Optional component to enable a smooth movement from the held position to the snapped position when the object is detected. 
+        /// If left unassinged, the object will snap to the location instantly. </summary>
+        public SG_SmoothMovement snapSmoothing;
 
-        //--------------------------------------------------------------------------------------------------------------
-        // Methods
+        /// <summary> Fires when an object finishes snapping to this zone, which occurs at most one FixedUpdate after ObjectDetected is called. 
+        /// If you want to do something as soon as it starts snapping, use the ObjectDetected event. </summary>
+        public DropZoneEvent ObjectSnapped = new DropZoneEvent();
 
-        // Base Class Overrides
+        //-------------------------------------------------------------------------------------------------------------------------
+        // DropZone Overrides
 
-        /// <summary> Validates RB / Collider settings on initialization. Add another check for RigidBodies. </summary>
-        public override void ValidateSettings()
+        /// <summary> Apply Snapping Logic to the object before calling the base ObjectDetected method (which calls the event). </summary>
+        /// <param name="args"></param>
+        protected override void OnObjectDetected(DropZoneArgs args) //fires once CanFirEvent has been triggered. Usually 1 frame after OnTriggerEnter.
         {
-            base.ValidateSettings();
-            if (this.physicsBody == null) //if this RB was not set in Base
-                this.physicsBody = this.snapPoint.GetComponent<Rigidbody>();
+
+            //Ensure the object is no longer held.
+            args.grabable.ReleaseSelf();
+
+            //lock the object in place
+            args.grabable.IsKinematic = true; //it it has a RigidBody, set IsKinematic to true. Otherwise, it'll just stay floating as well. This safe way will block double events.
+
+            SnapZoneArgs snapArgs = (SnapZoneArgs)args;
+            //logs some important info
+            snapArgs.InitiateSmoothSnap(); //Always SmoothSnap first. if this obj has no Smoothed snapping, it will fire ObjectSnapped during the next FixedUpdate.
+            //from this point on, it's locked.
+
+            if (useParenting) 
+            {
+                args.grabable.MyTransform.parent = this.ParentTransform;
+            }
+
+            //fires the event
+            base.OnObjectDetected(args);
         }
 
 
-        /// <summary> Fires when an object first enters the zone. Record its snap-properties. </summary>
-        /// <param name="grabable"></param>
-        public override void AddObject(SG_Grabable grabable)
+        /// <summary> Also restore the object's parent if we haven't already. </summary>
+        /// <param name="args"></param>
+        protected override void OnObjectRemoved(DropZoneArgs args)
         {
-            this.snapProperties.Add(new SnapProps(grabable)); //empty
-            base.AddObject(grabable); //if time==0, then CallObjectDetect is also coaaled.
-        }
-
-        /// <summary> Called when an Object is detected and its event is called. End interation if needed, then snap it </summary>
-        /// <param name="detectedObject"></param>
-        protected override void CallObjectDetect(SG_Grabable detectedObject)
-        {
-            if (this.disablesInteraction)
-                detectedObject.SetInteractable(false);
-
-            if (this.takesFromHand)
-                detectedObject.EndInteraction();
-
-            if (!detectedObject.IsInteracting())
-                this.AttachObject(detectedObject);
-            else //we still are interacting, meaning we did not disable nor take from the hand.
-                detectedObject.InteractionEnded += Grabable_InteractionEnded; //not subscribed to untill this object is released.
-
-            base.CallObjectDetect(detectedObject);
-        }
-
-        /// <summary> Fires when an object is removed from the zone. Unsubscribe from method(s). </summary>
-        /// <param name="index"></param>
-        protected override void RemoveObject(int index)
-        {
-            this.ReleaseObject(index); //released the object
-            this.snapProperties.RemoveAt(index);
-
-            base.RemoveObject(index); //removes the object from a list.
+            base.OnObjectRemoved(args);
+            ((SnapZoneArgs)args).RestoreParent(); //ensure it's restored
         }
 
 
-
-        // Class Methods
-
-
-        /// <summary> Returns true if this particular object has been detected and snapped within the SnapZone. </summary>
-        /// <param name="grabable"></param>
+        /// <summary> Fires when the object enters this zone for the first time. Generates SnapZoneArgs instead of DropZoneArgs. </summary>
+        /// <param name="script"></param>
         /// <returns></returns>
-        public bool IsSnapped(SG_Grabable grabable)
+        protected override DropZoneArgs GenerateZoneArguments(SG_Grabable script)
         {
-            int index = ListIndex(grabable, this.objectsInside);
-            if (index > -1)
-                return this.snapProperties[index].isSnapped;
+            return new SnapZoneArgs(script);
+        }
+
+        /// <summary> Updates object's location while it is snapping smoothly. Then call the base method for detection. </summary>
+        /// <param name="args"></param>
+        /// <param name="dT"></param>
+        protected override void CheckObject(DropZoneArgs args, float dT)
+        {
+            if (args.eventFired) //must be detected for us to begin a smooth transition
+            {
+                SnapZoneArgs snapArgs = (SnapZoneArgs)args;
+                if (!snapArgs.snapComplete)
+                {
+                    snapArgs.snapTimer += dT;
+                    if (snapSmoothing == null || snapArgs.snapTimer >= this.snapSmoothing.movementTime) //if any point the smoothing is deleted
+                    {
+                       // Debug.Log(this.name + ": Finished snapping " + args.grabable + ". You should now be able to pick it up again");
+                        this.FinishSnap(snapArgs);
+                    }
+                    else
+                    {
+                        //Ideally, I'd use the objects "MoveToLocation" - But it will be Kinematic anyway, and should hold the speed as determine by the SnapZone
+                        snapSmoothing.UpdateLocation(snapArgs.grabable.MyTransform, this.snapPoint, snapArgs.startPosition, snapArgs.startRotation, snapArgs.snapTimer);
+                    }
+                }
+                else if (snapArgs.grabable.IsGrabbed()) //this fires when the snapping is complete but the object is grabbed once more.
+                {
+                   // Debug.Log(this.name + ": " + snapArgs.grabable.name + " is grabbed, restoring the parenting (RB?).");
+                    snapArgs.RestoreParent(); //restores if it isn't already. 
+                }
+            }
+            base.CheckObject(args, dT); //fires the event if we haven't already.
+        }
+
+
+        //-------------------------------------------------------------------------------------------------------------------------
+        // SnapDropZone Functions
+
+        /// <summary> The transform of this Zone to use as a parent for objects that we're snapping. </summary>
+        /// <remarks> we prefer to snap to the snapPoint rather than this Zone, if possible? </remarks>
+        public Transform ParentTransform
+        {
+            get
+            {
+                return this.snapPoint != null ? this.snapPoint : this.transform;
+            }
+        }
+
+
+        /// <summary> Returns true if all objectsToGot in this zone have been snapped. </summary>
+        /// <returns></returns>
+        public virtual bool AllObjectsSnapped()
+        {
+            if (this.objectsToGet.Count == 0 || this.objectsToGet.Count != this.detectionArguments.Count) { return false; }
+            //Don't go here unless we have at least the correct abount of objects inside.
+            for (int i = 0; i < this.detectionArguments.Count; i++)
+            {
+                if (!((SnapZoneArgs)detectionArguments[i]).snapComplete) //there's at least one that has not yet snapped.
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        /// <summary> Confirm if a specific Grabable is in the process of being snapped to this zone through a smoothedSnap </summary>
+        /// <param name="objToCheck"></param>
+        public virtual bool IsMovingToSnap(SG_Grabable objToCheck)
+        {
+            int snapIndex = ArgumentIndex(objToCheck);
+            if (snapIndex > -1)
+            {
+                SnapZoneArgs args = (SnapZoneArgs)this.detectionArguments[snapIndex];
+                return args.eventFired && !args.snapComplete;
+            }
             return false;
         }
 
+        /// <summary> Confirm if a specific Grabable is snapped to this zone </summary>
+        /// <param name="objToCheck"></param>
+        public virtual bool IsSnapped(SG_Grabable objToCheck)
+        {
+            int snapIndex = ArgumentIndex(objToCheck);
+            if (snapIndex > -1)
+            {
+                SnapZoneArgs args = (SnapZoneArgs)this.detectionArguments[snapIndex];
+                return args.snapComplete;
+            }
+            return false;
+        }
 
-        /// <summary> Snaps an object to this Zone's snapPoint, based on the Grabable's grabType. </summary>
+        /// <summary> Safely snap a Transform to this SnapZone, using it's 'snap to X' parameters. Does not initate a smooth movement(!). </summary>
+        /// <param name="baseTransform"></param>
+        public virtual void SnapToMe(Transform baseTransform)
+        {
+            //now place it at the snap location(?)
+            if (this.snapPoint != null && baseTransform != null)
+            {
+                if (snapToRotation) { baseTransform.rotation = snapPoint.rotation; }
+                if (snapToPosition) { baseTransform.position = snapPoint.position; }
+            }
+        }
+
+        /// <summary> Snap an object to me, and notify the args container that we're finished. Called when not smooth snapping, or when smooth snap finishes. </summary>
+        /// <param name="objToSnap"></param>
+        protected virtual void FinishSnap(SnapZoneArgs objToSnap)
+        {
+            SnapToMe(objToSnap.grabable.baseTransform);
+            bool wasSnapped = objToSnap.snapComplete;
+            objToSnap.snapComplete = true; //no need check for updates anymore.
+            objToSnap.grabable.enabled = this.locksObject ? false : objToSnap.wasEnabled; //only lock it if we're meant to do so. Otherwise, just turn it back to the way it was.
+            if (!wasSnapped) //wasn't snapped before.
+            {
+                ObjectSnapped.Invoke(objToSnap.grabable);
+            }
+        }
+
+
+        /// <summary> Snaps the Grabable to this SnapZone via programming. You can choose to snap it immedeately, or use the smoothedSnap option(s). </summary>
         /// <param name="grabable"></param>
-        protected void AttachObject(SG_Grabable grabable)
+        /// <param name="snapInstantly"></param>
+        /// <returns> Anything over 0 means a succesful snap
+        /// -1 - This Grabable cannot be detected by this SnapZone. It did not happen
+        /// 0 - This object was already snapped
+        /// 1 - The object was moving to the snapPoint - It will snap now / soon
+        /// 2 - This object was not detected yet. It will snap now / soon
+        /// </returns>
+        public virtual int SnapToMe(SG_Grabable grabable, bool snapInstantly)
         {
-            grabable.SnapMeTo(this.snapPoint, true);
-            grabable.InteractionBegun += Grabable_InteractionBegun;
-            grabable.ObjectReset += Grabable_ObjectReset;
-
-            int index = ListIndex(grabable, this.objectsInside);
-
-            if (this.snapMethod == SnapMethod.FixedJoint
-                || (this.snapMethod == SnapMethod.ObjectDependent && grabable.pickupMethod == GrabType.FixedJoint))
+            if (this.CanDetect(grabable)) //it is one I can detect
             {
-                if (grabable.physicsBody != null)
+                int index = this.ArgumentIndex(grabable);
+                SnapZoneArgs snapArgs;
+                if (index > -1) //I've already detected this object
                 {
-                    grabable.physicsBody.useGravity = true;
-                    if (index > -1)
-                    {
-                        this.snapProperties[index].CreateJoint(grabable, this.physicsBody, SG_Grabable.defaultBreakForce);
-                        this.snapProperties[index].isSnapped = true;
-                    }
+                    snapArgs = (SnapZoneArgs) this.detectionArguments[index];
                 }
-                else
-                    SG_Debugger.LogWarning(grabable.name + " does not have a RigidBody to attach to " + this.name + " via PhysicsJoint.");
-            }
-            else //any other way we snap it using the parent method.
-            {
-                grabable.pickupReference.parent = this.snapPoint;
-                if (grabable.physicsBody != null)
+                else //it's never been added the list a.k.a. we've never been detected before. In fact, the object may be too far away to detect (yet).
                 {
-                    grabable.physicsBody.useGravity = false;
-                    grabable.physicsBody.isKinematic = true;
+                    snapArgs = (SnapZoneArgs) this.GenerateZoneArguments(grabable);
+                    this.detectionArguments.Add(snapArgs); //normally I'd advide to use AddToList, but that one also checks for ArgumentIndex, which we've already detremined is -1.
                 }
 
-                if (index > -1)
-                    this.snapProperties[index].isSnapped = true;
+                bool wasSnapping = snapArgs.eventFired;
+                bool wasSnapped = snapArgs.snapComplete;
+                if (!snapArgs.eventFired) //it's not even snapping yet
+                {
+                    this.OnObjectDetected(snapArgs); //instantly fires the event. Also snaps according to my parameters
+                }
+                if (!wasSnapping)
+                {
+                    snapArgs.InitiateSmoothSnap();
+                }
+                if (!snapArgs.snapComplete && snapInstantly) //if that didn't instantly snap me
+                {
+                    this.FinishSnap(snapArgs);
+                }
+                UpdateDebugger(); //report the state(s).
+
+                //Evaluate return params
+                if (wasSnapped) { return 0; }
+                else if (wasSnapping) { return 1; }
+                else if (index < 0) { return 2; }
             }
-        }
-
-        /// <summary> Release a specific object from the zone. </summary>
-        /// <param name="grabable"></param>
-        public void ReleaseObject(SG_Grabable grabable)
-        {
-            this.ReleaseObject(ListIndex(grabable, this.objectsInside));
-        }
-
-        /// <summary> Released an obejct from physics, but not from detection </summary>
-        /// <param name="index"></param>
-        protected void ReleaseObject(int index)
-        {
-            if (index > -1 && index < this.objectsInside.Count)
-            {
-                this.objectsInside[index].InteractionEnded -= Grabable_InteractionEnded;
-                this.objectsInside[index].InteractionBegun -= Grabable_InteractionBegun;
-                this.objectsInside[index].ObjectReset -= Grabable_ObjectReset;
-
-                this.snapProperties[index].RestoreProperties(this.objectsInside[index]); //apply properties to the object back to where it was before.
-            }
-        }
-
-        // Event Handlers
-
-        /// <summary> Fires when an object is picked up from the Sense Glove. Disconnect it from this SnapZone. </summary>
-        /// <param name="source"></param>
-        /// <param name="args"></param>
-        private void Grabable_InteractionBegun(object source, SG_InteractArgs args)
-        {
-            SG_Grabable grabable = (SG_Grabable)source;
-            grabable.InteractionBegun -= Grabable_InteractionBegun; //unsibscribe regardless.
-            this.RemoveObject(grabable);
-        }
-
-        /// <summary> Fires when one of my ObjectsToGet is released. </summary>
-        /// <remarks> Should only be subscribed to when  </remarks>
-        /// <param name="source"></param>
-        /// <param name="args"></param>
-        private void Grabable_InteractionEnded(object source, SG_InteractArgs args)
-        {
-            SG_Grabable grabable = (SG_Grabable)source;
-            grabable.InteractionEnded -= Grabable_InteractionEnded; //unsubscribe from the method.
-            this.AttachObject(grabable);
+            return -1;
         }
 
 
-        /// <summary> Fires when an object is reset. Disconnect it from this SnapZone.</summary>
-        /// <param name="source"></param>
-        /// <param name="args"></param>
-        private void Grabable_ObjectReset(object source, System.EventArgs args)
-        {
-            Debug.Log("An object was reset!");
-
-            SG_Grabable grabable = (SG_Grabable)source;
-            int index = ListIndex(grabable, this.objectsInside);
-            if (index > -1)
-                this.snapProperties[index].BreakJoint();
-            this.RemoveObject(grabable);
-        }
-
-        //--------------------------------------------------------------------------------------------------------------
+        //-------------------------------------------------------------------------------------------------------------------------
         // Monobehaviour
 
-        // Used for initialization.
+        protected override void Awake()
+        {
+            base.Awake();
+            if (this.snapSmoothing == null)
+            {
+                this.snapSmoothing = this.GetComponent<SG_SmoothMovement>();
+            }
+        }
+
+        //Runs once. Using it to check for the validity of settings.
         protected virtual void Start()
         {
-            if (this.snapPoint == null) { this.snapPoint = this.transform; }
+            if (this.snapPoint == null)
+            {
+                Debug.LogWarning(this.name + " has no SnapPoint assigned. Objects snapping to this SnapDropZone will lock themselves in the air.", this);
+            }
+            if (this.objectsToGet.Count != 1)
+            {
+                Debug.LogWarning(this.name + ": You specified " + objectsToGet.Count + " target objects for this SnapZone. They work best with 1 specific object.", this);
+            }
         }
 
     }
-
 }

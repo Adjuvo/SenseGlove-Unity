@@ -112,7 +112,7 @@ namespace SG
                 if (!this.isBroken)
                 {
                     //  SenseGlove_Debugger.Log("Disp:\t" + displacement + ",\t i:\t"+fingerIndex);
-                    if (!this.mustBeGrabbed || (this.mustBeGrabbed && this.myInteractable.IsInteracting()))
+                    if (!this.mustBeGrabbed || (this.mustBeGrabbed && this.myInteractable.IsGrabbed()))
                     {
                         // SenseGlove_Debugger.Log("mustBeGrabbed = " + this.mustBeGrabbed + ", isInteracting: " + this.myInteractable.IsInteracting());
 

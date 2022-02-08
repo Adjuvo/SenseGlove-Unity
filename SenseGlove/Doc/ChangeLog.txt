@@ -1,7 +1,45 @@
 # Changelog
 All notable changes to the SenseGlove Prefabs will be documented in this file.
 
-You are currently using version 2.1
+You are currently using version 2.2
+
+
+## [v2.2] - 2022-02-07
+Major Manipulation and TrackedHands overhaul.
+Use best practices for updating, and take into account that some script ID's may have changed.
+
+### Added
+- IHandPoseProvider interface that represents a device which outputs SG_HandPose data. If you have a device that outputs SG_HandPoses, it can be made compatible with this new system.
+- IHandFeedbackDevice interface, representing a device that can receive SenseGlove Haptic commands.
+- SG_ScriptDetector class to keep track of which colliders are colliding with a RigidBody, and which Monobehaviour Script they belong to. Re-Used multiple times in several detection scripts.
+- SG_Activator utility script that can be used to toggle groups of GameObjects, MeshRenderers and Monobehaviour Scripts. Used as a "middle man" between SG Scripts and object highlight components.
+- SG_SmoothMovement script that allows one to define a time and animationCurve to LERP a position and rotation based on a starting- and end location and an elapsedTime. Optional component for SnapZones to smoothly fly from the hand to the target location.
+- SG_PrecisePlaceZone - Extends the SG_SnapDropZone, but the object must match an specific position and/or rotation before snapping. Used for more precise assembly tasks. 
+- SG_PassThroughColliders and SG_PassthroughLayer scripts. The former detects non-trigger colliders, while the latter uses this information to prevent the fingers from passing though them.
+- SG_HandPoser3D script, which use used to position 21 joints of the hand in 3D space, based on a HandPose, with optional visible lines between them. Used for positioning colliders, and could be used for generalizing SenseGlove output: Not sure when to do with a SG_HandPose? Throw it into a SG_HandPoser3D and use its Transforms.
+- SG_GrabPoint, which replaces SG_GrabZone. Can be attached to an SG_Grabable to give it 'handles', each with their own snap and grab properties.
+
+### Changed
+- Changed around the Plugins folder to prevent Android Build errors.
+- SG_HandPoses now also contain Wrist Position & Rotation data.
+- To reflect this change, SG_TrackedHand script no longer has a TrackedObject and HardwareType, those are now integrated into the SG_HapticGlove script.
+- SG_TrackedHand can now accept any kind of IHandPoseProvider as input, and output its haptics to any kind of IHandFeedbackDevice. Because Unity does not allow direct linking to interfaces, you now instead assign a GameObject via the handTrackingSource and hapitcsSource parameters, from which we'll try to collect it. They can be the same object, or different ones.
+- SG_TrackedHand now also implements the IHandPoseProvider and IHandFeedbackDevice functions, passing them through to whatever device its connected to.
+- SG_TrackedHand now holds information on three separate SG_HandPoses: The Real Hand Pose; which is composed of the hand location & finger tracking in the real world ()Used to determine intent). The Virtual Pose, which uses the real world finger tracking, but the hand location as determined by the Physics engine and Grabable object(s) (Used for FFB / Grab colliders). Finally, the Render Pose, which combines the virtual hand location with the finger pose determined by a grabbed object (animation overrides), or the FingerPassThrough Layer (don't flex through objects). Each of these poses it represented by a series of transforms positioned using a SG_HandPoser3D script.
+- SG_HapticGlove now uses a built-in HapticStream to 'flatten' commands at the end of each frame.
+- SG_Interactables can now be held by one or more GrabScripts, as opposed to only one.
+- The Basic SG_Interactable is no longer abstract, and can be added to objects. It will be detected by SG_GrabScripts, without actually parenting, moving or scaling it. Replaces the SG_DetectGrab script.
+- SG_GrabScripts are optimized to be able to grab 1 (one) SG_Interactable at a time.
+- SG_HandRigidBodies scripts on the "PhysicsTracking" and "RigidBody" layers have been combined into the SG_HandPhysics script. That script is responsible for moving the hand's Physics Colliders and handling collision detection.
+- SG_PhysicsGrab has been reworked. Releasing objects is now "gesture-based", preventing Snapped objects from falling down immediately after being picked up: Opening the hand slightly from where you grabbed it or opening the hand fully releases held objects.
+- Fixed Example 01_HandLayers to reflect the new Hand layer setup.
+
+### Fixed
+- Unity 2019+ fires and additional OnTriggerExit, OnTriggerEnter event when changing an object's IsKinematic value, causing issues in the SG_HoverCollider, SG_DropZone, and SG_HandDetector class. Should no longer occus, save for a known bug with the HandDetectors.
+
+### Known Bugs
+- SG_HandDetector Scripts not registering OnTriggerExit for 1-4 colliders if a hand is removed while holding an SG_Grabable.
+
 
 ## [v2.1] - 2021-10-22
 SenseCom Updates, Minor bug fixes.

@@ -40,6 +40,7 @@ namespace SG.Examples
 		/// <summary> Send the waveFormToSend to each glove in memory. </summary>
 		public void SendWaveForm()
         {
+			Debug.Log("Sending " + waveFormToSend.name + " to " + hapticGloves.Length + " gloves");
             foreach (SG_HapticGlove glove in hapticGloves)
             {
 				if (glove != null)

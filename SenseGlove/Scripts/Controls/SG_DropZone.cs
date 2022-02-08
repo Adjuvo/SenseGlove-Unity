@@ -4,464 +4,460 @@ using UnityEngine;
 
 namespace SG
 {
+    [System.Serializable]
+    public class DropZoneEvent : UnityEngine.Events.UnityEvent<SG_Grabable> { }
 
-    /// <summary> A collider that detects SenseGlove_Grabable objects within its volume. </summary>
-    [RequireComponent(typeof(Collider))]
+    /// <summary> Collider(s) that detects SenseGlove_Grabable objects within its volume. Use it to detect if your Grabables are in the correct location.
+    /// At least one of its colliders should be marked as IsTrigger. </summary>
     public class SG_DropZone : MonoBehaviour
     {
-        //--------------------------------------------------------------------------------------------------------------------------
-        // Event Arguments
+        //-----------------------------------------------------------------------------------------------
+        // Drop Zone Parameters
 
-        /// <summary> Arguments to pass a detected object with events. </summary>
-        public class DropZoneArgs : System.EventArgs
+        /// <summary> Special DropZone parameters for each object detected in this volume. </summary>
+        /// <remarks> Contained within this class since it'll be rarely used outside of it. </remarks>
+        public class DropZoneArgs
         {
-            /// <summary> The object that was detected or removed. </summary>
+            /// <summary> The object that was detected inside the zone. </summary>
             public SG_Grabable grabable;
 
-            /// <summary> Create a new instance of the DropZoneArgs. </summary>
-            /// <param name="obj"></param>
-            public DropZoneArgs(SG_Grabable obj)
+            /// <summary> How long since the object was inside the zone and < detectionTime. </summary>
+            public float eventTimer = 0;
+
+            /// <summary> Whether we fired the Detection Event for this grabable yet. </summary>
+            public bool eventFired = false;
+
+            /// <summary> Default Constructor for override </summary>
+            protected DropZoneArgs() { }
+
+
+            /// <summary> Create a new Instance of a DropZoneArgs. </summary>
+            /// <param name="detectedScript"></param>
+            public DropZoneArgs(SG_Grabable detectedScript)
             {
-                this.grabable = obj;
+                grabable = detectedScript;
+            }
+
+
+            /// <summary> Prints the grabable name, the amount of colliders, and how much time before it is detected. </summary>
+            /// <remarks> Different from ToString(), because it also takes parameters </remarks>
+            /// <param name="collidersInside">The amount of colliders of this Object inside the zone, detected by the ScriptDetector class.</param>
+            /// <param name="zoneScript"></param>
+            /// <returns></returns>
+            public virtual string Print(int collidersInside, SG_DropZone zoneScript)
+            {
+                return grabable.name + " (" + collidersInside + ") "
+                    + (grabable.IsGrabbed() ? "Being Held " : " ")
+                    + (eventFired ? "Detected!" : System.Math.Round(eventTimer, 2) + "/" + zoneScript.detectionTime + "s");
             }
 
         }
 
 
-        //---------------------------------------------------------------------------------------------------------------------------
-        // DropZone Parameters.
+        //-------------------------------------------------------------------------------------------------------------------------
+        // Member Variables
 
-        /// <summary> Properties that assist in object detection. </summary>
-        /// <remarks> Placed inside a class to reduce the amount of List<> parameters. </remarks>
-        protected class DropProps
-        {
-            public float insideTime;
-            public bool detected;
-
-            public DropProps()
-            {
-                this.insideTime = 0;
-                this.detected = false;
-            }
-        }
-
-        //---------------------------------------------------------------------------------------------------------------------------
-        // Properties
-
-        #region Properties
-
-        /// <summary> The objects that should be inside this DropZone. Leave it empty to snap to all SenseGlove_Grabables. </summary>
-        [Tooltip("The objects that should be inside this DropZone. If left empty, this DropZone will detect all kinds of SenseGlove_Grabables..")]
+        /// <summary> Targets that must be inside this DropZone. If assigned, this Zone will ony respond to those objects. If empty, it will register any object. </summary>
+        [Header("DropZone Components")]
         public List<SG_Grabable> objectsToGet = new List<SG_Grabable>();
 
-        /// <summary> The time (in s) that a Grabable must be inside this zone before it is considered 'inside'. </summary>
-        [Tooltip("The time (in s) that a Grabable must be inside this zone before it is considered 'inside'.")]
+        //Splitting the functionality into two: One script (colliderDetection) is solely responsible for decting "in zone or not". Another set is responsible for the event arguments / logic.
+        //Both run parallel to each other (the sizes/indices should be the same).
+
+        /// <summary> Flexible detector list that will handle most of the detection work. We're only interested in the Grabable scripts it provides. </summary>
+        protected SG_ScriptDetector<SG_Grabable> colliderDetection = new SG_ScriptDetector<SG_Grabable>();
+        /// <summary> Runs parallel to the scripts in the zone. Custom arguments related to event firing and snapping. </summary>
+        protected List<DropZoneArgs> detectionArguments = new List<DropZoneArgs>();
+
+
+        /// <summary> The time (in s) that a Grabable must be inside this zone before it is detected. </summary>
+        [Tooltip("The time (in s) that a Grabable must be inside this zone before it is detected.")]
         public float detectionTime = 0.2f;
 
         /// <summary> Determines if objects that are still being held are detected. </summary>
         [Tooltip("Determines if objects that are still being grabbed are detected [true], or if they must be released first [false].")]
         public bool detectHeldObjects = true;
 
-        /// <summary> Fires when an Object is Detected. </summary>
-        [Header("Events")]
-        [Tooltip("Fires when an object is detected.")]
-        [SerializeField] protected SG.Util.SGEvent OnObjectDetected;
+        /// <summary> Optional Highlight to toggle zone indicators / object previes / etc. Access via HighLightEnabled. </summary>
+        public SG_Activator highlighter;
 
-        /// <summary> Fires when an Object is Removed. </summary>
-        [Tooltip("Fires when an object is removed.")]
-        [SerializeField] protected SG.Util.SGEvent OnObjectRemoved;
+        /// <summary> Optional Component to display all objects touched by this collider. </summary>
+        public TextMesh debugTxt;
+
+        /// <summary> Physics Colliders attached to this Zone. Used to disable collision with fingers. </summary>
+        /// <remarks>They are cached here after requesting them once, so that we don't need to look for them again.</remarks>
+        private Collider[] myColliders = null;
+
+        /// <summary> Fires when an object is detected by this zone (it's in there for at least the detectionTime). This also indicates when snapping Starts </summary>
+        public DropZoneEvent ObjectDetected = new DropZoneEvent();
+        /// <summary> Fires when an object is removed from this zone. </summary>
+        public DropZoneEvent ObjectRemoved = new DropZoneEvent();
+
+        private bool setup = true;
+
+        //-------------------------------------------------------------------------------------------------------------------------
+        // Basic DropZone Functions
 
 
-        /// <summary> An optional highlight for this snapzone that can be turned on or off. </summary>
-        [Header("Graphics")]
-        [Tooltip("An optional highlight for this snapzone that can be turned on or off.")]
-        public MeshRenderer[] highLighters;
-
-
-        // Internal properties
-
-        /// <summary> Whether ot not this script has run setup before. </summary>
-        protected bool setup = false;
-
-        /// <summary> Timer variable to check OnCollisionStay. </summary>
-        protected float checkStayTimer = 0;
-
-        /// <summary> The RigidBody connected to this DropZone. </summary>
-        protected Rigidbody physicsBody;
-
-        /// <summary> The list of objects currently inside this dropZone </summary>
-        protected List<SG_Grabable> objectsInside = new List<SG_Grabable>();
-
-        /// <summary> Contains all properties for dropZone logic. </summary>
-        protected List<DropProps> dropProperties = new List<DropProps>();
-
-        /// <summary> The time, in seconds, for which to check OnCollisionStay </summary>
-        /// <remarks> In case the collider is enabled with an object already inside </remarks>
-        protected static float checkStayTime = 0.2f;
-
-        //---------------------------------------------------------------------------------------------------------------------------
-        // Accessors
-
-        /// <summary> Get a list of all objects inside this DropZone. </summary>
+        /// <summary> Returns the number of objects currently inside this DropZone </summary>
         /// <returns></returns>
-        public SG_Grabable[] ObjectsInside
+        public int ObjectsInZoneCount()
         {
-            get { return this.objectsInside.ToArray(); }
+            return this.colliderDetection.DetectedCount();
         }
 
-        /// <summary> Returns a list of objects that this zone is supposed to detect. If it's empty, this zone detects any Grabable. </summary>
-        public SG_Grabable[] TargetObjects
-        {
-            get { return this.objectsToGet.ToArray(); }
-        }
-
-
-        /// <summary> Check the amount of objects within this DropZone. </summary>
+        /// <summary> Returns all SG_Grabable objects within this DropZone. </summary>
         /// <returns></returns>
-        public int NumberOfObjects
+        public SG_Grabable[] ObjectsInZone()
         {
-            get { return this.objectsInside.Count; }
+            return this.colliderDetection.GetDetectedScripts();
         }
 
-
-        /// <summary> Check if all desired objects have been detected. If ObjectsToGet is empty, it will return true, always. </summary>
-        /// <returns></returns>
-        public bool AllObjectsDetected
-        {
-            get
-            {
-                if (objectsInside.Count >= objectsToGet.Count)
-                {
-                    for (int i=0; i<dropProperties.Count; i++)
-                    {
-                        if (!dropProperties[i].detected) { return false; }
-                    }
-                    return true;
-                }
-                return false;
-            }
-        }
-
-        #endregion Properties
-
-        //---------------------------------------------------------------------------------------------------------------------------
-        // Methods
-
-        #region Methods
-
-        // Setup Logic
-
-        /// <summary> Validates the settings of this DropZone. </summary>
-        public virtual void ValidateSettings()
-        {
-            for (int i = 0; i < this.objectsToGet.Count;) //objectsToGet that are null should be removed.
-            {
-                if (this.objectsToGet[i] == null)
-                {
-                    this.objectsToGet.RemoveAt(i);
-                }
-                else { i++; }
-            }
-
-            this.ValidateRB();
-
-            Collider[] myColliders = this.gameObject.GetComponents<Collider>();
-            for (int i = 0; i < myColliders.Length; i++)
-                myColliders[i].isTrigger = true;
-        }
-
-
-        /// <summary> Check if all RigidBody settings allow us to pick up objects. </summary>
-        protected void ValidateRB()
-        {
-            this.physicsBody = this.GetComponent<Rigidbody>();
-            if (this.physicsBody != null)
-            {
-                if (this.physicsBody.useGravity)
-                    SG_Debugger.LogWarning(this.name + ".DropZone has a rigidbody that uses gravity, and might move from its desired location.");
-            }
-            else //we don't have a RigidBody, so one of the ObjectsToGet should have it!
-            {
-                if (this.objectsToGet.Count > 0)
-                {
-                    bool noRBs = true;
-                    for (int i = 0; i < this.objectsToGet.Count; i++)
-                    {
-                        if (this.objectsToGet[i].physicsBody == null)
-                            SG_Debugger.LogWarning(this.objectsToGet[i].name + " will not be detected by " + this.name
-                                + ".DropZone, as neither have a RigidBody attached.");
-                        else
-                            noRBs = false;
-                    }
-                    if (noRBs)
-                    {
-                        Debug.LogWarning("Since none of the ObjectsToGet in " + this.name + " have a RigidBody attached, one was autmatically attached to the GameObject.");
-                        this.physicsBody = this.gameObject.AddComponent<Rigidbody>();
-                        this.physicsBody.useGravity = false;
-                        this.physicsBody.isKinematic = true;
-                    }
-                }
-                else
-                    SG_Debugger.LogWarning(this.name + ".DropZone has no RigidBody of its own, and will therefore only " +
-                        "detect Grabables with a RigidBody attached.");
-            }
-        }
-
-
-
-        // Detection Logic
-
-        #region Detection
-
-        /// <summary> Retrieve the index of a Grabable within a list of Grabables. </summary>
+        /// <summary> Returns true if this Zone is allwed to detect a certain Grabable. </summary>
         /// <param name="obj"></param>
-        /// <param name="grabables"></param>
-        /// <returns> Returns -1 if obj does not exist in grabables. </returns>
-        public static int ListIndex(SG_Grabable obj, List<SG_Grabable> grabables)
+        /// <returns></returns>
+        public virtual bool CanDetect(SG_Grabable obj)
         {
-            if (obj != null)
+            return this.objectsToGet.Count == 0 || this.objectsToGet.Contains(obj);
+        }
+
+        /// <summary> Returns true if obj is in this zone, and has fired its ObjectDetected event. It must, of course be detectable by this zone in the firts place. (check using CanDetect(obj). </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
+        public virtual bool IsDetecting(SG_Grabable obj)
+        {
+            int detectionIndex = this.colliderDetection.DetectionIndex(obj);
+            return detectionIndex > -1 && detectionArguments[detectionIndex].eventFired; //fully detected 
+        }
+
+        /// <summary> Returns true if all ObjectsToGet for this zone have been officially detected. </summary>
+        /// <returns></returns>
+        public virtual bool AllObjectsDetected()
+        {
+            if (this.objectsToGet.Count == 0 || this.objectsToGet.Count != this.detectionArguments.Count) { return false; }
+            //Don't go here unless we have at least the correct abount of objects inside.
+            for (int i=0; i<this.detectionArguments.Count; i++)
             {
-                for (int i = 0; i < grabables.Count; i++)
+                if (!detectionArguments[i].eventFired) //there's at least one whose event has not yet fired.
                 {
-                    if (GameObject.ReferenceEquals(obj.pickupReference.gameObject, grabables[i].pickupReference.gameObject))
-                        return i;
+                    return false;
+                }
+            }
+            return true;
+        }
+        
+
+
+        //-------------------------------------------------------------------------------------------------------------------------
+        // Collision / Trigger Logic
+
+        /// <summary> Returns the index of a specific Grabable within our detectionArguments. Used to find a maching index to collisionDetection. </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
+        protected int ArgumentIndex(SG_Grabable obj)
+        {
+            for (int i=0; i<this.detectionArguments.Count; i++)
+            {
+                if (detectionArguments[i].grabable == obj)
+                {
+                    return i;
                 }
             }
             return -1;
         }
 
-        /// <summary> Check if this Object has already been detected. </summary>
-        /// <param name="obj"></param>
+        /// <summary> Generates new DropZoneArgs to add to the list. Called as soon as the first collider enters the volume. Override this if you want to add custom DropZoneArgs. </summary>
+        /// <param name="script"></param>
         /// <returns></returns>
-        public bool IsDetected(SG_Grabable obj)
+        protected virtual DropZoneArgs GenerateZoneArguments(SG_Grabable script)
         {
-            return SG_DropZone.ListIndex(obj, this.objectsInside) > -1;
+            return new DropZoneArgs(script);
         }
 
-        /// <summary> Check if this SG_HapticGlove is one of the "goal" objects; </summary>
-        /// <param name="obj"></param>
-        /// <returns></returns>
-        public bool IsTarget(SG_Grabable obj)
+        /// <summary> Called OnTirggerEnter. Attempts to add a collider to our ColliderDetection script. If succesful, we also generate Detection Arguments. </summary>
+        /// <param name="col"></param>
+        protected virtual void TryAddCollider(Collider col)
         {
-            if (this.objectsToGet.Count > 0)
-                return SG_DropZone.ListIndex(obj, this.objectsToGet) > -1;
-            return true; //we can accept any kind of Object.
-        }
-
-        /// <summary> Add a target object. </summary>
-        /// <param name="obj"></param>
-        public void AddTarget(SG_Grabable obj)
-        {
-            if (obj != null)
-                this.objectsToGet.Add(obj);
-        }
-
-
-        /// <summary> Adds an object to this SenseGlove_DropZone. Does not fire the eventTime. </summary>
-        /// <param name="grabable"></param>
-        public virtual void AddObject(SG_Grabable grabable)
-        {
-            this.objectsInside.Add(grabable);
-            this.dropProperties.Add(new DropProps());
-
-            if (this.detectionTime == 0 && (!grabable.IsInteracting() || this.detectHeldObjects))
+            //Step1 : Check if it has an Interactable Scrip attached.
+            SG_Grabable interactable;
+            if ( Util.SG_Util.GetScript(col, out interactable) )
             {
-                this.dropProperties[this.dropProperties.Count - 1].detected = true; //mark that we have detected it!
-                this.CallObjectDetect(grabable);
-            }
-        }
-
-
-        /// <summary> Removes a specific object from this SenseGlove_DropZone </summary>
-        /// <param name="grabable"></param>
-        public virtual void RemoveObject(SG_Grabable grabable)
-        {
-            int objIndex = SG_DropZone.ListIndex(grabable, this.objectsInside);
-            if (objIndex > -1)
-                this.RemoveObject(objIndex);
-        }
-
-
-        /// <summary> Raises a removed event and then remove an object from all associated lists </summary>
-        /// <param name="index"></param>
-        protected virtual void RemoveObject(int index)
-        {
-            if (this.dropProperties[index].detected) //only fire the event if this object was detected in the first place.
-                this.CallObjectRemoved(this.objectsInside[index]);
-
-            this.objectsInside.RemoveAt(index);
-            this.dropProperties.RemoveAt(index);
-        }
-
-
-        /// <summary> Clear all objects currently detected within this space. </summary>
-        public virtual void ClearObjects()
-        {
-            int max = this.objectsInside.Count;
-            int i = 0;
-            while (this.objectsInside.Count > 0 && i < max) //ensures everything is cleared without calling the function more than needed.
-            {
-                this.RemoveObject(0);
-                i++;
-            }
-            this.checkStayTimer = 0;
-        }
-
-
-        /// <summary> Check if a newly incoming object belongs to our targets. </summary>
-        /// <param name="obj"></param>
-        protected virtual void CheckObjectEnter(GameObject obj)
-        {
-            SG_Grabable grabableScript = obj.GetComponent<SG_Grabable>();
-            if (grabableScript != null && this.IsTarget(grabableScript) && !this.IsDetected(grabableScript))
-                this.AddObject(grabableScript);
-        }
-
-        /// <summary> Echeck if an exiting object belongs to one of the object we have. </summary>
-        /// <param name="obj"></param>
-        protected virtual void CheckObjectExit(GameObject obj)
-        {
-            SG_Grabable grabableScript = obj.GetComponent<SG_Grabable>();
-            if (grabableScript != null)
-                this.RemoveObject(grabableScript); //RemoveObject(Grabable) will check for indices etc.
-        }
-
-
-        /// <summary> Checks Detection times of the Grabables within this zone. </summary>
-        protected virtual void CheckDetectionTimes()
-        {
-            for (int i = 0; i < this.objectsInside.Count; i++)
-            {
-                if (!this.objectsInside[i].IsInteracting() || this.detectHeldObjects)
+                if (!interactable.KinematicChanged)
                 {
-                    if (this.dropProperties[i].insideTime < this.detectionTime)
+                   // Debug.Log(this.name + " (" + Time.timeSinceLevelLoad + ") Colliding with " + interactable.name + "(" + col.name + ") without changing Kinematicisim");
+                    if (this.CanDetect(interactable)) //this is an object relevant to us. Hurray!
                     {
-                        this.dropProperties[i].insideTime = this.dropProperties[i].insideTime + Time.deltaTime;
-                        if (this.dropProperties[i].insideTime >= this.detectionTime)
+                        //Step 2 : Check if this is one relevant to us
+                        int collidersInZone = this.colliderDetection.AddToList(interactable, col, this); //returns the (new) number of colliders associated with this script
+                        if (collidersInZone == 1) //this is the first collider of this script we've found. Do something!
                         {
-                            this.dropProperties[i].detected = true;
-                            this.CallObjectDetect(this.objectsInside[i]);
+                            DropZoneArgs args = GenerateZoneArguments(interactable);
+                            AddToList(args);
+                            UpdateDetections(0); //check them at t=0;
+                            UpdateDebugger();
+                            //Debug.Log(args.grabable.name + " entered " + this.name + " with its first collider.");
                         }
                     }
                 }
-                else if (!this.dropProperties[i].detected && !this.detectHeldObjects && this.objectsInside[i].IsInteracting())
-                    this.dropProperties[i].insideTime = 0; //reset the timer, but only if we havent fired the event yet.
             }
         }
 
-        #endregion Detection
-
-
-        // Other Logic
-
-        /// <summary> Turn the Highlighter(s) of this DropZone on or off. </summary>
-        /// <param name="active"></param>
-        public void SetHighLight(bool active)
-        {
-            for (int i = 0; i < this.highLighters.Length; i++)
-            {
-                this.highLighters[i].enabled = active;
-            }
-        }
-
-        /// <summary> Resets both the zone and its objects to their original state. </summary>
-        public virtual void ResetZoneAndObjects()
-        {
-            for (int i = 0; i < this.objectsToGet.Count; i++)
-                this.objectsToGet[i].ResetObject();
-
-            this.ClearObjects();
-        }
-
-
-        //---------------------------------------------------------------------------------------------------------------------------
-        // Events
-
-        /// <summary> Event Delegate for DropZones. </summary>
-        /// <param name="source"></param>
+        /// <summary> Actually adds a DropzoneArg to the list. Override this if you wish to intercept it. It's in a separate function in case you wish to force detection. </summary>
         /// <param name="args"></param>
-        public delegate void DropZoneEventHandler(object source, DropZoneArgs args);
-
-        /// <summary> Fires when an object has been detected inside this dropZone. </summary>
-        public event DropZoneEventHandler ObjectDetected;
-
-        /// <summary> Calls the ObjectDetected event </summary>
-        /// <param name="detectedObject"></param>
-        protected virtual void CallObjectDetect(SG_Grabable detectedObject)
+        protected virtual void AddToList(DropZoneArgs args)
         {
-            //Debug.Log(this.name + ": " + detectedObject.name + " Detected!");
-            if (this.ObjectDetected != null)
-                this.ObjectDetected(this, new DropZoneArgs(detectedObject));
-            this.OnObjectDetected.Invoke();
+            int index = ArgumentIndex(args.grabable);
+            if (index < 0)
+            {
+                this.detectionArguments.Add(args);
+            }
         }
 
-        /// <summary> Fires when an object has been removed from this dropZone. </summary>
-        public event DropZoneEventHandler ObjectRemoved;
-
-        /// <summary>  Calls the ObjectRemoved event  </summary>
-        /// <param name="removedObject"></param>
-        protected virtual void CallObjectRemoved(SG_Grabable removedObject)
+        /// <summary> Called during OnTriggerExit. Attempt to remove a collider from colliderDetection. If that's the last collider, remove the matching DropZoneArgs. </summary>
+        /// <param name="col"></param>
+        protected virtual void TryRemoveCollider(Collider col)
         {
-            //Debug.Log(this.name + ": " + removedObject.name + " Removed!");
-            if (this.ObjectRemoved != null)
-                this.ObjectRemoved(this, new DropZoneArgs(removedObject));
-            this.OnObjectRemoved.Invoke();
+            SG_Grabable interactable;
+            if (Util.SG_Util.GetScript(col, out interactable)) // a Grabable just left us
+            {
+                if (!interactable.KinematicChanged)
+                {
+                    int removeCode = this.colliderDetection.RemoveFromList(col, interactable);
+                    if (removeCode == 2) //returns 2 if the script has been completely removed - last collider exited.
+                    {
+                        //Debug.Log(interactable.name + " was completely removed from the zone.");
+                        int argIndex = ArgumentIndex(interactable); //find out my detectionArgs linked to that Grabable. As they run parallel, I should NEVER have an outofRangeException. Leaving this here to warn me if it does.
+                        DropZoneArgs args = detectionArguments[argIndex];
+                        this.detectionArguments.RemoveAt(argIndex);
+                        this.OnObjectRemoved(args); //let the script know it's gone.
+                        UpdateDebugger();
+                    }
+                }
+            }
         }
 
-        #endregion Methods
 
-        //---------------------------------------------------------------------------------------------------------------------------
+        //-------------------------------------------------------------------------------------------------------------------------
+        // Detection Logic
+
+        /// <summary> Returns true if a particular DropZoneArgs is elligible to be detected. Can be overriden to include proximity / rotation matching. </summary>
+        /// <param name="args"></param>
+        /// <returns></returns>
+        protected virtual bool CanFireEvent(DropZoneArgs args)
+        {
+            return this.detectHeldObjects || !args.grabable.IsGrabbed();
+        }
+
+        /// <summary> Returns true if the detectionTimer should be reset when CanFireEvent() is false. e.g. If I grab back onto the object for a dropzone that doesn't detect held objects. </summary>
+        /// <returns></returns>
+        public virtual bool ResetsTimer()
+        {
+            return false;
+        }
+
+        /// <summary> Check all DropZoneArgs to see if we can fire and event or simply update the object itself. </summary>
+        /// <returns></returns>
+        protected virtual void UpdateDetections(float dT)
+        {
+            for (int i=0; i<this.detectionArguments.Count; i++)
+            {
+                CheckObject(detectionArguments[i], dT);
+            }
+        }
+
+        /// <summary> Checks activation / event firing of a single object within this zone. </summary>
+        /// <remarks> Placed in a single function so I can override it in subclasses without doubling the for loops. </remarks>
+        /// <param name="args"></param>
+        /// <param name="dT"></param>
+        protected virtual void CheckObject(DropZoneArgs args, float dT)
+        {
+            if (!args.eventFired) //this one has not been 'detected' yet
+            {
+                if (args.eventTimer < this.detectionTime)
+                {
+                    args.eventTimer += dT; 
+                }
+                else // capping the value at detectionTime so as to avoid any overflow. I know, that would require someone to hover for weeks. But I'm paranoid.
+                { args.eventTimer = detectionTime; }
+
+                if (CanFireEvent(args)) //I'm in the correct location at the moment
+                {
+                    if (args.eventTimer >= this.detectionTime)
+                    {
+                        this.OnObjectDetected(args);
+                    }
+                }
+                else if (this.ResetsTimer())
+                {
+                    args.eventTimer = 0;
+                }
+            }
+        }
+
+        /// <summary> Fires when we have determined that this object is 'detected' as by our base rules (it's not held and in the zone for X amount of time. </summary>
+        /// <param name="args"></param>
+        protected virtual void OnObjectDetected(DropZoneArgs args)
+        {
+            //Fire the event
+            args.eventFired = true; //let it know the event should fire.
+            //Debug.Log("FIRING DETECT EVENT for " + args.grabable);
+            ObjectDetected.Invoke(args.grabable);
+        }
+
+
+        /// <summary> Fires when an object is removed from this zone </summary>
+        /// <param name="args"></param>
+        protected virtual void OnObjectRemoved(DropZoneArgs args)
+        {
+            if (args.eventFired) //at was removed AFTER wewere able to officially detect it.
+            {
+                //Debug.Log("FIRING REMOVED EVENT for " + args.grabable + " evenfired = " + args.eventFired + ", grabableEnabled = " + args.grabable.enabled);
+                ObjectRemoved.Invoke(args.grabable);
+            }
+        }
+
+
+        //-------------------------------------------------------------------------------------------------------------------------
+        // Utility Functions
+
+
+        /// <summary> Runs initial SetupZone() function, but only ever runs it once. So you can safely call this function 100x. </summary>
+        public void Setup()
+        {
+            if (setup)
+            {
+                setup = false;
+                this.SetupZone();
+            }
+        }
+
+        /// <summary> Actually sets up the zone and its components. </summary>
+        protected virtual void SetupZone()
+        {
+            Util.SG_PhysicsHelper.AddCollidersToIgnore(this.GetColliders()); //ignore any HandBones from the SG_HandPhysics script, which may become part of the object.
+            if (this.highlighter == null)
+            {
+                this.highlighter = this.GetComponent<SG_Activator>();
+            }
+            UpdateDebugger(); //clears the text
+        }
+
+        /// <summary> Collect the colliders attached to this GameObject and its children. Fires once. </summary>
+        /// <remarks> Using List<> instead of Array for this one since it's easier to add to in overrided functions </remarks>
+        /// <returns></returns>
+        protected virtual List<Collider> CollectColliders()
+        {
+            List<Collider> res = new List<Collider>();
+            Util.SG_Util.GetAllColliders(this.gameObject, ref res);
+            return res;
+        }
+
+        /// <summary> Retrieve a list of all colliders attached to this GameObject and its direct children. </summary>
+        /// <returns></returns>
+        public Collider[] GetColliders()
+        {
+            if (this.myColliders == null)
+            {
+                this.myColliders = CollectColliders().ToArray();
+            }
+            return this.myColliders;
+        }
+
+        /// <summary> Safely set the highlight / preview of this zone on or off. </summary>
+        /// <param name="active"></param>
+        public void SetHighlight(bool active)
+        {
+            if (this.highlighter != null)
+            {
+                this.highlighter.Activated = active;
+            }
+        }
+
+        /// <summary> Print all objects and their amount of colliders as a string. </summary>
+        /// <param name="delim"></param>
+        /// <returns></returns>
+        public virtual string PrintDetections(string delim = "\n")
+        {
+            //inZone and detectionArgumens should run parallel. 
+            string res = "";
+            for (int i = 0; i < detectionArguments.Count; i++)
+            {
+                int collidersIndex = colliderDetection.ColliderCount(detectionArguments[i].grabable); //make sure to look for it as opposed to copying the index.
+                res += detectionArguments[i].Print(collidersIndex, this);
+                if (i < detectionArguments.Count - 1) { res += delim; }
+            }
+            return res;
+        }
+
+        /// <summary> Debug Text to show all detected colliders. </summary>
+        public string ContentText
+        {
+            get { return debugTxt != null ? debugTxt.text : ""; }
+            set { if (debugTxt != null) { debugTxt.text = value; } }
+        }
+
+        /// <summary> Update the Debug Text to represent the number of objects within this zone, and their paramaters. </summary>
+        public void UpdateDebugger()
+        {
+            if (debugTxt != null) //Don't even start the for loop if we don't have a text assigned.
+            {
+                ContentText = PrintDetections();
+            }
+        }
+
+        /// <summary> Ensure that if scripts have been deleted, removed or no longer detectable, that we throw them out of our lists. </summary>
+        protected virtual void ValidateObjects()
+        {
+            int deletedScripts;
+            this.colliderDetection.ValidateDetectedObjects(this, out deletedScripts, true, true); //if colliders go from >0 to 0, remove it. But is it was already 0, we're moving towards it.
+            if (deletedScripts > 0) //we've removed at least one script(!) and it's not a collider that already had 0?
+            {
+                for (int i = 0; i < this.detectionArguments.Count;)
+                {
+                    if (detectionArguments[i].grabable == null ////Grabable was deleted.
+                        || !colliderDetection.IsDetected(detectionArguments[i].grabable)) // OR it no longer occus in detectedColliders because a collider was deleted.
+                    {
+                        detectionArguments.RemoveAt(i);
+                      //  Debug.Log("Cleaning a deleted script at index " + i);
+                    }
+                    else
+                    {
+                        i++;
+                    }
+                }
+            }
+        }
+
+
+        //-------------------------------------------------------------------------------------------------------------------------
         // Monobehaviour
 
-        #region Monobehaviour
 
-        // Update is called once per frame
-        protected virtual void Update()
+        protected virtual void Awake()
         {
-            if (!this.setup) //placed in Update so that all other scripts can finish initialization before we begin checking for RigidBodies.
+            this.Setup();
+        }
+
+        protected virtual void FixedUpdate()
+        {
+            if (detectionArguments.Count > 0) //it's really only relelevant if we are holding on to anything.
             {
-                this.ValidateSettings();
-                this.setup = true;
+                ValidateObjects();
+                UpdateDetections(Time.deltaTime);
+                UpdateDebugger(); //because we also show detection parameters, we update all the time.
             }
-
-            this.CheckDetectionTimes();
-
-            if (this.checkStayTimer < SG_DropZone.checkStayTime)
-                this.checkStayTimer += Time.deltaTime;
-
         }
-
-        //fires when this script is disabled
-        protected virtual void OnDestroy()
-        {
-            this.ClearObjects();
-        }
-
-        //Fires when we've been re-enabled
-        protected virtual void OnEnable()
-        {
-            this.checkStayTimer = 0; //resets OnTriggerStay timer to begin detecting new objects.
-        }
-
-
 
         protected virtual void OnTriggerEnter(Collider other)
         {
-            this.CheckObjectEnter(other.gameObject);
+            TryAddCollider(other);
         }
 
-        protected virtual void OnTriggerStay(Collider other)
-        {
-            if (this.checkStayTimer < SG_DropZone.checkStayTime)
-                this.CheckObjectEnter(other.gameObject);
-        }
 
         protected virtual void OnTriggerExit(Collider other)
         {
-            this.CheckObjectExit(other.gameObject);
+            TryRemoveCollider(other);
         }
-
-        #endregion Monobehaviour
 
     }
 

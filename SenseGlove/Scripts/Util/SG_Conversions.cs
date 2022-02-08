@@ -178,9 +178,22 @@ namespace SG.Util
         /// <summary> Convert a set of euler angles from Unity into one used by SGCore. </summary>
         /// <param name="euler"></param>
         /// <returns></returns>
-        public static SGCore.Kinematics.Vect3D ToEuler(Vector3 euler)
+        public static SGCore.Kinematics.Vect3D ToEuler(Vector3 unityEuler)
         {
-            return SGCore.Kinematics.Values.Radians(new SGCore.Kinematics.Vect3D(-euler.x, -euler.z, -euler.y));
+            return SGCore.Kinematics.Values.Radians(new SGCore.Kinematics.Vect3D(-unityEuler.x, -unityEuler.z, -unityEuler.y));
+        }
+
+        /// <summary> Convert a couple of sets of Unity Euler Angles </summary>
+        /// <param name="unityEuler"></param>
+        /// <returns></returns>
+        public static SGCore.Kinematics.Vect3D[] ToEuler(Vector3[] unityEuler)
+        {
+            SGCore.Kinematics.Vect3D[] res = new SGCore.Kinematics.Vect3D[unityEuler.Length];
+            for (int i=0; i<unityEuler.Length; i++)
+            {
+                res[i] = ToEuler(unityEuler[i]);
+            }
+            return res;
         }
 
 

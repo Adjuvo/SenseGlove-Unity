@@ -47,11 +47,14 @@ namespace SG
 		/// <summary> Which calibration algorithm to use for this sequence. </summary>
 		public CalibrationType calibrationType = CalibrationType.Quick;
 
-		///// <summary> If true, this hand calibration starts itself automatically when the linkedGlove indicates it's needed. </summary>
-		//public bool autoStartWhenNeeded = false;
-
 		/// <summary> When to start this calibration sequence </summary>
 		public StartCondition startCondition = StartCondition.Manual;
+
+		/// <summary> Whether or not debug information is passed to the user. </summary>
+		public bool debugEnabled = false;
+
+		/// <summary> Optional Element do debug Calibration Data onto </summary>
+		public TextMesh debugText;
 
 		/// <summary> Hotkey to start the calibration and confirm the current step(s_ </summary>
 		public KeyCode nextStepKey = KeyCode.None;
@@ -60,6 +63,7 @@ namespace SG
 		/// <summary> Hotkey to reset the calibration for the linkedGlove's left / right indication. </summary>
 		public KeyCode resetCalibrationKey = KeyCode.None;
 
+		protected bool eventsLinked = false;
 
 		/// <summary> If true, we're currently running through a calibration sequence. </summary>
 		public bool CalibrationActive
@@ -109,6 +113,20 @@ namespace SG
 			}
 		}
 
+		/// <summary> Accesor for Debug messages </summary>
+		public string DebugText
+		{
+			get
+			{
+				return debugText != null ? debugText.text : "";
+			}
+			set
+			{
+				if (debugText != null) { debugText.text = value; }
+			}
+		}
+
+
 		public bool CanAnimate
         {
 			get
@@ -124,6 +142,27 @@ namespace SG
 		//------------------------------------------------------------------------------------------------------------------
 		// Functions
 
+		public void LinkHand(SG_TrackedHand newHand)
+        {
+			UnlinkEvents();
+			this.linkedHand = newHand;
+			// Debug.Log(this.name + "(" + (this.linkedHand != null ? (this.linkedHand.TracksRightHand() ? "R" : "L") : "BEFORE LINK") + "): Setup.");
+			if (this.linkedGlove == null)
+			{
+				SG_HapticGlove myGlove = this.linkedHand != null && this.linkedHand.handTrackingSource != null ? this.linkedHand.handTrackingSource.GetComponent<SG_HapticGlove>() : null;
+				this.linkedGlove = myGlove;
+			}
+
+			//Also link my instructions to the hand's wrist if we don;t have one yet
+			if (this.instructions3D == null && newHand.statusIndicator != null)
+            {
+				this.instructions3D = newHand.statusIndicator.wristText;
+            }
+			this.LinkEvents();
+		}
+
+
+
 		/// <summary> Starts the calibration sequence if it hasn't already.  </summary>
 		/// <param name="cancelActive">If true, this will cancel any active calibration and start a new one</param>
 		public void StartCalibration(bool cancelActive = false)
@@ -135,7 +174,7 @@ namespace SG
 			if (!CalibrationActive)
 			{
 				SetupSequence(); //ensure we're alsways checking for values on time
-				if (internalSequence != null && linkedGlove != null && !linkedGlove.CalibrationLocked && linkedGlove.LockCalibration(this))
+				if (internalSequence != null && linkedGlove != null && !linkedGlove.CalibrationLocked && linkedGlove.StartCalibration(this))
 				{
                     //linkedGlove's calibration is now locked ot this stage.
 					internalSequence.Reset();
@@ -160,14 +199,22 @@ namespace SG
 			//SGCore.HandProfile newProfile;
 			if (internalSequence.CompileRange(out range))
 			{
-				this.linkedGlove.CalibrateHand(range);
-			}
+                SGCore.HandProfile newProfile;
+                SGCore.Calibration.HG_CalibrationSequence.CompileProfile(range, linkedGlove.DeviceType, linkedGlove.TracksRightHand(), out newProfile); //turn it into a newprofile
+                SG_HandProfiles.SetProfile(newProfile);
+
+                if (SG_HandProfiles.SaveLastRange(range, this.linkedGlove.InternalGlove))
+                {
+                    //Debug.Log("Saved Range: " + range.ToString(true));
+                }
+            }
 			else
 			{
 				//Debug.Log("We could not compile a range. Something went wrong....");
 			}
             //HandAnimationEnabled = true;
-            linkedGlove.UnlockCalibraion(this);
+            linkedGlove.CompleteCalibration(this);
+			DebugText = "";
 			CalibrationFinished.Invoke();
 		}
 
@@ -182,9 +229,10 @@ namespace SG
 				InstructionText = "Calibration Cancelled.";
 				timer_resetInstr = 0;
 				internalSequence.Reset();
-                linkedGlove.UnlockCalibraion(this);
-                //HandAnimationEnabled = true;
-            }
+                linkedGlove.CompleteCalibration(this);
+				//HandAnimationEnabled = true;
+			}
+			DebugText = "";
 			CalibrationActive = false;
 		}
 
@@ -206,7 +254,7 @@ namespace SG
 		/// <summary> Updates the calibration sequence; adds points, and checks for completion. </summary>
 		protected void UpdateCalibration()
 		{
-			if (linkedGlove != null && !linkedGlove.IsConnected)
+			if (linkedGlove != null && !linkedGlove.IsConnected())
 			{
 				Debug.Log("Lost Calibration because of a reset!");
 				this.CancelCalibration();
@@ -219,7 +267,6 @@ namespace SG
 				//Debug.Log("Calibration is active!");
 				this.internalSequence.Update(Time.deltaTime);
 				//Debug.Log("Gathered " + internalSequence.DataPointCount + " data points over " + internalSequence.elapsedTime + "s");
-
 
 				if (Input.GetKeyDown(this.nextStepKey))
 				{
@@ -238,50 +285,60 @@ namespace SG
 						this.InstructionText = internalSequence.GetCurrentInstuction();
 					}
 					this.lastStage = internalSequence.CurrentStageInt;
-
-					//if (linkedHand != null && linkedHand.handAnimation != null)
-					//{
-					//	SGCore.HandPose pose;
-					//	if (this.internalSequence.GetHandPose(out pose))
-					//	{
-					//		linkedHand.handAnimation.UpdateHand(new SG.SG_HandPose(pose));
-					//	}
-					//}
+					if (this.debugText != null)
+					{
+						this.DebugText = this.internalSequence.GetDebugInfo();
+					}
 				}
+
 			}
 		}
 
-		/// <summary> Retrieve the basic calibration pose. </summary>
+
+
+
+		/// <summary> Retrieve the internal "preview" pose, as internal SG notation. Does not include wrist position/rotation! </summary>
 		/// <param name="calibrationPose"></param>
 		/// <returns></returns>
-		public bool GetCalibrationPose( out SG_HandPose calibrationPose)
+		public bool GetCalibrationPose(SGCore.Kinematics.BasicHandModel handDimensions, out SG_HandPose calibrationPose)
         {
-			if (this.internalSequence != null)
+			SGCore.HandPose iPose;
+			if (GetCalibrationPose(handDimensions, out iPose))
             {
-				SGCore.HandPose pose;
-                if (this.internalSequence.GetHandPose(out pose))
-                {
-					calibrationPose = new SG.SG_HandPose(pose);
-					return true;
-				}
+				calibrationPose = new SG.SG_HandPose(iPose);
+				return true;
             }
 			calibrationPose = null;
+			return false;
+		}
+
+		/// <summary> Retrieve the internal "preview" pose, as internal SG notation </summary>
+		/// <param name="handDimensions"></param>
+		/// <param name="iCalibrationPose"></param>
+		/// <returns></returns>
+		public bool GetCalibrationPose(SGCore.Kinematics.BasicHandModel handDimensions, out SGCore.HandPose iCalibrationPose)
+        {
+			if (this.internalSequence != null)
+			{
+				return this.internalSequence.GetHandPose(handDimensions, out iCalibrationPose);
+			}
+			iCalibrationPose = null;
 			return false;
 		}
 
 		/// <summary> Reset the profile for the hand our LinkedGlove is connected to. </summary>
 		public void ResetHandCalibration()
 		{
-			SG.SG_HandProfiles.RestoreDefaults(linkedGlove.IsRight);
+			SG.SG_HandProfiles.RestoreDefaults(linkedGlove.TracksRightHand());
 			timer_resetInstr = 0;
-			InstructionText = "Reset " + (linkedGlove.IsRight ? "right" : "left") + " hand calibration.";
+			InstructionText = "Reset " + (linkedGlove.TracksRightHand() ? "right" : "left") + " hand calibration.";
 		}
 
 
 		/// <summary> Check if you need to start calibration, when calibrationStage changes. </summary>
 		public void CheckForStart_ChangedState()
         {
-			if (this.startCondition == StartCondition.WhenNeeded && this.linkedGlove != null && !linkedGlove.CalibrationLocked && this.linkedGlove.CalibrationStage == SGCore.Calibration.CalibrationStage.CalibrationNeeded)
+			if (this.startCondition == StartCondition.WhenNeeded && this.linkedGlove != null && !linkedGlove.CalibrationLocked && this.linkedGlove.GetCalibrationStage() == SGCore.Calibration.CalibrationStage.CalibrationNeeded)
 			{
 				Debug.Log("Automatically starting calibration because " + linkedGlove.name + " needs it, and " + this.name + " is set to start when needed.");
 				this.StartCalibration();
@@ -300,7 +357,7 @@ namespace SG
 		/// <summary> Create a new internal Calibration sequence based on the parameters in the Inspector, it it hasn't been created already </summary>
 		public void SetupSequence()
         {
-			if (linkedGlove != null && internalSequence == null && linkedGlove.IsConnected)
+			if (linkedGlove != null && internalSequence == null && linkedGlove.IsConnected())
 			{
 				SGCore.HapticGlove lastGlove = this.linkedGlove.InternalGlove;
 				if (calibrationType == CalibrationType.Quick)
@@ -316,28 +373,49 @@ namespace SG
 		}
 
 
+		protected void LinkEvents()
+        {
+			if (!eventsLinked)
+			{
+				eventsLinked = true;
+				//Debug.Log(this.name + "(" + (this.linkedHand != null ? (this.linkedHand.TracksRightHand() ? "R" : "L") : "BEFORE LINK") + "): Events Linked.");
+				if (this.linkedGlove != null) { this.linkedGlove.CalibrationStateChanged.AddListener(CheckForStart_ChangedState); }
+				if (this.linkedGlove != null) { this.linkedGlove.DeviceConnected.AddListener(CheckForStart_Connected); }
+			}
+		}
+
+		protected void UnlinkEvents()
+        {
+			if (eventsLinked)
+            {
+				eventsLinked = false;
+				//Debug.Log(this.name + "(" + (this.linkedHand != null ? (this.linkedHand.TracksRightHand() ? "R" : "L") : "BEFORE LINK") + "): Events UnLinked.");
+				if (this.linkedGlove != null) { this.linkedGlove.CalibrationStateChanged.RemoveListener(CheckForStart_ChangedState); }
+				if (this.linkedGlove != null) { this.linkedGlove.DeviceConnected.RemoveListener(CheckForStart_Connected); }
+			}
+        }
+
 		//------------------------------------------------------------------------------------------------------------------
 		// Monobehaviour
 
 		void OnEnable()
         {
-			if (this.linkedGlove != null) { this.linkedGlove.CalibrationStateChanged.AddListener(CheckForStart_ChangedState); }
-			if (this.linkedGlove != null) { this.linkedGlove.DeviceConnected.AddListener(CheckForStart_Connected); }
+			LinkEvents();
         }
 
 		void OnDisable()
         {
-			if (this.linkedGlove != null) { this.linkedGlove.CalibrationStateChanged.RemoveListener(CheckForStart_ChangedState); }
-			if (this.linkedGlove != null) { this.linkedGlove.DeviceConnected.RemoveListener(CheckForStart_Connected); }
+			UnlinkEvents();
 		}
 
 		// Use this for initialization
 		void Start()
 		{
-			if (linkedGlove == null) { linkedGlove = linkedHand.gloveHardware; }
+			//if (linkedGlove == null) { linkedGlove = linkedHand.gloveHardware; }
 			this.InstructionText = baseInstrMessage;
 			timer_resetInstr = resetInstrTime;
 			this.CancellationMessage = "";
+			DebugText = "";
 		}
 
 
@@ -346,6 +424,7 @@ namespace SG
 		{
 			if (!CalibrationActive)
 			{
+				//DebugText = "Calibration Inactive...";
 				if (Input.GetKeyDown(nextStepKey)) { StartCalibration(); }
 				else if (Input.GetKeyDown(resetCalibrationKey)) { ResetHandCalibration(); }
 				if (timer_resetInstr < resetInstrTime)

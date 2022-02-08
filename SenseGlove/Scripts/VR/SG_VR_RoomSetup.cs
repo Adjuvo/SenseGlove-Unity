@@ -55,7 +55,7 @@ namespace SG.VR
         /// <summary> Places the current headset at the target (based on this script's parameters) </summary>
         public void Recenter(Transform target)
         {
-            if (this.vrRig != null)
+            if (this.vrRig != null && target != null)
             {
                 CalculateRigLocation(vrRig.rigRoot.transform, vrRig.headTransfrom, target);
             }
@@ -147,10 +147,10 @@ namespace SG.VR
         {
             if (vrInit && headset != null)
             {
+                this.vrRig = headset;
                 vrInit = false;
                 if (keepBetweenSessions)
                 {
-                    this.vrRig = headset;
                     ApplyLastLocation(vrRig.rigRoot.transform);
                     //StoreRigVariables(vrRig.rigRoot.transform); //store the new variables, in case matchRotation ect have changed since last time?
                 }
@@ -160,6 +160,24 @@ namespace SG.VR
 
         //--------------------------------------------------------------------------------------------------------------------------
         // Monobehaviour
+
+        void Awake()
+        {
+            if (this.roomCenter == null)
+            {
+                this.roomCenter = this.transform;
+            }
+
+            // Scan for VRRigs in case you load this Room Setup into an existing scene.
+            if (this.vrRig == null && headsetDetection == null)
+            {   // nothing's been assigned, so let's try
+                this.headsetDetection = GameObject.FindObjectOfType<SG_VR_Setup>();
+                if (headsetDetection == null) //still null
+                {
+                    this.vrRig = GameObject.FindObjectOfType<SG_VR_Rig>();
+                }
+            }
+        }
 
         void OnEnable()
 		{

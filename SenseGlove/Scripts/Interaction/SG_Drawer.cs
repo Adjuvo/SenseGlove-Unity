@@ -5,370 +5,180 @@ using UnityEngine;
 
 namespace SG
 {
-    /// <summary> A SG_Interactable that moves along one (local) axis. </summary>
-    public class SG_Drawer : SG_Interactable
+    /// <summary> A SG_Interactable that moves along a single (local) axis. You define hof far you can push it in or pull it out from its starting location. </summary>
+    public class SG_Drawer : SG_Grabable
     {
-        //---------------------------------------------------------------------------------------------------------------------------------------
-        //  Properties
+        //--------------------------------------------------------------------------------------------------------------------------------------------------------
+        // Drawer Axis
 
-        #region Properties
-
-        /// <summary> The movement axis along which the SenseGlove_Drawer slides. </summary>
-        [Header("Drawer Options")]
-        [Tooltip("The movement axis along which the SenseGlove_Drawer slides. Change this GameObject's rotation to match the desired direction.")]
-        public MovementAxis moveDirection = MovementAxis.X;
-
-        /// <summary> The handles connected to this drawer. </summary>
-        [Tooltip("Optional handles connected to this drawer.")]
-        public List<SG_GrabZone> handles = new List<SG_GrabZone>();
-
-        // <summary>  Whether or not to snap this drawer onto its ends. </summary>
-        //public bool snapToEnd = false;
-
-        // <summary> Whether or not this drawer should return to original position. </summary>
-        //public bool returnToPosition = true;
-
-        /// <summary> The minimum distance that this drawer can move from its starting position. </summary>
-        [Tooltip("The minimum distance that this drawer can move from its starting position in the positive moveDirection.")]
-        public float minDrawerDist = 0;
-
-        /// <summary> The maximum distance that this drawer can move from its starting position. </summary>
-        [Tooltip("The maximum distance that this drawer can mode from its starting position in the positive moveDirection.")]
-        public float maxDrawerDist = 1;
-
-        //public GameObject drawerContensGroup;
-
-        //public bool hideDrawerContents; //
-
-        /// <summary> Used to ensure the open and closed events are not fired every time. </summary>
-        private bool openEventFired = false, closeEventFired = true; //start in closed position.
-
-        /// <summary> The Grabreference of the SG_GrabScript that is attached to this drawer. </summary>
-        private GameObject grabReference;
-
-        /// <summary> The offset between the grabReference at the time this drawer's interaction began. </summary>
-        private Vector3 grabOffset = Vector3.zero;
-        //private Quaternion grabRotation = Quaternion.identity;
-
-        /// <summary> The movement axis of this drawer. Will always be normalized (size is 1) </summary>
-        private Vector3 moveAxis;
-
-        /// <summary> Automatically recalculates the MoveAxis when one changes the moveDirection via the public property. </summary>
-        private MovementAxis actualMoveDirection = MovementAxis.X;
-
-        #endregion Properties
-
-        //---------------------------------------------------------------------------------------------------------------------------------------
-        //  Monobehaviour
-
-        #region Monobehaviour
-
-        protected virtual void Awake()
+        /// <summary> The axis along which the drawer is moved. </summary>
+        public enum DrawerAxis
         {
-            this.isInteractable = false;
-            this.actualMoveDirection = this.moveDirection;
-            this.SetMoveAxis(this.actualMoveDirection);
-            for (int i = 0; i < this.handles.Count; i++)
+            X = 0,
+            Y = 1,
+            Z = 2
+        }
+
+        //--------------------------------------------------------------------------------------------------------------------------------------------------------
+        // Member Variables
+
+        /// <summary> Local(!) axis along which to move. </summary>
+        [Header("Drawer Components")]
+        public DrawerAxis moveAxis = DrawerAxis.Z;
+
+        protected Vector3 localStartPos = Vector3.zero;
+        protected Quaternion localStartRot = Quaternion.identity;
+
+        /// <summary> How far can the drawer be pushed in from it's starting position. Should be Negative </summary>
+        public float pushDistance = 0.0f;
+        /// <summary> How far can the drawer be pulled out from it's starting position. Should be Positive </summary>
+        public float pullDistance = 1.0f;
+
+        /// <summary> The distance that the drawer has moved in world space [m] </summary>
+        public float drawerDist = 0;
+        /// <summary> How far the drawer had been pushed in/slid out, as a decima; [0 = fully pushed in, 1 = fully pulles out] </summary>
+        [Range(0, 1)] public float drawer_slideValue = 0;
+
+
+        //--------------------------------------------------------------------------------------------------------------------------------------------------------
+        // SG_Grabable Overrides
+
+        protected override void SetupScript()
+        {
+            base.SetupScript();
+
+            this.SetPhysicsbody(false, this.physicsBody != null ? this.physicsBody.isKinematic : true, RigidbodyConstraints.FreezeRotation); //unlock the movement, freeze the rotation.
+            this.UpdateRigidbodyDefaults(); //should always return to this.
+
+            RecalculateBaseLocation();
+        }
+
+
+        /// <summary> Updates the drawer's position </summary>
+        /// <param name="dT"></param>
+        protected override void UpdateLocation(float dT)
+        {
+            List<GrabArguments> heldBy = this.grabbedBy;
+            if (heldBy.Count > 0) //I'm actually grabbed by something
             {
-                this.handles[i].ConnectTo(this);
+                Vector3 targetPosition; Quaternion targetRotation;
+                CalculateTargetLocation(heldBy, out targetPosition, out targetRotation);
+                //My targetPosition is projected onto the MovementAxis. My targetRotation is ignored (set to parent).
+
+                Vector3 projPos; Quaternion projRot;
+                CalculateDrawerTarget(this, targetPosition, out projPos, out projRot, out this.drawerDist);
+                CalculateSliderValue();
+
+                MoveToTargetLocation(projPos, projRot, dT);
+            }
+            else if (this.IsMovedByPhysics) //I have a physicsBody
+            {
+                throw new System.NotImplementedException("The SG_Drawer feature is not yet available for non-Kinematic Rigidbodies.");
             }
         }
 
-        protected virtual void Start()
+
+        //--------------------------------------------------------------------------------------------------------------------------------------------------------
+        // Drawer Functions
+
+        /// <summary> Re-Calculates the  </summary>
+        protected void CalculateSliderValue()
         {
-            this.originalPos = this.transform.position;
-            this.originalRot = this.transform.rotation;
+            float push = -Mathf.Abs(this.pushDistance);
+            float pull = Mathf.Abs(this.pullDistance);
+            this.drawer_slideValue = SG.Util.SG_Util.Map(drawerDist, push, pull, 0, 1);  //no need to clamp, the drawerDist is locked.
         }
 
-        protected virtual void Update()
+        /// <summary> Set the current location of the drawer as "0" for the drawerDistance. </summary>
+        public void RecalculateBaseLocation()
         {
-            if (this.actualMoveDirection != this.moveDirection)
-            {
-                this.SetMoveAxis(this.moveDirection);
-            }
-
-            //the drawer is no longer being held.
-            if (this.grabReference == null)
-            {
-                //return to original position.
-            }
-
+            SG.Util.SG_Util.CalculateBaseLocation(this.MyTransform, out localStartPos, out localStartRot);
         }
 
-        #endregion Monobehaviour
-
-        //---------------------------------------------------------------------------------------------------------------------------------------
-        //  Class Methods
-
-        #region ClassMethods
-
-        /// <summary> Called when a new SG_GrabScript engages in an interaction with this Drawer </summary>
-        /// <param name="grabScript"></param>
-        /// <param name="fromExternal"></param>
-        protected override bool InteractionBegin(SG_GrabScript grabScript, bool fromExternal = false)
+        /// <summary> Returns the position & rotation of the Drawer's base. </summary>
+        public void GetBaseLocation(out Vector3 basePos, out Quaternion baseRot)
         {
-            //SenseGlove_Debugger.Log("Handle.BeginInteraction"); 
-            if (!InteractingWith(grabScript)) //never interact twice with the same grabscript before EndInteraction is called.
-            {
-                this.grabReference = grabScript.grabReference;
-                this._grabScript = grabScript;
-
-                //Quaternion.Inverse(QT) * (vT - vO);
-                this.grabOffset = Quaternion.Inverse(this.grabReference.transform.rotation) * (this.grabReference.transform.position - this.transform.position);
-
-                //Quaternion.Inverse(QT) * (Qo);
-                //this.grabRotation = Quaternion.Inverse(this.grabReference.transform.rotation) * this.transform.rotation;
-
-                /*
-                if (this.physicsBody)
-                {
-                    this.wasKinematic = this.physicsBody.isKinematic;
-                    this.usedGravity = this.physicsBody.useGravity;
-
-                    this.physicsBody.useGravity = false;
-                    this.physicsBody.isKinematic = true;
-                    this.physicsBody.velocity = new Vector3(0, 0, 0);
-                    this.physicsBody.angularVelocity = new Vector3(0, 0, 0);
-                }
-                */
-                return true;
-            }
-            return false;
+            SG.Util.SG_Util.GetCurrentBaseLocation(this.MyTransform, localStartPos, localStartRot, out basePos, out baseRot);
         }
 
-        /// <summary> Called when a SG_GrabScript ends the interaction with this drawer. </summary>
-        /// <param name="grabScript"></param>
-        /// <param name="fromExternal"></param>
-        protected override bool InteractionEnd(SG_GrabScript grabScript, bool fromExternal = false)
-        {
-            //SenseGlove_Debugger.Log("Handle.EndInteraction");
-            if (InteractingWith(grabScript)) //only do the proper endInteraction if the EndInteraction comes from the script currently holding it.
-            {
-                if (grabScript != null)
-                {
-                    //if we're not being held by this same grabscript a.k.a. we've been passed on to another one...
-                    /*
-                    if (this.physicsBody != null)
-                    {
-                        this.physicsBody.useGravity = this.usedGravity;
-                        this.physicsBody.isKinematic = this.wasKinematic;
-                        this.physicsBody.velocity = grabScript.GetVelocity();
-                        //this.physicsBody.angularVelocity = ???
-                    }
-                    */
-                };
-                this.grabReference = null;
-                this._grabScript = null;
-                return true;
-            }
-            return false;
-        }
-
-        /// <summary> Called when the grabreference of the SG_GrabScript has been updated during the LateUpdate function. </summary>
-        public override void UpdateInteraction()
-        {
-            bool maxDistReached = false;
-            bool minDistReached = false;
-
-            //SenseGlove_Debugger.Log("Handle.UpdateInteraction");
-            if (this.grabReference != null)
-            {
-                // SenseGlove_Debugger.Log("GrabReference != null");
-
-                //Quaternion newRotation = this.grabReference.transform.rotation * this.grabRotation;
-                Vector3 newPosition = this.grabReference.transform.position - (this.grabReference.transform.rotation * grabOffset);
-
-                Vector3 OP = newPosition - this.originalPos;
-
-                //project the new position on the desired axis and calculate its length.
-                float cos = Vector3.Dot(OP, this.moveAxis) / (OP.magnitude);
-                float dist = OP.magnitude * cos;
-
-                //SenseGlove_Debugger.Log(SG_Util.ToString(OP) + " . " + SG_Util.ToString(this.moveAxis) + " = " + Vector3.Dot(OP, this.moveAxis));
-                //SenseGlove_Debugger.Log(SG_Util.ToString(OP) + " proj on " + SG_Util.ToString(OP) + " = " + dist);
-
-                //limit it within the drawer's contstraints
-                if (!float.IsNaN(dist))
-                {
-
-                    if (dist >= this.maxDrawerDist)
-                    {
-                        dist = maxDrawerDist;
-                        maxDistReached = true;
-                    }
-                    else if (dist <= this.minDrawerDist)
-                    {
-                        dist = minDrawerDist;
-                        minDistReached = true;
-                    }
-
-                    //scale the (normalized) moveAxis by this same value
-                    this.transform.position = new Vector3(
-                        (this.moveAxis.x * dist) + this.originalPos.x,
-                        (this.moveAxis.y * dist) + this.originalPos.y,
-                        (this.moveAxis.z * dist) + this.originalPos.z
-                    );
-
-                }
-            }
-
-            if (maxDistReached && !this.openEventFired)
-            {
-                this.openEventFired = true;
-                this.closeEventFired = false;
-                this.OnDrawerOpened();
-            }
-            else if (minDistReached && !this.closeEventFired)
-            {
-                this.closeEventFired = true;
-                this.openEventFired = false;
-                this.OnDrawerClosed();
-            }
-        }
-
-        /// <summary> Retrieve the current movement axis [0, 0, 1]. </summary>
-        /// <returns></returns>
-        public Vector3 MoveAxis()
-        {
-            switch (this.actualMoveDirection)
-            {
-                case MovementAxis.X: return new Vector3(1, 0, 0);
-                case MovementAxis.Y: return new Vector3(0, 1, 0);
-                case MovementAxis.Z: return new Vector3(0, 0, 1);
-            }
-            return new Vector3(1, 0, 0); //will probably never get here unless one messes with the DrawerAxis variable(s)
-        }
-
-
-        /// <summary> Force this drawer to its open (maxDist) position. </summary>
-        public void ForceOpen(bool raiseEvent = false)
-        {
-            this.transform.position = this.originalPos + new Vector3(
-                this.moveAxis.x * this.maxDrawerDist,
-                this.moveAxis.y * this.maxDrawerDist,
-                this.moveAxis.z * this.maxDrawerDist
-                );
-            if (!this.openEventFired)
-            {
-                this.openEventFired = true;
-                this.OnDrawerOpened();
-            }
-            this.closeEventFired = false;
-        }
-
-        /// <summary> Force this drawer to its original closed (minDist) position </summary>
-        public void ForceClosed(bool raiseEvent = false)
-        {
-            this.transform.position = this.originalPos;
-            if (!this.closeEventFired)
-            {
-                this.closeEventFired = true;
-                this.OnDrawerClosed();
-            }
-            this.openEventFired = false;
-        }
-
-        /// <summary>  Set the moveDirection of this drawer. This method is cleaner than doing it via the public property </summary>
-        /// <param name="newAxis"></param>
-        public void SetMoveAxis(MovementAxis newAxis)
-        {
-            this.moveDirection = newAxis;
-            this.actualMoveDirection = newAxis;
-            this.moveAxis = (this.originalRot * this.MoveAxis()).normalized;
-        }
-
-        /// <summary> Wheck if this drawer is currently open </summary>
-        /// <returns></returns>
-        public bool IsOpen()
-        {
-            return (this.transform.position - this.originalPos).magnitude >= this.maxDrawerDist;
-        }
-
-        /// <summary> Check if this drawer is currently closed. </summary>
-        /// <returns></returns>
-        public bool IsClosed()
-        {
-            return (this.transform.position - this.originalPos).magnitude <= 0;
-        }
-
-        /// <summary> Save this drawer's current position when the ResetObject is called. </summary>
-        public override void SaveTransform()
-        {
-            this.originalPos = this.transform.position;
-        }
-
-        /// <summary> Reset the drawer (and its contents?) To their original position. </summary>
-        public override void ResetObject()
-        {
-            this.transform.position = this.originalPos;
-        }
-
-
-        #endregion ClassMethods
-
-        //---------------------------------------------------------------------------------------------------------------------------------------
-        //  Events
-
-        #region Events
-
-        //DrawerClosed
-        public delegate void DrawerClosedEventHandler(object source, EventArgs args);
-        /// <summary> Fires the Drawer returns to its initial position. </summary>
-        public event DrawerClosedEventHandler DrawerClosed;
-
-        protected void OnDrawerClosed()
-        {
-            if (DrawerClosed != null)
-            {
-                DrawerClosed(this, null);
-            }
-        }
-
-        //DrawerExtended
-        public delegate void DrawerOpenedEventHandler(object source, EventArgs args);
-        /// <summary> Fires when the drawer reached its maximum extension. </summary>
-        public event DrawerOpenedEventHandler DrawerOpened;
-
-        protected void OnDrawerOpened()
-        {
-            if (DrawerOpened != null)
-            {
-                DrawerOpened(this, null);
-            }
-        }
-
-        #endregion Events;
-
-
-        public Vector3 InitPos
-        {
-            get { return this.originalPos; }
-        }
-
-        public float DrawerRatio
+        /// <summary> Forward directional vector along which we should be moving now. </summary>
+        public Vector3 DrawerDirection
         {
             get
             {
-                return Mathf.Clamp01((this.transform.position - this.originalPos).magnitude / (this.maxDrawerDist - this.minDrawerDist));
+                Vector3 localAxis = SG.Util.SG_Util.GetAxis( (Util.SG_Util.MoveAxis) this.moveAxis ); //I can cast to the Utils moveAxis because the also use XYZ at the start
+                return this.transform.TransformDirection(localAxis);
             }
         }
 
-
-        public override void SetInteractable(bool canInteract)
+        /// <summary> Calculate a drawer target position. Placed in a static function so it can be used bo ther scripts that use sliders. </summary>
+        /// <param name="drawer"></param>
+        /// <param name="nextPositon"></param>
+        /// <param name="targetPos"></param>
+        /// <param name="targetRot"></param>
+        /// <param name="drawerDist"></param>
+        public static void CalculateDrawerTarget(SG_Drawer drawer, Vector3 nextPositon, out Vector3 targetPos, out Quaternion targetRot, out float drawerDist)
         {
-            base.SetInteractable(canInteract);
-            for (int f = 0; f < this.handles.Count; f++)
-                handles[f].SetInteractable(canInteract);
+           // Calculate the ference point for this drawer
+            Vector3 basePos;
+            drawer.GetBaseLocation(out basePos, out targetRot);
+
+            // Project targetPosition onto the movement "plane" 
+            Vector3 projectedPos = SG.Util.SG_Util.ProjectOnTransform(nextPositon, basePos, targetRot);
+            int ax = (int)drawer.moveAxis;
+            for (int i = 0; i < 3; i++)
+            {
+                if (i != ax) { projectedPos[i] = 0; }
+            }
+
+            //ToDO: Limit movement
+            projectedPos[ax] = Mathf.Clamp(projectedPos[ax], -Mathf.Abs(drawer.pushDistance), drawer.pullDistance);
+            drawerDist = projectedPos[ax];
+            
+            //finally: Reproject local back to abs.
+            targetPos = basePos + (targetRot * projectedPos);
         }
+
+        
+
+        /// <summary> Sets the drawer to a certain pulled-out value (0 = fully pushed in, 1 = fully pulled out) </summary>
+        /// <param name="slideValue01"></param>
+        public void SetDrawerAt(float slideValue01)
+        {
+            slideValue01 = Mathf.Clamp01(slideValue01);
+            if (slideValue01 != this.drawer_slideValue) //optimization: Don't change if you're already there.
+            {
+                this.drawer_slideValue = slideValue01;
+
+                //Calculate displacement from base POsition
+                float push = -Mathf.Abs(this.pushDistance);
+                float pull = Mathf.Abs(this.pullDistance);
+                float localDisplacement = SG.Util.SG_Util.Map(slideValue01, 0, 1, push, pull);  //no need to clamp, the drawerDist is locked.
+
+                Vector3 localPos = Vector3.zero;
+                int ax = (int)this.moveAxis;
+                localPos[ax] = localDisplacement;
+
+                //now to set this...
+
+                Vector3 basePos; Quaternion baseRot;
+                this.GetBaseLocation(out basePos, out baseRot);
+
+                Vector3 targetDrawerPos = basePos + (baseRot * localPos);
+                this.MyTransform.position = targetDrawerPos;
+
+            }
+        }
+
+        //--------------------------------------------------------------------------------------------------------------------------------------------------------
+        // Monobehaviour
+
+        protected override void Awake()
+        {
+            base.Awake();
+            this.CalculateSliderValue();
+        }
+
     }
 
-
-
-    /// <summary> The axis along which the drawer is moved. </summary>
-    public enum MovementAxis
-    {
-        X = 0,
-        Y = 1,
-        Z = 2
-    }
 }

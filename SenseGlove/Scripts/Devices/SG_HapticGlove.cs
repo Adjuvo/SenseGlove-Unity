@@ -2,6 +2,8 @@
 
 using SGCore.Calibration;
 using SGCore.Haptics;
+using SGCore.Kinematics;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -17,186 +19,90 @@ namespace SG
         /// <summary> This script only connects to right-handed gloves. </summary>
         RightHand,
         /// <summary> This script connects to the first glove this is connected to the system. </summary>
-        Any
+        AnyHand
     }
 
     /// <summary> Interface for a left- or right handed glove built by SenseGlove. Usually either a SenseGlove DK1 or a Nova Glove. </summary>
-    public class SG_HapticGlove : MonoBehaviour
+    public class SG_HapticGlove : MonoBehaviour, IHandPoseProvider, IHandFeedbackDevice
     {
-        /// <summary> How much of the CV tracking is being used. </summary>
-        public enum CV_Tracking_Depth
-        {
-            /// <summary> No computer-vision is enabled. </summary>
-            Disabled = 0,
-            /// <summary> Use CV only for the wrist position / rotation </summary>
-            WristOnly,
-            /// <summary> Use CV for both the wirst location and Hand Position  </summary>
-            WristAndHandPose
-        }
 
         //--------------------------------------------------------------------------------------------------------
         // Variables
 
-        /// <summary> Which side of the hand this glove connects to </summary>
-        public HandSide connectsTo = HandSide.Any;
+        // Inspector Variables.
 
-        /// <summary> If true, the user must move their hands at the beginning of the play session to make sure the glove is properly calibrated. Though only if this is a Nova Glove. </summary>
-        public bool checkCalibrationOnStart = false; //todo: Write a check that allows us to skip this if a scene change occured.
+        /// <summary> What kind of hand sides this SG_HapitcGlove is allowed to connect to. </summary>
+        public HandSide connectsTo = HandSide.RightHand;
+
+        /// <summary> GameObject controller by a 3rd party tracking script, that is used to take over wrist tracking. </summary>
+        public Transform wristTrackingObj;
+
+        /// <summary> The hardware family of our 3rd part wrist trackers. We use the offsets during StartUp if set to Custom. </summary>
+        public SGCore.PosTrackingHardware wristTrackingOffsets = SGCore.PosTrackingHardware.Custom;
+
+        /// <summary> If true, we check calibration status at the start of the simulation. Set this to true if you don't have a separate Calibration Scene before this one. </summary>
+        public bool checkCalibrationOnConnect = false;
 
 
-        /// <summary>  Fires when this HapitcGlove connect from the system while this application is running. </summary>
-        public UnityEvent DeviceConnected;
+        // Events
 
-        /// <summary> Fires when this HapitcGlove disconnects from the system while this application is running. </summary>
-        public UnityEvent DeviceDisconnected;
+        /// <summary> Fires when this HapticGlove connects to this simulation. Switchng Scene causes this to fire again. </summary>
+        public UnityEvent DeviceConnected = new UnityEvent();
+
+        /// <summary> Fires when this HapticGlove disconnects from the system. </summary>
+        public UnityEvent DeviceDisconnected = new UnityEvent();
 
         /// <summary> Fires when this glove's calibration state changes. </summary>
-		public UnityEvent CalibrationStateChanged;
-
-        /// <summary> The current Caliobration sequenced using this glove. Used tolimit the amount of calibration sequences that a glove can have active </summary>
-        protected SG_CalibrationSequence currentSequence = null;
-
-        /// <summary> This JapticGlove's calibration Stage. </summary>
-        public CalibrationStage CalibrationStage
-        {
-            get; private set;
-        }
-
-        /// <summary> Whether or not this glove is currently being calibrated by a Calibration Sequence. </summary>
-        public bool CalibrationLocked
-        {
-            get; set;
-        }
+        public UnityEvent CalibrationStateChanged = new UnityEvent();
 
 
 
-        /// <summary> The glove we were connected to since the last "Hardware Tick" </summary>
+        // Connection Related
+
+        /// <summary> The glove we were connected to since the last "Hardware Tick". If null, we were not connected. </summary>
         protected SGCore.HapticGlove lastGlove = null;
-        /// <summary> How ofter we check for new hardware (states). </summary>
-        protected float hwTimer = 0.5f;
+        /// <summary> How ofter we check for new hardware (states). Static so it may be changed from other settings.</summary>
+        public static float hwTimer = 0.5f;
         /// <summary> Timer to activate HardwareTick. </summary>
-        protected float checkTime = 0;
+        protected float timer_checkHW = 0;
         /// <summary> Connection state during the last Hardware Tick. Used to fire Connected/Disconnected events. </summary>
         protected bool wasConnected = false;
 
 
-        /// <summary> If true, we can retrieve a new HandPose this frame. </summary>
-        protected bool newPoseNeeded = true;
-        /// <summary> HandPose as calculated in the first GetHandPose function of this frame. Used to prevent redundant calculations. </summary>
-		protected SG_HandPose lastHandPose = null;
-        /// <summary> The last handKinematcs used for the GetHandPose function. Used so you can request HandPoses without needing access to HandKinematics. </summary>
-		protected SGCore.Kinematics.BasicHandModel lastHandModel = null;
+        // Calibration Related
 
-
-        /// <summary> If true, we haven't yet retrieved a new CV data point this frame </summary>
-        protected bool newCVNeeded = true;
-
-#if UNFINISHED_FEATURES
-        /// <summary> The last calculated CV pose. Kept in memory so we only calculate it one per frame (since time since last sample doesn't change). </summary>
-        protected SGCore.CV.HandDataPoint lastCVData = null;
-
-        // Internal cv stuff
-
-        /// <summary> How much of the CV we're using for Tracking. </summary>
-        protected CV_Tracking_Depth cvLevel = CV_Tracking_Depth.WristOnly;
-#endif
-
-        // Internal haptics Stuff.
-
-        /// <summary> Enables / Disables Force-Feedback on individual fingers. </summary>
-        public bool[] ffbEnabled = new bool[5] { true, true, true, true, true };
-        /// <summary> Enables / Disables Vibrotactile-Feedback on individual fingers. </summary>
-		public bool[] vibroEnabled = new bool[5] { true, true, true, true, true };
-
-        protected static readonly int maxQueue = 25;
-        protected List<SGCore.Haptics.SG_FFBCmd> ffbQueue = new List<SGCore.Haptics.SG_FFBCmd>(maxQueue);
-        protected List<SGCore.Haptics.SG_TimedBuzzCmd> buzzQueue = new List<SGCore.Haptics.SG_TimedBuzzCmd>(maxQueue);
-        public SGCore.Haptics.SG_FFBCmd lastFFB = SGCore.Haptics.SG_FFBCmd.Off;
-        public SGCore.Haptics.SG_BuzzCmd lastBuzz = SGCore.Haptics.SG_BuzzCmd.Off;
-
-        protected List<TimedThumpCmd> thumperQueue = new List<TimedThumpCmd>();
-        public SGCore.Haptics.ThumperCmd lastThumpCmd = ThumperCmd.Off;
-
+        /// <summary> The current Calibration Stage of this glove. </summary>
+        protected SGCore.Calibration.CalibrationStage calibrationStage = CalibrationStage.Done;
         /// <summary> Used to check if your Haptic Glove needs calibration. </summary>
         protected SGCore.Calibration.HG_CalCheck calibrationCheck = new HG_CalCheck(null);
+        /// <summary> The CalibrationSequence linked to this glove. </summary>
+        protected SG_CalibrationSequence activeCalibrationSequence = null;
 
 
-        /// <summary> The DeviceType of this glove. Use this to distinguish between SenseGlove and Nova. Is unknown if the glove is not connected. </summary>
-        public SGCore.DeviceType DeviceType
-        {
-            get; private set;
-        }
 
+        // Tracking Related
 
-        //--------------------------------------------------------------------------------------------------------
-        // Accessors
+        /// <summary> The HandDimensions used to generate our HandModel. can be get/set. When requesting a HandPose while it's NULL, we'll set it to a default one. </summary>
+        protected SGCore.Kinematics.BasicHandModel handDimensions = null;
+        /// <summary> The Last HandPose calculated by this glove. Cached to we can retrun it when mulitple requests are made each frame. </summary>
+        protected SG_HandPose lastHandPose = null;
+        /// <summary> If true, we can retrieve a new HandPose this frame. If false, we've already calculated one </summary>
+        protected bool newPoseNeeded = true;
 
+        // Haptics Related
 
-        /// <summary> Returns true if this HapticGlove is currently connected. </summary>
-        public virtual bool IsConnected
-        {
-            get
-            {
-                return this.lastGlove != null && this.lastGlove.IsConnected();
-            }
-        }
-
-
-        /// <summary> Returns true if this HapticGlove is currently connected to a right hand. </summary>
-        public virtual bool IsRight
-        {
-            get
-            {
-                if (this.IsConnected)
-                {
-                    return this.lastGlove.IsRight();
-                }
-                return this.connectsTo != HandSide.LeftHand;
-            }
-        }
-
-
-        /// <summary> The Internal HapticGlove that this glove is linked to. Is null when not connected. </summary>
-        public SGCore.HapticGlove InternalGlove
-        {
-            get { return this.lastGlove; }
-        }
-
-
-        /// <summary> Enable / Disable all Force-Feedack. </summary>
-        public bool ForceFeedbackEnabled
-        {
-            get
-            {
-                for (int f = 0; f < ffbEnabled.Length; f++)
-                {
-                    if (!ffbEnabled[f]) { return false; };
-                }
-                return true;
-            }
-            set { for (int f = 0; f < ffbEnabled.Length; f++) { ffbEnabled[f] = value; } }
-        }
-
-
-        /// <summary> Enables / Disables all vibrotatcile feedback. </summary>
-        public bool VibroTactileEnabled
-        {
-            get
-            {
-                for (int f = 0; f < vibroEnabled.Length; f++)
-                {
-                    if (!vibroEnabled[f]) { return false; };
-                }
-                return true;
-            }
-            set { for (int f = 0; f < vibroEnabled.Length; f++) { vibroEnabled[f] = value; } }
-        }
-
+        /// <summary> Soecial Utility class that keeps track of incoming hapitc commands, updates their times, and can flush them at the end of each frame. </summary>
+        protected SGCore.Haptics.HG_HapticStream hapticStream = new HG_HapticStream();
+        /// <summary> The Force-Feedback Command sent last frame. </summary>
+        protected SG_FFBCmd lastFFBLevels = SG_FFBCmd.Off;
+        /// <summary> The BuzzCmd sent last frame </summary>
+        protected SG_BuzzCmd lastBuzzCmd = SG_BuzzCmd.Off;
+        /// <summary> The Thumper Command sent last frame. </summary>
+        protected ThumperCmd lastThumperCmd = ThumperCmd.Off;
 
 
         //--------------------------------------------------------------------------------------------------------
         // Connection Functions
-
 
         /// <summary> Returns the first valid instance of a SGCore.HapticGlove object, based on HandSide parameters </summary>
         /// <param name="handSide"></param>
@@ -204,14 +110,32 @@ namespace SG
         /// <returns></returns>
         public static bool GetGloveInstance(HandSide handSide, out SGCore.HapticGlove gloveInstance)
         {
-            if (handSide == HandSide.Any)
+            if (handSide == HandSide.AnyHand)
             {
-                return SGCore.HapticGlove.GetGlove(out gloveInstance);
+                return SGCore.HapticGlove.GetGlove(out gloveInstance); //returns the first connected glove
             }
-            return SGCore.HapticGlove.GetGlove(handSide == HandSide.RightHand, out gloveInstance);
+            return SGCore.HapticGlove.GetGlove(handSide == HandSide.RightHand, out gloveInstance); //returns the firce connected glove that matches left/right parameters.
         }
 
-        /// <summary> Updates the connection status and fires events if needed </summary>
+        /// <summary> The Internal HapticGlove that this glove is linked to.Is null when not connected. </summary>
+        public SGCore.HapticGlove InternalGlove
+        {
+            get { return this.lastGlove; }
+        }
+
+        /// <summary> The DeviceType of this glove. Use this to distinguish between SenseGlove and Nova, for example. </summary>
+        public SGCore.DeviceType DeviceType
+        {
+            get; private set;
+        }
+
+        /// <summary> Updates this glove's DeviceType at various stages </summary>
+        private void UpdateDeviceType()
+        {
+            this.DeviceType = this.lastGlove != null ? this.lastGlove.GetDeviceType() : SGCore.DeviceType.UNKNOWN;
+        }
+
+        /// <summary> Updates the connection status and fires events if needed</summary>
         protected void UpdateConnection()
         {
             SGCore.HapticGlove uGlove;
@@ -238,15 +162,42 @@ namespace SG
             }
         }
 
-        /// <summary> Updates this glove's DeviceType at various stages </summary>
-        private void UpdateDeviceType()
+        //--------------------------------------------------------------------------------------------------------
+        // Tracking Functions
+
+        /// <summary> Retrieve the IMU rotation of this glove  in Unity notation. This is an uncalibrated rotation, and is purely what the sensor itself passes through. </summary>
+        /// <param name="imuRotation"></param>
+        /// <returns></returns>
+        public virtual bool GetIMURotation(out Quaternion imuRotation)
         {
-            this.DeviceType = this.lastGlove != null ? this.lastGlove.GetDeviceType() : SGCore.DeviceType.UNKNOWN;
+            if (this.lastGlove != null)
+            {
+                SGCore.Kinematics.Quat Q;
+                if (lastGlove.GetIMURotation(out Q))
+                {
+                    imuRotation = SG.Util.SG_Conversions.ToUnityQuaternion(Q);
+                    return true;
+                }
+            }
+            imuRotation = Quaternion.identity;
+            return false;
         }
 
+        public void SwapTracking(SG_HapticGlove otherHand)
+        {
+            if (otherHand != null)
+            {
+                Transform myTrackedObject = this.wristTrackingObj;
+                this.wristTrackingObj = otherHand.wristTrackingObj;
+                otherHand.wristTrackingObj = myTrackedObject;
+            }
+        }
 
-        //--------------------------------------------------------------------------------------------------------
-        // Tracking
+        public void SetTrackingHardware(Transform trackingRefrence, SGCore.PosTrackingHardware hardwareType)
+        {
+            wristTrackingObj = trackingRefrence;
+            wristTrackingOffsets = hardwareType;
+        }
 
 
         /// <summary> Calculates the 3D position of the glove hardware origin. Mostly used in representing a 3D model of the hardware. If you wish to know where the hand is; use GetWristLocation instead. </summary>
@@ -274,6 +225,16 @@ namespace SG
             return false;
         }
 
+        /// <summary> Calculate a 3D position of the wrist, based on an existing tracking hardware and its location. </summary>
+        /// <param name="trackedObject"></param>
+        /// <param name="hardware"></param>
+        /// <param name="wristPos"></param>
+        /// <param name="wristRot"></param>
+        /// <returns></returns>
+        public bool GetWristLocation(out Vector3 wristPos, out Quaternion wristRot)
+        {
+            return GetWristLocation(this.wristTrackingObj, this.wristTrackingOffsets, out wristPos, out wristRot);
+        }
 
         /// <summary> Calculate a 3D position of the wrist, based on an existing tracking hardware and its location. </summary>
         /// <param name="trackedObject"></param>
@@ -283,418 +244,142 @@ namespace SG
         /// <returns></returns>
         public virtual bool GetWristLocation(Transform trackedObject, SGCore.PosTrackingHardware hardware, out Vector3 wristPos, out Quaternion wristRot)
         {
-#if UNFINISHED_FEATURES
-            if (CVDataAvailable())
+            if (this.lastGlove == null || hardware == SGCore.PosTrackingHardware.Custom)
             {
-                wristPos = SG.Util.SG_Conversions.ToUnityPosition(this.lastCVData.wristWorldPosition);
-                wristRot = SG.Util.SG_Conversions.ToUnityQuaternion(this.lastCVData.wristWorldRotation);
+                if (trackedObject == null)
+                {
+                    wristPos = this.transform.position;
+                    wristRot = this.transform.rotation;
+                    return false;
+                }
+                wristPos = trackedObject.position;
+                wristRot = trackedObject.rotation;
                 return true;
             }
-#endif
-            if (this.lastGlove != null)
+
+            //if we get here, lastGlove is not null.
+            SGCore.Kinematics.Vect3D trackedPos = SG.Util.SG_Conversions.ToPosition(trackedObject.position, true);
+            SGCore.Kinematics.Quat trackedRot = SG.Util.SG_Conversions.ToQuaternion(trackedObject.rotation);
+
+            SGCore.Kinematics.Vect3D wPos; SGCore.Kinematics.Quat wRot;
+            lastGlove.GetWristLocation(trackedPos, trackedRot, hardware, out wPos, out wRot);
+
+            wristPos = SG.Util.SG_Conversions.ToUnityPosition(wPos);
+            wristRot = SG.Util.SG_Conversions.ToUnityQuaternion(wRot);
+            return true;
+        }
+
+
+        /// <summary> Updates the LastHandPose if needed. </summary>
+        /// <param name="forceUpdate"></param>
+        public void UpdateLastHandPose(bool forceUpdate)
+        {
+            if (forceUpdate || newPoseNeeded)
             {
-                SGCore.Kinematics.Vect3D trackedPos = SG.Util.SG_Conversions.ToPosition(trackedObject.position, true);
-                SGCore.Kinematics.Quat trackedRot = SG.Util.SG_Conversions.ToQuaternion(trackedObject.rotation);
+                newPoseNeeded = false; //we no longer need a pose this frame
+                SG_HandPose newPose;
+                if (this.GetHandPose(this.GetKinematics(), out newPose))
+                {
+                    lastHandPose = newPose; //only re-assign it if you were succesful in calculating it.
+                }
+            }
+        }
 
-                SGCore.Kinematics.Vect3D wPos; SGCore.Kinematics.Quat wRot;
-                lastGlove.GetWristLocation(trackedPos, trackedRot, hardware, out wPos, out wRot);
+        //--------------------------------------------------------------------------------------------------------
+        // Calbration Functions
 
-                wristPos = SG.Util.SG_Conversions.ToUnityPosition(wPos);
-                wristRot = SG.Util.SG_Conversions.ToUnityQuaternion(wRot);
+        /// <summary> Whether or not this glove is currently being calibrated by a Calibration Sequence. </summary>
+        public bool CalibrationLocked
+        {
+            get; protected set;
+        }
+
+        public SGCore.Calibration.CalibrationStage GetCalibrationStage()
+        {
+            return this.calibrationStage;
+        }
+
+        /// <summary> Sets the new Calibration stage and, if it's a differnt statge, invoke the event. </summary>
+        /// <param name="newStage"></param>
+        protected void GoToCalibrationStage(SGCore.Calibration.CalibrationStage newStage)
+        {
+            if (newStage != this.calibrationStage)
+            {
+                Debug.Log(this.name + ": Calibration Stage Changed to " + newStage.ToString());
+                this.calibrationStage = newStage;
+                this.CalibrationStateChanged.Invoke();
+            }
+        }
+
+        /// <summary> Lock this hand to a calibration sequence. Returns true if it is successfully locked. </summary>
+        /// <param name="sequence"></param>
+        /// <returns></returns>
+        public bool StartCalibration(SG_CalibrationSequence sequence)
+        {
+            if (this.activeCalibrationSequence == null)
+            {
+                this.activeCalibrationSequence = sequence;
+                this.GoToCalibrationStage(CalibrationStage.Calibrating);
                 return true;
             }
-            wristPos = trackedObject.position;
-            wristRot = trackedObject.rotation;
             return false;
         }
 
-#if UNFINISHED_FEATURES
-
-        /// <summary> Attemo to retieve Computer Vision data for this frame; which will contain a smoothed set of HandAngles, wirstPosition and rotation. </summary>
-        /// <param name="cvData"></param>
+        /// <summary> Unlock this hand to a calibration sequence. Only the one that Locaked it can do so via this method. </summary>
+        /// <param name="sequence"></param>
         /// <returns></returns>
-        public bool GetCVData(out SGCore.CV.HandDataPoint cvData, bool forceUpdate = false)
+        public bool CompleteCalibration(SG_CalibrationSequence sequence)
         {
-            cvData = null;
-            if (CVDataAvailable(forceUpdate))
+            if (this.activeCalibrationSequence == sequence)
             {
-                cvData = this.lastCVData;
-            }
-            return cvData != null;
-        }
-
-        /// <summary> Check if CV data is available this frame.  </summary>
-        /// <param name="forceUpdate"></param>
-        /// <returns></returns>
-        public bool CVDataAvailable(bool forceUpdate = false)
-        {
-            UpdateCVData(false);
-            return this.lastCVData != null;
-        }
-
-        /// <summary> Calculate CV hand pose and position if we haven't already this frame. </summary>
-        /// <param name="forceUpdate"></param>
-        /// <returns></returns>
-        protected void UpdateCVData(bool forceUpdate = false)
-        {
-            if (forceUpdate || newCVNeeded) //we need a new pose
-            {
-                newCVNeeded = false; //we'll only check once per frame.
-                SGCore.CV.HandDataPoint cvData;
-                if (SGCore.CV.CV_HandLayer.TryGetPose(this.IsRight, SGCore.DeviceType.NOVA, "", out cvData)) //NOVA FOR NOW BUT THIS MUST BE THE ACTUAL DEVICE!
-                {
-                    lastCVData = cvData;
-                }
-                else
-                {
-                    lastCVData = null; //so that the GetData knows it's not (or no longer) available.
-                }
-            }
-        }
-#endif
-
-        /// <summary> Returns a Hand Pose containing everything you'd want to animate a hand model in Unity. Using the global HandProfile. </summary>
-        /// <param name="handModel"></param>
-        /// <param name="pose"></param>
-        /// <param name="forceUpdate"></param>
-        /// <returns></returns>
-        public virtual bool GetHandPose(SGCore.Kinematics.BasicHandModel handModel, out SG_HandPose pose, bool forceUpdate = false)
-        {
-            return GetHandPose(handModel, SG_HandProfiles.GetProfile(this.IsRight), out pose, forceUpdate);
-        }
-
-        /// <summary> Returns a Hand Pose containing everything you'd want to animate a hand model in Unity. Using a custom HandProfile. </summary>
-        /// <returns></returns>
-        public bool GetHandPose(SGCore.Kinematics.BasicHandModel handDimensions, SGCore.HandProfile userProfile, out SG_HandPose pose, bool forceUpdate = false)
-        {
-#if UNFINISHED_FEATURES
-            if (this.CVDataAvailable(forceUpdate)) //we are able to get CV data. Yay
-            {
-                pose = new SG_HandPose( SGCore.HandPose.FromHandAngles(lastCVData.handAngles, lastCVData.rightHand, handDimensions) );
-                newPoseNeeded = false; //we don't need a new pose this frame, thank you.
-                lastHandModel = handDimensions;
-                lastHandPose = pose;
+                this.activeCalibrationSequence = null;
+                this.GoToCalibrationStage(CalibrationStage.Done); //TODO": Move to NeedsCalibrating on cancel?
                 return true;
             }
-#endif
-            if (this.lastGlove != null)
-            {
-                if (forceUpdate || newPoseNeeded) //we need a new pose
-                {
-                    lastHandModel = handDimensions;
-                    if (this.CalibrationStage == CalibrationStage.MoveFingers)
-                    {
-                        lastHandPose = SG_HandPose.Idle(this.IsRight);
-                        newPoseNeeded = false; //we don't need a new pose this frame, thank you.
-                    }
-                    else if (this.CalibrationLocked && this.currentSequence != null)
-                    {
-                        //we should gram it from the calibrationSequence instead.
-                        if (this.currentSequence.GetCalibrationPose(out lastHandPose))
-                        {
-                            newPoseNeeded = false;
-                        }
-                    }
-                    else
-                    {
-                        SGCore.HandPose iPose;
-                        if (lastGlove.GetHandPose(handDimensions, userProfile, out iPose))
-                        {
-                            lastHandPose = new SG_HandPose(iPose);
-                            newPoseNeeded = false; //we don't need a new pose this frame, thank you.
-                        }
-                    }
-                }
-                // else we already have one, and don't want to force-update.
-                pose = lastHandPose;
-                return lastHandPose != null;
-            }
-            else if (lastHandPose == null) { lastHandPose = SG_HandPose.Idle(this.IsRight); } //only if we dont yet have a LastHandPose.
-
-            //otherwise we shouldn't bother
-            pose = lastHandPose;
             return false;
         }
 
 
-        /// <summary> Retrieve flexion angles, normalized to [0...1] or [fingers extended ... fingers flexed] </summary>
-        /// <param name="flexions"></param>
-        /// <param name="forceUpdate"></param>
-        /// <returns></returns>
-		public virtual bool GetNormalizedFlexion(out float[] flexions, bool forceUpdate = false)
+        protected bool GetCalibrationPose(SGCore.Kinematics.BasicHandModel handDimensions, out SG_HandPose pose)
         {
-            if (lastHandModel == null) { lastHandModel = SGCore.Kinematics.BasicHandModel.Default(this.IsRight); }
-            //if (lastProfile == null) { lastProfile = SGCore.HandProfile.Default(this.IsRight); }
-            return GetNormalizedFlexion(lastHandModel, SG_HandProfiles.GetProfile(this.IsRight), out flexions, forceUpdate);
-        }
-
-
-        /// <summary> Retrieve flexion angles, normalized to [0...1] or [fingers extended ... fingers flexed] </summary>
-        /// <param name="handModel"></param>
-        /// <param name="userProfile"></param>
-        /// <param name="flexions"></param>
-        /// <param name="forceUpdate"></param>
-        /// <returns></returns>
-        public virtual bool GetNormalizedFlexion(SGCore.Kinematics.BasicHandModel handModel, SGCore.HandProfile userProfile, out float[] flexions, bool forceUpdate = false)
-        {
-            SG_HandPose pose;
-            if (GetHandPose(handModel, userProfile, out pose, forceUpdate))
+            if (this.calibrationStage == CalibrationStage.Calibrating && this.activeCalibrationSequence != null)
             {
-                flexions = pose.normalizedFlexion;
-                return true;
-            }
-            flexions = new float[5];
-            return false;
-        }
-
-
-        /// <summary> Retrieve the IMU rotation of this glove. </summary>
-        /// <param name="imuRotation"></param>
-        /// <returns></returns>
-		public virtual bool GetIMURotation(out Quaternion imuRotation)
-        {
-            if (this.lastGlove != null)
-            {
-                SGCore.Kinematics.Quat Q;
-                if (lastGlove.GetIMURotation(out Q))
+                //at this point, we need to ask the Calibration Sequence for help
+                SGCore.HandPose iPose;
+                if (this.activeCalibrationSequence.GetCalibrationPose(handDimensions, out iPose))
                 {
-                    imuRotation = SG.Util.SG_Conversions.ToUnityQuaternion(Q);
+                    pose = ToUnityPose(iPose);
                     return true;
                 }
             }
-            imuRotation = Quaternion.identity;
-            return false;
+            //else we'll just return an idle pose - since that's either the pose we want, or you're doing something illegal.
+            pose = ToUnityPose(SGCore.HandPose.DefaultIdle(this.TracksRightHand(), handDimensions)); //otherwise, it's the default hand model
+            return this.calibrationStage != CalibrationStage.Done; //you werent supposed to call this when done.
         }
 
-
-        //--------------------------------------------------------------------------------------------------------
-        // Haptic Feedback
-
-
-        /// <summary> Send a new Force-Feedback command for this frame. </summary>
-        /// <param name="ffb"></param>
-        public virtual void SendCmd(SGCore.Haptics.SG_FFBCmd ffb)
-        {
-            if (this.isActiveAndEnabled)
-            {
-                this.ffbQueue.Add(ffb.Copy());
-                if (this.ffbQueue.Count > maxQueue) { ffbQueue.RemoveAt(0); }
-            }
-
-        }
-
-        /// <summary> Send a new timed vibration command for this frame. </summary>
-        /// <param name="buzz"></param>
-        public virtual void SendCmd(SGCore.Haptics.SG_TimedBuzzCmd buzz)
-        {
-
-            if (this.isActiveAndEnabled)
-            {
-                this.buzzQueue.Add((SGCore.Haptics.SG_TimedBuzzCmd)buzz.Copy());
-                buzzQueue[buzzQueue.Count - 1].elapsedTime = -Time.deltaTime; //since the time is in ms, and we will be adding deltatime for the first update.
-                if (this.buzzQueue.Count > maxQueue) { buzzQueue.RemoveAt(0); }
-            }
-        }
-
-
-        /// <summary> Send a so-called Timed Thumper Command, like a finger vibrotactile command, but for the Nova Glove's wrist actuator. </summary>
-        /// <param name="thumper"></param>
-        public virtual void SendCmd(TimedThumpCmd thumper)
-        {
-            if (this.isActiveAndEnabled)
-            {
-                this.thumperQueue.Add(thumper.Copy());
-                this.thumperQueue[this.thumperQueue.Count - 1].elapsedTime = -Time.deltaTime;
-                if (this.thumperQueue.Count > maxQueue) { thumperQueue.RemoveAt(0); }
-            }
-        }
-
-
-        /// <summary> Send a vibration command based on an AnimationCurve. With optional override parameters. </summary>
-        /// <param name="buzz"></param>
-        public virtual void SendCmd(SG_Waveform buzz)
-        {
-            if (buzz != null)
-            {
-                this.SendCmd(buzz, buzz.fingers, buzz.magnitude, buzz.duration_s);
-            }
-        }
-
-        /// <summary> Send a vibration command based on an AnimationCurve. With optional override parameters. </summary>
-        /// <param name="buzz"></param>
-        /// <param name="overrideFingers"></param>
-        public virtual void SendCmd(SG_Waveform buzz, bool[] overrideFingers)
-        {
-            if (buzz != null)
-            {
-                this.SendCmd(buzz, overrideFingers, buzz.magnitude, buzz.duration_s);
-            }
-        }
-
-        /// <summary> Send a vibration command based on an AnimationCurve. With optional override parameters. </summary>
-        /// <param name="buzz"></param>
-        /// <param name="overrideFingers"></param>
-        /// <param name="magnitude"></param>
-        public virtual void SendCmd(SG_Waveform buzz, bool[] overrideFingers, int magnitude)
-        {
-            if (buzz != null)
-            {
-                this.SendCmd(buzz, overrideFingers, magnitude, buzz.duration_s);
-            }
-        }
-
-        /// <summary> Send a vibration command based on an AnimationCurve. With optional override parameters. </summary>
-        /// <param name="buzz"></param>
-        /// <param name="overrideFingers"></param>
-        /// <param name="magnitude"></param>
-        /// <param name="duration_s"></param>
-        public virtual void SendCmd(SG_Waveform buzz, bool[] overrideFingers, int magnitude, float duration_s)
-        {
-            if (this.isActiveAndEnabled && this.lastGlove != null && buzz != null)
-            {
-                if (buzz.wrist && this.DeviceType != SGCore.DeviceType.SENSEGLOVE)
-                {
-                    //Debug.Log("Converted a Waveform into a thumper cmd");
-                    ThumperWaveForm cmd = new ThumperWaveForm(magnitude, duration_s, buzz.waveForm, -Time.deltaTime);
-                    this.thumperQueue.Add(cmd);
-                    if (this.thumperQueue.Count > maxQueue) { thumperQueue.RemoveAt(0); }
-                }
-                else
-                {
-                    //Debug.Log("Converted a Waveform into a buzzCmd");
-                    SG_WaveFormCmd iCmd = new SG_WaveFormCmd(buzz.waveForm, duration_s, magnitude, overrideFingers, -Time.deltaTime);
-                    this.buzzQueue.Add(((SGCore.Haptics.SG_TimedBuzzCmd)iCmd.Copy()));
-                    if (this.buzzQueue.Count > maxQueue) { buzzQueue.RemoveAt(0); }
-                }
-            }
-        }
-
-
-
-
-
-        /// <summary> Ceases all vibrotactile feedback only </summary>
-        public virtual void StopAllVibrations()
-        {
-            this.buzzQueue.Clear();
-            if (this.lastGlove != null) { lastGlove.SendHaptics(SGCore.Haptics.SG_BuzzCmd.Off); }
-        }
-
-        /// <summary> Ceases all haptics on this glove. </summary>
-        public virtual void StopHaptics()
-        {
-            this.ffbQueue.Clear();
-            this.buzzQueue.Clear();
-            if (this.lastGlove != null) { lastGlove.StopHaptics(); }
-        }
-
-
-        /// <summary> Go through any active haptic effects this frame, update any timers and flush everything as a single set of commands. </summary>
-        protected virtual void UpdateHaptics()
-        {
-            if (this.ffbQueue.Count > 0 || this.buzzQueue.Count > 0 || thumperQueue.Count > 0)
-            {
-                int startBuzz = this.buzzQueue.Count;
-
-                SGCore.Haptics.SG_FFBCmd finalBrakeCmd = SGCore.Haptics.SG_FFBCmd.Off;
-                SGCore.Haptics.SG_BuzzCmd finalBuzzCmd = SGCore.Haptics.SG_BuzzCmd.Off;
-
-                if (ffbQueue.Count > 0)
-                {
-                    for (int i = 0; i < ffbQueue.Count; i++)
-                    {
-                        finalBrakeCmd = finalBrakeCmd.Merge(ffbQueue[i]);
-                    }
-                }
-                else { finalBrakeCmd = lastFFB; }
-
-                ffbQueue.Clear(); //clear buffer for next frame.
-
-                float dTSec = Time.deltaTime;
-
-                //Buzz motor
-                for (int i = 0; i < buzzQueue.Count;)
-                {
-                    buzzQueue[i].UpdateTiming(dTSec);
-                    if (buzzQueue[i].TimeElapsed()) //no more relevant cmds
-                    {
-                        buzzQueue.RemoveAt(i); //do nothing
-                    }
-                    else
-                    {
-                        finalBuzzCmd = buzzQueue[i].Merge(finalBuzzCmd); //add to final cmd
-                        i++;
-                    }
-                }
-
-                //evaluate thumper
-                int finalThump = 0;
-                for (int i = 0; i < thumperQueue.Count;)
-                {
-                    thumperQueue[i].Update(dTSec);
-                    if (thumperQueue[i].Elapsed)
-                    {
-                        thumperQueue.RemoveAt(i);
-                    }
-                    else
-                    {
-                        finalThump = Mathf.Max(finalThump, thumperQueue[i].magnitude);
-                        i++;
-                    }
-                }
-
-                //evaluate based on FFBEnabled BuzzEnabled
-                int[] fForceLevels = finalBrakeCmd.Levels;
-                int[] fBuzzLevels = finalBuzzCmd.Levels;
-                for (int f = 0; f < 5; f++)
-                {
-                    if (!ffbEnabled[f]) { fForceLevels[f] = 0; }
-                    if (!vibroEnabled[f]) { fBuzzLevels[f] = 0; }
-                }
-                finalBrakeCmd.Levels = fForceLevels;
-                finalBuzzCmd.Levels = fBuzzLevels;
-
-                //ToDo: Only send if there is a change?
-                lastBuzz = finalBuzzCmd;
-                lastFFB = finalBrakeCmd;
-                lastThumpCmd = new ThumperCmd(finalThump);
-
-                if (this.lastGlove != null)
-                {
-                    //Debug.Log("Sending Hatpics: " + finalBrakeCmd.ToString() + ", " + finalBuzzCmd.ToString() + ", [" + finalThump + "]");
-                    this.lastGlove.SendHaptics(finalBrakeCmd, finalBuzzCmd, new ThumperCmd(finalThump));
-                }
-            }
-        }
-
-        //--------------------------------------------------------------------------------------------------------
-        // Calibration
 
         /// <summary> Checks the calibration stage of this glove when it connects. </summary>
         protected virtual void CheckForCalibration()
         {
-            if (this.checkCalibrationOnStart && SGCore.Calibration.HG_CalCheck.NeedsCheck(this.DeviceType))
+            if (this.checkCalibrationOnConnect && SGCore.Calibration.HG_CalCheck.NeedsCheck(this.DeviceType))
             {
                 SGCore.Calibration.SensorRange lastRange;
                 if (SG_HandProfiles.LoadLastRange(this.lastGlove, out lastRange))
                 {
-                    //Debug.Log("Loaded Last Range: " + lastRange.ToString(true));
-                    Debug.Log("Please move your " + (this.IsRight ? "right" : "left") + " hand so we can determine of calibration is required");
-                    this.CalibrationStage = CalibrationStage.MoveFingers; //todo: Check for Nova or SenseGlove DK1
+                    Debug.Log("Please move your " + (this.TracksRightHand() ? "right" : "left") + " hand so we can determine of calibration is required");
                     this.calibrationCheck = new HG_CalCheck(lastRange);
+                    GoToCalibrationStage(CalibrationStage.MoveFingers);
                 }
                 else
                 {
                     //Debug.Log("There's no range from last time, so we start off with calibration regardless!");
-                    this.CalibrationStage = CalibrationStage.CalibrationNeeded;
+                    GoToCalibrationStage(CalibrationStage.CalibrationNeeded);
                 }
             }
             else
             {
-                this.CalibrationStage = CalibrationStage.Done;
+                GoToCalibrationStage(CalibrationStage.Done);
             }
-            //CalibrationLocked = this.CalibrationStage == CalibrationStage.Calibrating; //only locked if we're calibrating
-            this.CalibrationStateChanged.Invoke();
         }
 
 
@@ -702,7 +387,7 @@ namespace SG
         /// <param name="deltaTime"></param>
         protected virtual void CheckFingerMovement(float deltaTime)
         {
-            if (this.lastGlove != null && this.CalibrationStage == CalibrationStage.MoveFingers)
+            if (this.lastGlove != null && this.calibrationStage == CalibrationStage.MoveFingers)
             {
                 SGCore.Kinematics.Vect3D[] calVals;
                 if (lastGlove.GetCalibrationValues(out calVals))
@@ -710,104 +395,307 @@ namespace SG
                     calibrationCheck.CheckRange(calVals, deltaTime, this.DeviceType); //update checker.
                     if (calibrationCheck.ReachedConclusion)
                     {
-                        this.CalibrationStage = calibrationCheck.CalibrationStage;
+                        if (calibrationCheck.CalibrationStage == CalibrationStage.CalibrationNeeded)
+                        {
+                            Debug.Log(this.name + ": Determined that calibration is required!");
+                        }
                         CalibrationLocked = false; //unlocks calibration
-                        this.CalibrationStateChanged.Invoke();
+                        this.GoToCalibrationStage(calibrationCheck.CalibrationStage);
                     }
                 }
             }
         }
 
-        /// <summary> Lock this glove to a SG_ClibrationSequence so that no others can interfere. Also lets us know this glove is currently being calibrated. </summary>
-        /// <param name="sequence"></param>
+
+        //--------------------------------------------------------------------------------------------------------
+        // HandPoseProvider Interface Functions
+
+        /// <summary> Returns true if this Haptic Glove is configured to connect to the left / right hands. </summary>
         /// <returns></returns>
-        public virtual bool LockCalibration(SG_CalibrationSequence sequence)
+        public bool TracksRightHand()
         {
-            if (sequence != null && !CalibrationLocked)
+            return this.connectsTo != HandSide.LeftHand;
+        }
+
+        /// <summary> Sets the default handKinematics used by this glove's solver. Can be left empty, at which point it will use the default. You can also override it when requesting a HandPose </summary>
+        /// <param name="handModel"></param>
+        public void SetKinematics(BasicHandModel handModel)
+        {
+            this.handDimensions = handModel;
+            this.newPoseNeeded = true; //we definitely need to recalculate
+            if (this.lastHandPose == null) //was never generated!
             {
-                this.currentSequence = sequence;
-                this.CalibrationLocked = true;
-                this.CalibrationStage = CalibrationStage.Calibrating;
-                this.CalibrationStateChanged.Invoke();
+                lastHandPose = ToUnityPose(SGCore.HandPose.DefaultIdle(this.TracksRightHand(), this.handDimensions));
+            }
+        }
+
+        /// <summary> Retrieve the hand dimensions used for this glove's default  </summary>
+        /// <returns></returns>
+        public BasicHandModel GetKinematics()
+        {
+            if (this.handDimensions == null)
+            {
+                this.handDimensions = SGCore.Kinematics.BasicHandModel.Default(this.TracksRightHand());
+            }
+            return this.handDimensions;
+        }
+
+
+        /// <summary> Returns true if this HapticGlove is connected to the system.  </summary>
+        /// <returns></returns>
+        public bool IsConnected()
+        {
+            return this.lastGlove != null;
+        }
+
+        /// <summary> Returns the last handPose retrieved this frame </summary>
+        /// <param name="handPose"></param>
+        /// <param name="forceUpdate"></param>
+        /// <returns></returns>
+        public bool GetHandPose(out SG_HandPose handPose, bool forceUpdate = false)
+        {
+            this.UpdateLastHandPose(forceUpdate);
+            handPose = this.lastHandPose;
+            return handPose != null;
+        }
+
+
+        /// <summary> Calculates a new handPose based on specific HandDimensions. This one does not get stored in the lastHandpose </summary>
+        /// <param name="handPose"></param>
+        /// <param name="handDimensions"></param>
+        /// <param name="forceUpdate"></param>
+        /// <returns></returns>
+        public bool GetHandPose(SGCore.Kinematics.BasicHandModel handDimensions, out SG_HandPose handPose)
+        {
+            if (this.calibrationStage != CalibrationStage.Done) //This means the pose is dependent on the Calibration Stage.
+            {
+                return GetCalibrationPose(handDimensions, out handPose);
+            }
+            // It's easy to retrieve the latest profile now
+            SGCore.HandProfile latestProfile = this.TracksRightHand() ? SG_HandProfiles.RightHandProfile : SG_HandProfiles.LeftHandProfile;
+            return GetHandPose(handDimensions, latestProfile, out handPose);
+        }
+
+        /// <summary> Properly calculates a new HandPose with SenseGlove-Specific inputs. This one does not get stored in the lastHandpose </summary>
+        /// <param name="handDimensions"></param>
+        /// <param name="handProfile"></param>
+        /// <param name="handPose"></param>
+        /// <returns></returns>
+        public bool GetHandPose(SGCore.Kinematics.BasicHandModel handDimensions, SGCore.HandProfile handProfile, out SG_HandPose handPose)
+        {
+            handPose = null;
+            if (this.lastGlove != null)
+            {
+                SGCore.HandPose iPose;
+                if (this.lastGlove.GetHandPose(handDimensions, handProfile, out iPose))
+                {
+                    handPose = ToUnityPose(iPose);
+                }
+            }
+            return handPose != null;
+        }
+
+        /// <summary> Convert and internal SenseGlove Pose into a Unity one, where I also add the wrist location </summary>
+        /// <param name="iPose"></param>
+        /// <returns></returns>
+        protected SG_HandPose ToUnityPose(SGCore.HandPose iPose)
+        {
+            SG_HandPose handPose = new SG_HandPose(iPose); //convert this into Unity Notation
+            //and add the position / rotation of the wrist-taken from Unity.
+            this.GetWristLocation(out handPose.wristPosition, out handPose.wristRotation);
+            return handPose;
+        }
+
+        /// <summary> Return the finger flexions as normalized values [0 = Extended, 1 = fully flexed]. </summary>
+        /// <param name="flexions"></param>
+        /// <returns></returns>
+        public bool GetNormalizedFlexion(out float[] flexions)
+        {
+            this.UpdateLastHandPose(false);
+            if (lastHandPose != null)
+            {
+                flexions = this.lastHandPose.normalizedFlexion;
                 return true;
             }
+            flexions = new float[5];
             return false;
         }
 
-        /// <summary> Unlocks the glove from this calibration sequence, and let others know it's finished. </summary>
-        /// <param name="sequence"></param>
+        /// <summary> Since this is not a controller, we don't need to map it. </summary>
         /// <returns></returns>
-        public virtual bool UnlockCalibraion(SG_CalibrationSequence sequence)
+        public float OverrideGrab()
         {
-            if (this.currentSequence == null || this.currentSequence == sequence)
-            {
-                this.currentSequence = null;
-                this.CalibrationLocked = false;
-                this.CalibrationStage = CalibrationStage.Done;
-                this.CalibrationStateChanged.Invoke();
-                return true;
-            }
-            return false;
+            return 0;
         }
 
 
-        /// <summary> Takes a sensor range taked from a Calibration sequence and calibrates the hand accordingly.. </summary>
-        /// <param name="range"></param>
+        /// <summary> Since this is not a controler, we don't need to map it. </summary>
         /// <returns></returns>
-        public virtual bool CalibrateHand(SGCore.Calibration.SensorRange range)
+        public float OverrideUse()
         {
-            SGCore.HandProfile newProfile;
-            SGCore.Calibration.HG_CalibrationSequence.CompileProfile(range, this.DeviceType, this.IsRight, out newProfile);
-            SG_HandProfiles.SetProfile(newProfile);
-
-            //this.lastRange = new SGCore.Calibration.SensorRange(range); //deep copy
-            if (SG_HandProfiles.SaveLastRange(range, this.lastGlove))
-            {
-                //Debug.Log("Saved Range: " + range.ToString(true));
-            }
-
-            if (this.CalibrationStage != CalibrationStage.Done)
-            {
-                this.CalibrationStage = CalibrationStage.Done;
-                this.CalibrationStateChanged.Invoke();
-            }
-            return true;
+            return 0;
         }
 
 
 
         //--------------------------------------------------------------------------------------------------------
-        // Monobehaviour
+        // HandPoseProvider Interface Functions
 
-
-        // Use this for initialization
-        protected virtual void Start()
+        /// <summary> Returns the name of this GameObjects summary>
+        /// <returns></returns>
+        public string Name()
         {
-            if (this.DeviceConnected == null) { this.DeviceConnected = new UnityEvent(); }
-            if (this.DeviceDisconnected == null) { this.DeviceDisconnected = new UnityEvent(); }
-            this.CalibrationStage = CalibrationStage.MoveFingers;
+            return this.gameObject.name;
+        }
+
+        /// <summary> Stop any vibrotactile effects currently playing on this glove. </summary>
+        public void StopAllVibrations()
+        {
+            hapticStream.ClearVibrations();
+            if (this.lastGlove != null)
+            {
+                lastGlove.SendHaptics(lastFFBLevels, SG_BuzzCmd.Off, ThumperCmd.Off);
+            }
+        }
+
+        /// <summary> Stop both force- and vibrotactile feedback to this glove. </summary>
+        public void StopHaptics()
+        {
+            hapticStream.ClearAll();
+            if (this.lastGlove != null)
+            {
+                lastGlove.SendHaptics(SG_FFBCmd.Off, SG_BuzzCmd.Off, ThumperCmd.Off);
+            }
+        }
+
+        /// <summary> Send a Force-Feedback command to this glove. </summary>
+        /// <param name="ffb"></param>
+        public void SendCmd(SG_FFBCmd ffb)
+        {
+            this.hapticStream.AddCmd(ffb);
+        }
+
+
+        /// <summary> Send a command to the finger vibrotactile actuators, if any </summary>
+        /// <param name="fingerCmd"></param>
+        public void SendCmd(SGCore.Haptics.SG_TimedBuzzCmd fingerCmd)
+        {
+            fingerCmd.elapsedTime = -Time.deltaTime; // -deltaTime so when we evaluate at the end of this frame, they start at 0s.
+            this.hapticStream.AddCmd(fingerCmd);
+        }
+
+
+        /// <summary> Send a command to the Wrist vibrotactile actuators. </summary>
+        /// <param name="wristCmd"></param>
+        public void SendCmd(SGCore.Haptics.TimedThumpCmd wristCmd)
+        {
+            wristCmd.elapsedTime = -Time.deltaTime; // -deltaTime so when we evaluate at the end of this frame, they start at 0s.
+            this.hapticStream.AddCmd(wristCmd);
+        }
+
+        /// <summary> Send a Wavefrom from the Inspector to the glove. </summary>
+        /// <param name="waveform"></param>
+        public void SendCmd(SG_Waveform waveform)
+        {
+            //Convert this from a Monobehaviour class into a class that extends off the Timed Buzz/Waveform Cmd.
+            if (Util.SG_Util.OneTrue(waveform.fingers))
+            {
+                SG_WaveFormCmd iFingerBuzz = new SG_WaveFormCmd(waveform.waveForm, waveform.duration_s, waveform.magnitude, waveform.fingers, -Time.deltaTime); // -deltaTime so when we evaluate at the end of this frame, they start at 0s.
+                this.hapticStream.AddCmd(iFingerBuzz);
+            }
+            if (waveform.wrist && this.DeviceType != SGCore.DeviceType.SENSEGLOVE)
+            {
+                ThumperWaveForm iWristCmd = new ThumperWaveForm(waveform.magnitude, waveform.duration_s, waveform.waveForm, -Time.deltaTime); // -deltaTime so when we evaluate at the end of this frame, they start at 0s.
+                this.hapticStream.AddCmd(iWristCmd);
+            }
+        }
+
+        /// <summary> Send a Thumper command that is defined by a WaveForm to this Glove. </summary>
+        /// <param name="waveform"></param>
+        public void SendCmd(ThumperWaveForm waveform)
+        {
+            waveform.elapsedTime = -Time.deltaTime;
+            this.hapticStream.AddCmd(waveform);
+        }
+
+        /// <summary> Send an impact vibration to this HapitcGlove, along with the location and a vibration impact level 0...1. </summary>
+        /// <param name="location"></param>
+        /// <param name="normalizedVibration"></param>
+        public void SendImpactVibration(SG_HandSection location, float normalizedVibration)
+        {
+            if (this.lastGlove != null)
+            {
+                if (lastGlove.GetDeviceType() == SGCore.DeviceType.SENSEGLOVE)
+                {
+                    //it's a DK1
+                    //Debug.LogWarning(this.name + " TODO: Implement Impact Vibration for SenseGlove DK1");
+                    float wL = (50) + (normalizedVibration * 50); //10 ... 80
+                    this.SendCmd(new SG_TimedBuzzCmd(SGCore.Finger.Index, Mathf.RoundToInt(wL), 0.15f));
+                }
+                else if (lastGlove.GetDeviceType() == SGCore.DeviceType.NOVA)
+                {
+                    float wL = (10) + (normalizedVibration * 70); //10 ... 80
+                    this.SendCmd(new TimedThumpCmd(Mathf.RoundToInt(wL), 0.15f));
+                }
+            }
+        }
+
+        /// <summary> Process all haptics that were sent this frame and that are still active. </summary>
+        public void UpdateHaptics(float dT)
+        {
+            SG_FFBCmd newFFB; SG_BuzzCmd newBuzz; ThumperCmd newThumper;
+            if (this.hapticStream.FlushHaptics(dT, this.lastFFBLevels, lastBuzzCmd, lastThumperCmd, out newFFB, out newBuzz, out newThumper)) //processes Hapitcs in queue, and returns true if any of the new effects are different from the last
+            {
+                //Debug.Log(this.name + ": Compiled " + newFFB.ToString() + ", " + newBuzz.ToString() + ", " + newThumper.ToString());
+                //I see no reson to update these unless they were different
+                this.lastFFBLevels = newFFB;
+                this.lastBuzzCmd = newBuzz;
+                this.lastThumperCmd = newThumper;
+                if (this.lastGlove != null) //we'll process the timing regardless of whether or not we are connected. So this check comes after.
+                {
+                    this.lastGlove.SendHaptics(newFFB, newBuzz, newThumper); //actually send these.
+                }
+            }
+        }
+
+        //--------------------------------------------------------------------------------------------------------
+        // Utility Functions 
+
+
+
+        //--------------------------------------------------------------------------------------------------------
+        // Monobehavior 
+
+
+        protected void Start()
+        {
             SG.Util.SG_Connections.SetupConnections();
             UpdateDeviceType();
-            checkTime = hwTimer; //ensures we check it next frame!
+            timer_checkHW = hwTimer; //ensures we check it next frame!
         }
+
 
         protected virtual void Update()
         {
-            checkTime += Time.deltaTime;
-            if (checkTime >= hwTimer) { UpdateConnection(); checkTime = 0; }
+            timer_checkHW += Time.deltaTime;
+            if (timer_checkHW >= hwTimer)
+            {
+                UpdateConnection();
+                timer_checkHW = 0;
+            }
             CheckFingerMovement(Time.deltaTime);
         }
 
         protected virtual void LateUpdate()
         {
             newPoseNeeded = true; //next frame we're allowed to update the pose again.
-            newCVNeeded = true; //new frame we're allowed ot get CV data again
-            UpdateHaptics();
+            UpdateHaptics(Time.deltaTime);
         }
 
+        
         protected virtual void OnApplicationQuit()
         {
-            StopHaptics();
+            StopHaptics(); //Ensure no Haptics continue after the application quits.
         }
 
     }

@@ -4,12 +4,13 @@ using UnityEngine;
 
 namespace SG
 {
-	/// <summary> VR Wrapper around a SG_CalibrationSequence. </summary>
+	/// <summary> VR Wrapper around a SG_CalibrationSequence to acces calibration during play. </summary>
 	public class SG_VR_CalibrationMenu : MonoBehaviour 
 	{
-
+		/// <summary> the sequence this menu responds to. </summary>
 		public SG_CalibrationSequence sequence;
 
+		/// <summary> Zone tart activates calibration </summary>
 		public SG.SG_ConfirmZone calibrationZone;
 
 		/// <summary> Optional zone to cancel calibration at any time. </summary>
@@ -18,9 +19,10 @@ namespace SG
 		/// <summary> Optional calibration instructions </summary>
 		public TextMesh instructions3D;
 
-
+		/// <summary> Once calibration completes, how long will the instructiontext remain? </summary>
 		public static float instructionStayingTime = 2.5f;
 
+		/// <summary> timer to clear instructions. </summary>
 		private float timer_clearInstr;
 
 
@@ -73,9 +75,9 @@ namespace SG
 				else if (!sequence.CalibrationActive)
 				{
                     string txt = "Calibrate";
-                    if (sequence != null && sequence.linkedGlove != null && sequence.linkedGlove.connectsTo != HandSide.Any)
+                    if (sequence != null && sequence.linkedGlove != null && sequence.linkedGlove.connectsTo != HandSide.AnyHand)
                     {
-                        txt += (sequence.linkedGlove.IsRight ? "\r\nRight" : "\r\nLeft");
+                        txt += (sequence.linkedGlove.TracksRightHand() ? "\r\nRight" : "\r\nLeft");
                     }
                     calibrationZone.InstructionText = txt;
 				}
@@ -96,18 +98,18 @@ namespace SG
 		}
 
 
-		private void CalibrationZone_Activated(object source, SG_HandDetector.GloveDetectionArgs args)
+		private void CalibrationZone_Activated(SG_TrackedHand args)
 		{
 			NextCalibrationStep();
 			UpdateInstructions();
 		}
 
-		private void CalibrationZone_Reset(object source, SG_HandDetector.GloveDetectionArgs args)
+		private void CalibrationZone_Reset(SG_TrackedHand args)
 		{
 			UpdateInstructions();
 		}
 
-		private void CancelZone_Activated(object source, SG_HandDetector.GloveDetectionArgs args)
+		private void CancelZone_Activated(SG_TrackedHand args)
 		{
 			CancelCalibration();
 		}
@@ -132,10 +134,10 @@ namespace SG
 		{
 			if (calibrationZone != null) 
 			{ 
-				calibrationZone.Activated += CalibrationZone_Activated;
-                calibrationZone.Reset += CalibrationZone_Reset;
+				calibrationZone.OnConfirm.AddListener(CalibrationZone_Activated);
+                calibrationZone.OnReset.AddListener(CalibrationZone_Reset);
 			}
-			if (cancelZone != null) { cancelZone.Activated += CancelZone_Activated; }
+			if (cancelZone != null) { cancelZone.OnConfirm.AddListener(CancelZone_Activated); }
 			if (sequence != null) 
 			{ 
 				this.sequence.CalibrationFinished.AddListener(OnCalibrationFinished); 
@@ -147,10 +149,10 @@ namespace SG
         {
 			if (calibrationZone != null)
 			{
-				calibrationZone.Activated -= CalibrationZone_Activated;
-				calibrationZone.Reset -= CalibrationZone_Reset;
+				calibrationZone.OnConfirm.RemoveListener(CalibrationZone_Activated);
+				calibrationZone.OnReset.RemoveListener(CalibrationZone_Reset);
 			}
-			if (cancelZone != null) { cancelZone.Activated -= CancelZone_Activated; }
+			if (cancelZone != null) { cancelZone.OnConfirm.RemoveListener(CancelZone_Activated); }
 			if (sequence != null) 
 			{ 
 				this.sequence.CalibrationFinished.RemoveListener(OnCalibrationFinished);

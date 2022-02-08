@@ -6,17 +6,19 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace SG
+namespace SG.Examples
 {
 
 	public class SGEx_GloveDiagnostics : MonoBehaviour
 	{
-		
-		[Header("Visual Components")]
-		public SG_HapticGlove glove;
+
+		//[Header("Visual Components")]
+		//public SG_HapticGlove glove;
 		public SG.Util.SG_WireFrame wireFrame;
-        public SG_CalibrationSequence calibrationSequence;
-		public SG_TrackedHand leftHandModel, rightHandModel;
+		//      public SG_CalibrationSequence calibrationSequence;
+		//public SG_TrackedHand leftHandModel, rightHandModel;
+
+		public SGEx_SelectHandModel handSelector;
 
 		[Header("UI Components")]
 		public Text titleText;
@@ -24,6 +26,7 @@ namespace SG
 		public SG_InputSlider[] fingerVibration = new SG_InputSlider[0];
 		public SG_InputSlider thumperVibration;
 		public GameObject SGThumperVibration;
+		public SGEx_ShowGloveAngles gloveAngleWindow;
 
 		public Button ffbOn, ffbOff, toggleFFB, buzzOn, buzzOff, toggleBuzz;
 		public Button sgThumpTest;
@@ -136,35 +139,32 @@ namespace SG
 
 		public void CalibrateIMU()
         {
-			if (rightHandModel != null) { this.rightHandModel.handAnimation.CalibrateWrist(); }
-			if (leftHandModel != null) { this.leftHandModel.handAnimation.CalibrateWrist(); }
+			SG_HapticGlove glove = this.handSelector.ActiveGlove;
+			if (glove != null)
+			{
+				Quaternion IMU;
+				if (glove.GetIMURotation(out IMU))
+				{
+					this.handSelector.rightHand.handAnimation.CalibrateWrist(IMU);
+					this.handSelector.leftHand.handAnimation.CalibrateWrist(IMU);
+				}
+			}
 			if (wireFrame != null) { this.wireFrame.CalibrateWrist(); }
         }
 
 		private void SetupAfterConnect()
         {
-			//Show the right HandModels
-			if (glove.IsRight)
-            {
-                rightHandModel.gameObject.SetActive(true);
-                if (calibrationSequence != null) 
-				{ 
-					calibrationSequence.linkedHand = rightHandModel; 
-				}
-				rightHandModel.UpdateHandState();
-			}
-			else
-            {
-                leftHandModel.gameObject.SetActive(true);
-                if (calibrationSequence != null) 
-				{ 
-					calibrationSequence.linkedHand = leftHandModel; 
-				}
-				leftHandModel.UpdateHandState();
-			}
-			if (wireFrame != null) { wireFrame.HandVisible = true; }
+            //Show the right HandModels
 
-			hapticGlove = (SGCore.HapticGlove)glove.InternalGlove;
+            if (wireFrame != null)
+            {
+				wireFrame.SetTrackedGlove(this.handSelector.ActiveGlove);
+                //wireFrame.ResizeFingers(this.handSelector.ActiveGlove.GetKinematics().FingerLengths);
+                wireFrame.HandVisible = true;
+            }
+
+            SG_HapticGlove glove = this.handSelector.ActiveGlove;
+            hapticGlove = (SGCore.HapticGlove)glove.InternalGlove;
 			if (hapticGlove != null)
             {
 				if (hapticGlove.GetDeviceType() == SGCore.DeviceType.NOVA)
@@ -214,23 +214,51 @@ namespace SG
 
 		public void ResetCalibration()
         {
-			if (this.calibrationSequence != null)
+			//if (this.calibrationSequence != null)
+			//{
+			//	this.calibrationSequence.StartCalibration(true);
+			//}
+			if (this.handSelector.ActiveHand != null)
             {
-				this.calibrationSequence.StartCalibration(true);
+				this.handSelector.ActiveHand.calibration.StartCalibration(false);
             }
         }
+
+
+		public void ActiveHandConnects()
+        {
+			SetupAfterConnect();
+			gloveAngleWindow.senseGlove = this.handSelector.ActiveGlove;
+		}
+
+		public void ActiveHandDisconnects()
+		{
+			//Set Sliders to 0
+			for (int f = 0; f < fingerFFB.Length; f++)
+			{
+				this.fingerFFB[f].SlideValue = 0;
+			}
+			for (int f = 0; f < fingerVibration.Length; f++)
+			{
+				this.fingerVibration[f].SlideValue = 0;
+			}
+			gloveAngleWindow.senseGlove = null;
+		}
 
 
 		// Use this for initialization
 		void Start()
 		{
-			if (rightHandModel != null) { rightHandModel.gameObject.SetActive(false); }
-			if (leftHandModel != null) { leftHandModel.gameObject.SetActive(false); }
+
 			if (wireFrame != null) { wireFrame.HandVisible = false; }
 
-			//ensure the SG does not update itself.
-			this.glove.ffbEnabled = new bool[5];
-			this.glove.vibroEnabled = new bool[5];
+			this.handSelector.leftHand.overrideWristLocation = true;
+			this.handSelector.leftHand.handAnimation.imuForWrist = true;
+			this.handSelector.rightHand.overrideWristLocation = true;
+			this.handSelector.rightHand.handAnimation.imuForWrist = true;
+
+			this.handSelector.ActiveHandConnect.AddListener(ActiveHandConnects);
+			this.handSelector.ActiveHandDisconnect.AddListener(ActiveHandDisconnects);
 
 			for (int f = 0; f < fingerFFB.Length; f++)
             {
@@ -266,6 +294,8 @@ namespace SG
 			sComRuns = SGCore.DeviceList.SenseCommRunning();
 			titleText.text = sComRuns ? "Awaiting connection with glove..." : "SenseCom isn't running, so no glove will be detected!";
 			titleText.color = sComRuns ? Color.white : Color.red;
+
+			gloveAngleWindow.senseGlove = null;
 		}
 
 		// Update is called once per frame
@@ -281,13 +311,8 @@ namespace SG
                 }
 				sComRuns = nowRunning;
 			}
-			else if (glove.IsConnected)
+			else
             {
-				if (!setup)
-                {
-					setup = true;
-					this.SetupAfterConnect();
-				}
 				if (hapticGlove != null)
 				{
 					if (hapticGlove.IsConnected())
@@ -315,6 +340,16 @@ namespace SG
 						thumprCmd = new ThumperCmd((int)thumperVibration.SlideValue);
 
 						hapticGlove.SendHaptics(ffbCmd, buzzCmd, thumprCmd);
+
+						//update wrist IMU
+						if (handSelector.ActiveHand != null && handSelector.ActiveGlove != null)
+                        {
+							Quaternion imu;
+							if (handSelector.ActiveGlove.GetIMURotation(out imu))
+                            {
+								handSelector.ActiveHand.handAnimation.UpdateWrist(imu);
+							}
+                        }
 					}
 					else
                     {

@@ -1,791 +1,458 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
-#if UNITY_EDITOR
-    using UnityEditor;
-#endif
 
 namespace SG
 {
 
-    /// <summary> A class to detect a SG_TrackedHand based on its SG_Feedback colliders </summary>
-    [RequireComponent(typeof(Collider))]
+    [System.Serializable]
+    public class HandDetectionEvent : UnityEngine.Events.UnityEvent<SG_TrackedHand> { }
+
+    /// <summary> A Zone that detects TrackedHands, rather than objects </summary>
     public class SG_HandDetector : MonoBehaviour
-    {
-
-        /// <summary> How a SG_TrackedHand is detected through its Feedback scripts. </summary>
-        public enum DetectionType
+	{
+        /// <summary> Whether a HandDetector responds to left hands, righ hands, or any hand. </summary>
+		public enum DetectionType
         {
-            /// <summary> This zone detects any finger. </summary>
-            AnyFinger = 0,
-            /// <summary> This zone only detects specific fingers. </summary>
-            SpecificFingers
+			Any,
+			LeftHandOnly,
+			RightHandOnly
         }
 
+        //-----------------------------------------------------------------------------------------------
+        // HandDetection Parameters
 
-        /// <summary> EventArgs fired when a glove is detected in or removed from a SenseGlove_Detector. </summary>
-        public class GloveDetectionArgs : System.EventArgs
+        /// <summary> Special Hand Detection parameters for each object detected in this volume. </summary>
+        /// <remarks> Contained within this class since it'll be rarely used outside of it. </remarks>
+        public class HandDetectionArgs
         {
-            /// <summary> The TrackedHand that caused the event to fire. </summary>
-            public SG_TrackedHand trackedHand;
+            /// <summary> The hand that was detected inside the zone. </summary>
+            public SG_TrackedHand hand;
 
-            /// <summary> Create a new instance of the SenseGlove Detection Arguments </summary>
-            /// <param name="grab"></param>
-            public GloveDetectionArgs(SG_TrackedHand hand)
+            /// <summary> How long since the hand was inside the zone and < detectionTime. </summary>
+            public float eventTimer = 0;
+
+            /// <summary> Whether we fired the Detection Event for this hand yet. </summary>
+            public bool eventFired = false;
+
+            /// <summary> Default Constructor for override </summary>
+            protected HandDetectionArgs() { }
+
+
+            /// <summary> Create a new Instance of a HandDetectionArgs. </summary>
+            /// <param name="detectedScript"></param>
+            public HandDetectionArgs(SG_TrackedHand detectedHand)
             {
-                this.trackedHand = hand;
-            }
-
-        }
-
-        /// <summary> Contains internal detection arguments for a single glove. </summary>
-        public class HandDetectArgs
-        {
-            //parameters
-
-            /// <summary> The trackedHand we've detected, grants access to all of its layers. </summary>
-            public SG_TrackedHand TrackedHand
-            {
-                get; private set;
+                hand = detectedHand;
             }
 
 
-            /// <summary> The HapticGlove linked to the detected hand. </summary>
-            public SG_HapticGlove Glove
-            {
-                get { return TrackedHand.gloveHardware; }
-            }
-
-            /// <summary> How long this hand is inside the detection zone for. </summary>
-            public float DetectionTime
-            {
-                get; set;
-            }
-
-            /// <summary> If true, this instance's HandDetected Event has already been fired. </summary>
-            public bool EventFired
-            {
-                get; set;
-            }
-
-
-            /// <summary> The number of colliders of each finger we've detected for this TrackedHand. </summary>
-            private int[] FingerColliders;
-
-            /// <summary> The number of wrist colliders we've detected for this TrackedHand. </summary>
-            public int WristColliders
-            {
-                get; private set;
-            }
-
-            /// <summary> The number of colliders we've detcted that don't belong to a wrist or a finger. </summary>
-            public int OtherColliders
-            {
-                get; private set;
-            }
-
-            /// <summary> The total number of colliders of this TrackedHand inside the zone. If this reaches 0, the hand has exited. </summary>
-            public int TotalColliders
-            {
-                get; private set;
-            }
-
-
-
-            // Accessors
-
-            /// <summary> Which fingers of the TrackedHand are inside of this zone. </summary>
+            /// <summary> Prints the grabable name, the amount of colliders, and how much time before it is detected. </summary>
+            /// <remarks> Different from ToString(), because it also takes parameters </remarks>
+            /// <param name="collidersInside">The amount of colliders of this Object inside the zone, detected by the ScriptDetector class.</param>
+            /// <param name="zoneScript"></param>
             /// <returns></returns>
-            public bool[] FingersInside()
+            public virtual string Print(int collidersInside, SG_HandDetector zoneScript)
             {
-                bool[] res = new bool[5];
-                for (int f=0; f<FingerColliders.Length; f++)
-                {
-                    res[f] = FingerColliders[f] > 0;
-                }
-                return res;
-            }
-
-            /// <summary> Returns true if the wrist of this hand is inside the zone. </summary>
-            /// <returns></returns>
-            public bool WristInside()
-            {
-                return WristColliders > 0;
-            }
-            
-            // Construction.
-
-            /// <summary> Create a new instance of a detectedHand without any colliders. </summary>
-            /// <param name="detectedHand"></param>
-            public HandDetectArgs(SG_TrackedHand detectedHand)
-            {
-                TrackedHand = detectedHand;
-                EventFired = false;
-                DetectionTime = 0;
-                FingerColliders = new int[5];
-                WristColliders = 0;
-                TotalColliders = 0;
-            }
-
-            /// <summary> Register a newly detcted collider to this hand. </summary>
-            /// <param name="touch"></param>
-            public void AddCollider(SG_BasicFeedback touch)
-            {
-                if (touch.handLocation == SG_HandSection.Unknown)
-                {
-                    OtherColliders += 1;
-                }
-                else if (touch.handLocation == SG_HandSection.Wrist)
-                {
-                    WristColliders += 1;
-                }
-                else
-                {
-                    int index = (int)touch.handLocation;
-                    FingerColliders[index] += 1;
-                }
-                TotalColliders += 1;
-            }
-
-            /// <summary> Register that a collider of this hand has been removed from the zone. </summary>
-            /// <param name="touch"></param>
-            public void RemoveCollider(SG_BasicFeedback touch)
-            {
-                if (touch.handLocation == SG_HandSection.Unknown)
-                {
-                    OtherColliders -= 1;
-                }
-                else if (touch.handLocation == SG_HandSection.Wrist)
-                {
-                    WristColliders -= 1;
-                }
-                else
-                {
-                    int index = (int)touch.handLocation;
-                    FingerColliders[index] -= 1;
-                }
-                TotalColliders -= 1;
-            }
-
-            /// <summary> Prints the objects inside of the zone, with the detection parameters. </summary>
-            /// <returns></returns>
-            public string PrintDetected()
-            {
-                string res = "Detected " + this.Glove.gameObject.name + ": dT = " + (Math.Round(DetectionTime, 2).ToString()) +  "s [";
-                for (int f=0; f<this.FingerColliders.Length; f++)
-                {
-                    res += FingerColliders[f].ToString();
-                    if (f < 4) { res += ", "; }
-                }
-                return res + "] + " + WristColliders + " => " + TotalColliders.ToString();
+                return hand.name + " (" + collidersInside + ") "
+                    + (eventFired ? "Detected!" : System.Math.Round(eventTimer, 2) + "/" + zoneScript.detectionTime + "s");
             }
 
         }
 
 
+        //-------------------------------------------------------------------------------------------------------------------------
+        // Member Variables
 
-        //--------------------------------------------------------------------------------------------------------------------------
-        // Properties
+        /// <summary> Targets that must be inside this DropZone. If assigned, this Zone will ony respond to those objects. If empty, it will register any object. </summary>
+        [Header("HandDetector Components")]
+        public List<SG_TrackedHand> detectableHands = new List<SG_TrackedHand>();
 
-        #region Properties
+        //Splitting the functionality into two: One script (colliderDetection) is solely responsible for decting "in zone or not". Another set is responsible for the event arguments / logic.
+        //Both run parallel to each other (the sizes/indices should be the same).
 
-        // Public Properties.
-
-        /// <summary>  General Colliders or Specific fingers. </summary>
-        [Tooltip("The method for detection")]
-        public DetectionType detectionMethod = DetectionType.AnyFinger;
-
-        /// <summary> How many SG_Feedback colliders must enter the Detector before the GloveDetected event is raised. </summary>
-        [Tooltip("How many SG_Feedback colliders can enter the Detector before the GloveDetected event is raised.")]
-        public int activationThreshold = 1;
-
-        /// <summary> Whether or not this detector is activated by a thumb when detecting specific fingers only.</summary>
-        [Tooltip("Whether or not this detector is activated by a thumb")]
-        public bool detectThumb = true;
-
-        /// <summary> Whether or not this detector is activated by an index finger when detecting specific fingers only. </summary>
-        [Tooltip("Whether or not this detector is activated by an index finger")]
-        public bool detectIndex = true;
-
-        /// <summary> Whether or not this detector is activated by a middle finger when detecting specific fingers only. </summary>
-        [Tooltip("Whether or not this detector is activated by a middle finger")]
-        public bool detectMiddle = true;
-
-        /// <summary> Whether or not this detector is activated by a ring finger when detecting specific fingers only.</summary>
-        [Tooltip("Whether or not this detector is activated by a ring finger")]
-        public bool detectRing = true;
-
-        /// <summary> Whether or not this detector is activated by a pinky finger when detecting specific fingers only. </summary>
-        [Tooltip("Whether or not this detector is activated by a pinky finger")]
-        public bool detectPinky = true;
-
-        /// <summary> Optional: The time in seconds that the Sense Glove must be inside the detector for before the GloveDetected event is called. </summary>
-        [Tooltip("Optional: The time in seconds that the Sense Glove must be inside the detector for before the GloveDetected event is called. Set to 0 to ignore.")]
-        public float activationTime = 0;
-
-        /// <summary> If set to true, the detector will not raise events if a second handModel joins in.  </summary>
-        [Tooltip("If set to true, the detector will not raise events if a second handModel joins in.")]
-        public bool singleGlove = false;
-
-        /// <summary> An optional Highlight of this Detector that can be enabled / disabled. </summary>
-        [Tooltip("An optional Highlight of this Detector that can be enabled / disabled.")]
-        public Renderer highLight;
-
-        // Internal Properties.
-
-        /// <summary> List of the detected hands inside this zone. </summary>
-        protected List<HandDetectArgs> detectedHands = new List<HandDetectArgs>();
-
-        /// <summary> The collider of this detection area. Assigned on startup </summary>
-        private Collider myCollider;
-
-        /// <summary> The rigidbody of this detection area. Assigned on StartUp </summary>
-        private Rigidbody myRigidbody;
-
-        #endregion Properties
-
-        
-
-        //--------------------------------------------------------------------------------------------------------------------------
-        // Collision Detection
-
-        #region Collision
-
-        void OnTriggerEnter(Collider col)
-        {
-            SG_BasicFeedback touch = col.GetComponent<SG_BasicFeedback>();
-            if (touch && touch.feedbackScript && touch.feedbackScript.TrackedHand) //needs to have a grabscript attached.
-            {
-                int scriptIndex = this.HandModelIndex(touch.feedbackScript.TrackedHand);
-
-                //#1 - Check if it belongs to a new or existing detected glove.
-                if (scriptIndex < 0)
-                {
-                    if (ValidScript(touch))
-                    {
-                        //SG_Debugger.Log("New Grabscript entered.");
-                        this.AddEntry(touch.feedbackScript.TrackedHand);
-                        scriptIndex = this.detectedHands.Count - 1;
-                        this.detectedHands[scriptIndex].AddCollider(touch);
-                    }
-                }
-                else
-                {
-                    if (ValidScript(touch))
-                    {
-                        //SG_Debugger.Log("Another collider for grabscript " + scriptIndex);
-                        this.detectedHands[scriptIndex].AddCollider(touch);
-                    }
-                }
-
-                //if no time constraint is set, raise the event immediately!
-                if (this.activationTime <= 0 && scriptIndex > -1 && scriptIndex < detectedHands.Count && this.detectedHands[scriptIndex].TotalColliders == this.activationThreshold)
-                {
-                    //SG_Debugger.Log("ActivationThreshold Reached!");
-                    if (!(detectedHands[scriptIndex].EventFired) && !(this.singleGlove && this.detectedHands.Count > 1))
-                    {
-                        this.detectedHands[scriptIndex].EventFired = true;
-                        this.FireDetectEvent(this.detectedHands[scriptIndex].TrackedHand);
-                    }
-                }
-
-            }
-        }
-
-        void OnTriggerExit(Collider col)
-        {
-            SG_BasicFeedback touch = col.GetComponent<SG_BasicFeedback>();
-            if (touch && touch.feedbackScript && touch.feedbackScript.TrackedHand)
-            {
-                //SG_Debugger.Log("Collider Exits");
-                int scriptIndex = this.HandModelIndex(touch.feedbackScript.TrackedHand);
-                if (scriptIndex < 0)
-                {
-                    //SG_Debugger.Log("Something went wrong with " + this.gameObject.name);
-                    //it is likely the palm collider.
-                }
-                else
-                {   //belongs to an existing SenseGlove.
-                    if (ValidScript(touch))
-                    {
-                        this.detectedHands[scriptIndex].RemoveCollider(touch);
-                        if (this.detectedHands[scriptIndex].TotalColliders <= 0)
-                        {
-                            //raise release event.
-                            //SG_Debugger.Log("Escape!");
-                            if (detectedHands[scriptIndex].EventFired && !(this.singleGlove && this.detectedHands.Count > 1)) //only fire if the last glove has been removed.
-                            {
-                                this.FireRemoveEvent(this.detectedHands[scriptIndex].TrackedHand);
-                            }
-                            this.RemoveEntry(scriptIndex);
-                        }
-                    }
-                }
-            }
-        }
-
-        #endregion Collision
-
-        //--------------------------------------------------------------------------------------------------------------------------
-        // Logic
-
-        #region Logic
-
-        /// <summary> Set the highlight of this Sense Glove on or off. </summary>
-        /// <param name="active"></param>
-        public void SetHighLight(bool active)
-        {
-            if (this.highLight != null)
-            {
-                this.highLight.enabled = active;
-            }
-        }
-
-        /// <summary> Set the highlight of this Sense Glove on or off </summary>
-        public bool HighlightEnabled
-        {
-            get { return this.highLight != null && this.highLight.enabled; }
-            set { if (this.highLight != null) { this.highLight.enabled = value; }  }
-        }
+        /// <summary> Flexible detector list that will handle most of the detection work. We're only interested in the Grabable scripts it provides. </summary>
+        protected SG_ScriptDetector<SG_TrackedHand> colliderDetection = new SG_ScriptDetector<SG_TrackedHand>();
+        /// <summary> Runs parallel to the scripts in the zone. Custom arguments related to event firing and snapping. </summary>
+        protected List<HandDetectionArgs> detectionArguments = new List<HandDetectionArgs>();
 
 
-        /// <summary> Returns the index of the SG_HandAnimator in this detector's detectedGloves. Returns -1 if it is not in the list. </summary>
-        /// <param name="grab"></param>
+        /// <summary> The time (in s) that a Grabable must be inside this zone before it is detected. </summary>
+        [Tooltip("The time (in s) that a Grabable must be inside this zone before it is detected.")]
+        public float detectionTime = 0.2f;
+
+        //TODO: Detect Specific Fingers?
+
+        /// <summary> Optional Highlight to toggle zone indicators / object previes / etc. Access via HighLightEnabled. </summary>
+        public SG_Activator highlighter;
+
+        /// <summary> Optional Component to display all objects touched by this collider. </summary>
+        public TextMesh debugTxt;
+
+        /// <summary> Physics Colliders attached to this Zone. Used to disable collision with fingers. </summary>
+        /// <remarks>They are cached here after requesting them once, so that we don't need to look for them again.</remarks>
+        private Collider[] myColliders = null;
+
+        /// <summary> Fires when a hand is detected by this zone (it's in there for at least the detectionTime).  </summary>
+        public HandDetectionEvent HandDetected = new HandDetectionEvent();
+        /// <summary> Fires when a hand object is removed from this zone. </summary>
+        public HandDetectionEvent HandRemoved = new HandDetectionEvent();
+
+
+        //-------------------------------------------------------------------------------------------------------------------------
+        // Basic DropZone Functions
+
+
+        /// <summary> Returns the number of objects currently inside this DropZone </summary>
         /// <returns></returns>
-        private int HandModelIndex(SG_TrackedHand model)
+        public int HandsInZoneCount()
         {
-            for (int i = 0; i < this.detectedHands.Count; i++)
+            return this.colliderDetection.DetectedCount();
+        }
+
+        /// <summary> Returns all SG_Grabable objects within this DropZone. </summary>
+        /// <returns></returns>
+        public SG_TrackedHand[] HandsInZone()
+        {
+            return this.colliderDetection.GetDetectedScripts();
+        }
+
+        /// <summary> returns the amount of hands that are inside the Detection zone and have fired their Detected Events </summary>
+        /// <returns></returns>
+        public int FullyDetctedCount()
+        {
+            return this.FullyDetectedHands().Count;
+        }
+        
+        /// <summary> Returns a list of all hands within this zone that have fired their Detected events. </summary>
+        /// <returns></returns>
+        public List<SG_TrackedHand> FullyDetectedHands()
+        {
+            List<SG_TrackedHand> hands = new List<SG_TrackedHand>();
+            for (int i=0; i<this.detectionArguments.Count; i++)
             {
-                if (GameObject.ReferenceEquals(model.gameObject, this.detectedHands[i].TrackedHand.gameObject)) { return i; }
+                if (detectionArguments[i].eventFired)
+                { 
+                    hands.Add(detectionArguments[i].hand); 
+                }
+            }
+            return hands;
+        }
+
+        /// <summary> Returns true if this Zone can detect a specific Grabable. </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
+        public bool Detects(SG_TrackedHand hand)
+        {
+            return this.detectableHands.Count == 0 || this.detectableHands.Contains(hand);
+        }
+
+        /// <summary> Returns true if all DetectedHands for this zone have been officially detected. </summary>
+        /// <returns></returns>
+        public bool AllhandsDetected()
+        {
+            if (this.detectableHands.Count == 0 || this.detectableHands.Count != this.detectionArguments.Count) { return false; }
+            //Don't go here unless we have at least the correct abount of objects inside.
+            for (int i = 0; i < this.detectionArguments.Count; i++)
+            {
+                if (!detectionArguments[i].eventFired) //there's at least one whose event has not yet fired.
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+
+        //-------------------------------------------------------------------------------------------------------------------------
+        // Collision / Trigger Logic
+
+        /// <summary> Returns the index of a specific TrackedHand within our detectionArguments. Used to find a maching index to collisionDetection. </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
+        protected int ArgumentIndex(SG_TrackedHand hand)
+        {
+            for (int i = 0; i < this.detectionArguments.Count; i++)
+            {
+                if (detectionArguments[i].hand == hand)
+                {
+                    return i;
+                }
             }
             return -1;
         }
 
-        /// <summary> Add a newly detected SenseGlove to the list of detected gloves. </summary>
-        /// <param name="model"></param>
-        private void AddEntry(SG_TrackedHand model)
-        {
-            this.detectedHands.Add(new HandDetectArgs(model));
-        }
-
-        /// <summary> Remove a handmodel at the specified index from the list of detected gloves. </summary>
-        /// <param name="scriptIndex"></param>
-        private void RemoveEntry(int scriptIndex)
-        {
-            if (scriptIndex > -1 && scriptIndex < detectedHands.Count)
-            {
-                this.detectedHands.RemoveAt(scriptIndex);
-            }
-        }
-
-
-        /// <summary> Returns true if there is a Sense Glove contained within this detector. </summary>
+        /// <summary> Generates new HandDetectionArgs to add to the list. Called as soon as the first collider enters the volume. Override this if you want to add custom HandDetectionArgs. </summary>
+        /// <param name="script"></param>
         /// <returns></returns>
-        public bool ContainsSenseGlove()
+        protected virtual HandDetectionArgs GenerateZoneArguments(SG_TrackedHand hand)
         {
-            for (int i=0; i<this.detectedHands.Count; i++)
-            {
-                if (detectedHands[i].EventFired) { return true; } //returns true for the first glove that has fired its event.
-            }
-            return false;
+            return new HandDetectionArgs(hand);
         }
 
-        /// <summary> Get a list of all Haptic Glove Hardware within this detection area. </summary>
-        /// <returns></returns>
-        public SG_HapticGlove[] GlovesInside()
+        /// <summary> Called OnTirggerEnter. Attempts to add a collider to our ColliderDetection script. If succesful, we also generate Detection Arguments. </summary>
+        /// <param name="col"></param>
+        protected virtual void TryAddCollider(Collider col)
         {
-            SG_HapticGlove[] res = new SG_HapticGlove[this.detectedHands.Count];
-            for (int i=0; i<this.detectedHands.Count; i++)
+            //Step1 : Check if it has an Interactable Scrip attached.
+            SG_TrackedHand hand;
+            if (SG_HandPhysics.TryGetLinkedHand(col, out hand)) //this collider is attached to the hand
             {
-                res[i] = this.detectedHands[i].Glove;
-            }
-            return res;
-        }
-
-        /// <summary> Get a list of all SG_TrackedHands within this detection area. </summary>
-        /// <returns></returns>
-        public SG_TrackedHand[] HandsInside()
-        {
-            SG_TrackedHand[] res = new SG_TrackedHand[this.detectedHands.Count];
-            for (int i = 0; i < this.detectedHands.Count; i++)
-            {
-                res[i] = this.detectedHands[i].TrackedHand;
-            }
-            return res;
-        }
-
-        /// <summary> Access not only the glove within this collider, but also its detection parameters </summary>
-        /// <returns></returns>
-        public HandDetectArgs[] GetDetected()
-        {
-            return this.detectedHands.ToArray();
-        }
-
-        /// <summary> Returns true if a SG_TrackedHand is detected by this zone. </summary>
-        /// <param name="hand"></param>
-        /// <returns></returns>
-        public bool IsDetected(SG_TrackedHand hand)
-        {
-            if (hand != null)
-            {
-                for (int i = 0; i < this.detectedHands.Count; i++)
+                if (this.Detects(hand)) //this is an object relevant to us. Hurray!
                 {
-                    if (detectedHands[i].TrackedHand == hand && detectedHands[i].EventFired) { return true; } //returns true but only if the glove has fires its event.
+                    //Step 2 : Check if this is one relevant to us
+                    int collidersInZone = this.colliderDetection.AddToList(hand, col, this); //returns the (new) number of colliders associated with this script
+                    if (collidersInZone == 1) //this is the first collider of this script we've found. Do something!
+                    {
+                        HandDetectionArgs args = GenerateZoneArguments(hand);
+                        AddToList(args);
+                        UpdateDetections(0); //check them at t=0;
+                        UpdateDebugger();
+                        //Debug.Log(args.grabable.name + " entered " + this.name + " with its first collider.");
+                    }
                 }
             }
+        }
+
+        protected virtual void AddToList(HandDetectionArgs args)
+        {
+            int index = ArgumentIndex(args.hand);
+            if (index < 0)
+            {
+                this.detectionArguments.Add(args);
+            }
+        }
+
+        /// <summary> Called during OnTriggerExit. Attempt to remove a collider from colliderDetection. If that's the last collider, remove the matching HandDetectionArgs. </summary>
+        /// <param name="col"></param>
+        protected virtual void TryRemoveCollider(Collider col)
+        {
+            SG_TrackedHand hand;
+            if (SG_HandPhysics.TryGetLinkedHand(col, out hand)) // a Grabable just left us
+            {
+                int removeCode = this.colliderDetection.RemoveFromList(col, hand);
+                if (removeCode == 2) //returns 2 if the script has been completely removed - last collider exited.
+                {
+                    //Debug.Log(interactable.name + " was completely removed from the zone.");
+                    int argIndex = ArgumentIndex(hand); //find out my detectionArgs linked to that Grabable. As they run parallel, I should NEVER have an outofRangeException. Leaving this here to warn me if it does.
+                    HandDetectionArgs args = detectionArguments[argIndex];
+                    this.detectionArguments.RemoveAt(argIndex);
+                    this.OnObjectRemoved(args); //let the script know it's gone.
+                    UpdateDebugger();
+                }
+                if (this.name.Contains("Zap"))
+                {
+                    Debug.Log(this.name + ": Removing " + col.name + " with parent " + (col.transform.parent != null ? col.transform.parent.name : "NULL") + " with code " + removeCode + ", which was linked to " + hand.name);
+                }
+            }
+            else if (this.name.Contains("Zap") && col.transform.parent != null && col.transform.parent.name.Contains("Bone"))
+            {
+                Debug.LogError("Could not get a Hand for " + col.name + "???");
+            }
+        }
+
+
+        //-------------------------------------------------------------------------------------------------------------------------
+        // Detection Logic
+
+        /// <summary> Returns true if a particular HandDetection is elligible to be detected. Can be overriden to include specific fingers. </summary>
+        /// <param name="args"></param>
+        /// <returns></returns>
+        protected virtual bool CanFireEvent(HandDetectionArgs args)
+        {
+            return true;
+        }
+
+        /// <summary> Returns true if the detectionTimer should be reset when CanFireEvent is false. </summary>
+        /// <returns></returns>
+        public virtual bool ResetsTimer()
+        {
             return false;
         }
 
-
-        /// <summary> Check if this scriptIndex is detectable by this Detector. </summary>
-        /// <param name="scriptIndex"></param>
+        /// <summary> Check all HandDetectionArgs to see if we can fire and event or simply update the object itself. </summary>
         /// <returns></returns>
-        private bool ValidScript(SG_HandSection handSection)
+        protected virtual void UpdateDetections(float dT)
         {
-            return (this.detectThumb && handSection == SG_HandSection.Thumb)
-                || (this.detectIndex && handSection == SG_HandSection.Index)
-                || (this.detectMiddle && handSection == SG_HandSection.Middle)
-                || (this.detectRing && handSection == SG_HandSection.Ring)
-                || (this.detectPinky && handSection == SG_HandSection.Pinky);
+            for (int i = 0; i < this.detectionArguments.Count; i++)
+            {
+                CheckObject(detectionArguments[i], dT);
+            }
         }
 
-        /// <summary> Returns true if this is a valid script. </summary>
-        /// <param name="touch"></param>
+        /// <summary> Checks activation / event firing of a single object within this zone. </summary>
+        /// <remarks> Placed in a single function so I can override it in subclasses without doubling the for loops. </remarks>
+        /// <param name="args"></param>
+        /// <param name="dT"></param>
+        protected virtual void CheckObject(HandDetectionArgs args, float dT)
+        {
+            if (!args.eventFired) //this one has not been 'detected' yet
+            {
+                if (args.eventTimer < this.detectionTime)
+                {
+                    args.eventTimer += dT;
+                }
+                else // capping the value at detectionTime so as to avoid any overflow. I know, that would require someone to hover for weeks. But I'm paranoid.
+                { args.eventTimer = detectionTime; }
+
+                if (CanFireEvent(args)) //I'm in the correct location at the moment
+                {
+                    if (args.eventTimer >= this.detectionTime)
+                    {
+                        this.OnObjectDetected(args);
+                    }
+                }
+                else if (this.ResetsTimer())
+                {
+                    args.eventTimer = 0;
+                }
+            }
+        }
+
+        /// <summary> Fires when we have determined that this object is 'detected' as by our base rules (it's not held and in the zone for X amount of time. </summary>
+        /// <param name="args"></param>
+        protected virtual void OnObjectDetected(HandDetectionArgs args)
+        {
+            //Fire the event
+            args.eventFired = true; //let it know the event should fire.
+            HandDetected.Invoke(args.hand);
+        }
+
+
+        /// <summary> Fires when an object is removed from this zone </summary>
+        /// <param name="args"></param>
+        protected virtual void OnObjectRemoved(HandDetectionArgs args)
+        {
+            if (args.eventFired) //at was removed AFTER wewere able to officially detect it.
+            {
+                HandDetected.Invoke(args.hand);
+            }
+        }
+
+
+        //-------------------------------------------------------------------------------------------------------------------------
+        // Utility Functions
+
+        /// <summary> Collect the colliders attached to this GameObject and its children. Fires once. </summary>
+        /// <remarks> Using List<> instead of Array for this one since it's easier to add to in overrided functions </remarks>
         /// <returns></returns>
-        private bool ValidScript(SG_BasicFeedback touch)
+        protected virtual List<Collider> CollectColliders()
         {
-            return this.detectionMethod == DetectionType.AnyFinger
-                        || (this.detectionMethod == DetectionType.SpecificFingers && this.ValidScript(touch.handLocation));
+            List<Collider> res = new List<Collider>();
+            Util.SG_Util.GetAllColliders(this.gameObject, ref res);
+            return res;
         }
 
-
-        #endregion Logic
-
-        //--------------------------------------------------------------------------------------------------------------------------
-        // Events
-
-        #region Events
-
-        /// <summary> A step in between events that can be overridden by sub-classes of the SenseGlove_Detector </summary>
-        /// <param name="model"></param>
-        protected virtual void FireDetectEvent(SG_TrackedHand hand)
+        /// <summary> Retrieve a list of all colliders attached to this GameObject and its direct children. </summary>
+        /// <returns></returns>
+        public Collider[] GetColliders()
         {
-            this.OnGloveDetected(hand);
-        }
-
-        /// <summary> A step in between events that can be overridden by sub-classes of the SenseGlove_Detector </summary>
-        /// <param name="model"></param>
-        protected virtual void FireRemoveEvent(SG_TrackedHand hand)
-        {
-            this.OnGloveRemoved(hand);
-        }
-
-        /// <summary> Event Handler for new Glove Detections </summary>
-        /// <param name="source"></param>
-        /// <param name="args"></param>
-        public delegate void GloveDetectedEventHandler(object source, GloveDetectionArgs args);
-        
-        /// <summary> Fires when a new SG_TrackedHand enters this detection zone and fullfils the detector's conditions. </summary>
-        public event GloveDetectedEventHandler GloveDetected;
-
-        /// <summary> Fire the GloveDetected event </summary>
-        /// <param name="hand"></param>
-        protected void OnGloveDetected(SG_TrackedHand hand)
-        {
-            if (GloveDetected != null)
+            if (this.myColliders == null)
             {
-                GloveDetected(this, new GloveDetectionArgs(hand));
+                this.myColliders = CollectColliders().ToArray();
             }
+            return this.myColliders;
         }
 
-        /// <summary> Event Handler for Glove removals. </summary>
-        /// <param name="source"></param>
-        /// <param name="args"></param>
-        public delegate void OnGloveRemovedEventHandler(object source, GloveDetectionArgs args);
-
-        /// <summary>Fires when a SG_TrackedHand exits this detection zone and fullfils the detector's conditions.  </summary>
-        public event OnGloveRemovedEventHandler GloveRemoved;
-
-        /// <summary> Fire the GlloveRemoved event </summary>
-        /// <param name="hand"></param>
-        protected void OnGloveRemoved(SG_TrackedHand hand)
+        /// <summary> Safely set the highlight / preview of this zone on or off. </summary>
+        /// <param name="active"></param>
+        public void SetHighlight(bool active)
         {
-            if (GloveRemoved != null)
+            if (this.highlighter != null)
             {
-                GloveRemoved(this, new GloveDetectionArgs(hand));
-            }
-        }
-
-        #endregion Events
-
-        /// <summary> Remove all of the references to trackedHands inside this list. </summary>
-        public void ResetParameters()
-        {
-            int failsafe = this.detectedHands.Count;
-            int count = 0;
-            while (count < failsafe && detectedHands.Count > 0)
-            {
-                this.RemoveEntry(0);
-                count++;
+                this.highlighter.Activated = active;
             }
         }
 
 
-        //--------------------------------------------------------------------------------------------------------------------------
+        public virtual string PrintDetections(string delim = "\n")
+        {
+            //inZone and detectionArgumens should run parallel. 
+            string res = "";
+            for (int i = 0; i < detectionArguments.Count; i++)
+            {
+                int collidersIndex = colliderDetection.ColliderCount(detectionArguments[i].hand); //make sure to look for it as opposed to copying the index.
+                res += detectionArguments[i].Print(collidersIndex, this);
+                if (i < detectionArguments.Count - 1) { res += delim; }
+            }
+            return res;
+        }
+
+        /// <summary> Debug Text to show all detected colliders. </summary>
+        public string ContentText
+        {
+            get { return debugTxt != null ? debugTxt.text : ""; }
+            set { if (debugTxt != null) { debugTxt.text = value; } }
+        }
+
+        /// <summary> Update the Debug Text to represent the number of objects within this zone, and their paramaters. </summary>
+        public void UpdateDebugger()
+        {
+            if (debugTxt != null) //Don't even start the for loop if we don't have a text assigned.
+            {
+                ContentText = PrintDetections();
+            }
+        }
+
+        /// <summary> Ensure that, if  </summary>
+        protected virtual void ValidateObjects()
+        {
+            int deletedScripts;
+            this.colliderDetection.ValidateDetectedObjects(this, out deletedScripts, true, false); //if colliders go from >0 to 0, remove it. But is it was already 0, we're moving towards it.
+            if (deletedScripts > 0) //we've removed at least one script(!) and it's not a collider that already had 0?
+            {
+                for (int i = 0; i < this.detectionArguments.Count;)
+                {
+                    if (detectionArguments[i].hand == null ////Grabable was deleted.
+                        || !colliderDetection.IsDetected(detectionArguments[i].hand)) // OR it no longer occus in detectedColliders because a collider was deleted.
+                    {
+                        detectionArguments.RemoveAt(i);
+                        Debug.Log("Cleaning a deleted script at index " + i);
+                    }
+                    else
+                    {
+                        i++;
+                    }
+                }
+            }
+        }
+
+
+        //-------------------------------------------------------------------------------------------------------------------------
         // Monobehaviour
 
-        #region Monobehaviour
 
-        // Use this for initialization
-        protected virtual void Start()
+        protected virtual void Awake()
         {
-            //add a rigidbody if not already present?
-            myCollider = this.GetComponent<Collider>();
-            myRigidbody = this.GetComponent<Rigidbody>();
-
-            if (myCollider)
+            //Do not ignore physics collision with the hand this time (duh)
+            if (this.highlighter == null)
             {
-                myCollider.isTrigger = true;
+                this.highlighter = this.GetComponent<SG_Activator>();
             }
-            if (myRigidbody)
+            UpdateDebugger(); //clears the text
+        }
+
+        protected virtual void FixedUpdate()
+        {
+            if (detectionArguments.Count > 0) //it's really only relelevant if we're detecting something.
             {
-                myRigidbody.useGravity = false;
-                myRigidbody.isKinematic = true;
+                ValidateObjects();
+                UpdateDetections(Time.deltaTime);
+                UpdateDebugger();
             }
         }
 
-        // Updates every frame, used to raise event(s).
-        protected virtual void LateUpdate()
+        protected virtual void OnTriggerEnter(Collider other)
         {
-            for (int i = 0; i < this.detectedHands.Count; i++)
-            {
-                if (this.detectedHands[i].TotalColliders >= this.activationThreshold)
-                {
-                    if (this.detectedHands[i].DetectionTime <= this.activationTime)
-                    {
-                        this.detectedHands[i].DetectionTime += Time.deltaTime;
-                    }
-                    if (this.detectedHands[i].DetectionTime >= this.activationTime && !(detectedHands[i].EventFired) && !(this.singleGlove && this.detectedHands.Count > 1))
-                    {
-                        this.FireDetectEvent(this.detectedHands[i].TrackedHand);
-                        this.detectedHands[i].EventFired = true;
-                    }
-                }
-                // Debug.Log(detectedHands[i].ToString());
-            }
+            TryAddCollider(other);
         }
 
-        #endregion Monobehaviour
+
+        protected virtual void OnTriggerExit(Collider other)
+        {
+            TryRemoveCollider(other);
+        }
 
     }
-
-
-
-#if UNITY_EDITOR //used to prevent crashing while building the solution.
-
-    #region Interface
-
-    [CustomEditor(typeof(SG_HandDetector))]
-    [CanEditMultipleObjects]
-    public class SenseGloveDetectorEditor : Editor
-    {
-        /// <summary> Properties to check for changes and for multi-object editing. </summary>
-        protected SerializedProperty _detectType, _activationThresh, _detectThumb, _detectIndex, _detectMiddle, _detectRing, _detectPinky;
-
-        /// <summary> Properties to check for changes and for multi-object editing. </summary>
-        protected SerializedProperty _activationTime, _singleGlove, _highLight;
-
-        /// <summary> Style for the Material, Breakable and Haptic Feedback properties. </summary>
-        protected FontStyle headerStyle = FontStyle.Bold;
-
-        //Tooltips are kept as static readonly so they are only instantialized once for the entire session, for each script.
-        private static readonly GUIContent l_detectType = new GUIContent("Detection Type\t", "The method for detection: General Colliders or Specific fingers.");
-        private static readonly GUIContent l_activationThresh = new GUIContent("Activation Threshold\t", " How many SG_Feedback colliders must enter the Detector before the GloveDetected event is raised.");
-
-        private static readonly GUIContent l_detectThumb = new GUIContent("Detects Thumb\t", "Whether or not this detector is activated by a thumb when detecting specific fingers only.");
-        private static readonly GUIContent l_detectIndex = new GUIContent("Detects Index\t", "Whether or not this detector is activated by an index finger when detecting specific fingers only.");
-        private static readonly GUIContent l_detectMiddle = new GUIContent("Detects Middle\t", "Whether or not this detector is activated by a middle finger when detecting specific fingers only.");
-        private static readonly GUIContent l_detectRing = new GUIContent("Detects Ring\t", "Whether or not this detector is activated by a ring finger when detecting specific fingers only.");
-        private static readonly GUIContent l_detectPinky = new GUIContent("Detects Pinky\t", "Whether or not this detector is activated by a pinky finger when detecting specific fingers only.");
-
-        private static readonly GUIContent l_activationTime = new GUIContent("Activation Time\t", "Optional: The time in seconds that the Sense Glove must be inside the detector for before the GloveDetected event is called");
-        private static readonly GUIContent l_singleGlove = new GUIContent("Single Glove\t", " If set to true, the detector will not raise additional events if a second handModel joins in.");
-        private static readonly GUIContent l_highlight = new GUIContent("HighLight\t", "An optional Highlight of this Detector that can be enabled / disabled.");
-
-        /// <summary> 
-        /// Runs once when the script's inspector is opened. 
-        /// Caches all variables to save processing power.
-        /// </summary>
-        void OnEnable()
-        {
-            CollectBaseAttributes();
-        }
-
-        /// <summary> Placed in a separate method so its child classes can call it as well. </summary>
-        protected virtual void CollectBaseAttributes()
-        {
-            this._detectType = serializedObject.FindProperty("detectionMethod");
-            this._activationThresh = serializedObject.FindProperty("activationThreshold");
-
-            this._detectThumb = serializedObject.FindProperty("detectThumb");
-            this._detectIndex = serializedObject.FindProperty("detectIndex");
-            this._detectMiddle = serializedObject.FindProperty("detectMiddle");
-            this._detectRing = serializedObject.FindProperty("detectRing");
-            this._detectPinky = serializedObject.FindProperty("detectPinky");
-
-            this._activationTime = serializedObject.FindProperty("activationTime");
-            this._singleGlove = serializedObject.FindProperty("singleGlove");
-            this._highLight = serializedObject.FindProperty("highLight");
-        }
-
-        /// <summary> Called when the inspector is (re)drawn. </summary>
-        public override void OnInspectorGUI()
-        {
-            DrawDefault();
-        }
-
-        /// <summary> Method to fully draw a detector based on the conditions set. Placed in a separate model so its children can call it as well. </summary>
-        public void DrawDefault()
-        {
-            // Update the serializedProperty - always do this in the beginning of OnInspectorGUI.
-            serializedObject.Update();
-
-            var detectorClass = target as SG_HandDetector;
-            var origFontStyle = EditorStyles.label.fontStyle;
-
-            ///// Always show the dropdown menu
-            ////show as an enum dropdown with the selected option matching the one we've chosen.
-
-            EditorGUI.BeginChangeCheck();
-            SetRenderMode(_detectType.hasMultipleDifferentValues);
-            detectorClass.detectionMethod = (SG_HandDetector.DetectionType)EditorGUILayout.EnumPopup(l_detectType, detectorClass.detectionMethod);
-            SetRenderMode(false, origFontStyle);
-            if (EditorGUI.EndChangeCheck()) //update serialzed properties before showing them.
-            {
-                _detectType.enumValueIndex = (int)detectorClass.detectionMethod;
-            }
-
-            //Actually show everything.
-            if (!_detectType.hasMultipleDifferentValues)
-            {
-                CreateIntField(ref detectorClass.activationThreshold, ref _activationThresh, l_activationThresh);
-
-                if (detectorClass.detectionMethod == SG_HandDetector.DetectionType.SpecificFingers)
-                {
-                    CreateToggle(ref detectorClass.detectThumb, ref _detectThumb, l_detectThumb);
-                    CreateToggle(ref detectorClass.detectIndex, ref _detectIndex, l_detectIndex);
-                    CreateToggle(ref detectorClass.detectMiddle, ref _detectMiddle, l_detectMiddle);
-                    CreateToggle(ref detectorClass.detectRing, ref _detectRing, l_detectRing);
-                    CreateToggle(ref detectorClass.detectPinky, ref _detectPinky, l_detectPinky);
-                }
-            }
-
-            //show general properties
-            //activationTime
-            CreateFloatField(ref detectorClass.activationTime, ref this._activationTime, l_activationTime);
-
-            //singleglove
-            CreateToggle(ref detectorClass.singleGlove, ref this._singleGlove, l_singleGlove);
-
-            //highlight.
-            EditorGUILayout.PropertyField(_highLight, l_highlight);
-
-            EditorStyles.label.fontStyle = origFontStyle; //return it to the desired value.
-
-            // Apply changes to the serializedProperty - always do this in the end of OnInspectorGUI.
-            serializedObject.ApplyModifiedProperties();
-        }
-
-        /// <summary> Set the renderer to show a mixed value or not. </summary>
-        /// <param name="multipleValues"></param>
-        protected void SetRenderMode(bool multipleValues)
-        {
-            EditorGUI.showMixedValue = multipleValues;
-        }
-
-        /// <summary> Set the renderer to show a mixed value and or a different fonr style. </summary>
-        /// <param name="multipleValues"></param>
-        /// <param name="style"></param>
-        protected void SetRenderMode(bool multipleValues, FontStyle style)
-        {
-            EditorGUI.showMixedValue = multipleValues;
-            EditorStyles.label.fontStyle = style;
-        }
-
-        /// <summary> Create an input field for an integer, </summary>
-        /// <param name="value"></param>
-        /// <param name="valueProp"></param>
-        /// <param name="label"></param>
-        protected void CreateIntField(ref int value, ref SerializedProperty valueProp, GUIContent label)
-        {
-            this.SetRenderMode(valueProp.hasMultipleDifferentValues);
-            EditorGUI.BeginChangeCheck();
-            value = EditorGUILayout.IntField(label, value);
-            if (EditorGUI.EndChangeCheck()) //update serialzed properties before showing them.
-            {
-                valueProp.intValue = value;
-            }
-            this.SetRenderMode(false);
-        }
-
-        /// <summary> Create an input field for a floatign point value </summary>
-        /// <param name="value"></param>
-        /// <param name="valueProp"></param>
-        /// <param name="label"></param>
-        protected void CreateFloatField(ref float value, ref SerializedProperty valueProp, GUIContent label)
-        {
-            this.SetRenderMode(valueProp.hasMultipleDifferentValues);
-            EditorGUI.BeginChangeCheck();
-            value = EditorGUILayout.FloatField(label, value);
-            if (EditorGUI.EndChangeCheck()) //update serialzed properties before showing them.
-            {
-                valueProp.floatValue = value;
-            }
-            this.SetRenderMode(false);
-        }
-
-        /// <summary> Create a boolean checkbox </summary>
-        /// <param name="value"></param>
-        /// <param name="valueProp"></param>
-        /// <param name="label"></param>
-        protected void CreateToggle(ref bool value, ref SerializedProperty valueProp, GUIContent label)
-        {
-            this.SetRenderMode(valueProp.hasMultipleDifferentValues);
-            EditorGUI.BeginChangeCheck();
-            value = EditorGUILayout.Toggle(label, value);
-            if (EditorGUI.EndChangeCheck()) //update serialzed properties before showing them.
-            {
-                valueProp.boolValue = value;
-            }
-            this.SetRenderMode(false);
-        }
-
-        /// <summary> Create a toggle with a specified header style. </summary>
-        /// <param name="value"></param>
-        /// <param name="valueProp"></param>
-        /// <param name="label"></param>
-        /// <param name="style"></param>
-        /// <param name="originalStyle"></param>
-        protected void CreateToggle(ref bool value, ref SerializedProperty valueProp, GUIContent label, FontStyle style, FontStyle originalStyle)
-        {
-            this.SetRenderMode(valueProp.hasMultipleDifferentValues, style);
-            EditorGUI.BeginChangeCheck();
-            value = EditorGUILayout.Toggle(label, value);
-            if (EditorGUI.EndChangeCheck()) //update serialzed properties before showing them.
-            {
-                valueProp.boolValue = value;
-            }
-            this.SetRenderMode(false, originalStyle);
-        }
-
-
-    }
-    #endregion Interface
-
-
-#endif
 
 }
-

@@ -99,6 +99,13 @@ namespace SG
         /// <summary> The maximum vibration level, a.k.a. 1 on the y-axis of the animationCurve. </summary>
         public int maxAmplitude = 0;
 
+        protected float cutOffTime = -1;
+
+        public override bool TimeElapsed()
+        {
+            return base.TimeElapsed();
+        }
+
         /// <summary> Create a new waveform. </summary>
         /// <param name="amplitude"></param>
         /// <param name="duration_s"></param>
@@ -120,7 +127,6 @@ namespace SG
             base.Update(dT);
             float normalTime = duration != 0 ? elapsedTime / duration : 0;
             this.magnitude = Mathf.RoundToInt(_timeline.Evaluate(normalTime) * this.maxAmplitude);
-            Debug.Log("MAGN " + this.magnitude);
 
         }
 

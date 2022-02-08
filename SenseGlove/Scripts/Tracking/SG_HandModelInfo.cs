@@ -4,6 +4,72 @@ using UnityEngine;
 
 namespace SG
 {
+    ///// <summary> Represents a segment of the hand. Unused for now because we prefer to use the Joints, but may become relevant in the future. </summary>
+    //public enum HandPart
+    //{
+    //    Wrist,
+
+    //    Thumb_MetaCarpal,
+    //    Thumb_Proximal_Phalange,
+    //    Thumb_Distal_Phalange,
+    //    Thumb_FingerTip,
+
+    //    Index_Proximal_Phalange,
+    //    Index_Medial_Phalange,
+    //    Index_Distal_Phalange,
+    //    Index_FingerTip,
+
+    //    Middle_Proximal_Phalange,
+    //    Middle_Medial_Phalange,
+    //    Middle_Distal_Phalange,
+    //    Middle_FingerTip,
+
+    //    Ring_Proximal_Phalange,
+    //    Ring_Medial_Phalange,
+    //    Ring_Distal_Phalange,
+    //    Ring_FingerTip,
+
+    //    Pinky_Proximal_Phalange,
+    //    Pinky_Medial_Phalange,
+    //    Pinky_Distal_Phalange,
+    //    Pinky_FingerTip,
+
+    //    None//util
+    //}
+
+    /// <summary> Represents a joint of the hand </summary>
+    public enum HandJoint
+    {
+        Wrist,
+
+        Thumb_CMC,
+        Thumb_MCP,
+        Thumb_IP,
+        Thumb_FingerTip,
+
+        Index_MCP,
+        Index_PIP,
+        Index_DIP,
+        Index_FingerTip,
+
+        Middle_MCP,
+        Middle_PIP,
+        Middle_DIP,
+        Middle_FingerTip,
+
+        Ring_MCP,
+        Ring_PIP,
+        Ring_DIP,
+        Ring_FingerTip,
+
+        Pinky_MCP,
+        Pinky_PIP,
+        Pinky_DIP,
+        Pinky_FingerTip,
+
+        None//util
+    }
+
     /// <summary> A script to assign information of hand joints, used by other scripts that use hand tracking. </summary>
     public class SG_HandModelInfo : MonoBehaviour
     {
@@ -11,7 +77,7 @@ namespace SG
         // Member Variables
 
         /// <summary> The side of this hand model. Used to indicate if it is a left- or right hand. </summary>
-        public HandSide handSide = HandSide.Any;
+        public HandSide handSide = HandSide.AnyHand;
 
         /// <summary> The forearm of the hand model, usually the parent of the wrist transform. </summary>
         public Transform foreArmTransform;
@@ -44,7 +110,7 @@ namespace SG
         /// <summary> Quaternion offsets wrist -> finger.  </summary>
         protected Quaternion[][] iFingerCorrections = null;
 
-
+        
         //----------------------------------------------------------------------------------------------
         // Accessors
 
@@ -98,6 +164,12 @@ namespace SG
                 res[4] = pinkyJoints;
                 return res;
             }
+        }
+
+        /// <summary> Retruns true if this source provides data fro the right hand. </summary>
+        public bool IsRightHand
+        {
+            get { return this.handSide != HandSide.LeftHand; }
         }
 
 
@@ -235,6 +307,6 @@ namespace SG
                 }
             }
         }
-
+        
     }
 }

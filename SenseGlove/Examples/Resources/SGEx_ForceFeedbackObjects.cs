@@ -38,9 +38,15 @@ namespace SG.Examples
         {
             if (hand != null)
             {
-                if (hand.handAnimation != null) { hand.handAnimation.gameObject.SetActive(active); }
-                if (hand.handModel != null) { hand.handModel.gameObject.SetActive(active); }
-                if (hand.feedbackScript != null) { hand.feedbackScript.gameObject.SetActive(active); }
+                hand.HandModelEnabled = active;
+                hand.SetLayer(SG_TrackedHand.HandLayer.Animation, active);
+                hand.SetLayer(SG_TrackedHand.HandLayer.Calibration, true);
+                hand.SetLayer(SG_TrackedHand.HandLayer.Feedback, active);
+                hand.SetLayer(SG_TrackedHand.HandLayer.Gestures, false);
+                hand.SetLayer(SG_TrackedHand.HandLayer.Grab, false);
+               // hand.SetLayer(SG_TrackedHand.HandLayer.HandModel, active);
+                hand.SetLayer(SG_TrackedHand.HandLayer.Passthrough, false);
+                hand.SetLayer(SG_TrackedHand.HandLayer.Physics, false);
             }
         }
 
@@ -49,7 +55,14 @@ namespace SG.Examples
         {
             if (this.activeHand != null && this.activeHand.handAnimation != null)
             {
-                this.activeHand.handAnimation.CalibrateWrist();
+                if (this.activeHand.realHandSource is SG.SG_HapticGlove)
+                {
+                    Quaternion imu;
+                    if (((SG.SG_HapticGlove)this.activeHand.realHandSource).GetIMURotation(out imu))
+                    {
+                        this.activeHand.handAnimation.CalibrateWrist(imu);
+                    }
+                }
             }
         }
 
@@ -57,7 +70,7 @@ namespace SG.Examples
         public static bool CheckHandOpen(SG_TrackedHand hand)
         {
             float[] flexions;
-            if (hand.gloveHardware.GetNormalizedFlexion(out flexions))
+            if (hand.GetNormalizedFlexion(out flexions))
             {
                 bool res = flexions.Length > 3 && flexions[0] < tOpen && flexions[1] < iOpen && flexions[2] < mOpen;
                 //Debug.Log(((int)flexions[0]).ToString() + " / " + tOpen.ToString()
@@ -153,7 +166,6 @@ namespace SG.Examples
 
 
 
-
         void Awake()
         {
 
@@ -162,16 +174,19 @@ namespace SG.Examples
         // Use this for initialization
         void Start()
         {
-            SG.Util.SG_Util.SetChildren(leftHand.transform, false);
-            SG.Util.SG_Util.SetChildren(rightHand.transform, false);
+            //SG.Util.SG_Util.SetChildren(leftHand.transform, false);
+            //SG.Util.SG_Util.SetChildren(rightHand.transform, false);
+            SetRelevantScripts(leftHand, false);
+            SetRelevantScripts(rightHand, false);
+
             if (leftHand.calibration != null) 
             { 
-                leftHand.calibration.gameObject.SetActive(true);
+                //leftHand.calibration.gameObject.SetActive(true);
                 leftHand.calibration.startCondition = SG_CalibrationSequence.StartCondition.WhenNeeded;
             }
             if (rightHand.calibration != null) 
             { 
-                rightHand.calibration.gameObject.SetActive(true);
+                //rightHand.calibration.gameObject.SetActive(true);
                 rightHand.calibration.startCondition = SG_CalibrationSequence.StartCondition.WhenNeeded;
             }
 
@@ -209,9 +224,9 @@ namespace SG.Examples
         {
             if (activeHand == null)
             {
-                if (rightHand.gloveHardware.IsConnected || leftHand.gloveHardware.IsConnected)
+                if (rightHand.IsConnected() || leftHand.IsConnected())
                 {
-                    activeHand = rightHand.gloveHardware.IsConnected ? rightHand : leftHand;
+                    activeHand = rightHand.IsConnected() ? rightHand : leftHand;
                     SetRelevantScripts(activeHand, true);
                     ConnectObjects(activeHand);
                     ButtonsActive = true;
@@ -221,7 +236,7 @@ namespace SG.Examples
             {
                 if (Input.GetKeyDown(calibrateKey)) { this.ResetCalibration(); }
 
-                bool handOpen = this.objIndex > -1 ? !activeHand.feedbackScript.TouchingMaterial() : CheckHandOpen(this.activeHand);
+                bool handOpen = /*this.objIndex > -1 ? !activeHand.feedbackLayer.TouchingMaterial() :*/ CheckHandOpen(this.activeHand);
                 if (handOpen)
                 {
                     openedTimer += Time.deltaTime;

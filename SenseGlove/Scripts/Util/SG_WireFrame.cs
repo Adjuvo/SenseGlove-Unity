@@ -20,7 +20,7 @@ namespace SG.Util
         //  Public Properties
 
         [Tooltip("The Haptic Glove from which to grab data.")]
-        public SG_HapticGlove glove;
+        [SerializeField] protected SG_HapticGlove glove;
 
         [Header("Animation Components")]
         [Tooltip("The GameObject representing the forearm. Most likely this gameObject.")]
@@ -74,8 +74,8 @@ namespace SG.Util
         /// <summary> The relative angles between wrist and lower arm transforms. </summary>
         protected Quaternion wristAngles = Quaternion.identity;
 
-        /// <summary> Do not run the setups more than once. </summary>
-        private bool setupComplete = false;
+        ///// <summary> Do not run the setups more than once. </summary>
+        //private bool setupComplete = false;
 
         /// <summary> Glove joints to which the gloveAngles are applied. </summary>
         private Transform[][] gloveJoints = null;
@@ -87,8 +87,8 @@ namespace SG.Util
         private Transform[] carpalBones = null;
 
 
-        /// <summary> The HandModel that was used to generate the wireframe. </summary>
-        protected SGCore.Kinematics.BasicHandModel iHandModel = null;
+        ///// <summary> The HandModel that was used to generate the wireframe. </summary>
+        //protected SGCore.Kinematics.BasicHandModel iHandModel = null;
 
         /// <summary> Rotation offset between wrist and forearm </summary>
         protected Quaternion iWristCorrection = Quaternion.identity;
@@ -117,18 +117,19 @@ namespace SG.Util
             set { if (this.handBase != null) { this.handBase.SetActive(value); } }
         }
 
-        /// <summary> Returns true if the hand we're linked to is Right Handed.s </summary>
-        public bool IsRight
-        {
-            get
-            {
-                if (this.glove != null && this.glove.IsConnected)
-                {
-                    return this.glove.IsRight;
-                }
-                return this.glove.connectsTo != HandSide.LeftHand;
-            }
-        }
+        ///// <summary> Returns true if the hand we're linked to is Right Handed.s </summary>
+        //public bool IsRight
+        //{
+        //    get
+        //    {
+        //        if (this.glove != null && this.glove.IsConnected())
+        //        {
+        //            return this.glove.TracksRightHand();
+        //        }
+        //        return true;
+        //        //return this.glove.connectsTo != HandSide.LeftHand;
+        //    }
+        //}
 
         /// <summary> Retrieve the Quaterion rotation between this model's foreArm and Wrist. </summary>
         public Quaternion RelativeWrist
@@ -153,15 +154,34 @@ namespace SG.Util
         {
             get
             {
-                //Debug.Log("Get HandGeometry");
-                if (this.iHandModel == null) { iHandModel = SGCore.Kinematics.BasicHandModel.Default(this.IsRight); }
-                return this.iHandModel;
+                return this.glove.GetKinematics();
             }
             set
             {
                 //Debug.Log("Set HandGeometry");
-                this.iHandModel = value;
+                this.glove.SetKinematics(value);
                 this.ResizeFingers();
+            }
+        }
+
+        public void SetTrackedGlove(SG_HapticGlove newGlove)
+        {
+            if (newGlove != null)
+            {
+                this.glove = newGlove;
+                this.ResizeFingers(newGlove.GetKinematics().FingerLengths);
+                this.CalibrateWrist();
+
+                SG_HandPose idleHand = SG_HandPose.Idle(glove.TracksRightHand());
+                this.UpdateHand(idleHand);
+                if (this.glove.InternalGlove is SGCore.SG.SenseGlove)
+                {
+                    //  Debug.Log("Generated glove model for " + this.glove.GetInternalObject().GetDeviceID());
+                    SGCore.SG.SG_GloveInfo gloveModel = ((SGCore.SG.SenseGlove)this.glove.InternalGlove).GetGloveModel();
+                    GenerateGlove(gloveModel);
+                    SGCore.SG.SG_GlovePose idlePose = SGCore.SG.SG_GlovePose.IdlePose(gloveModel);
+                    this.UpdateGlove(idlePose);
+                }
             }
         }
 
@@ -285,14 +305,18 @@ namespace SG.Util
 
         /// <summary> Resize the fingers based  on this glove's internal handModel </summary>
         public void ResizeFingers()
-        {
-            this.ResizeFingers(this.HandGeometry.FingerLengths);
+        { 
+            if (this.glove != null)
+            {
+                this.ResizeFingers(this.HandGeometry.FingerLengths);
+            }
         }
 
         /// <summary> Resize the white cylingers that represent the hand bones. newLengths should be in mm. </summary>
         /// <param name="newLengths"></param>
         public void ResizeFingers(float[][] newLengths)
         {
+            //Debug.Log(this.name + " Resizing Fingers " + Util.SG_Util.ToString( newLengths[0] ));
             if (this.fingerJoints == null)
             {
                 this.GenerateFingers();
@@ -342,7 +366,7 @@ namespace SG.Util
         public void UpdateHand()
         {
             SG_HandPose handPose;
-            if (this.glove.GetHandPose(this.HandGeometry, out handPose, true))
+            if (this.glove.GetHandPose(out handPose, true))
             {
                 UpdateHand(handPose);
             }
@@ -376,10 +400,10 @@ namespace SG.Util
 
                                     fingerJoints[f][j].localPosition = positions[f][j];
                                 }
-                                if (j > 0)
-                                {
-                                    Debug.DrawLine(fingerJoints[f][j - 1].position, fingerJoints[f][j].position);
-                                }
+                                //if (j > 0)
+                                //{
+                                //    Debug.DrawLine(fingerJoints[f][j - 1].position, fingerJoints[f][j].position, Color.red);
+                                //}
                             }
                         }
                     }
@@ -504,9 +528,7 @@ namespace SG.Util
         void Start()
 		{
             GenerateFingers();
-            ResizeFingers();
-            SG_HandPose startPose = SG_HandPose.Idle(this.IsRight);
-            this.UpdateHand(startPose);
+            //this.SetTrackedGlove(this.glove);
         }
 
 		// Update is called once per frame
@@ -523,28 +545,8 @@ namespace SG.Util
             }
 
             //Automated Updates
-            if (this.glove != null && glove.IsConnected)
+            if (this.glove != null && glove.IsConnected())
             {
-                if (!setupComplete)
-                {
-                    setupComplete = true;
-                    this.HandGeometry = SGCore.Kinematics.BasicHandModel.Default(this.glove.IsRight);
-                    //Debug.Log("WireFrame; " + this.HandGeometry.ToString());
-
-                    this.CalibrateWrist();
-                    
-                    SG_HandPose idleHand = SG_HandPose.Idle(glove.IsRight);
-                    this.UpdateHand(idleHand);
-
-                    if (this.glove.InternalGlove is SGCore.SG.SenseGlove)
-                    {
-                      //  Debug.Log("Generated glove model for " + this.glove.GetInternalObject().GetDeviceID());
-                        SGCore.SG.SG_GloveInfo gloveModel = ((SGCore.SG.SenseGlove)this.glove.InternalGlove).GetGloveModel();
-                        GenerateGlove( gloveModel );
-                        SGCore.SG.SG_GlovePose idlePose = SGCore.SG.SG_GlovePose.IdlePose(gloveModel);
-                        this.UpdateGlove(idlePose);
-                    }
-                }
                 if (this.wristTransform != null && this.foreArmTransform != null)
                 {
                     if (Input.GetKeyDown(this.resetWristKey)) { this.CalibrateWrist(); }

@@ -89,15 +89,17 @@ namespace SG
         {
             if (this.IsBroken()) { return; }
 
-            SG_Interactable senseScript = this.wholeObject.GetComponent<SG_Interactable>();
-            if (senseScript) { senseScript.EndInteraction(); }
+            //SG_Interactable senseScript = this.wholeObject.GetComponent<SG_Interactable>();
+            //if (senseScript) { senseScript.ReleaseSelf(); }
+            //wholeObject.ReleaseSelf();
 
             if (this.wholeDeform)
             {
                 this.wholeDeform.ResetMesh();
             }
             wholeMaterial.SetBroken(true);
-            wholeObject.EndInteraction(); //end any interaction
+            wholeObject.ReleaseSelf(); //end any interaction
+
             this.wholeObject.gameObject.SetActive(false);
 
             if (this.brokenObject)
@@ -130,7 +132,7 @@ namespace SG
             //remove the broken object if we have one.
             if (this.brokenObject != null)
             {
-                this.brokenObject.EndInteraction();
+                this.brokenObject.ReleaseSelf();
                 this.brokenObject.gameObject.SetActive(false);
 
                 if (this.brokenMaterial)
@@ -144,8 +146,8 @@ namespace SG
                 }
 
                 //Debug.Log("WholeObject is now on the position of the broken object");
-                this.wholeObject.transform.position = this.brokenObject.transform.position;
-                this.wholeObject.transform.rotation = this.brokenObject.transform.rotation;
+                //this.wholeObject.transform.position = this.brokenObject.transform.position;
+                //this.wholeObject.transform.rotation = this.brokenObject.transform.rotation;
             }
 
             //stop the particle effect(s)
@@ -174,11 +176,11 @@ namespace SG
         {
             this.UnBreak(); //every parameter is reset; the whole material is now on the position of the broken one (if a broken one exists).
 
-            this.wholeObject.ResetObject();
-            if (this.brokenObject)
-            {
-                this.brokenObject.ResetObject();
-            }
+            //this.wholeObject.ResetObject();
+            //if (this.brokenObject)
+            //{
+            //    this.brokenObject.ResetObject();
+            //}
         }
 
         /// <summary> Check if this objects needs to be reset, depending on the state and unbreakMethod </summary>
@@ -215,13 +217,13 @@ namespace SG
             this.wholeDeform = this.wholeObject.GetComponent<SG_MeshDeform>();
             this.wholeMaterial = this.wholeObject.GetComponent<SG_Material>();
             this.wholeMaterial.MaterialBreaks += WholeMaterial_MaterialBreaks;
-            this.wholeObject.SaveTransform();
+            this.wholeObject.Setup();
 
             if (this.brokenObject)
             {
                 this.brokenDeform = this.brokenObject.GetComponent<SG_MeshDeform>();
                 this.brokenMaterial = this.brokenObject.GetComponent<SG_Material>();
-                this.brokenObject.SaveTransform();
+                this.brokenObject.Setup();
             }
 
             this.UnBreak();

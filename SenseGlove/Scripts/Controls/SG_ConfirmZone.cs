@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace SG
 {
-	/// <summary> An extension of the HandDetector, more optimized to be used as a "button" with optional text instructions. The innerZone dissapears until the outerZone has been exited. </summary>
+	/// <summary> An extension of the HandDetector, more optimized to be used as a "button" with optional text instructions. The innerZone dissapears until the outerZone has been exited to prevent pressing it 100x per second. </summary>
 	public class SG_ConfirmZone : MonoBehaviour
 	{
 		//--------------------------------------------------------------------------------------------------------------
@@ -29,6 +29,11 @@ namespace SG
 		/// OR when two gloves are inside </summary>
 		private bool enableAllowed = true;
 
+		/// <summary> Fires when a hand enters the inner zone. </summary>
+		public HandDetectionEvent OnConfirm = new HandDetectionEvent();
+
+		/// <summary> Fires when a hand exits the outer zone </summary>
+		public HandDetectionEvent OnReset = new HandDetectionEvent();
 
 		//--------------------------------------------------------------------------------------------------------------
 		// Accessors
@@ -58,7 +63,7 @@ namespace SG
 		public void SetZone(bool active)
         {
 			zoneEnabled = active;
-			if (innerZone != null) { innerZone.SetHighLight(active); }
+			if (innerZone != null) { innerZone.SetHighlight(active); }
 			InstructionsEnabled = active;
         }
 
@@ -67,33 +72,33 @@ namespace SG
 		// Class Logic - Before Calling events
 
 		/// <summary> Called when the sphere is touched for the first time. </summary>
-		public void CheckSphereConfirm(SG_HandDetector.GloveDetectionArgs args)
+		public void CheckSphereConfirm(SG_TrackedHand args)
         {
 			if (enableAllowed && zoneEnabled)
 			{
 				enableAllowed = false; //we're no longer allowed to enable our glove. 
 				//Debug.Log(this.name + ": Activate!");
-				this.innerZone.SetHighLight(false);
+				this.innerZone.SetHighlight(false);
 				InstructionsEnabled = instructionsStayVisible;
 
 				//fire the event
-				OnZoneActivated(args);
+				OnConfirm.Invoke(args);
 			}
 		}
 
 		/// <summary> Called when the hand exits the outerZone. </summary>
-		public void CheckSphereReset(SG_HandDetector.GloveDetectionArgs args)
+		public void CheckSphereReset(SG_TrackedHand args)
         {
 			if (!enableAllowed)
 			{
 				enableAllowed = true;
 				//Debug.Log(this.name + ": Reset!");
 				//Only turn these back on if the zone is enabled.
-				this.innerZone.SetHighLight(zoneEnabled);
+				this.innerZone.SetHighlight(zoneEnabled);
 				InstructionsEnabled = zoneEnabled;
 
 				//fire the event
-				OnZoneReset(args);
+				OnReset.Invoke(args);
 			}
 		}
 
@@ -104,7 +109,7 @@ namespace SG
 		/// <summary> Fired when entering the innermost zone. </summary>
 		/// <param name="source"></param>
 		/// <param name="args"></param>
-		private void InnerZone_GloveDetected(object source, SG_HandDetector.GloveDetectionArgs args)
+		private void InnerZone_GloveDetected(SG_TrackedHand args)
 		{
 			CheckSphereConfirm(args);
 		}
@@ -112,40 +117,9 @@ namespace SG
 		/// <summary> Fired when the user removes the hand from the outermost zone. Allows us to use the sphere again </summary>
 		/// <param name="source"></param>
 		/// <param name="args"></param>
-		private void OuterZone_GloveRemoved(object source, SG_HandDetector.GloveDetectionArgs args)
+		private void OuterZone_GloveRemoved(SG_TrackedHand args)
 		{
 			CheckSphereReset(args);
-		}
-
-
-
-		//--------------------------------------------------------------------------------------------------------------
-		// Events - What other scripts subscribe to.
-
-		/// <summary> Event Handler for detection. </summary>
-		/// <param name="source"></param>
-		/// <param name="args"></param>
-		public delegate void ConfirmSphereEventHandler(object source, SG_HandDetector.GloveDetectionArgs args);
-
-		/// <summary> Fires when the user puts their glove inside the zone and activated it for the first time. </summary>
-		public event ConfirmSphereEventHandler Activated;
-
-		/// <summary> Fires the user has removed their hand from the zone and it can be activated once more. </summary>
-		public event ConfirmSphereEventHandler Reset;
-
-
-		/// <summary> Fire the Activated Event, if we have subscribers available </summary>
-		/// <param name="args"></param>
-		private void OnZoneActivated(SG_HandDetector.GloveDetectionArgs args)
-		{
-			if (Activated != null) { Activated(this, args); }
-		}
-
-		/// <summary> Fire the Activated Event, if we have subscribers available </summary>
-		/// <param name="args"></param>
-		private void OnZoneReset(SG_HandDetector.GloveDetectionArgs args)
-		{
-			if (Reset != null) { Reset(this, args); }
 		}
 
 
@@ -154,14 +128,14 @@ namespace SG
 
 		private void OnEnable()
         {
-			if (innerZone != null) { innerZone.GloveDetected += InnerZone_GloveDetected; }
-			if (outerZone != null) { outerZone.GloveRemoved += OuterZone_GloveRemoved; }
+			if (innerZone != null) { innerZone.HandDetected.AddListener(InnerZone_GloveDetected); }
+			if (outerZone != null) { outerZone.HandRemoved.AddListener(OuterZone_GloveRemoved); }
         }
 
         private void OnDisable()
 		{
-			if (innerZone != null) { innerZone.GloveDetected -= InnerZone_GloveDetected; }
-			if (outerZone != null) { outerZone.GloveRemoved -= OuterZone_GloveRemoved; }
+			if (innerZone != null) { innerZone.HandDetected.RemoveListener(InnerZone_GloveDetected); }
+			if (outerZone != null) { outerZone.HandRemoved.RemoveListener(OuterZone_GloveRemoved); }
 		}
 
 
@@ -170,10 +144,10 @@ namespace SG
 		{
 			if (outerZone != null)
 			{
-				outerZone.SetHighLight(false); //we'll not be using this one
-				outerZone.singleGlove = true;
+				outerZone.SetHighlight(false); //we'll not be using this one
+				//outerZone.singleGlove = true;
 			}
-			if (innerZone != null) { innerZone.singleGlove = true; }
+			//if (innerZone != null) { innerZone.singleGlove = true; }
 		}
 
 	}
