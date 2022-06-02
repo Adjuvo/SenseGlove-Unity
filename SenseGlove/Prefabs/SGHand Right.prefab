@@ -1593,7 +1593,7 @@ GameObject:
   - component: {fileID: 4399011142321146}
   - component: {fileID: 114613197288951028}
   m_Layer: 0
-  m_Name: PhysicsGrabLayer
+  m_Name: Grab Layer
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -6577,9 +6577,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   connectsTo: 1
+  checkCalibrationOnConnect: 0
   wristTrackingObj: {fileID: 0}
   wristTrackingOffsets: 0
-  checkCalibrationOnConnect: 1
   DeviceConnected:
     m_PersistentCalls:
       m_Calls: []

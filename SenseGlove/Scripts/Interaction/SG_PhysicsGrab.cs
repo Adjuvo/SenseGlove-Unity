@@ -22,10 +22,11 @@ namespace SG
         /// <summary> Above these flexions, the hand is considered 'open' </summary>
         protected static float[] openHandThresholds = new float[5] { 0.1f, 0.2f, 0.2f, 0.2f, 0.2f };
         /// <summary> below these flexions, the hand is considered 'open' </summary>
-        protected static float[] closedHandThresholds = new float[5] { 2, 2, 2, 2, 2 }; //set to -360 so it won;t trigger for now
+        protected static float[] closedHandThresholds = new float[5] { 2, 0.9f, 0.9f, 0.9f, 0.9f }; //set to -360 so it won;t trigger for now
 
         protected float releaseThreshold = 0.05f;
         protected bool[] grabRelevance = new bool[5];
+        protected bool snapFrame = false;
 
         /// <summary> All fingers, used to iterate through the fingers only. </summary>
         protected SG_HoverCollider[] fingerScripts = new SG_HoverCollider[0];
@@ -198,11 +199,152 @@ namespace SG
             //Doesn't do anything
         }
 
+
+        protected void EvaluateGrab()
+        {
+            // Collect objects that we're allowed to grab.
+            List<SG_Interactable> objToGrab = this.ObjectsGrabableNow();
+
+            //TODO; Check for a littlest bit of intent. Some for of flexion. Because now you can still slam your hand into something.
+            if (objToGrab.Count > 0)
+            {
+                SG_Interactable[] sortedGrabables = SG.Util.SG_Util.SortByProximity(this.ProximitySource.position, objToGrab.ToArray());
+                //attempt to grab each object I can, starting with the closest
+                for (int i = 0; i < sortedGrabables.Length; i++)
+                {
+                    TryGrab(sortedGrabables[i]);
+                    if (!CanGrabNewObjects) { break; } //stop going through the objects if we can no longer grab one
+                }
+            }
+            else if (this.handPoseProvider != null && this.handPoseProvider.OverrideGrab() > overrideGrabThreshold)
+            {
+                SG_Interactable[] grabablesInHover = this.virtualHoverCollider.GetTouchedObjects(this.ProximitySource);
+                //attempt to grab each object I can, starting with the first
+                for (int i = 0; i < grabablesInHover.Length; i++)
+                {
+                    TryGrab(grabablesInHover[i]);
+                    if (!CanGrabNewObjects) { break; } //stop going through the objects if we can no longer grab one
+                }
+            }
+            if (this.IsGrabbing) //we managed to grab something.
+            {
+                this.grabRelevance = new bool[0]; //clear this so we re-register it the first frame
+                snapFrame = false; //we don't check for collision the first frame after grabbing.
+                Debug.Log(Time.timeSinceLevelLoad + ": Grabbed Object(s)");
+            }
+        }
+
+
+        protected void EvaluateRelease()
+        {
+            SG_Interactable heldObj = this.heldObjects[0];
+            bool[] currentTouched = this.FingersTouching(heldObj); //the fingers that are currently touching the (first) object
+
+            //Step 1 : Evaluate Intent - If ever there was any
+            if (this.grabRelevance.Length == 0)
+            {
+                //first time after snapping. HoverColliders should have had a frame to catch up.
+                bool oneGrabRelevance = false;
+                for (int f = 1; f < currentTouched.Length; f++) //Because of the bullshit snapping, I don't want to evaluate releasing until at least a finger (no thumb) touches the object
+                {                                           //this should always be true unless we're snapping.
+                    if (currentTouched[f])
+                    {
+                        oneGrabRelevance = true;
+                        break;
+                    }
+                }
+                if (oneGrabRelevance) //there is a t least one relevant finger now touching.
+                {
+                    this.grabRelevance = currentTouched;
+                    this.normalizedOnGrab = Util.SG_Util.ArrayCopy(this.lastNormalized);
+                }
+            }
+            else //check for any changes in grabrelevance
+            {
+                for (int f = 1; f < fingerScripts.Length; f++)
+                {
+                    if (!grabRelevance[f] && currentTouched[f]) //first time this finger touches the object after grasping. Log its flexion.
+                    {
+                        normalizedOnGrab[f] = lastNormalized[f];
+                        grabRelevance[f] = true;
+                    }
+                }
+            }
+
+            // Step 2 - Evaluate finger angles
+            if (lastNormalized.Length > 0) //we successfully got some grab parameters.
+            {
+                //We will release if all relevant fingers are either above the "open threshold" OR have relevant fingers, and these have extended above / below
+                float[] grabDiff = new float[5]; //DEBUG
+                int[] grabCodes = new int[5]; // 0 and up means grab, < zero means release.
+                for (int f = 0; f < fingerScripts.Length; f++)
+                {
+                    if (lastNormalized[f] < openHandThresholds[f]) // This finger is above the max extension
+                    {
+                        grabCodes[f] = -1;
+                    }
+                    else if (lastNormalized[f] > closedHandThresholds[f]) // This finger is below max flexion
+                    {
+                        grabCodes[f] = -2;
+                    }
+                    else if (grabRelevance.Length > f && grabRelevance[f]) // we're within the right threshold(s)
+                    {   //check or undo grabrelevance
+                        grabDiff[f] = this.normalizedOnGrab[f] - this.lastNormalized[f];//i'd normally use latest - ongrab, but then extension is negative and I'd have to invert releaseThreshold. So we subract it the other way around. very tiny optimizations make me happy,
+                        if (grabDiff[f] > releaseThreshold) //the finger is now above the threshold, and we think you want to release.
+                        {
+                            grabCodes[f] = -3; //want to release because we've extended a bit above when we grabbed the object
+                        }
+                    }
+                    //Reset relevance if the gesture thinks we've released, and we're not currently touching.
+                    if (grabCodes[f] < 0 && grabRelevance.Length > f && grabRelevance[f] && !currentTouched[f])
+                    {
+                        grabRelevance[f] = false;
+                    }
+                }
+
+                //Step 3 - After evaluating finger states, determine grab intent.
+                //This is a separate step so later down the line, we can make a difference between finger-thumb, finger-palm, and thumb-palm grabbing
+                bool grabDesired = false;
+                for (int f = 1; f < this.fingerScripts.Length; f++) //Assuming only thumb-finger and finger-palm (NOT thumb-palm) grasps. So skipping 0 (thumb)
+                {
+                    if (grabCodes[f] > -1) //there's one finger that wants to hold on (and is allowed to hold on).
+                    {
+                        grabDesired = true;
+                        break; //can break here because evaluation is done in a separate loop
+                    }
+                }
+
+                //Step 4 - Compare with override to make a final judgement. Can be optimized by placing this before Step 2 and skipping it entirely while GrabOverride is true.
+
+                bool nothingInHover = this.snapFrame && this.heldObjects.Count > 0 && this.virtualHoverCollider.HoveredCount() == 0 && !this.heldObjects[0].KinematicChanged; //no objects within the hover collider.
+                if (!snapFrame) { snapFrame = true; } //set after nothinInHover is assigned so it stays false the first time.
+                if (nothingInHover)
+                {
+                    Debug.Log(Time.timeSinceLevelLoad + ": There's nothing in the hover collider and that's not because the kinematics had changed!");
+                }
+
+                bool overrideGrab = this.handPoseProvider != null && this.handPoseProvider.OverrideGrab() > overrideGrabThreshold; //we start with wanting to release based on overriding.
+                bool shouldRelease = !(grabDesired || overrideGrab);
+                if (shouldRelease) //We can no longer grab anything
+                {
+                    //Debug.Log("Detected no grab intent anymore: Override = " + (overrideGrab ? "True" : "False") + ", GrabCodes: " + SG.Util.SG_Util.ToString(grabCodes));
+                    Debug.Log(Time.timeSinceLevelLoad + ": Released Objects");
+                    this.ReleaseAll();
+                }
+            }
+        }
+
+        
+
+
+
+
+
         public override void UpdateGrabLogic(float dT)
         {
             base.UpdateGrabLogic(dT);  //updates reference location(s).
 
-            //Update Physics Colliders
+            // Update Physics Colliders
             for (int i = 0; i < this.hoverScripts.Length; i++)
             {
                 this.hoverScripts[i].UpdateLocation();
@@ -220,138 +362,14 @@ namespace SG
             }
             this.wantsGrab = GetGrabIntent(this.lastNormalized); //doing this here so I can evaluate from inspector
 
-
-            List<SG_Interactable> objToGrab = this.ObjectsGrabableNow();
-
-            if (this.IsGrabbing) //check for release - semi-gesture based
+            // Evaluate Grabbing / Releasing
+            if (this.IsGrabbing) //Check for release - Gesture Based
             {
-                SG_Interactable heldObj = this.heldObjects[0];
-                bool[] currentTouched = this.FingersTouching(heldObj); //the fingers that are currently touching the held object
-
-
-                //Evaluate Intent - If ever there was any
-                if (this.grabRelevance.Length == 0)
-                {
-                    //first time after snapping. HoverColliders should have had a frame to catch up.
-                    bool oneGrabRelevance = false;
-                    for (int f=1; f<currentTouched.Length; f++) //start at 1. Because of the bullshit snapping, I don't want to evaluate releasing until at lease a finger touches the object
-                    {                                           //this should always be true unless we're snapping.
-                        if (currentTouched[f])
-                        {
-                            oneGrabRelevance = true;
-                            break;
-                        }
-                    }
-                    if (oneGrabRelevance) //there is a t least one relevant finger now touching.
-                    {
-                        this.grabRelevance = currentTouched;
-                        this.normalizedOnGrab = Util.SG_Util.ArrayCopy(this.lastNormalized);
-                        //Debug.Log("First time since grabbing. \n"
-                        //    + SG.Util.SG_Util.PrintArray(grabRelevance)
-                        //    + "\n" + SG.Util.SG_Util.ToString(normalizedOnGrab, 2));
-                    }
-                }
-
-                if (virtualHoverCollider.HoveredCount() == 0 && !heldObj.KinematicChanged) //nothing is being hovered over anymore and it's not becasue of Unity derpiness
-                {
-                    //Debug.Log("Releasing because we're not hovering over anything anymore");
-                    this.ReleaseAll();
-                }
-                else
-                {
-                    //We will release if all relevant fingers are either above the "open threshold" OR have are relevant and have extended above 
-                        
-                    //Step 1: Evaluate Intent - We do this separately because I'm always interested in this.
-                    float[] grabDiff = new float[5]; //DEBUG
-                    int[] grabCodes = new int[5]; // 0 and up means grab, < zero means release.
-                    for (int f=0; f<fingerScripts.Length; f++)
-                    {
-                        //update Grab Relevance?
-                        if (!grabRelevance[f] && currentTouched[f])
-                        {
-                            grabRelevance[f] = true;
-                            normalizedOnGrab[f] = lastNormalized[f]; //store this for later.
-                        }
-                        grabDiff[f] = this.normalizedOnGrab[f] - this.lastNormalized[f];
-                        if (lastNormalized[f] < openHandThresholds[f])
-                        {
-                            grabCodes[f] = -2; //release because you;re above the max threshold.
-                        }
-                        else if (this.normalizedOnGrab[f] - this.lastNormalized[f] > releaseThreshold) //i'd normally use latest - ongrab, but then extension is negative and I'd have to invert releaseThreshold. So we subract it the other way around. very tiny optimizations make me happy,
-                        {
-                            grabCodes[f] = -1;
-                        }
-                    }
-                    //Step 2 - After evaluating finger states, determine grab intent.
-                    //This is a separate step so later down the line, we can make a difference between finger-thumb, finger-palm, and thumb-palm grabbing
-                    bool wantsGrab = false;
-                    for (int f=1; f<this.fingerScripts.Length; f++) //Assuming only thumb-finger and finger-palm (NOT thumb-palm) grasps. So skipping 0 (thumb)
-                    {
-                        if (grabRelevance[f] && grabCodes[f] > -1) //there's one finger that wants to hold on.
-                        {
-                            wantsGrab = true;
-                            break; //can break here because evaluation is done in a separate loop
-                        }
-                    }
-                    //Step 3 - Compare with override to make a final judgement. Can be optimized by placing this before Step 2 and skipping it entirely while GrabOverride is true.
-                    bool overrideGrab = this.handPoseProvider != null && this.handPoseProvider.OverrideGrab() > overrideGrabThreshold; //we start with wanting to release based on overriding.
-                    bool shouldRelease = !(wantsGrab || overrideGrab);
-
-                    //Optional: Debug States
-                    //if (debugTxt != null && this.debugEnabled)
-                    //{
-                    //    this.GrabbedText = "Hovering Over " + virtualHoverCollider.HoveredCount()
-                    //        + "\nCurr Flex: " + SG.Util.SG_Util.ToString(this.lastNormalized, 2)
-                    //        + "\nOnGrab: " + SG.Util.SG_Util.ToString(this.normalizedOnGrab, 2)
-                    //        + "\nGrabRelevance: " + SG.Util.SG_Util.PrintArray(this.grabRelevance)
-                    //        + "\nFingerCodes: " + SG.Util.SG_Util.ToString(grabCodes)
-                    //        + "\nDiffs: " + SG.Util.SG_Util.ToString(grabDiff, 2)
-                    //        + "\nWantsGrab: " + wantsGrab + " / Override: " + overrideGrab + " => Release: " + shouldRelease;
-                    //}
-                    // And actually release
-                    if (shouldRelease) //can not longer grab anything
-                    {
-                        //Debug.Log("Detected no grab intent anymore; " + SG.Util.SG_Util.PrintArray(this.grabRelevance) + ", " + SG.Util.SG_Util.ToString(grabCodes));
-                        this.ReleaseAll();
-                    }
-                }
+                EvaluateRelease();
             }
-            else //check for grab
+            else //Check for Grab (collision based)
             {
-                //TODO; Check for a littlest bit of intent. Some for of flexion. Because now you can still slam your hand into something.
-                if (objToGrab.Count > 0)
-                {
-                    SG_Interactable[] sortedGrabables = SG.Util.SG_Util.SortByProximity(this.ProximitySource.position, objToGrab.ToArray());
-                    //attempt to grab each object I can, starting with the closest
-                    for (int i = 0; i < sortedGrabables.Length; i++)
-                    {
-                        TryGrab(sortedGrabables[i]);
-                        if (!CanGrabNewObjects) { break; } //stop going through the objects if we can no longer grab one
-                    }
-                }
-                else if (this.handPoseProvider != null && this.handPoseProvider.OverrideGrab() > overrideGrabThreshold)
-                {
-                    SG_Interactable[] grabablesInHover = this.virtualHoverCollider.GetTouchedObjects(this.ProximitySource);
-                    //attempt to grab each object I can, starting with the first
-                    for (int i = 0; i < grabablesInHover.Length; i++)
-                    {
-                        TryGrab(grabablesInHover[i]);
-                        if (!CanGrabNewObjects) { break; } //stop going through the objects if we can no longer grab one
-                    }
-                }
-                if (this.IsGrabbing)
-                {
-                    this.grabRelevance = new bool[0]; //clear this so we re-register it the first frame
-                }
-                //if (this.debugTxt != null)
-                //{
-                //    string db = "Hovering over " + this.virtualHoverCollider.HoveredCount() + " objects"
-                //        + "\nCan Grab " + objToGrab.Count + " objects"
-                //        + "\nCurr Flex: " + SG.Util.SG_Util.ToString(this.lastNormalized, 2)
-                //        + "\nOverrdie: " + (this.handPoseProvider != null ? this.handPoseProvider.OverrideGrab().ToString() : "0") + " vs " + overrideGrabThreshold
-                //        + "\nWantsGrab: " + Util.SG_Util.PrintArray(this.wantsGrab);
-                //    this.debugTxt.text = db;
-                //}
+                EvaluateGrab();
             }
 
             

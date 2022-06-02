@@ -582,18 +582,23 @@
             <summary> Create a string representation of the Quaternion rotation. </summary>
             <returns></returns>
         </member>
+        <member name="M:SGCore.Kinematics.Quat.ToDeclaration">
+            <summary> Creates a string to create this Quat in code. Useful for replicating test cases. </summary>
+            <returns></returns>
+        </member>
         <member name="M:SGCore.Kinematics.Quat.ToEuler">
             <summary> Retrieve this Quaternion's euler angle notation. </summary>
             <returns></returns>
         </member>
         <member name="M:SGCore.Kinematics.Quat.Rotate(SGCore.Kinematics.Vect3D)">
             <summary> Rotate myVect by this quaternion rotation. </summary>
-            <param name="myVect"></param>
+            <param name="v">The vector to rotate by</param>
             <returns></returns>
         </member>
-        <member name="M:SGCore.Kinematics.Quat.Equals(System.Object)">
+        <member name="M:SGCore.Kinematics.Quat.Equals(SGCore.Kinematics.Quat,System.Single)">
             <summary> Check if two quaternions have equal values. </summary>
-            <param name="obj"></param>
+            <param name="that"></param>
+            <param name="acceptableOffset"></param>
             <returns></returns>
         </member>
         <member name="M:SGCore.Kinematics.Quat.GetHashCode">
@@ -605,6 +610,25 @@
         </member>
         <member name="M:SGCore.Kinematics.Quat.Magnitude">
             <summary> Returns the magnitude of this Quaternion. Used in normalization. </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Kinematics.Quat.Normalized">
+            <summary> Returns a unit length version of this quaternion. </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Kinematics.Quat.LookRotation(SGCore.Kinematics.Vect3D,SGCore.Kinematics.Vect3D)">
+            <summary>Calculate the Quat that, when applied to the "forward" axis and "up axis", results in the input vectors." In Unity notation, "forward" is Z, and "up" is Y. </summary>
+            <param name="forward"></param>
+            <param name="up"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Kinematics.Quat.LookRotation_XYZ(SGCore.Kinematics.Vect3D,SGCore.Kinematics.Vect3D,SGCore.Kinematics.Vect3D)">
+            <summary>  Calculate the Quaternion that, when applied to (1, 0, 0), (0, 1, 0) and (0, 0, 1) will result in X, Y, Z. </summary>
+            <param name="X">In Orignal function - Side, calculated from Cross Up(input)-FWD, Unity (2D) Left/Right</param>
+            <param name="Y">In Orignal function - UP, re-calculated from Cross SIDE-FWD, Unity (2D) Up/Down</param>
+            <param name="Z">In Orignal function - Forward, Unity Z (towards screen)</param>
+            <remarks> Based on the implementation at https://gist.github.com/aeroson/043001ca12fe29ee911e or https://answers.unity.com/questions/467614/what-is-the-source-code-of-quaternionlookrotation.html, 
+            refactored somewhat to make it more readable, and added comments that reflect my own hand solved variables based on the sources from Quat.Rotate. </remarks>
             <returns></returns>
         </member>
         <member name="M:SGCore.Kinematics.Quat.Invert(SGCore.Kinematics.Quat)">
@@ -727,6 +751,57 @@
             <param name="max"></param>
             <returns></returns>
         </member>
+        <member name="M:SGCore.Kinematics.Values.InterpolateVectors(System.Single,System.Single,System.Single,SGCore.Kinematics.Vect3D[][],SGCore.Kinematics.Vect3D[][],System.Boolean)">
+            <summary> Interpolate a 2D array of Vectors </summary>
+            <param name="t"></param>
+            <param name="t0"></param>
+            <param name="t1"></param>
+            <param name="v0"></param>
+            <param name="v1"></param>
+            <param name="clamp"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Kinematics.Values.InterpolateVectors(System.Single,System.Single,System.Single,SGCore.Kinematics.Vect3D[],SGCore.Kinematics.Vect3D[],System.Boolean)">
+            <summary> Interpolate an array of Vectors </summary>
+            <param name="t"></param>
+            <param name="t0"></param>
+            <param name="t1"></param>
+            <param name="v0"></param>
+            <param name="v1"></param>
+            <param name="clamp"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Kinematics.Values.InterpolateVector(System.Single,System.Single,System.Single,SGCore.Kinematics.Vect3D,SGCore.Kinematics.Vect3D,System.Boolean)">
+            <summary> Interpolate a single Vector </summary>
+            <param name="t"></param>
+            <param name="t0"></param>
+            <param name="t1"></param>
+            <param name="v0"></param>
+            <param name="v1"></param>
+            <param name="clamp"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Kinematics.Values.InterpolateQuaternion(System.Single,System.Single,System.Single,SGCore.Kinematics.Quat,SGCore.Kinematics.Quat,System.Boolean)">
+            <summary> Interpolate a Quaternion Rotaion </summary>
+            <param name="t"></param>
+            <param name="t0"></param>
+            <param name="t1"></param>
+            <param name="q0"></param>
+            <param name="q1"></param>
+            <param name="clamp"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Kinematics.Values.InterpolateHandAngles_WithJointAngles(System.Single,System.Single,System.Single,SGCore.Kinematics.Vect3D[][],SGCore.Kinematics.Vect3D[][],System.Boolean,System.Boolean)">
+            <summary> Allows up to pass clamping, but still takes into account the joint angle limits. </summary>
+            <param name="t"></param>
+            <param name="t0"></param>
+            <param name="t1"></param>
+            <param name="v0"></param>
+            <param name="v1"></param>
+            <param name="rightHand"></param>
+            <param name="clamp"></param>
+            <returns></returns>
+        </member>
         <member name="M:SGCore.Kinematics.Values.FillZero(System.Int32)">
             <summary> Returns an array of Vect3D's, all at 0, 0, 0. Used for quick generation and to avoid NullRefs </summary>
             <param name="length"></param>
@@ -779,9 +854,10 @@
             <param name="other"></param>
             <returns></returns>
         </member>
-        <member name="M:SGCore.Kinematics.Vect3D.Equals(SGCore.Kinematics.Vect3D)">
+        <member name="M:SGCore.Kinematics.Vect3D.Equals(SGCore.Kinematics.Vect3D,System.Single)">
             <summary> Check if this Vector is roughly equal to another. </summary>
             <param name="that"></param>
+            <param name="acceptableOffset"></param>
             <returns></returns>
         </member>
         <member name="M:SGCore.Kinematics.Vect3D.ToString">
@@ -1843,6 +1919,449 @@
         <member name="M:SGCore.Util.UDPSender.SendString(System.String)">
             <summary> Send a string over the socket. </summary>
             <param name="msg"></param>
+            <returns></returns>
+        </member>
+        <member name="T:SGCore.CV.CV_Tracking_Depth">
+            <summary> How much of the CV tracking is being used. Used by other APIs. </summary>
+        </member>
+        <member name="F:SGCore.CV.CV_Tracking_Depth.Disabled">
+            <summary> No computer-vision is enabled. </summary>
+        </member>
+        <member name="F:SGCore.CV.CV_Tracking_Depth.WristOnly">
+            <summary> Use CV only for the wrist position / rotation </summary>
+        </member>
+        <member name="F:SGCore.CV.CV_Tracking_Depth.WristAndHandPose">
+            <summary> Use CV for both the wirst location and Hand Position  </summary>
+        </member>
+        <member name="T:SGCore.CV.CV_HandPoints">
+            <summary> Used to access specific positions from the CV output, which is an array of Vect3D positions. </summary>
+            <remarks> Declared in CVHandOutput.cs because these enums are used to index the jointPositions array in that class. </remarks>
+        </member>
+        <member name="F:SGCore.CV.CV_HandPoints.CV_WRIST">
+            <summary> The position of the wrist as determined by the CV Model. </summary>
+        </member>
+        <member name="F:SGCore.CV.CV_HandPoints.CV_THUMB_CMC">
+            <summary> The position of the Thumb CMC Joint as determined by the CV Model. </summary>
+        </member>
+        <member name="F:SGCore.CV.CV_HandPoints.CV_THUMB_MCP">
+            <summary> The position of the Thumb MCP Joint as determined by the CV Model. </summary>
+        </member>
+        <member name="F:SGCore.CV.CV_HandPoints.CV_THUMB_IP">
+            <summary> The position of the Thumb IP Joint as determined by the CV Model. </summary>
+        </member>
+        <member name="F:SGCore.CV.CV_HandPoints.CV_THUMB_TIP">
+            <summary> The position of the Thumb tip as determined by the CV Model. </summary>
+        </member>
+        <member name="F:SGCore.CV.CV_HandPoints.CV_INDEX_MCP">
+            <summary> The position of the Index MCP Joint as determined by the CV Model. </summary>
+        </member>
+        <member name="F:SGCore.CV.CV_HandPoints.CV_INDEX_PIP">
+            <summary> The position of the Index PIP Joint as determined by the CV Model. </summary>
+        </member>
+        <member name="F:SGCore.CV.CV_HandPoints.CV_INDEX_DIP">
+            <summary> The position of the Index DIP Joint as determined by the CV Model. </summary>
+        </member>
+        <member name="F:SGCore.CV.CV_HandPoints.CV_INDEX_TIP">
+            <summary> The position of the Index fingertip as determined by the CV Model. </summary>
+        </member>
+        <member name="F:SGCore.CV.CV_HandPoints.CV_MIDDLE_MCP">
+            <summary> The position of the Middle MCP Joint as determined by the CV Model. </summary>
+        </member>
+        <member name="F:SGCore.CV.CV_HandPoints.CV_MIDDLE_PIP">
+            <summary> The position of the Middle PIP Joint as determined by the CV Model. </summary>
+        </member>
+        <member name="F:SGCore.CV.CV_HandPoints.CV_MIDDLE_DIP">
+            <summary> The position of the Middle DIP Joint as determined by the CV Model. </summary>
+        </member>
+        <member name="F:SGCore.CV.CV_HandPoints.CV_MIDDLE_TIP">
+            <summary> The position of the Middle fingertip as determined by the CV Model. </summary>
+        </member>
+        <member name="F:SGCore.CV.CV_HandPoints.CV_RING_MCP">
+            <summary> The position of the Ring MCP Joint as determined by the CV Model. </summary>
+        </member>
+        <member name="F:SGCore.CV.CV_HandPoints.CV_RING_PIP">
+            <summary> The position of the Ring PIP Joint as determined by the CV Model. </summary>
+        </member>
+        <member name="F:SGCore.CV.CV_HandPoints.CV_RING_DIP">
+            <summary> The position of the Ring DIP Joint as determined by the CV Model. </summary>
+        </member>
+        <member name="F:SGCore.CV.CV_HandPoints.CV_RING_TIP">
+            <summary> The position of the Ring fingertip as determined by the CV Model. </summary>
+        </member>
+        <member name="F:SGCore.CV.CV_HandPoints.CV_PINKY_MCP">
+            <summary> The position of the Pinky MCP Joint as determined by the CV Model. </summary>
+        </member>
+        <member name="F:SGCore.CV.CV_HandPoints.CV_PINKY_PIP">
+            <summary> The position of the Pinky PIP Joint as determined by the CV Model. </summary>
+        </member>
+        <member name="F:SGCore.CV.CV_HandPoints.CV_PINKY_DIP">
+            <summary> The position of the Pinky DIP Joint as determined by the CV Model. </summary>
+        </member>
+        <member name="F:SGCore.CV.CV_HandPoints.CV_PINKY_TIP">
+            <summary> The position of the Pinky fingertip as determined by the CV Model. </summary>
+        </member>
+        <member name="F:SGCore.CV.CV_HandPoints.CV_All">
+            <summary> Utility enumerator to check if an array contains enough values. </summary>
+        </member>
+        <member name="T:SGCore.CV.CV_HandOutput">
+            <summary> Contains output from one of our CV Model, specifically that for a hand / glove. </summary>
+        </member>
+        <member name="F:SGCore.CV.CV_HandOutput.timeStamp">
+            <summary> Simulation time When this Data was received. Used for data smoothing. </summary>
+        </member>
+        <member name="F:SGCore.CV.CV_HandOutput.jointPositions">
+            <summary> 21 positions, representing the wrist and finger positions in 3D (world)space. </summary>
+        </member>
+        <member name="F:SGCore.CV.CV_HandOutput.handedNess">
+            <summary> 0 = left hand, 1 = right hand. Use IsRight for a simple boolean access. </summary>
+        </member>
+        <member name="F:SGCore.CV.CV_HandOutput.rightHandThreshold">
+            <summary> If the handednNess is above this threshold, the hand is considered, a 'right hand' </summary>
+        </member>
+        <member name="F:SGCore.CV.CV_HandOutput.certaintyFactor">
+            <summary> How certain is it that this is an actual hand that we're tracking.  </summary>
+        </member>
+        <member name="F:SGCore.CV.CV_HandOutput.fingerCertainties">
+            <summary> How certain we are about each finger.  </summary>
+        </member>
+        <member name="F:SGCore.CV.CV_HandOutput.forDevice">
+            <summary> Which Device this data has been generated for </summary>
+        </member>
+        <member name="F:SGCore.CV.CV_HandOutput.forHwVersion">
+            <summary> (sub)hardware version that this data has been generated for. </summary>
+        </member>
+        <member name="P:SGCore.CV.CV_HandOutput.IsValid">
+            <summary> Returns true if enough Data is available. </summary>
+        </member>
+        <member name="P:SGCore.CV.CV_HandOutput.IsRight">
+            <summary> Returns true if the CV Model estimated this to be a right hand.  </summary>
+        </member>
+        <member name="M:SGCore.CV.CV_HandOutput.#ctor(SGCore.Kinematics.Vect3D[],SGCore.DeviceType,System.String,System.Single)">
+            <summary> Create a new CVHandOutput instance, with an autmatically generated TimeStamp.</summary>
+            <param name="CVHandPoints"></param>
+            <param name="forDeviceType"></param>
+            <param name="subHwVersion"></param>
+            <param name="rightHandedNess"></param>
+        </member>
+        <member name="M:SGCore.CV.CV_HandOutput.#ctor(SGCore.Kinematics.Vect3D[],SGCore.DeviceType,System.String,System.Single,System.Single)">
+            <summary> Create a new CVHandOutput instance with a custom timestamp. </summary>
+            <param name="CVHandPoints"></param>
+            <param name="forDeviceType"></param>
+            <param name="subHwVersion"></param>
+            <param name="rightHandedNess"></param>
+            <param name="time"></param>
+        </member>
+        <member name="M:SGCore.CV.CV_HandOutput.GetPosition(SGCore.CV.CV_HandPoints)">
+            <summary> Safely retrieve the location of a specific joint. </summary>
+            <param name="location"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.CV.CV_HandOutput.MatchesDevice(System.Boolean,SGCore.DeviceType,System.String)">
+            <summary> Returns true if this pose was made for a specific hand, device, and sub-hw version. </summary>
+            <param name="isRight"></param>
+            <param name="type"></param>
+            <param name="hwVer"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.CV.CV_HandOutput.MatchesDevice(SGCore.CV.CV_HandOutput)">
+            <summary> Returns true if this pose was made for the same device as another pose. </summary>
+            <param name="otherPose"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.CV.CV_HandOutput.ToString">
+            <summary> Get a simple notation of this CVHandOutput. </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.CV.CV_HandOutput.PrintKeyPoints(System.String)">
+            <summary> Prints all of the joint positions within this CVHandOutput. </summary>
+            <param name="delim"></param>
+            <returns></returns>
+        </member>
+        <member name="T:SGCore.CV.CV_Kinematics">
+            <summary> Kinematic Algorithms for Computer Vision. Much like JointKinematics, this static class contains the fance mathematics. </summary>
+        </member>
+        <member name="M:SGCore.CV.CV_Kinematics.CalculateTrackingData(SGCore.CV.CV_HandOutput,SGCore.CV.CV_HandDataPoint@,System.Boolean)">
+            <summary> Converts CV output (21 joint positions + handed-ness) into a handDataPoint. Returns true if the calculation is succesful. </summary>
+            <param name="pose"></param>
+            <param name="dataPoint"></param>
+            <param name="naturalLimits">If true, joint angles are clamped within their natural limits. </param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.CV.CV_Kinematics.CalculateHandPoseAngles(SGCore.CV.CV_HandOutput,SGCore.Kinematics.Vect3D@,SGCore.Kinematics.Quat@,SGCore.Kinematics.Vect3D[][]@,System.Boolean)">
+            <summary> Calculates the  wrist location and hand angles and based on the 21 keypoints + handedness in our CV Output. </summary>
+            <param name="pose"></param>
+            <param name="wristWorldPos"></param>
+            <param name="wristWorldRot"></param>
+            <param name="handAngles"></param>
+            <param name="naturalLimits"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.CV.CV_Kinematics.CalculateWristLocation(SGCore.CV.CV_HandOutput,SGCore.Kinematics.Vect3D@,SGCore.Kinematics.Quat@)">
+            <summary> Calculate the wrist position and -rotation from a set of keypoints that describe the finger. </summary>
+            <param name="pose"></param>
+            <param name="wristWorldPos"></param>
+            <param name="wristWorldRot"></param>
+        </member>
+        <member name="F:SGCore.CV.CV_Kinematics.cmcLimitLeft">
+            <summary> It's a right hand if our we process it as a right hand and the CMC joint is 'below' the wrist by this much. </summary>
+        </member>
+        <member name="M:SGCore.CV.CV_Kinematics.CheckForRightHand(SGCore.Kinematics.Vect3D[],System.Boolean@)">
+            <summary> In case  Martijn's Data doesn't say, to a manual check for the left/right handedness. 90% accurate so far. </summary>
+            <param name="cvPositions"></param>
+            <param name="rightHanded"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.CV.CV_Kinematics.EstimateAbd(SGCore.Kinematics.Vect3D,SGCore.Kinematics.Vect3D,SGCore.Kinematics.Vect3D)">
+            <summary> Calculates the most likely Abduction (z) angle. All of these positons must be relative to the first joint (CMC or MCP), in the thumb/finger coordinate system. </summary>
+            <param name="medialJoint"></param>
+            <param name="distalJoint"></param>
+            <param name="fingerTip"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.CV.CV_Kinematics.CalculateLastFlexion(System.Single,System.Single,SGCore.Kinematics.Vect3D,SGCore.Kinematics.Vect3D)">
+            <summary> Calculates the flexion of the last joint, based on  </summary>
+            <param name="j0Flex"></param>
+            <param name="j1Flex"></param>
+            <param name="tipRelToj0"></param>
+            <param name="j2RelToj0"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.CV.CV_Kinematics.CalculateHandAngles(SGCore.CV.CV_HandOutput,SGCore.Kinematics.Quat,System.Boolean)">
+            <summary> The actual hand angle calculations. First we define a "working plane"; joint start rotation + abduction. j0 flexion is calculated using aTan2, j1 flexion using vector.anglebetween.
+            finally, j2 flexion is calculated using aTan2 again, using j0's reference frame. </summary>
+            <param name="pose"></param>
+            <param name="wristWorldRot"></param>
+            <param name="naturalLimits"></param>
+            <returns></returns>
+        </member>
+        <!-- Badly formed XML comment ignored for member "T:SGCore.CV.CV_HandLayer" -->
+        <member name="F:SGCore.CV.CV_HandLayer.requestedDeviceCount">
+            <summary> The amount of devices that should be visible to the CV camera. </summary>
+        </member>
+        <member name="F:SGCore.CV.CV_HandLayer.forDevice">
+            <summary> Which deviceType are detected and are being used to run the model. </summary>
+        </member>
+        <member name="F:SGCore.CV.CV_HandLayer.forHwVer">
+            <summary> Optional sub-hardware-type that is being used to run the moddel </summary>
+        </member>
+        <member name="F:SGCore.CV.CV_HandLayer.simStart">
+            <summary> Initialized upon the dll being loaded. The automatic simulation time will be based on this class </summary>
+        </member>
+        <member name="F:SGCore.CV.CV_HandLayer.smoothedData">
+            <summary> Hand Data smoothers, with entries for each hand / glove / hw combinations. Expecting there won't be more than 2 of these. </summary>
+        </member>
+        <member name="M:SGCore.CV.CV_HandLayer.GetSimulationTime">
+            <summary> Retrieve the current simulation time - used for generating timestamps. </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.CV.CV_HandLayer.DataIndex(SGCore.CV.CV_HandOutput)">
+            <summary> Returns the index within smoothedData that matches the handednedd / glove / subtype combination of a particular output. </summary>
+            <param name="cvData"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.CV.CV_HandLayer.DataIndex(System.Boolean,SGCore.DeviceType,System.String)">
+            <summary> Returns the index within smoothedData that matches the handednedd / glove / subtype combination. </summary>
+            <param name="rightHand"></param>
+            <param name="devType"></param>
+            <param name="hwVer"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.CV.CV_HandLayer.PostHandData(SGCore.CV.CV_HandOutput)">
+            <summary> Post new CV output once it becomes available. Will be used to calculate smoothed Data </summary>
+            <param name="cvData"></param>
+        </member>
+        <member name="M:SGCore.CV.CV_HandLayer.ClearCVData">
+            <summary> Clear all Data from memory. Useful if you're restarting. </summary>
+        </member>
+        <member name="M:SGCore.CV.CV_HandLayer.PoseAvailable(System.Boolean,SGCore.DeviceType,System.String)">
+            <summary> Returns true if data is available for a hand of a specific handedness / DeviceType / hwVersion </summary>
+            <param name="rightHand"></param>
+            <param name="deviceType"></param>
+            <param name="hwVersion"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.CV.CV_HandLayer.TryGetPose(System.Boolean,SGCore.DeviceType,System.String,SGCore.CV.CV_HandDataPoint@,System.Boolean)">
+            <summary> Returns true if  the data was succesfully gathered. Simulation time is gathered GetSimulationTime(). </summary>
+            <param name="rightHand"></param>
+            <param name="deviceType"></param>
+            <param name="hwVersion"></param>
+            <param name="handData"></param>
+            <param name="clampValues"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.CV.CV_HandLayer.TryGetPose(System.Single,System.Boolean,SGCore.DeviceType,System.String,SGCore.CV.CV_HandDataPoint@,System.Boolean)">
+            <summary> Returns true if  the data was succesfully grathered for a custom timeStamp. </summary>
+            <param name="currentTime"></param>
+            <param name="rightHand"></param>
+            <param name="deviceType"></param>
+            <param name="hwVersion"></param>
+            <param name="handData"></param>
+            <param name="clampValues"></param>
+            <returns></returns>
+        </member>
+        <member name="T:SGCore.CV.CV_HandDataPoint">
+            <summary> CVHandOutput converted into HandAngles + wrist location. Has all the information needed to determine when and how to convert this data into an actual HandPose. </summary>
+            <remarks> Can generate a "smoothed" version of this via the HandDatSmoothing or just return the latets one. </remarks>
+        </member>
+        <member name="F:SGCore.CV.CV_HandDataPoint.timeStamp">
+            <summary> The data point's timestamp, used for smoothing </summary>
+        </member>
+        <member name="F:SGCore.CV.CV_HandDataPoint.handAngles">
+            <summary> The HandAngles caluclated at ttimeStamp </summary>
+        </member>
+        <member name="F:SGCore.CV.CV_HandDataPoint.wristWorldPosition">
+            <summary> The wrist position calculated at timeStamp </summary>
+        </member>
+        <member name="F:SGCore.CV.CV_HandDataPoint.wristWorldRotation">
+            <summary> The wrist rotation calculated at timeStamp </summary>
+        </member>
+        <member name="F:SGCore.CV.CV_HandDataPoint.rightHand">
+            <summary> Whether or not this data point was generated for a left- or right hand </summary>
+        </member>
+        <member name="F:SGCore.CV.CV_HandDataPoint.globalCertainty">
+            <summary> Certainties of the whole hand tracking. </summary>
+        </member>
+        <member name="F:SGCore.CV.CV_HandDataPoint.fingerCertainties">
+            <summary> Certainites of individual fingers. </summary>
+        </member>
+        <member name="M:SGCore.CV.CV_HandDataPoint.#ctor">
+            <summary> Created empty arrays and data. </summary>
+        </member>
+        <member name="M:SGCore.CV.CV_HandDataPoint.#ctor(System.Boolean,SGCore.Kinematics.Vect3D,SGCore.Kinematics.Quat,SGCore.Kinematics.Vect3D[][],System.Single,System.Single[],System.Single)">
+            <summary> Create a new instance of a HandDataPoint with a custom timestamp. </summary>
+            <param name="isRight"></param>
+            <param name="wristPos"></param>
+            <param name="wristRot"></param>
+            <param name="fingerAngles"></param>
+            <param name="time"></param>
+            <param name="globalCert"></param>
+            <param name="fingerCert"></param>
+        </member>
+        <member name="M:SGCore.CV.CV_HandDataPoint.#ctor(System.Boolean,SGCore.Kinematics.Vect3D,SGCore.Kinematics.Quat,SGCore.Kinematics.Vect3D[][],System.Single,System.Single[])">
+            <summary> Create a new instance of a HandDataPoint using an autmatically generated timestamp. </summary>
+            <param name="isRight"></param>
+            <param name="wristPos"></param>
+            <param name="wristRot"></param>
+            <param name="fingerAngles"></param>
+            <param name="globalCert"></param>
+            <param name="fingerCert"></param>
+        </member>
+        <member name="M:SGCore.CV.CV_HandDataPoint.ToString">
+            <summary> Prints the tracking data of this HandDataPoint </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.CV.CV_HandDataPoint.ToHandPose(SGCore.Kinematics.BasicHandModel,SGCore.HandPose@)">
+            <summary> Convert the handAngles etc of this HandDataPoint into an acual HandPose </summary>
+            <param name="handDimensions"></param>
+            <param name="handPose"></param>
+        </member>
+        <member name="M:SGCore.CV.CV_HandDataPoint.ToHandPose(SGCore.Kinematics.BasicHandModel,SGCore.HandPose@,SGCore.Kinematics.Vect3D@,SGCore.Kinematics.Quat@)">
+            <summary> Convert the handAngles etc of this HandDataPoint into an acual HandPose </summary>
+            <param name="handDimensions"></param>
+            <param name="handPose"></param>
+            <param name="wristPosition"></param>
+            <param name="wristRotation"></param>
+        </member>
+        <member name="M:SGCore.CV.CV_HandDataPoint.InterpolateData(SGCore.CV.CV_HandDataPoint,SGCore.CV.CV_HandDataPoint,System.Single,System.Boolean)">
+            <summary> Interpolate beween two HandDataPoints to generate a new one </summary>
+            <param name="p0"></param>
+            <param name="p1"></param>
+            <param name="t"></param>
+            <param name="clampOutput"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.CV.CV_HandDataPoint.InterpolateData(System.Single,SGCore.CV.CV_HandDataPoint,SGCore.CV.CV_HandDataPoint,System.Boolean,SGCore.Kinematics.Vect3D@,SGCore.Kinematics.Quat@,SGCore.Kinematics.Vect3D[][]@)">
+            <summary> Interpolate all Hand Data between two points. </summary>
+            <param name="t"></param>
+            <param name="p0"></param>
+            <param name="p1"></param>
+            <param name="clampOutput"></param>
+            <param name="wristPos"></param>
+            <param name="wristRot"></param>
+            <param name="handAngles"></param>
+        </member>
+        <member name="T:SGCore.CV.CV_HandDataSmoother">
+            <summary> Keeps track of a small history of CV Outputs to compensate for low(er) update rates. For example, running a VR simulation at 90Hz while sampling at 30. </summary>
+        </member>
+        <member name="T:SGCore.CV.CV_HandDataSmoother.SmoothingMethod">
+            <summary> The way handPoses are smoothed in this class. </summary>
+        </member>
+        <member name="F:SGCore.CV.CV_HandDataSmoother.SmoothingMethod.None">
+            <summary> None. You'll always get the latest pose received. No performance increase, but might result in a "stop-motion" effect on lower framerates.  </summary>
+        </member>
+        <member name="F:SGCore.CV.CV_HandDataSmoother.SmoothingMethod.InterpolateBehind">
+            <summary> Pretend you're one sample behind, and interpolate along the exact paths. More accurate, but we will lag 1 frame behind. </summary>
+        </member>
+        <member name="F:SGCore.CV.CV_HandDataSmoother.SmoothingMethod.ExtrapolateAhead">
+            <summary> Take the last two handPoses and estimate the current values based on extrapolation. Is percieved as "faster", but is more likely to overhoot during sudden changes in direction.  </summary>
+        </member>
+        <member name="F:SGCore.CV.CV_HandDataSmoother.initialInput">
+            <summary> What the HandPos was originally made for. Used to deterime which DeviceType / Handedness / subHW version this data was generated for. </summary>
+        </member>
+        <member name="F:SGCore.CV.CV_HandDataSmoother.maxDataPoints">
+            <summary> The maximum amount of points we keep track of for smoothed hand data. </summary>
+        </member>
+        <member name="F:SGCore.CV.CV_HandDataSmoother.lastFrames">
+            <summary> The last X amount of frames this data keeps in memory. </summary>
+        </member>
+        <member name="F:SGCore.CV.CV_HandDataSmoother.smoothMethod">
+            <summary> The way in which we're smoothing the incoming data </summary>
+        </member>
+        <member name="F:SGCore.CV.CV_HandDataSmoother.lastSmoothedData">
+            <summary> When using SmoothingMethod.ExtrapolateAhead: The last dmoothed data, used to determine projection and PosAtPrediction when both are null. </summary>
+        </member>
+        <member name="F:SGCore.CV.CV_HandDataSmoother.projection">
+            <summary> When using SmoothingMethod.ExtrapolateAhead: What the next frame is estimated to look like, based on the last two data points. </summary>
+        </member>
+        <member name="F:SGCore.CV.CV_HandDataSmoother.posAtPrediction">
+            <summary> When using SmoothingMethod.ExtrapolateAhead: The variables we had calculated to be at during the last GetSmoothedPose call. </summary>
+            <remarks> Interpolating from this to the projection as opposed to the last two frames, so that we don't "jump" around. </remarks>
+        </member>
+        <member name="M:SGCore.CV.CV_HandDataSmoother.#ctor(SGCore.CV.CV_HandOutput)">
+            <summary> Create a new instance of Smoothed Hand Data, using a first frame. </summary>
+            <param name="firstFrame"></param>
+        </member>
+        <member name="M:SGCore.CV.CV_HandDataSmoother.MatchesDevice(SGCore.CV.CV_HandOutput)">
+            <summary> Returns true if this Smoother was created for the same device as the one of this cvPose. Used in CVHandLayer </summary>
+            <param name="cvPose"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.CV.CV_HandDataSmoother.MatchesDevice(System.Boolean,SGCore.DeviceType,System.String)">
+            <summary> Returns true if this Smoother was created for a particular hand / deviceType / hw. Used in CVHandLayer </summary>
+            <param name="isRight"></param>
+            <param name="type"></param>
+            <param name="hwVer"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.CV.CV_HandDataSmoother.ClearFrames">
+            <summary> Clear smoothing data. </summary>
+        </member>
+        <member name="M:SGCore.CV.CV_HandDataSmoother.FrameCount">
+            <summary> The amount of frames currently in this smoother (0 .. maxDataPoints). </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.CV.CV_HandDataSmoother.GetFrame(System.Int32,SGCore.CV.CV_HandDataPoint@)">
+            <summary> Safely retrieve a HandDataPoint out of this class' frame buffer. </summary>
+            <param name="index"></param>
+            <param name="frame"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.CV.CV_HandDataSmoother.AddFrame(SGCore.CV.CV_HandOutput)">
+            <summary> Post new CVHandOutput into this Smoother, which will converted into handAngles and calculate the appropriate values.. </summary>
+            <param name="nextFrame"></param>
+        </member>
+        <member name="M:SGCore.CV.CV_HandDataSmoother.UpdateProjection">
+            <summary> Updates Projection values, which is used when using SmoothingMethod.ExtrapolateAhead. </summary>
+        </member>
+        <member name="M:SGCore.CV.CV_HandDataSmoother.SetLastSmoothed(SGCore.CV.CV_HandDataPoint)">
+            <summary> Since the last smoothed pose is updated every time I request one, I need to keep track of it When using SmoothingMethod.ExtrapolateAhead </summary>
+            <param name="newSmoothedData"></param>
+        </member>
+        <member name="M:SGCore.CV.CV_HandDataSmoother.GetSmoothedPose(System.Single,SGCore.CV.CV_HandDataPoint@,System.Boolean)">
+            <summary> Based on the last X frames in this buffer, each with an earlier timestamp, Retrieve Smoothed Hand Data at currentTime </summary>
+            <param name="currentTime">Time at which this data is requested, used to interpolate / extrapolate. </param>
+            <param name="smoothedData"> Output: Smoothed Hand Data </param>
+            <param name="clampValues"> If true, any smoothed output pose cannot 'extend' beyond the latest (predicted) values. </param>
             <returns></returns>
         </member>
         <member name="T:SGCore.Calibration.CalibrationStage">
@@ -3070,6 +3589,17 @@
             <param name="handPose"></param>
             <returns></returns>
         </member>
+        <member name="M:SGCore.HapticGlove.GetHandPose(SGCore.Kinematics.BasicHandModel,SGCore.HandPose@)">
+            <summary> Returns the latest hand pose for a specific hand ggeometry, using the latest profile on disk. </summary>
+            <param name="handGeometry"></param>
+            <param name="handPose"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.HapticGlove.GetHandPose(SGCore.HandPose@)">
+            <summary> Retruns the latest handPose using a default HandGeometry and the latest profile stored on disk. </summary>
+            <param name="handPose"></param>
+            <returns></returns>
+        </member>
         <member name="M:SGCore.HapticGlove.GetHandPose(SGCore.HandProfile,SGCore.HandPose@)">
             <summary> Calculate the Hand Pose of this device, provided it has Hand Tracking available, using a default hand geometry. </summary>
             <param name="handProfile"></param>
@@ -3110,8 +3640,9 @@
             <summary> Send Haptic Commands to this Glove. Updates Last Commands. </summary>
             <param name="ffb"></param>
         </member>
-        <member name="M:SGCore.HapticGlove.GetHapticGloves">
+        <member name="M:SGCore.HapticGlove.GetHapticGloves(System.Boolean)">
             <summary> Get all Haptic Gloves connected to this system. They may or may not be connected </summary>
+            <param name="connectedOnly">If false, we'll return all haptic gloves ever detected during this session</param>
             <returns></returns>
         </member>
         <member name="M:SGCore.HapticGlove.GetGlove(SGCore.HapticGlove@)">

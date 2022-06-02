@@ -23,6 +23,7 @@ GameObject:
   - component: {fileID: 135386338018351666}
   - component: {fileID: 23660746640103956}
   - component: {fileID: 114254718105202414}
+  - component: {fileID: 114701024116008982}
   m_Layer: 0
   m_Name: InnerZone
   m_TagString: Untagged
@@ -75,6 +76,7 @@ GameObject:
   - component: {fileID: 135320270242996106}
   - component: {fileID: 23667755177534004}
   - component: {fileID: 114018334863910518}
+  - component: {fileID: 114584471254487744}
   m_Layer: 0
   m_Name: OuterZone
   m_TagString: Untagged
@@ -128,7 +130,7 @@ Transform:
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1307286872732052}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 1.043, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 0.5, y: 0.5, z: 0.5}
   m_Children:
   - {fileID: 4274977045893422}
@@ -177,7 +179,7 @@ MeshRenderer:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1870848617625428}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -282,19 +284,23 @@ MonoBehaviour:
   m_GameObject: {fileID: 1870848617625428}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: af3c65d3a420e9e4aa567bad62514dba, type: 3}
+  m_Script: {fileID: 11500000, guid: fb5ab9ad94207e64798aaf4e872504bc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  detectionMethod: 0
-  activationThreshold: 1
-  detectThumb: 1
-  detectIndex: 1
-  detectMiddle: 1
-  detectRing: 1
-  detectPinky: 1
-  activationTime: 0
-  singleGlove: 0
-  highLight: {fileID: 23667755177534004}
+  detectableHands: []
+  detectionTime: 0
+  highlighter: {fileID: 114584471254487744}
+  debugTxt: {fileID: 0}
+  HandDetected:
+    m_PersistentCalls:
+      m_Calls: []
+    m_TypeName: SG.HandDetectionEvent, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
+      PublicKeyToken=null
+  HandRemoved:
+    m_PersistentCalls:
+      m_Calls: []
+    m_TypeName: SG.HandDetectionEvent, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
+      PublicKeyToken=null
 --- !u!114 &114254718105202414
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -303,19 +309,39 @@ MonoBehaviour:
   m_GameObject: {fileID: 1051079512897066}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: af3c65d3a420e9e4aa567bad62514dba, type: 3}
+  m_Script: {fileID: 11500000, guid: fb5ab9ad94207e64798aaf4e872504bc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  detectionMethod: 0
-  activationThreshold: 1
-  detectThumb: 1
-  detectIndex: 1
-  detectMiddle: 1
-  detectRing: 1
-  detectPinky: 1
-  activationTime: 0.1
-  singleGlove: 0
-  highLight: {fileID: 23660746640103956}
+  detectableHands: []
+  detectionTime: 0.2
+  highlighter: {fileID: 114701024116008982}
+  debugTxt: {fileID: 0}
+  HandDetected:
+    m_PersistentCalls:
+      m_Calls: []
+    m_TypeName: SG.HandDetectionEvent, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
+      PublicKeyToken=null
+  HandRemoved:
+    m_PersistentCalls:
+      m_Calls: []
+    m_TypeName: SG.HandDetectionEvent, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
+      PublicKeyToken=null
+--- !u!114 &114584471254487744
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1870848617625428}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe4850a10a4bba344a4c4879654265df, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  activatedOnStart: 0
+  linkedObjects: []
+  linkedRenderers:
+  - {fileID: 23667755177534004}
+  linkedScripts: []
 --- !u!114 &114674009553171510
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -332,6 +358,32 @@ MonoBehaviour:
   instructions3D: {fileID: 102582167847774542}
   zoneEnabled: 1
   instructionsStayVisible: 0
+  OnConfirm:
+    m_PersistentCalls:
+      m_Calls: []
+    m_TypeName: SG.HandDetectionEvent, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
+      PublicKeyToken=null
+  OnReset:
+    m_PersistentCalls:
+      m_Calls: []
+    m_TypeName: SG.HandDetectionEvent, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
+      PublicKeyToken=null
+--- !u!114 &114701024116008982
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1051079512897066}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe4850a10a4bba344a4c4879654265df, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  activatedOnStart: 0
+  linkedObjects: []
+  linkedRenderers:
+  - {fileID: 23660746640103956}
+  linkedScripts: []
 --- !u!135 &135320270242996106
 SphereCollider:
   m_ObjectHideFlags: 1
@@ -339,7 +391,7 @@ SphereCollider:
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1870848617625428}
   m_Material: {fileID: 0}
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_Enabled: 1
   serializedVersion: 2
   m_Radius: 0.5
@@ -351,7 +403,7 @@ SphereCollider:
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1051079512897066}
   m_Material: {fileID: 0}
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_Enabled: 1
   serializedVersion: 2
   m_Radius: 0.5

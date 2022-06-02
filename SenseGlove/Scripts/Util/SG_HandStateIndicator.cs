@@ -123,7 +123,7 @@ namespace SG
         protected override void LinkToHand(SG_TrackedHand newHand, bool firstLink)
         {
             base.LinkToHand(newHand, firstLink);
-            if (WristText != null)
+            if (wristText != null)
             {
                 SG_SimpleTracking link = Util.SG_Util.TryAddComponent<SG_SimpleTracking>(wristText.gameObject);
                 Transform wrist = newHand.GetTransform(SG_TrackedHand.TrackingLevel.RenderPose, HandJoint.Wrist);

@@ -142,12 +142,8 @@ namespace SG
 		// Use this for initialization
 		private void Start()
 		{
-			if (outerZone != null)
-			{
-				outerZone.SetHighlight(false); //we'll not be using this one
-				//outerZone.singleGlove = true;
-			}
-			//if (innerZone != null) { innerZone.singleGlove = true; }
+			if (outerZone != null) { outerZone.SetHighlight(false); }
+			if (innerZone != null) { innerZone.SetHighlight(zoneEnabled); }
 		}
 
 	}

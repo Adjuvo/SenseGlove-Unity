@@ -1,7 +1,26 @@
 # Changelog
 All notable changes to the SenseGlove Prefabs will be documented in this file.
 
-You are currently using version 2.2
+You are currently using version 2.3
+
+## [v2.3] - 2022-06-02
+UnityXR, Bug Fixes and CV Preparation
+
+### Added
+- (Unity 2019.4+) SG_XR_Devices class that used Unity.XR to determine which hardware is mounted onto the glove, and which hardware-offsets to use.
+- (Unity 2019.4+) SG_XR_ControllerTracking - Utility script to grab a controller's position off SG_XR_Devices and move them in 3D space.
+- SenseCom v1.2.0+, which introduces a TroubleShooter for Nova gloves and an official Windows installer.
+
+### Changed
+- (Unity 2019.4+) SG_HapticGlove has new ways to link the virtual hand to a controller / tracker via the wristTrackingMethod property. The default method is now to use the SG_XR_Devices system to determine position + offsets. You will need to assign an "origin" if your camerarig moves around the space.
+- Improved the stability of SG_TrackedHand tracking to reduce the "twitchy-ness".
+- Improved stability of the Feedabck layer, reducing the 'clicking' force-feedback when moving around.
+- Integrated Computer-Vision classes into the SGCore.dll. SG_HapticGloves will now grab tracking from our CV_HandLayer if data is available. Classes to "Post" CV data (which requires a plugin for your specific HMD) will follow in future update(s).
+
+### Fixed
+- ConfirmZone Prefab not having the proper SG_HandDetector scripts assgined.
+- OutOfRange exception when using the SG_PhysicsGrab to pick up a snapping object.
+- Improved release detection on the SG_PhyisicsGrab script. Objects should no longer fall out of the hand when moving fast.
 
 
 ## [v2.2] - 2022-02-07

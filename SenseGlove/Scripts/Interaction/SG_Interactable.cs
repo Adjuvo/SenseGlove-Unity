@@ -209,6 +209,7 @@ namespace SG
             if (point != this)
             {
                 SG.Util.SG_Util.SafelyAdd(point, linkedGrabPoints);
+                point.enabled = this.enabled; //match my settings
             }
             else
             {
@@ -689,13 +690,29 @@ namespace SG
         }
 
 
-        protected void OnDisable()
+        protected virtual void OnDisable()
         {
             this.ReleaseSelf();
             //also disable the linked grabpoints
-            for (int i = 0; i < this.linkedGrabPoints.Count; i++)
+            if (linkedGrabPoints.Count > 0)
             {
-                this.linkedGrabPoints[i].enabled = false;
+                //Debug.Log(this.name + " Disabled. Disabling Handles");
+                for (int i = 0; i < this.linkedGrabPoints.Count; i++)
+                {
+                    this.linkedGrabPoints[i].enabled = false;
+                }
+            }
+        }
+
+        protected virtual void OnEnable()
+        {
+            if (linkedGrabPoints.Count > 0)
+            {
+                //Debug.Log(this.name + " Enabled. Enabling Handles");
+                for (int i = 0; i < this.linkedGrabPoints.Count; i++)
+                {
+                    this.linkedGrabPoints[i].enabled = true;
+                }
             }
         }
 

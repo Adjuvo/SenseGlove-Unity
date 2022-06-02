@@ -346,6 +346,17 @@ namespace SG
             return this.TryRemoveList(col, out temp);
         }
 
+        /// <summary> Remove everything related to a specific script off this detector </summary>
+        /// <returns></returns>
+        public bool ClearCollisions(T script)
+        {
+            int index = ListIndex(script, this.detectedScripts);
+            if (index > -1) //this script is in the list
+            {
+                detectedScripts.RemoveAt(index); //cleared.
+            }
+            return false;
+        }
 
         //---------------------------------------------------------------------------------------------------------------------------------------------
         // Check if the object should still be alive
@@ -449,6 +460,45 @@ namespace SG
                 }
             }
         }
+
+
+        /*
+        //---------------------------------------------------------------------------------------------------------------------------------------------
+        // TODO: Events: So we can listen to a specific ScriptDetector
+
+        public class SD_EventArgs : System.EventArgs
+        {
+            public DetectArguments Detection
+            {
+                get; private set;
+            }
+
+            public SD_EventArgs(DetectArguments args)
+            {
+                this.Detection = args;
+            }
+        }
+
+        // Declare the delegate (if using non-generic pattern).
+        public delegate void SD_EventHandler(object sender, SD_EventArgs e);
+
+        // Declare the event(s)
+        /// <summary> Raised after a new script has been added. </summary>
+        public event SD_EventHandler ScriptAdded;
+        /// <summary> Raised after a new script has been removed. </summary>
+        public event SD_EventHandler ScriptRemoved;
+
+        /// <summary> Raised whenever there is a change in colliders / objects. </summary>
+        public event SD_EventHandler ColliderChange;
+
+        // Wrap the event in a protected virtual method
+        // to enable derived classes to raise the event.
+        protected virtual void RaiseAddedEvent(DetectArguments args)
+        {
+            // Raise the event in a thread-safe manner using the ?. operator.
+            ScriptAdded?.Invoke(this, new SD_EventArgs(args));
+        }
+        */
 
     }
 }

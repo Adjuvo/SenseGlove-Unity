@@ -302,8 +302,18 @@ namespace SG
         /// <summary> Manually enables / disables collision on this hand's RigidBody. </summary>
         public bool CollisionsEnabled
         {
-            get { return this.handRigidbody != null && handRigidbody.detectCollisions; }
-            set { if (this.handRigidbody != null) { handRigidbody.detectCollisions = value; } }
+            get 
+            { 
+                return this.handRigidbody != null && handRigidbody.detectCollisions; 
+            }
+            set 
+            {
+                //if (value != this.CollisionsEnabled)
+                //{
+                //    Debug.Log("Setting " + (this.TrackedHand != null && this.TrackedHand.TracksRightHand() ? "Right" : "Left") + " Hand Collision to " + value);
+                //}
+                if (this.handRigidbody != null) { handRigidbody.detectCollisions = value; } 
+            }
         }
 
 
@@ -474,7 +484,7 @@ namespace SG
                 {
                     snapTimer = 0;
                 }
-                //DebugText = Util.SG_Util.ToString(finalPosDiff, 3) + "\n" + System.Math.Round(finalDist, 3) + "\n" + snapTimer;
+                DebugText = Util.SG_Util.ToString(finalPosDiff, 3) + "\n" + System.Math.Round(finalDist, 3) + "\n" + snapTimer;
             }
             else
             {
@@ -516,19 +526,19 @@ namespace SG
             }
             this.CheckUncollision();
 
-            if (debugEnabled && debugElement != null)
-            {
-                string db = "";
-                for (int i = 0; i < this.markedColliders.Count; i++)
-                {
-                    db = markedColliders[i].linkedBody.name;
-                    if (i < markedColliders.Count - 1)
-                    {
-                        db += "\n";
-                    }
-                }
-                DebugText = db;
-            }
+            //if (debugEnabled && debugElement != null)
+            //{
+            //    string db = "";
+            //    for (int i = 0; i < this.markedColliders.Count; i++)
+            //    {
+            //        db = markedColliders[i].linkedBody.name;
+            //        if (i < markedColliders.Count - 1)
+            //        {
+            //            db += "\n";
+            //        }
+            //    }
+            //    DebugText = db;
+            //}
         }
 
 

@@ -73,7 +73,20 @@ namespace SG.Util
         OfficialMoveRotation,
     }
 
-
+    /// <summary> Directory to store / load files </summary>
+    public enum StorageDir
+    {
+        /// <summary> In player: .exe folder. In Editor - Assets </summary>
+        WorkingDir,
+        /// <summary> MyDocuments </summary>
+        MyDocuments,
+        /// <summary> Where most SG data ends up. MyDocuments/SenseGlove on Win </summary>
+        SGCommon,
+        /// <summary> On Android: Application folder. On Windows: AppData/LocalLow/Company/ProjectName/ </summary>
+        AppData,
+        /// <summary> The true Executable directory. In Inspector, this is the uni.exe? </summary>
+        ExeDir,
+    }
 
 
     /// <summary> A basic Unity Event that is re-used for simple Unity calls </summary>
@@ -218,6 +231,21 @@ namespace SG.Util
             }
             return res;
         }
+
+        public static string PrintArray<T>(T[][] array, string colDelim = ", ", string rowDelim = "\n")
+        {
+            string res = "";
+            for (int i = 0; i < array.Length; i++)
+            {
+                res += PrintArray(array[i], colDelim);
+                if (i < array.Length - 1)
+                {
+                    res += rowDelim;
+                }
+            }
+            return res;
+        }
+
 
         public static string PrintArray<T>(List<T> array, string delim = ", ")
         {
@@ -532,12 +560,6 @@ namespace SG.Util
         // Misc 
 
         #region Misc
-
-        /// <summary> Returns the SenseGlove directory on the system; "Documents/SenseGlove/" </summary>
-        public static string SenseGloveDir
-        {
-            get { return System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments) + "/SenseGlove/"; }
-        }
 
 
         /// <summary> Spawn a sphere and make it a child of parent. </summary>
@@ -1419,6 +1441,13 @@ namespace SG.Util
                     Quaternion qTo = Quaternion.Slerp(rigidBody.rotation, targetRotation, deltaTime * rotationSpeed);
 #if UNITY_2018_1_OR_NEWER
                     qTo = qTo.normalized;
+#else
+                    //Manual Normalization
+                    float qL = Mathf.Sqrt((qTo.x * qTo.x) + (qTo.y * qTo.y) + (qTo.z * qTo.z) + (qTo.w * qTo.w));
+                    if (qL != 0)
+                    {
+                        qTo = new Quaternion(qTo.x / qL, qTo.y / qL, qTo.z / qL, qTo.w / qL);
+                    }
 #endif
                     rigidBody.MoveRotation(qTo);
                 }
@@ -1551,6 +1580,129 @@ namespace SG.Util
         }
 
         #endregion ProximityDetection
+
+
+        //------------------------------------------------------------------------------------------------------------------------------------------
+        // Folders / IO
+
+        /// <summary> Returns the SenseGlove directory on the system; "MyDocuments/SenseGlove/" </summary>
+        public static string SenseGloveDir
+        {
+            get 
+            {
+                return CombineDir(GetDirectory(StorageDir.MyDocuments), "SenseGlove\\");
+            }
+        }
+
+        /// <summary> Returns a path to a commonly used directory </summary>
+        /// <param name="directory"></param>
+        /// <returns></returns>
+        public static string GetDirectory(StorageDir directory)
+        {
+#if UNITY_ANDROID && !UNITY_EDITOR
+			return Application.persistentDataPath + "\\";
+#else
+            switch (directory)
+            {
+                case StorageDir.MyDocuments:
+                    return System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments);
+                case StorageDir.AppData:
+                    return Application.persistentDataPath + "\\";
+                case StorageDir.SGCommon:
+                    return SenseGloveDir;
+                case StorageDir.ExeDir:
+                    return System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName;
+            }
+            return "";
+#endif
+        }
+
+       
+        /// <summary> Ensure a directory ends in a "\", if it has any charaters. </summary>
+        /// <param name="directory"></param>
+        /// <returns></returns>
+        public static string ValidateDir(string directory)
+        {
+            if (directory.Length > 0) //gotta check it's still there.
+            {
+                char last = directory[directory.Length - 1];
+                if (last != '\\' && last != '/')
+                {
+                    directory += "\\"; //add one last subslash
+                }
+            }
+            return directory;
+        }
+
+        /// <summary> Collect the path to a subfolder in a specific Directory  </summary>
+        /// <param name="directory"></param>
+        /// <param name="subDir"></param>
+        /// <returns></returns>
+        public static string GetDirectory(StorageDir directory, string subDir)
+        {
+            return CombineDir(GetDirectory(directory), subDir);
+        }
+
+        /// <summary> Combine two directories into a valid path. Either could be empty. Ensures no duplicate entries exist. </summary>
+        /// <param name="startDir"></param>
+        /// <param name="subDir"></param>
+        /// <returns></returns>
+        public static string CombineDir(string startDir, string subDir)
+        {
+            startDir = ValidateDir(startDir); //ensure start ends in "\"
+            if (startDir.Length > 0 && subDir.Length > 0) //ensure the end one doesn't.
+            {
+                char first = subDir[0];
+                if (first == '/' || first == '\\')
+                {
+                    subDir = subDir.Substring(1);
+                }
+            }
+            return startDir + subDir;
+        }
+
+        public static void ShowDirectory(string itemPath)
+        {
+            itemPath = itemPath.Replace(@"/", @"\");   // explorer doesn't like front slashes
+                                                       //System.Diagnostics.Process.Start("explorer.exe", "/select," + itemPath);
+            Application.OpenURL("file://" + itemPath);
+        }
+
+        public static void ShowFile(string itemPath)
+        {
+            itemPath = itemPath.Replace(@"/", @"\");   // explorer doesn't like front slashes
+            System.Diagnostics.Process.Start("explorer.exe", "/select," + itemPath);
+        }
+
+
+        public static string PrintGameObjName(Component[] array, string delim = ", ")
+        {
+            string res = "";
+            for (int i = 0; i < array.Length; i++)
+            {
+                res += array[i].gameObject.name;
+                if (i < array.Length - 1)
+                {
+                    res += delim;
+                }
+            }
+            return res;
+        }
+
+        public static string PrintGameObjName(List<Component> array, string delim = ", ")
+        {
+            string res = "";
+            for (int i = 0; i < array.Count; i++)
+            {
+                res += array[i].gameObject.name;
+                if (i < array.Count - 1)
+                {
+                    res += delim;
+                }
+            }
+            return res;
+        }
+
 
     }
 

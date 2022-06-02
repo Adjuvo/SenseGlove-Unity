@@ -115,8 +115,20 @@ namespace SG
 				vrRig = detectedVRSet;
 				Debug.Log("Assgined " + detectedVRSet.name + " to the SenseGlove setup");
 
-                if (leftGlove != null) { leftGlove.SetTrackingHardware(vrRig.leftHandReference, vrRig.hardwareFamily); }
-                if (rightGlove != null) { rightGlove.SetTrackingHardware(vrRig.rightHandReference, vrRig.hardwareFamily); }
+                if (leftGlove != null) 
+                {
+#if UNITY_2019_4_OR_NEWER
+                    leftGlove.origin = vrRig.rigRoot.transform;
+#endif
+                    leftGlove.SetTrackingHardware(vrRig.leftHandReference, vrRig.hardwareFamily); 
+                }
+                if (rightGlove != null) 
+                {
+#if UNITY_2019_4_OR_NEWER
+                    rightGlove.origin = vrRig.rigRoot.transform;
+#endif
+                    rightGlove.SetTrackingHardware(vrRig.rightHandReference, vrRig.hardwareFamily);
+                }
 
                 bool swappedBefore = PlayerPrefs.GetInt(swappedKey, 0) == 1;
                 if (swappedBefore)

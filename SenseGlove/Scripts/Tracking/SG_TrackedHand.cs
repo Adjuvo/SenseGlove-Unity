@@ -357,7 +357,7 @@ namespace SG
                 }
                 if (this.handPhysics != null)
                 {
-                    this.handPhysics.CollisionsEnabled = value && this.handPhysics.CollisionsEnabled; //only turn it back on if the hand wants it to be on.
+                    this.handPhysics.CollisionsEnabled = value; //only turn it back on if the hand wants it to be on.
                 }
                 UpdateDebugLines(); //turn on / off the debug lines
             }
@@ -494,9 +494,8 @@ namespace SG
         {
             if (this.grabScript != null && this.grabScript.isActiveAndEnabled && this.grabScript.ControlsFingerTracking())
             {
-                SGCore.Kinematics.BasicHandModel handDimensions = this.GetHandModel();
                 SG_HandPose grabPose;
-                this.grabScript.GetFingerTracking(realHandPose, handDimensions, out grabPose);
+                this.grabScript.GetFingerTracking(realHandPose, this.GetHandModel(), out grabPose);
                 return grabPose;
             }
             else if (this.passThoughLayer != null && this.passThoughLayer.isActiveAndEnabled)
@@ -507,12 +506,11 @@ namespace SG
         }
 
 
-        /// <summary> Called during Update(). Updates the latest RealHandPose for FixedUpdate(), a few trigger colliders and renders the hand via the Animator. </summary>
-        /// <param name="deltaTime"></param>
-        protected void UpdateHandTracking(float deltaTime)
-        {
-            // Get the latest real hand pose.
 
+
+
+        protected void UpdateRealHandPose()
+        {
             if (this.realHandSource != null) //if true, l_realHandPose has been assigned and can be used in other updates.
             {
                 SG_HandPose nextPose;
@@ -521,19 +519,85 @@ namespace SG
                     l_realHandPose = nextPose;
                 }
             }
-
             if (this.overrideWristLocation)
             {
                 l_realHandPose.wristPosition = this.transform.position;
                 l_realHandPose.wristRotation = this.transform.rotation;
             }
-
             // Update the tracking refrences for the real hand.
             SG_HandPoser3D.UpdatePoser(this.realHandPoser, l_realHandPose);
+        }
+
+
+        protected void UpdateVirtualPose() // is the real wold finger tracking + wrist determined by grab / physics logic.
+        {
+            if (l_realHandPose == null)
+                return;
+
+            // Wrist Position to use for the hand Physics
+            Vector3 wristPosition = Vector3.zero;
+            Quaternion wristRotation = Quaternion.identity;
+            bool wristAssigned = false; //set this to true whenever you set the wristPosition/Rotation.
+
+            if (this.grabScript != null && this.grabScript.isActiveAndEnabled)
+            {
+                if (this.grabScript.ControlsHandLocation())
+                {
+                    this.grabScript.GetHandLocation(l_realHandPose, out wristPosition, out wristRotation);
+                    //Debug.Log("VP: GrabScript Source");
+                    wristAssigned = true;
+                }
+            }
+            // We're not grabbing on to anything, OR whatever we are grabbing does not influence hand location
+            if (!wristAssigned && this.handPhysics != null && this.handPhysics.isActiveAndEnabled)
+            {
+                wristPosition = this.handPhysics.WristPosition;
+                wristRotation = this.handPhysics.WristRotation;
+               // Debug.Log("VP: Physics Source");
+                wristAssigned = true;
+            }
+            // Neither Grabbing nor Physics is influencing the wrist position.
+            if (!wristAssigned)
+            {
+                wristPosition = l_realHandPose.wristPosition;
+                wristRotation = l_realHandPose.wristRotation;
+                //Debug.Log("VP: RealHand Source");
+            }
+            l_virtualPose = SG_HandPose.Combine(wristPosition, wristRotation, l_realHandPose, true);
+            SG_HandPoser3D.UpdatePoser(this.virtualHandPoser, l_virtualPose); //Finally, Update the poser
+        }
+
+        protected void UpdateRenderPose()
+        {
+            if (l_realHandPose == null || l_virtualPose == null)
+                return;
+
+            // Render the hand using the latest pose / overrides.
+            SG_HandPose fingerTracking = GetLatestFingerPose(this.l_realHandPose, this.l_virtualPose);
+            l_renderPose = SG_HandPose.Combine(l_virtualPose, fingerTracking, true); // combine finger tracking with the latest virtual pose's wrist
+
+            SG_HandPoser3D.UpdatePoser(renderPoser, l_renderPose); //update transforms
+            if (this.handAnimation != null && this.handAnimation.isActiveAndEnabled) //animate it if required.
+            {
+                this.handAnimation.UpdateHand(l_renderPose, false);
+            }
+        }
+
+
+
+
+
+        /// <summary> Called during Update(). Updates the latest RealHandPose for FixedUpdate(), a few trigger colliders and renders the hand via the Animator. </summary>
+        /// <param name="deltaTime"></param>
+        protected void UpdateHandTracking(float deltaTime)
+        {
+            // Get the latest real hand pose.
+           // UpdateRealHandPose();
+            
 
             // Update the latest collider pose - since the wrist position updates on Physics Step, it will have changed since the PhysicsUpdate.
-            l_virtualPose = GetLatestColliderPose(l_realHandPose);
-            SG_HandPoser3D.UpdatePoser(this.virtualHandPoser, l_virtualPose);
+            //l_virtualPose = GetLatestColliderPose(l_realHandPose);
+            //SG_HandPoser3D.UpdatePoser(this.virtualHandPoser, l_virtualPose);
 
             // Update any layers that need to match the colliderPose exactly
             // PassThrough Layer - Tracking only.
@@ -548,16 +612,11 @@ namespace SG
             //    this.feedbackLayer.UpdateColliders();
             //}
 
-            // Render the hand using the latest pose / overrides.
-            SG_HandPose fingerTracking = GetLatestFingerPose(this.l_realHandPose, this.l_virtualPose);
-            l_renderPose = SG_HandPose.Combine(l_virtualPose, fingerTracking, true); // combine finger tracking with the latest virtual pose's wrist
-
-            SG_HandPoser3D.UpdatePoser(renderPoser, l_renderPose); //update transforms
-            if (this.handAnimation != null && this.handAnimation.isActiveAndEnabled) //animate it if required.
-            {
-                this.handAnimation.UpdateHand(l_renderPose, false);
-            }
+            //UpdateRenderPose();
         }
+
+
+
 
 
         /// <summary> Called in FixedUpdate(). Updates the physics and logic of the hand. Manipulation, Physics Movement etc. Stores the ColliderPose. </summary>
@@ -581,6 +640,7 @@ namespace SG
             {
                 this.grabScript.UpdateGrabLogic(deltaTime);
                 this.grabScript.UpdateGrabbedObjects();
+
                 if (grabScript.ControlsHandLocation())
                 {
                     this.grabScript.GetHandLocation(this.l_realHandPose, out wristPosition, out wristRotation);
@@ -611,25 +671,26 @@ namespace SG
             {
                 //For now, the target is either the grabbed obj or the real world location.
                 SG_HandPose physicsTarget = wristAssigned ? SG_HandPose.Combine(wristPosition, wristRotation, fingerTracking, false) : SG_HandPose.Combine(l_realHandPose, fingerTracking, false);
+                
                 this.handPhysics.UpdateRigidbody(physicsTarget, deltaTime, true); //might as well update colliders in the same function (true)
-                if (!wristAssigned)
-                {
-                    wristPosition = handPhysics.WristPosition;
-                    wristRotation = handPhysics.WristRotation;
-                    wristAssigned = true;
-                }
+                //if (!wristAssigned)
+                //{
+                //    wristPosition = handPhysics.WristPosition;
+                //    wristRotation = handPhysics.WristRotation;
+                //    wristAssigned = true;
+                //}
             }
 
-            if (!wristAssigned) //just_in_case
-            {
-                wristPosition = l_realHandPose.wristPosition;
-                wristRotation = l_realHandPose.wristRotation;
-                wristAssigned = true;
-            }
+            //if (!wristAssigned) //just_in_case
+            //{
+            //    wristPosition = l_realHandPose.wristPosition;
+            //    wristRotation = l_realHandPose.wristRotation;
+            //    wristAssigned = true;
+            //}
 
-            l_virtualPose = SG_HandPose.Combine(wristPosition, wristRotation, l_realHandPose, true);
-            SG_HandPoser3D.UpdatePoser(this.virtualHandPoser, l_virtualPose); //Update the pose
-            //I don't need to assign any render poses, since they'll be updated later
+            //l_virtualPose = SG_HandPose.Combine(wristPosition, wristRotation, l_realHandPose, true);
+            //SG_HandPoser3D.UpdatePoser(this.virtualHandPoser, l_virtualPose); //Update the pose
+            ////I don't need to assign any render poses, since they'll be updated later
         }
 
 
@@ -862,13 +923,29 @@ namespace SG
         // Handle Physics Behaviours during FixedUpdate
         void FixedUpdate()
         {
+            //UpdatePhsics should be fine
+            UpdateRealHandPose();
+            UpdateVirtualPose();
             UpdateHandPhysics(Time.fixedDeltaTime);
+            //l_virtualPose = l_realHandPose; //Supposedly, this is the only time I _can_ update it...
+            //UpdateVirtualPose();
         }
 
         // And all trigger behaviours in Update
+        // Update creates the smoothest experience
         void Update()
         {
+            // UpdateHandTracking(Time.deltaTime);
+            UpdateRealHandPose();
+           // UpdateHandPhysics(Time.deltaTime);
+            UpdateVirtualPose();
             UpdateHandTracking(Time.deltaTime);
+            UpdateRenderPose();
+        }
+
+        void LateUpdate()
+        {
+           // UpdateRealHandPose();
         }
 
         void OnDisable()

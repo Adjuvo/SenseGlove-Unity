@@ -79,7 +79,7 @@ namespace SG
         {
             base.LinkToHand(newHand, firstLink);
             //Link finger colliders to the collider poser.
-            SG_HandPoser3D colliderPoser = newHand.GetPoser(SG_TrackedHand.TrackingLevel.RealHandPose);  //might as well. We're mainly using it for the offsets.
+            SG_HandPoser3D colliderPoser = newHand.GetPoser(SG_TrackedHand.TrackingLevel.VirtualPose);  //might as well. We're mainly using it for the offsets.
             for (int f = 0; f < this.fingerColliders.Length; f++)
             {
                 colliderPoser.ParentObject(this.fingerColliders[f].transform, fingerColliders[f].linkMeTo); //make these children as opposed to follwing them, so they're no longer a frame behind.

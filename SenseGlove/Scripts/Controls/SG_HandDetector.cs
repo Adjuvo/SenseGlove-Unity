@@ -240,15 +240,15 @@ namespace SG
                     this.OnObjectRemoved(args); //let the script know it's gone.
                     UpdateDebugger();
                 }
-                if (this.name.Contains("Zap"))
-                {
-                    Debug.Log(this.name + ": Removing " + col.name + " with parent " + (col.transform.parent != null ? col.transform.parent.name : "NULL") + " with code " + removeCode + ", which was linked to " + hand.name);
-                }
+                //if (this.name.Contains("Zap"))
+                //{
+                //    Debug.Log(this.name + ": Removing " + col.name + " with parent " + (col.transform.parent != null ? col.transform.parent.name : "NULL") + " with code " + removeCode + ", which was linked to " + hand.name);
+                //}
             }
-            else if (this.name.Contains("Zap") && col.transform.parent != null && col.transform.parent.name.Contains("Bone"))
-            {
-                Debug.LogError("Could not get a Hand for " + col.name + "???");
-            }
+            //else if (this.name.Contains("Zap") && col.transform.parent != null && col.transform.parent.name.Contains("Bone"))
+            //{
+            //    Debug.LogError("Could not get a Hand for " + col.name + "???");
+            //}
         }
 
 
@@ -325,7 +325,7 @@ namespace SG
         {
             if (args.eventFired) //at was removed AFTER wewere able to officially detect it.
             {
-                HandDetected.Invoke(args.hand);
+                HandRemoved.Invoke(args.hand);
             }
         }
 
@@ -417,6 +417,31 @@ namespace SG
             }
         }
 
+        /// <summary> Remove a specific hand from this zone </summary>
+        /// <param name="hand"></param>
+        public void RemoveDetection(SG.SG_TrackedHand hand)
+        {
+            if (hand == null)
+            {
+                return;
+            }
+
+            this.colliderDetection.ClearCollisions(hand);
+            for (int i=0; i<this.detectionArguments.Count;)
+            {
+                if (detectionArguments[i].hand == hand)
+                {
+                    detectionArguments.RemoveAt(i);
+                }
+                else { i++; }
+            }
+        }
+
+        /// <summary> Removes all detected hands from this zone </summary>
+        public void RemoveDetections()
+        {
+
+        }
 
         //-------------------------------------------------------------------------------------------------------------------------
         // Monobehaviour
@@ -444,12 +469,20 @@ namespace SG
 
         protected virtual void OnTriggerEnter(Collider other)
         {
+            //if (this.name.Contains("Zap"))
+            //{
+            //    Debug.Log(this.name + ": Collided with " + other.name);
+            //}
             TryAddCollider(other);
         }
 
 
         protected virtual void OnTriggerExit(Collider other)
         {
+            //if (this.name.Contains("Zap"))
+            //{
+            //    Debug.Log(this.name + ": " + ": Collided with " + other.name);
+            //}
             TryRemoveCollider(other);
         }
 

@@ -178,6 +178,10 @@ namespace SG
             {
                 UpdateColliders();
             }
+        }
+
+        private void FixedUpdate()
+        {
             UpdateForces();
         }
 

@@ -168,6 +168,7 @@ namespace SG
             if (handPoser != null && pose != null)
             {
                 handPoser.UpdateHandPoser(pose);
+				//Debug.Log(Time.timeSinceLevelLoad + " : " + handPoser.name + " Updated", handPoser);
             }
         }
 
@@ -481,7 +482,7 @@ namespace SG
 		}
 
         /// <summary> Fires when the HandPoser is destroyed. I need to release the LineRenderers created through code. </summary>
-        protected void OnDestroy()
+        protected virtual void OnDestroy()
 		{
 			for (int i = 0; i < this.handLines.Length; i++)
 			{
@@ -495,7 +496,7 @@ namespace SG
 
 #if UNITY_EDITOR
         /// <summary> When we change the HandColor through the Inspector, we should update the LineRenderers as well. </summary>
-        protected void OnValidate()
+        protected virtual void OnValidate()
 		{
             if (Application.isPlaying)
             {

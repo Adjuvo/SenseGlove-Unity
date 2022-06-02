@@ -217,6 +217,59 @@ namespace SG
         //    return res;
         //}
 
+        //----------------------------------------------------------------------------------------------
+        // Sreialize / Deserialize - Recording
+
+        public string Serialize()
+        {
+            string serialized = SGCore.Util.Serializer.Enclose( this.rightHanded ? "R" : "L" );
+            serialized += SG.Util.SG_Conversions.Serialize( wristPosition );
+            serialized += SG.Util.SG_Conversions.Serialize( wristRotation );
+            serialized += SG.Util.SG_Conversions.Serialize( jointPositions );
+            serialized += SG.Util.SG_Conversions.Serialize( jointRotations );
+            serialized += SG.Util.SG_Conversions.Serialize( jointAngles );
+            serialized += SGCore.Util.Serializer.Serialize( normalizedFlexion );
+
+            return serialized;
+        }
+
+        public static bool Deserialize(string serialized, out SG_HandPose deserializedPose)
+        {
+            string[] split = SGCore.Util.Serializer.SplitBlocks(serialized);
+            if (split.Length > 6) //7 entries.
+            {
+                bool right = !(split[0].Length > 0 && split[0][0] == 'L');
+                Vector3 wristPos = SG.Util.SG_Conversions.DeserializeVector3(split[1]);
+                Quaternion wristRot = SG.Util.SG_Conversions.DeserializeQuaternion(split[2]);
+                Vector3[][] jointPos = SG.Util.SG_Conversions.DeserializeVector3s2D(split[3]);
+                Quaternion[][] jointRots = SG.Util.SG_Conversions.DeserializeQuaternions2D(split[4]);
+                Vector3[][] jointAngls = SG.Util.SG_Conversions.DeserializeVector3s2D(split[5]);
+                float[] normalizedFlexes = SGCore.Util.Serializer.DeserializeFloats(split[6]);
+                deserializedPose = new SG_HandPose(jointAngls, jointRots, jointPos, right, wristPos, wristRot, normalizedFlexes);
+                return true;
+            }
+            deserializedPose = null;
+            return false;
+        }
+
+        /// <summary> Returns true if the otherPose has the same values as this pose. </summary>
+        /// <param name="otherPose"></param>
+        /// <returns></returns>
+        public bool Equals(SG_HandPose otherPose)
+        {
+            if (otherPose.rightHanded != this.rightHanded
+                || !SG.Util.SG_Conversions.RoughlyEqual(otherPose.wristPosition, this.wristPosition)
+                || !SG.Util.SG_Conversions.RoughlyEqual(otherPose.wristRotation, this.wristRotation)
+                || otherPose.normalizedFlexion.Length != this.normalizedFlexion.Length)
+            {
+                return false;
+            }
+            return Util.SG_Conversions.RoughlyEqual(this.normalizedFlexion, otherPose.normalizedFlexion)
+                && Util.SG_Conversions.RoughlyEqual(this.jointAngles, otherPose.jointAngles)
+                && Util.SG_Conversions.RoughlyEqual(this.jointPositions, otherPose.jointPositions)
+                && Util.SG_Conversions.RoughlyEqual(this.jointRotations, otherPose.jointRotations);
+        }
+
     }
 
 }

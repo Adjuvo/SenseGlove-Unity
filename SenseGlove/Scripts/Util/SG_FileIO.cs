@@ -20,11 +20,12 @@ namespace SG.Util
         {
             try
             {
-                if (!Directory.Exists(dir))
+                if (dir.Length > 0 && !Directory.Exists(dir))
                 {
                     Directory.CreateDirectory(dir);
                 }
-                string path = dir + "/" + fileName;
+              
+                string path = SG.Util.SG_Util.ValidateDir(dir) + fileName;
 
                 if (!File.Exists(path)) { append = true; } //always append if the file does not exist so that it will be automatically created (without IOExceptions)
 
