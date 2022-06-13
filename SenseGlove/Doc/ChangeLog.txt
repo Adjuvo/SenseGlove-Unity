@@ -1,7 +1,15 @@
 # Changelog
 All notable changes to the SenseGlove Prefabs will be documented in this file.
 
-You are currently using version 2.3
+You are currently using version 2.3.1
+
+## [v2.3.1] - 2022-06-13
+Grab Events and IMU Script
+
+### Added
+- SG_IMUTracking, which allows one to rotate a Transform using the SenseGlove's built-in IMU. Can be calibrated to move relative to another transform.
+- ObjectGrabbed / ObjectReleased events to both SG_GrabScript and SG_Interactable, which passes the grabscript and the interactable as parameters.
+
 
 ## [v2.3] - 2022-06-02
 UnityXR, Bug Fixes and CV Preparation

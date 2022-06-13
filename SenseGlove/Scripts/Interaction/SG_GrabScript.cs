@@ -4,6 +4,9 @@ using UnityEngine;
 
 namespace SG
 {
+    /// <summary> Unity Event to handle object Grabbing / Releasing. </summary>
+    [System.Serializable] public class SG_GrabbedObjectEvent : UnityEngine.Events.UnityEvent<SG_Interactable, SG_GrabScript> { }
+
     /// <summary> A layer to hover over and grab SG_Interactables. Can override hand tracking if a held object does. </summary>
 	public abstract class SG_GrabScript : SG_HandComponent
 	{
@@ -73,6 +76,14 @@ namespace SG
         protected static float objCooldownTime = 0.3f;
         /// <summary> Objects that we've just released and can therefore not be grabbed for a few frames. </summary>
         protected List<CooldownParams> objsOnCoolDown = new List<CooldownParams>();
+
+        /// <summary> Fires just after this GrabScript grabs an object </summary>
+        public SG_GrabbedObjectEvent GrabbedObject = new SG_GrabbedObjectEvent();
+
+        /// <summary> Fires just after this GrabScript released an object </summary>
+        public SG_GrabbedObjectEvent ReleasedObject = new SG_GrabbedObjectEvent();
+
+
 
         //-------------------------------------------------------------------------------------------------------------------------------------------------------------
         // SG_HandComponent Overrides
@@ -454,7 +465,8 @@ namespace SG
 					if (grabbed)
 					{
 						heldObjects.Add(grabable);
-						//Debug.Log(this.name + " Grabbed " + grabable.name);
+                        //Debug.Log(this.name + " Grabbed " + grabable.name);
+                        this.GrabbedObject.Invoke(grabable, this);
 						UpdateDebugger();
 						return true;
 					}
@@ -493,9 +505,10 @@ namespace SG
             {
 				heldObjects.RemoveAt(heldIndex);
                 PutOnCooldown(toRelease);
-				//TODO: Fire Event
-				//Debug.Log(this.name + " Released " + removed.name);
-				UpdateDebugger();
+                //TODO: Fire Event
+                //Debug.Log(this.name + " Released " + removed.name);
+                this.GrabbedObject.Invoke(toRelease, this);
+                UpdateDebugger();
 			}
 			return toRelease;
 		}

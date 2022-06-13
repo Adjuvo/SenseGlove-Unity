@@ -623,7 +623,7 @@
             <returns></returns>
         </member>
         <member name="M:SGCore.Kinematics.Quat.LookRotation_XYZ(SGCore.Kinematics.Vect3D,SGCore.Kinematics.Vect3D,SGCore.Kinematics.Vect3D)">
-            <summary>  Calculate the Quaternion that, when applied to (1, 0, 0), (0, 1, 0) and (0, 0, 1) will result in X, Y, Z. </summary>
+            <summary>  Calculate the Quaternion that, when applied to (1, 0, 0), (0, 1, 0) and (0, 0, 1) will result in teh vectors X, Y, Z. </summary>
             <param name="X">In Orignal function - Side, calculated from Cross Up(input)-FWD, Unity (2D) Left/Right</param>
             <param name="Y">In Orignal function - UP, re-calculated from Cross SIDE-FWD, Unity (2D) Up/Down</param>
             <param name="Z">In Orignal function - Forward, Unity Z (towards screen)</param>

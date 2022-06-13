@@ -1,7 +1,7 @@
 # SenseGlove-Unity
 The latest stable Unity SDK for the SenseGlove, built using Unity 2017.4.30f1. Can be imported into Unity 2017.4 and up, which will automatically update the assets for you. Using older Unity versions may cause issues.
 
-Current version is v2.3, released on the 2nd of June 2022.
+Current version is v2.3.1, released on the 13th of June 2022.
 
 ## Upgrade Guide
 When importing a new version of the Sense Glove SDK, the best practice is to delete the SenseGlove folder before re-importing, since some files may have been removed or placed in a more suitable folder.

@@ -149,6 +149,11 @@ namespace SG
         /// <summary> The frame wherein we last changed out IsKinematic Value. </summary>
         protected int safeguardFrame = -1;
 
+        /// <summary> Fires just before this object is officially grabbed by a GrabScript. </summary>
+        public SG_GrabbedObjectEvent ObjectGrabbed = new SG_GrabbedObjectEvent();
+        /// <summary> Fires just before this object is officially released by a GrabScript. </summary>
+        public SG_GrabbedObjectEvent ObjectReleased = new SG_GrabbedObjectEvent();
+
         //---------------------------------------------------------------------------------------------------------------------------------------------------------------------
         // Utility Functions
 
@@ -519,6 +524,7 @@ namespace SG
 						this.grabbedBy.Add(args);
 						//Debug.Log(this.name + " Grabbed by " + grabScript.name);
 						UpdateDebugger();
+                        this.ObjectGrabbed.Invoke(this, grabScript);
 						return true;
 					}
                 }
@@ -539,6 +545,7 @@ namespace SG
                 {
                     this.grabbedBy.Add(grabArgs); //add the pre-generated Grab Args as opposed to the one made by this script.
                     //Debug.Log(this.name + " Grabbed by " + grabScript.name);
+                    this.ObjectGrabbed.Invoke(this, grabArgs.GrabScript);
                     UpdateDebugger();
                     return true;
                 }
@@ -596,6 +603,7 @@ namespace SG
                         this.grabbedBy.RemoveAt(grabbedIndex);
                         //Debug.Log(this.name + " Released by " + beReleasedBy.GrabScript.name);
                         //ToDo Fire and event with beReleasedBy;
+                        this.ObjectReleased.Invoke(this, grabScript);
                         UpdateDebugger();
                         return true;
                     }
@@ -619,6 +627,7 @@ namespace SG
                     this.grabbedBy.RemoveAt(grabbedIndex);
                     //Debug.Log(this.name + " Released by " + beReleasedBy.GrabScript.name);
                     //ToDo Fire and event with beReleasedBy;
+                    this.ObjectReleased.Invoke(this, grabArgs.GrabScript);
                     UpdateDebugger();
                     return true;
                 }
@@ -642,6 +651,7 @@ namespace SG
                     if (!removed) //the grabscript doesn't think it's holding me, but I sure do!
                     {
                         this.StartRelease(this.grabbedBy[0]); //Call the release neatly
+                        this.ObjectReleased.Invoke(this, this.grabbedBy[0].GrabScript); //let them know they should let me go
                         this.grabbedBy.RemoveAt(0); //then remove this one-sided love.
                     }
                     //debug += removed + ", newCount = " + this.grabbedBy.Count;

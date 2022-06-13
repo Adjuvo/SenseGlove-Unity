@@ -261,7 +261,7 @@ namespace SG
         private static void TryLinkHands(List<InputDevice> devices)
         {
             string hmdName = headTracking != null ? headTracking.XRDevice.name.ToLower() : "";
-            if (hmdName.Length > 0 && (hmdName.Contains("vive") | hmdName.Contains("valve")))
+            if (hmdName.Length > 0 && (hmdName.Contains("vive") || hmdName.Contains("valve")))
             {   //It's a headset meant to be used with Vive Trackers.
                 List<InputDevice> trackers = GetViveTrackers(devices);
                 if (trackers.Count > 0) //there's at least one tracker found
