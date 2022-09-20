@@ -3,14 +3,20 @@ The latest stable Unity SDK for the SenseGlove, built using Unity 2017.4.30f1. C
 
 Current version is v2.3.1, released on the 13th of June 2022.
 
+**Important notice**: After 4-5 years of supporting Unity 2017 and 2018, the time has come for us to raise the minimum Unity version from 2017.4 to 2019.4 (LTS version). This update will allow us to make more use of the Unity XR system, and add vr-ready examples to the plugin. This means that your Unity 2017-2018 projects will no longer be able to receive updates to the SenseGlove Unity Plugin. If you'd like to continue using Unity 2017-2018, you can still use versions 1.0.0 - 2.3.1. SenseCom operates independently from the Unity Editor, and can still be used with our plugins of v2.0 and above.
+
 ## Upgrade Guide
 When importing a new version of the Sense Glove SDK, the best practice is to delete the SenseGlove folder before re-importing, since some files may have been removed or placed in a more suitable folder.
 
 ## Backwards Compatability
-Starting from v0.20 and onwards, the SDK is no longer compatible out of the box with the old, white, lasercut prototypes (released before DK1). If you have such a device and wish to continue using it with the latest SDK, contact the Sense Glove team.
+As with all unity packages, the SenseGlove Unity Plugin is compatible with the Unity version it is built, and any Unity Editor version released after. It is not recommended to use an earier version of the Unity Editor, as this may cause compiler errors and/or cause prefabs to go missing.
+
+The SenseGlove Unity Plugin is compatible with both the SenseGlove DK1 - exoskeleton glove and the SenseGlove Nova - the soft glove.
+
+The SenseCom software is compatible with plugin version 2.0 and above. When using older versions of the plugin, SenseCom should not be running in the background.
 
 ## Platform Compatability
-The SenseGlove Unity API is compatible with Windows, with Linux support coming soon. It is also compatible with Android devices, such as the Oculus Quest and Pico Neo 2.
+The SenseGlove Unity API is compatible with Windows, with Linux support currently only working for the DK1 blue exoskeleton gloves. It is also compatible with Android devices, such as the Oculus Quest and Pico Neo 2.
 
 ## Getting Started
 The first thing one should do is ensure that their Sense Glove is working.
