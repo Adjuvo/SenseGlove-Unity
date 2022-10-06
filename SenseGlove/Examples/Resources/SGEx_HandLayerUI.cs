@@ -445,7 +445,8 @@ namespace SG.Examples
 
                 }
             }
-
+#if ENABLE_INPUT_SYSTEM //if Unitys new Input System is enabled....
+#else
             if (Input.GetKeyDown(nextKey))
             {
                 if (this.ProceedConnection() && this.ProceedCalibration())
@@ -457,6 +458,7 @@ namespace SG.Examples
             {
                 PreviousInstruction();
             }
+#endif
         }
 
     }

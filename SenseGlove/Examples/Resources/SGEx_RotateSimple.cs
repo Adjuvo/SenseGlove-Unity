@@ -9,7 +9,7 @@ namespace SG.Examples
     public class SGEx_RotateSimple : MonoBehaviour
     {
 
-        public SG_Util.MoveAxis moveAround = SG_Util.MoveAxis.Y;
+        public SG.Util.MoveAxis moveAround = SG.Util.MoveAxis.Y;
         public float rotationSpeed = 10f;
         public bool resetOnEnable = false;
 

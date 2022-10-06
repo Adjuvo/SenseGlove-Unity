@@ -90,7 +90,7 @@ namespace SG
         /// <summary> Called when the breakable material of the wholeObject is broken </summary>
         public override void Break()
         {
-            if (this.IsBroken()) { return; }
+            if (this.IsBroken() || !breakingAllowed) { return; }
 
             base.Break(); //make sure it broke first
 

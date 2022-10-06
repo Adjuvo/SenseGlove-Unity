@@ -275,6 +275,11 @@ namespace SG
             DebugEnabled = this.debugEnabled; //set debug components
         }
 
+        public virtual void OnApplicationQuit()
+        {
+            SG.Util.SG_Util.IsQuitting = true;
+        }
+
 #if UNITY_EDITOR
         public virtual void OnValidate()
         {

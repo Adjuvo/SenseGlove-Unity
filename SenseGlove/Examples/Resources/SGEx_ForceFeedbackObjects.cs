@@ -55,10 +55,10 @@ namespace SG.Examples
         {
             if (this.activeHand != null && this.activeHand.handAnimation != null)
             {
-                if (this.activeHand.realHandSource is SG.SG_HapticGlove)
+                if (this.activeHand.RealHandSource != null && this.activeHand.RealHandSource is SG.SG_HapticGlove)
                 {
                     Quaternion imu;
-                    if (((SG.SG_HapticGlove)this.activeHand.realHandSource).GetIMURotation(out imu))
+                    if (((SG.SG_HapticGlove)this.activeHand.RealHandSource).GetIMURotation(out imu))
                     {
                         this.activeHand.handAnimation.CalibrateWrist(imu);
                     }
@@ -234,8 +234,10 @@ namespace SG.Examples
             }
             else
             {
+#if ENABLE_INPUT_SYSTEM //if Unitys new Input System is enabled....
+#else
                 if (Input.GetKeyDown(calibrateKey)) { this.ResetCalibration(); }
-
+#endif
                 bool handOpen = /*this.objIndex > -1 ? !activeHand.feedbackLayer.TouchingMaterial() :*/ CheckHandOpen(this.activeHand);
                 if (handOpen)
                 {
@@ -251,6 +253,8 @@ namespace SG.Examples
                 if (ButtonsInteractable != allowedSwap) { ButtonsInteractable = allowedSwap; }
                 if (allowedSwap)
                 {
+#if ENABLE_INPUT_SYSTEM //if Unitys new Input System is enabled....
+#else
                     if (Input.GetKeyDown(prevObjKey))
                     {
                         PreviousObject();
@@ -259,6 +263,7 @@ namespace SG.Examples
                     {
                         NextObject();
                     }
+#endif
                 }
 
                 if (objIndex > -1 && breakables[objIndex] != null && breakables[objIndex].IsBroken()) //we're dealing with a breakable

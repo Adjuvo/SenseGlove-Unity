@@ -208,7 +208,8 @@ namespace SG.Examples
 			if (hapticGlove != null && hapticGlove is SGCore.SG.SenseGlove)
 			{
 				SGCore.Haptics.SG_ThumperCmd cmd = thumpersAvailable[sgThump];
-				((SGCore.SG.SenseGlove)hapticGlove).SendCmd(cmd);
+				((SGCore.SG.SenseGlove)hapticGlove).QueueWristCommand(cmd);
+				hapticGlove.SendHaptics(); //immedeately sedn
 			}
 		}
 
@@ -358,6 +359,8 @@ namespace SG.Examples
 				}
 
 				//KeyBinds
+#if ENABLE_INPUT_SYSTEM //if Unitys new Input System is enabled....
+#else
 				if (Input.GetKeyDown(this.resetWristKey))
                 {
 					this.CalibrateIMU();
@@ -378,7 +381,7 @@ namespace SG.Examples
 				{
 					this.ResetCalibration();
 				}
-
+#endif
 			}
 		}
 

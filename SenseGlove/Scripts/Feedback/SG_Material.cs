@@ -14,14 +14,15 @@ namespace SG
 
         /// <summary> The maximum brake force [0..100%] that the material provides when the finger is at maxForceDist inside the collider. </summary>
         [Header("Force-Feedback Settings")]
-        public int maxForce = 100;
+        //public int maxForce = 100;
 
-        /// <summary> The distance [in m] before the maximum force is reached. 0.02 == 2cm.</summary>
-        public float maxForceDist = 0.02f; //1 cm
+        ///// <summary> The distance [in m] before the maximum force is reached. 0.02 == 2cm.</summary>
+        //public float maxForceDist = 0.02f; //1 cm
 
-        /// <summary> The Force-Feedback response of an object. X axis [0..1] represtents the maxForceDist in relation to the y-axis, where [1] represents the maxForce. </summary>
-        public AnimationCurve forceRepsonse = AnimationCurve.Constant(0, 1, 1);
+        ///// <summary> The Force-Feedback response of an object. X axis [0..1] represtents the maxForceDist in relation to the y-axis, where [1] represents the maxForce. </summary>
+        //public AnimationCurve forceRepsonse = AnimationCurve.Constant(0, 1, 1);
 
+        public SG_MaterialProperties materialProperties;
 
         //---------------------------------------------------------------------
         //  Breakable properties
@@ -65,6 +66,18 @@ namespace SG
         // Material Methods
 
         #region MaterialMethods
+
+        public void Touch(SG_FingerFeedback script)
+        {
+            //TODO: Some form of hover(ing) scripts?
+        }
+
+        public void UnTouch(SG_FingerFeedback script)
+        {
+            //TODO: Event?
+        }
+
+
 
         /// <summary> Check if this material is broken </summary>
         /// <returns></returns>
@@ -138,8 +151,13 @@ namespace SG
                     return 0;
                 }
             }
-            //return (int)SGCore.Kinematics.Values.Clamp(SG_Material.CalculateResponseForce(displacement, this.maxForce, this.maxForceDist), 0, this.maxForce);
-            return (int)SG_Material.CalculateResponseForce(displacement, this.maxForce, this.maxForceDist, ref this.forceRepsonse);
+
+
+            if (this.materialProperties != null)
+            {
+                return (int)SG_Material.CalculateResponseForce(displacement, (int)(this.materialProperties.maxForce * 100), this.materialProperties.maxForceDist, ref this.materialProperties.forceRepsonse);
+            }
+            return 100; //just full FFB at this point.
         }
 
         public static int CalculateResponseForce(float disp, int maxForce, float maxForceDist, ref AnimationCurve ffbCurve)
@@ -198,8 +216,13 @@ namespace SG
         /// <summary> Unbreak this material if it is disabled. </summary>
         protected virtual void OnDisable()
         {
-            this.UnBreak();
+            if (!SG.Util.SG_Util.IsQuitting) //otherwise Unity will cry when we change parenting etc
+            {
+                this.UnBreak();
+            }
         }
+
+
 
         #endregion Monobehaviour
 

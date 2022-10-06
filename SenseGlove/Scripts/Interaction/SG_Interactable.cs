@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using SGCore.Haptics;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace SG
@@ -6,8 +7,8 @@ namespace SG
     //-------------------------------------------------------------------------------------------------------------------------------------
     // Hover Arguments
 
-	/// <summary> Contains any hovering arguments, which happens when a hand hovers above an object </summary>
-	public class HoverArguments
+	/// <summary> Contains any hovering arguments, which happens when a hand hovers above an object. Implements IFeedback device to send Haptics directly to the TrackedHand involved </summary>
+	public class HoverArguments : IHandFeedbackDevice
 	{
 		/// <summary> The GrabScript that is hovering above this Interactable. </summary>
 		public SG_GrabScript GrabScript { get; set; }
@@ -27,7 +28,78 @@ namespace SG
         {
 			GrabScript = hoveredBy;
         }
-	}
+
+
+        /// <summary> Returns the name of the TrackedHand involved in these Arguments </summary>
+        /// <returns></returns>
+        public string Name()
+        {
+            return TrackedHand != null ? ((IHandFeedbackDevice)TrackedHand).Name() : "";
+        }
+
+        /// <summary> Returns true if the TrackedHand involved in these aguments is linked and connected. </summary>
+        /// <returns></returns>
+        public bool IsConnected()
+        {
+            return TrackedHand != null ? ((IHandFeedbackDevice)TrackedHand).IsConnected() : false;
+        }
+
+        /// <summary> End all vibrations on the TrackedHand involved in these arguments. </summary>
+        public void StopAllVibrations()
+        {
+            if (TrackedHand != null) { ((IHandFeedbackDevice)TrackedHand).StopAllVibrations(); }
+        }
+
+        /// <summary> Stop all vibration- and force haptics on the TrackedHand linked to these args </summary>
+        public void StopHaptics()
+        {
+            if (TrackedHand != null) { ((IHandFeedbackDevice)TrackedHand).StopHaptics(); }
+        }
+
+        /// <summary> Send a Force-Feedback command to the TrackedHand linked to these Args </summary>
+        /// <param name="ffb"></param>
+        public void SendCmd(SG_FFBCmd ffb)
+        {
+            if (TrackedHand != null) { ((IHandFeedbackDevice)TrackedHand).SendCmd(ffb); }
+        }
+
+        /// <summary> Send a Vibration command to the TrackedHand linked to these Args </summary>
+        /// <param name="fingerCmd"></param>
+        public void SendCmd(SG_TimedBuzzCmd fingerCmd)
+        {
+            if (TrackedHand != null) { ((IHandFeedbackDevice)TrackedHand).SendCmd(fingerCmd); }
+        }
+
+        /// <summary> Send a Thumper command to the TrackedHand linked to these Args </summary>
+        /// <param name="wristCmd"></param>
+        public void SendCmd(TimedThumpCmd wristCmd)
+        {
+            if (TrackedHand != null) {  ((IHandFeedbackDevice)TrackedHand).SendCmd(wristCmd); }
+        }
+
+        /// <summary> Send a Thumper command to the TrackedHand linked to these Args </summary>
+        /// <param name="waveform"></param>
+        public void SendCmd(ThumperWaveForm waveform)
+        {
+            if (TrackedHand != null) { ((IHandFeedbackDevice)TrackedHand).SendCmd(waveform); }
+        }
+
+        /// <summary> Send a WaveForm command to the TrackedHand linked to these Args </summary>
+        /// <param name="waveform"></param>
+        public void SendCmd(SG_Waveform waveform)
+        {
+            if (TrackedHand != null) { ((IHandFeedbackDevice)TrackedHand).SendCmd(waveform); }
+        }
+
+
+        /// <summary> Send an Impact Vibration command to the TrackedHand linked to these Args </summary>
+        /// <param name="location"></param>
+        /// <param name="normalizedVibration"></param>
+        public void SendImpactVibration(SG_HandSection location, float normalizedVibration)
+        {
+            if (TrackedHand != null) { ((IHandFeedbackDevice)TrackedHand).SendImpactVibration(location, normalizedVibration); }
+        }
+    }
 
     //-------------------------------------------------------------------------------------------------------------------------------------
     // Grab Arguments
@@ -49,8 +121,9 @@ namespace SG
 		/// <param name="obj"></param>
 		/// <param name="objTargetPos"></param>
 		/// <param name="objTargetRot"></param>
-		public void CalculateObjectTarget(Transform obj, out Vector3 objTargetPos, out Quaternion objTargetRot)
+		public virtual void CalculateObjectTarget(Transform obj, out Vector3 objTargetPos, out Quaternion objTargetRot)
         {
+            //TODO: Confirm if this is correct.
 			SG.Util.SG_Util.CalculateTargetLocation(this.GrabScript.realGrabRefrence, GrabOffset_Position, GrabOffset_Rotation, out objTargetPos, out objTargetRot);
         }
 
@@ -58,10 +131,23 @@ namespace SG
 		/// <param name="obj"></param>
 		/// <param name="objTargetPos"></param>
 		/// <param name="objTargetRot"></param>
-		public void CalculateRefrenceLocation(Transform obj, out Vector3 objTargetPos, out Quaternion objTargetRot)
+		public virtual void CalculateRefrenceLocation(Transform obj, out Vector3 objTargetPos, out Quaternion objTargetRot)
         {
 			SG.Util.SG_Util.CalculateRefrenceLocation(obj.position, obj.rotation, GrabOffset_Position, GrabOffset_Rotation, out objTargetPos, out objTargetRot);
         }
+
+        public Transform GetRealGrabRefrence()
+        {
+            return this.GrabScript != null && this.GrabScript.realGrabRefrence != null ? this.GrabScript.realGrabRefrence : null;
+        }
+
+        /// <summary> Safely retrieve the current (world) position of the real hand's GrabReference. </summary>
+        /// <returns></returns>
+        public Vector3 GetRealRefPosition()
+        {
+            return this.GrabScript != null && this.GrabScript.realGrabRefrence != null ? this.GrabScript.realGrabRefrence.position : Vector3.zero;
+        }
+
 
 
         /// <summary> Default constructor for extension purposes. </summary>
@@ -79,7 +165,7 @@ namespace SG
 			GrabOffset_Rotation = relativeRot;
             MyPosAtGrab = objPosition;
             MyRotAtGrab = objRotation;
-		}
+        }
 	}
 
 
@@ -90,7 +176,7 @@ namespace SG
     /// <summary> A base class that can be overriden. It fires events and keeps track of hands, but does not manipulate the object it's attached to. </summary>
     /// <remarks> Use this script to use make an object recognizeable by an SG_GrabScript. </remarks>
     [DisallowMultipleComponent]
-    public class SG_Interactable : MonoBehaviour
+    public class SG_Interactable : MonoBehaviour, IHandFeedbackDevice //using this as a Feebdack Device will send commands to all hands that holding this GrabScript.
 	{
         /// <summary> Grab conditions for an Interactable, restricting grabbing based on certain contitions </summary>
         public enum GrabMethod
@@ -154,6 +240,14 @@ namespace SG
         /// <summary> Fires just before this object is officially released by a GrabScript. </summary>
         public SG_GrabbedObjectEvent ObjectReleased = new SG_GrabbedObjectEvent();
 
+
+        /// <summary> The last Grab Arguments that were applied to this Interactable. Useful if you wish to send Haptics just after a hand just releases. Is NULL when no hand has ever grabbed or released this object </summary>
+        public GrabArguments LastGrabbedBy
+        {
+            get; protected set;
+        }
+
+
         //---------------------------------------------------------------------------------------------------------------------------------------------------------------------
         // Utility Functions
 
@@ -203,6 +297,7 @@ namespace SG
             {
                 this.physicsBody = this.baseTransform.GetComponent<Rigidbody>();
             }
+            this.LastGrabbedBy = null;
             this.highlighter = this.GetComponent<SG_Activator>(); //attempt to collect hover highlight.
         }
 
@@ -416,6 +511,7 @@ namespace SG
         }
 
 
+
         //---------------------------------------------------------------------------------------------------------------------------------
         // Hover Behaviour
 
@@ -476,7 +572,7 @@ namespace SG
         /// <returns></returns>
         public virtual List<GrabArguments> ScriptsGrabbingMe()
         {
-            return this.grabbedBy;
+            return SG.Util.SG_Util.ArrayCopy(this.grabbedBy);
         }
 
 
@@ -505,6 +601,8 @@ namespace SG
         //------------------------------------------------------------------------
         // Grab Behaviour
 
+
+
         /// <summary> Step 1: Returns true if this object was succesfully grabbed by a GrabScript. Grabbing can fail because for many reasons (e.g. already being grabbed by this script,
         /// this is a one-handed object, etc). </summary>
         /// <param name="grabScript"></param>
@@ -522,10 +620,8 @@ namespace SG
 					if (StartGrab(grabScript, out args))
 					{
 						this.grabbedBy.Add(args);
-						//Debug.Log(this.name + " Grabbed by " + grabScript.name);
-						UpdateDebugger();
-                        this.ObjectGrabbed.Invoke(this, grabScript);
-						return true;
+                        this.OnGrabComplete(args);
+                        return true;
 					}
                 }
             }
@@ -544,9 +640,7 @@ namespace SG
                 if (StartGrab(grabArgs.GrabScript, out args)) //we call this to simulate proper behaviour (rigidBody manipulation etc).
                 {
                     this.grabbedBy.Add(grabArgs); //add the pre-generated Grab Args as opposed to the one made by this script.
-                    //Debug.Log(this.name + " Grabbed by " + grabScript.name);
-                    this.ObjectGrabbed.Invoke(this, grabArgs.GrabScript);
-                    UpdateDebugger();
+                    this.OnGrabComplete(grabArgs);
                     return true;
                 }
             }
@@ -563,6 +657,15 @@ namespace SG
         {
 			grabArgs = GenerateGrabArgs(grabScript);
 			return grabArgs != null;
+        }
+
+        /// <summary> Fires after a grab is succesful and we can begin. Invokes event and updates degbugger. </summary>
+        protected virtual void OnGrabComplete(GrabArguments grabArgs)
+        {
+            //Debug.Log(this.name + " Grabbed by " + grabScript.name);
+            this.ObjectGrabbed.Invoke(this, grabArgs.GrabScript);
+            this.LastGrabbedBy = grabArgs; //updates the last hand to initiate a grab event.
+            UpdateDebugger();
         }
 
 		/// <summary> Put in a separate function so we can add more in-depth GrabArguments in later classes. </summary>
@@ -601,10 +704,7 @@ namespace SG
                     {
                         // Actually release it.
                         this.grabbedBy.RemoveAt(grabbedIndex);
-                        //Debug.Log(this.name + " Released by " + beReleasedBy.GrabScript.name);
-                        //ToDo Fire and event with beReleasedBy;
-                        this.ObjectReleased.Invoke(this, grabScript);
-                        UpdateDebugger();
+                        this.OnReleaseComplete(beReleasedBy);
                         return true;
                     }
 				}
@@ -625,10 +725,7 @@ namespace SG
                 {
                     // Actually release it.
                     this.grabbedBy.RemoveAt(grabbedIndex);
-                    //Debug.Log(this.name + " Released by " + beReleasedBy.GrabScript.name);
-                    //ToDo Fire and event with beReleasedBy;
-                    this.ObjectReleased.Invoke(this, grabArgs.GrabScript);
-                    UpdateDebugger();
+                    OnReleaseComplete(beReleasedBy); //call event while the args are still alive
                     return true;
                 }
             }
@@ -650,9 +747,10 @@ namespace SG
                     bool removed = this.grabbedBy[0].GrabScript.TryRelease(this, true); //remove the first one, thich changes grabbedBy.Count(!)
                     if (!removed) //the grabscript doesn't think it's holding me, but I sure do!
                     {
-                        this.StartRelease(this.grabbedBy[0]); //Call the release neatly
-                        this.ObjectReleased.Invoke(this, this.grabbedBy[0].GrabScript); //let them know they should let me go
+                        GrabArguments beReleasedBy = this.grabbedBy[0];
+                        this.StartRelease(beReleasedBy); //Call the release neatly
                         this.grabbedBy.RemoveAt(0); //then remove this one-sided love.
+                        OnReleaseComplete(beReleasedBy); //call event while the args are still alive
                     }
                     //debug += removed + ", newCount = " + this.grabbedBy.Count;
                     removals++;
@@ -666,6 +764,14 @@ namespace SG
             {
                 this.linkedGrabPoints[i].ReleaseSelf();
             }
+        }
+
+        protected virtual void OnReleaseComplete(GrabArguments beReleasedBy)
+        {
+            //Debug.Log(this.name + " Released by " + beReleasedBy.GrabScript.name);
+            this.LastGrabbedBy = this.grabbedBy.Count == 0 ? beReleasedBy : this.grabbedBy[this.grabbedBy.Count - 1];
+            this.ObjectReleased.Invoke(this, beReleasedBy.GrabScript);
+            UpdateDebugger();
         }
 
         /// <summary> Returns true if this object is allowed to be released by a specific GrabScript. Should not affecr behaviour, only deterimen if it's allowed.
@@ -686,6 +792,101 @@ namespace SG
 		}
 
 
+        //--------------------------------------------------------------------------------------
+        // IHandFeedbackDevice Imnterface - Pass Cmds to all hands touching me.
+
+        /// <summary> Returns this object's name. </summary>
+        /// <returns></returns>
+        public string Name()
+        {
+            return this.name;
+        }
+
+        /// <summary> Returns true onless overrided. </summary>
+        /// <returns></returns>
+        public virtual bool IsConnected()
+        {
+            return true;
+        }
+
+        /// <summary> Stop All vibrations on the hands that are holding on to this object. </summary>
+        public void StopAllVibrations()
+        {
+            for (int i=0; i<this.grabbedBy.Count; i++)
+            {
+                if (grabbedBy[i] != null && grabbedBy[i].TrackedHand != null) { this.grabbedBy[i].TrackedHand.StopAllVibrations(); }
+            }
+        }
+
+        /// <summary> Stop All Haptics on the hands that are holding on to this object. </summary>
+        public void StopHaptics()
+        {
+            for (int i = 0; i < this.grabbedBy.Count; i++)
+            {
+                if (grabbedBy[i] != null && grabbedBy[i].TrackedHand != null) { this.grabbedBy[i].TrackedHand.StopHaptics(); }
+            }
+        }
+
+        /// <summary> Send a force-feedback command to all hands holding on to this object </summary>
+        /// <param name="ffb"></param>
+        public void SendCmd(SG_FFBCmd ffb)
+        {
+            for (int i = 0; i < this.grabbedBy.Count; i++)
+            {
+                if (grabbedBy[i] != null && grabbedBy[i].TrackedHand != null) { this.grabbedBy[i].TrackedHand.SendCmd(ffb); }
+            }
+        }
+
+        /// <summary> Send a buzz command to all hands holding on to this object </summary>
+        /// <param name="ffb"></param>
+        public void SendCmd(SG_TimedBuzzCmd fingerCmd)
+        {
+            for (int i = 0; i < this.grabbedBy.Count; i++)
+            {
+                if (grabbedBy[i] != null && grabbedBy[i].TrackedHand != null) { this.grabbedBy[i].TrackedHand.SendCmd(fingerCmd); }
+            }
+        }
+
+        /// <summary> Send a wrist command to all hands holding on to this object </summary>
+        /// <param name="ffb"></param>
+        public void SendCmd(TimedThumpCmd wristCmd)
+        {
+            for (int i = 0; i < this.grabbedBy.Count; i++)
+            {
+                if (grabbedBy[i] != null && grabbedBy[i].TrackedHand != null) { this.grabbedBy[i].TrackedHand.SendCmd(wristCmd); }
+            }
+        }
+
+        /// <summary> Send a waveform command to all hands holding on to this object </summary>
+        /// <param name="ffb"></param>
+        public void SendCmd(ThumperWaveForm waveform)
+        {
+            for (int i = 0; i < this.grabbedBy.Count; i++)
+            {
+                if (grabbedBy[i] != null && grabbedBy[i].TrackedHand != null) { this.grabbedBy[i].TrackedHand.SendCmd(waveform); }
+            }
+        }
+
+        /// <summary> Send a waveform command to all hands holding on to this object </summary>
+        /// <param name="ffb"></param>
+        public void SendCmd(SG_Waveform waveform)
+        {
+            for (int i = 0; i < this.grabbedBy.Count; i++)
+            {
+                if (grabbedBy[i] != null && grabbedBy[i].TrackedHand != null) { this.grabbedBy[i].TrackedHand.SendCmd(waveform); }
+            }
+        }
+
+        /// <summary> Send an impact vibration command to all hands holding on to this object </summary>
+        /// <param name="ffb"></param>
+        public void SendImpactVibration(SG_HandSection location, float normalizedVibration)
+        {
+            for (int i = 0; i < this.grabbedBy.Count; i++)
+            {
+                if (grabbedBy[i] != null && grabbedBy[i].TrackedHand != null) { this.grabbedBy[i].TrackedHand.SendImpactVibration(location, normalizedVibration); }
+            }
+        }
+
         //---------------------------------------------------------------------------------------------------------------------------------------------------------------------
         // Monobehaviour
 
@@ -702,14 +903,18 @@ namespace SG
 
         protected virtual void OnDisable()
         {
-            this.ReleaseSelf();
-            //also disable the linked grabpoints
-            if (linkedGrabPoints.Count > 0)
+            if (!SG.Util.SG_Util.IsQuitting) //otherwise Unity will cry when we change parenting etc
             {
-                //Debug.Log(this.name + " Disabled. Disabling Handles");
-                for (int i = 0; i < this.linkedGrabPoints.Count; i++)
+                this.ReleaseSelf();
+            
+                //also disable the linked grabpoints
+                if (linkedGrabPoints.Count > 0)
                 {
-                    this.linkedGrabPoints[i].enabled = false;
+                    //Debug.Log(this.name + " Disabled. Disabling Handles");
+                    for (int i = 0; i < this.linkedGrabPoints.Count; i++)
+                    {
+                        this.linkedGrabPoints[i].enabled = false;
+                    }
                 }
             }
         }
@@ -726,15 +931,11 @@ namespace SG
             }
         }
 
-        /// <summary> When this object is destroyed. </summary>
-        protected virtual void OnDestroy()
+        protected virtual void OnApplicationQuit()
         {
-			//if (Application.quitting)
-			//{
-			//	// When we're not quitting
-			//	// TODO: Remove Grabable's reference to me
-			//}
-		}
+            SG.Util.SG_Util.IsQuitting = true;
+        }
 
-	}
+        
+    }
 }

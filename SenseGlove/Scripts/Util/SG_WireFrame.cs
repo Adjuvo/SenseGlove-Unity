@@ -535,6 +535,8 @@ namespace SG.Util
 		void Update()
 		{
             //Keybinds
+#if ENABLE_INPUT_SYSTEM //if Unitys new Input System is enabled....
+#else
             if (Input.GetKeyDown(this.toggleGloveKey))
             {
                 this.GloveVisible = !GloveVisible;
@@ -543,13 +545,17 @@ namespace SG.Util
             {
                 this.HandVisible = !HandVisible;
             }
+#endif
 
             //Automated Updates
             if (this.glove != null && glove.IsConnected())
             {
                 if (this.wristTransform != null && this.foreArmTransform != null)
                 {
+#if ENABLE_INPUT_SYSTEM //if Unitys new Input System is enabled....
+#else
                     if (Input.GetKeyDown(this.resetWristKey)) { this.CalibrateWrist(); }
+#endif
                     Quaternion imu;
                     if (this.glove.GetIMURotation(out imu)) { this.UpdateWrist(imu); }
                 }

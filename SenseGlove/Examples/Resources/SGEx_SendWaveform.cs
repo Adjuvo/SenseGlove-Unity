@@ -141,6 +141,8 @@ namespace SG.Examples
 		// Update is called once per frame
 		void Update()
 		{
+#if ENABLE_INPUT_SYSTEM //if Unitys new Input System is enabled....
+#else
 			if (Input.GetKeyDown(sendWaveFormKey))
             {
 				SendWaveForm();
@@ -153,6 +155,7 @@ namespace SG.Examples
             {
 				SelectPrevious();
             }
+#endif
 		}
 	}
 

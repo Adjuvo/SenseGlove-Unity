@@ -82,7 +82,7 @@ namespace SG
         // Accessors
 
         /// <summary> returns the distance (in m) of the fingers inside a SG_Material collider, provided they are touching one. </summary>
-        public float[] ColliderDistances
+        public virtual float[] ColliderDistances
         {
             get
             {
@@ -96,7 +96,7 @@ namespace SG
         }
 
         /// <summary> Returns MeshDeform scripts touched by each finger. Elements can be NULL! </summary>
-        public SG_MeshDeform[] TouchedDeformScripts
+        public virtual SG_MeshDeform[] TouchedDeformScripts
         {
             get
             {
@@ -110,7 +110,7 @@ namespace SG
         }
 
         /// <summary> Returns true for each finger that is touching a deformation script and that hasn't passed full deformation distance yet. </summary>
-        public bool[] DeformingMesh
+        public virtual bool[] DeformingMesh
         {
             get
             {
@@ -129,7 +129,7 @@ namespace SG
 
         /// <summary> Returns true if at least one collider is touching a material. </summary>
         /// <returns></returns>
-        public bool TouchingMaterial()
+        public virtual bool TouchingMaterial()
         {
             for (int f = 0; f < this.fingerFeedbackScripts.Length; f++)
             {
@@ -138,7 +138,7 @@ namespace SG
             return false;
         }
 
-        public void UpdateColliders()
+        public virtual void UpdateColliders()
         {
             for (int f=0; f<this.fingerFeedbackScripts.Length; f++)
             {
@@ -148,7 +148,7 @@ namespace SG
 
 
         /// <summary> Retrieve the forces for each finger and send these to the glove. </summary>
-        public void UpdateForces()
+        public virtual void UpdateForces()
         {
             if (this.isActiveAndEnabled && this.hapticHardware != null && this.hapticHardware.IsConnected()) //don't send FFB when disconnected.
             {
@@ -172,20 +172,17 @@ namespace SG
         // Monobehaviour
 
         // Update is called once per frame
-        void Update()
+        protected virtual void Update()
         {
             if (updateSelf)
             {
                 UpdateColliders();
             }
-        }
-
-        private void FixedUpdate()
-        {
             UpdateForces();
         }
 
-        void OnDisable()
+
+        protected virtual void OnDisable()
         {
             if (this.hapticHardware != null)
             {

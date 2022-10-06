@@ -28,6 +28,7 @@ namespace SG.Util
         private static readonly string fn_LibVer = "GetLibraryVersion";
         private static readonly string fn_paired = "GetPaired_Serialized";
         private static readonly string fn_ConnStates = "GetConnectionStates";
+        private static readonly string fn_retryConnections = "ReleaseIdleConnections";
 
         /// <summary> Singleton instance - There should only be one of this class. </summary>
         private static SG_IAndroid instance = new SG_IAndroid();
@@ -108,6 +109,29 @@ namespace SG.Util
             }
             //#endif
             res = default(T);
+            return false;
+        }
+
+        private static bool CallFunctionVoid(string funcName, object[] parameters = null)
+        {
+            if (SG_IAndroid.instance.senseComClass != null)
+            {
+                if (parameters == null)
+                {
+                    parameters = new object[] { };
+                }
+                try
+                {
+                    //Log("Attempting to call " + funcName);
+                    instance.senseComClass.CallStatic(funcName, parameters);
+                    //Log("Done calling " + funcName);
+                    return true;
+                }
+                catch (System.Exception ex)
+                {
+                    SG_IAndroid.Log(ex.Message + "\r\n\r\n" + ex.StackTrace);
+                }
+            }
             return false;
         }
 
@@ -262,6 +286,12 @@ namespace SG.Util
         {
             bool successfulCall = CallFunctionGet<string>(fn_ConnStates, out statesSerialized);
             return successfulCall;
+        }
+
+        public static bool Andr_RetryConnections()
+        {
+            bool succesfullCall = CallFunctionVoid(fn_retryConnections);
+            return succesfullCall;
         }
 
 

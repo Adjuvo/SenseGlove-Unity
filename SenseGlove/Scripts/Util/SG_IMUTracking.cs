@@ -58,10 +58,13 @@ namespace SG.Util
 		// Update is called once per frame
 		void Update()
 		{
+#if ENABLE_INPUT_SYSTEM //if Unitys new Input System is enabled....
+#else
 			if (Input.GetKeyDown(this.calibrateIMUKey))
             {
 				this.CalibrateIMU();
             }
+#endif
 			UpdateRotation();
 		}
 	}

@@ -3,6 +3,22 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 
+
+namespace SG
+{
+    /// <summary> Promises the return of a single value between 0 .. 1 that can be used to drive other scripts.  </summary>
+    public interface IOutputs01Value
+    {
+        float Get01Value();
+    }
+
+    /// <summary> Has something that can be controller by setting a value of 0...1. This can be anything from animation to transparency to timing-related variables. </summary>
+    public interface IControlledBy01Value
+    {
+        void SetControlValue(float value01);
+    }
+}
+
 namespace SG.Util
 {
     /// <summary> Stats for a RigidBody that we can pass around </summary>
@@ -92,10 +108,27 @@ namespace SG.Util
     /// <summary> A basic Unity Event that is re-used for simple Unity calls </summary>
     [Serializable] public class SGEvent : UnityEvent { }
 
+    /// <summary> An enumerator to have someone choose movement axes. Used in certain interactables. </summary>
+    public enum MoveAxis
+    {
+        X = 0, Y, Z, NegativeX, NegativeY, NegativeZ
+    }
+
+
+
 
     /// <summary> Contains methods we use in verious locations to make our life easier int Unity. </summary>
     public static class SG_Util
     {
+        /// <summary> Returns true if the application is quitting, becuase Unity doesn't support this in a meaningful way. </summary>
+        public static bool IsQuitting
+        {
+            get { return _quitting; }
+            set { _quitting = value; }
+        }
+
+        private static bool _quitting = false;
+
         /// <summary> 2*Pi </summary>
         public static readonly float PI_2 = Mathf.PI * 2;
 
@@ -104,11 +137,6 @@ namespace SG.Util
 
         #region MovementAxes
 
-        /// <summary> An enumerator to have someone choose movement axes. Used in certain interactables. </summary>
-        public enum MoveAxis
-        {
-            X = 0, Y, Z, NegativeX, NegativeY, NegativeZ
-        }
 
 
 
@@ -164,6 +192,32 @@ namespace SG.Util
         // ToString Methods
 
         #region ToString
+
+        /// <summary> Create a string representation of a floating point value, guarenteed to have the amount of deicmals. (e.g. "0" -> "0.00" </summary>
+        /// <param name="val"></param>
+        /// <param name="decimals"></param>
+        /// <returns></returns>
+        public static string UniLengthStr(float val, int decimals)
+        {
+            string res = System.Math.Round(val, decimals).ToString();
+            int expLength = decimals + 2; //value dot decimals
+            if (res.Length < expLength)
+            {
+                if (res.Length < 2) //only 0
+                {
+                    res += "."; //value + .
+                }
+                for (int i = 2; i < expLength; i++)
+                {
+                    if (res.Length <= i)
+                    {
+                        res += "0"; //add more zeroes
+                    }
+                }
+            }
+            return res;
+        }
+
 
         public static string ToString(float val, int decimals = -1)
         {
@@ -221,7 +275,7 @@ namespace SG.Util
         public static string PrintArray<T>(T[] array, string delim = ", ")
         {
             string res = "";
-            for (int i=0; i<array.Length; i++)
+            for (int i = 0; i < array.Length; i++)
             {
                 res += array[i].ToString();
                 if (i < array.Length - 1)
@@ -331,6 +385,11 @@ namespace SG.Util
             return SGCore.Kinematics.Values.Map(value, inMin, inMax, outMin, outMax);
         }
 
+        public static float Map(float value, float inMin, float inMax, float outMin, float outMax, bool clampOutput = false)
+        {
+            return SGCore.Kinematics.Values.Map(value, inMin, inMax, outMin, outMax, clampOutput);
+        }
+
         public static Vector3 Map(float x, float x0, float x1, Vector3 y0, Vector3 y1)
         {
             return new Vector3
@@ -377,11 +436,29 @@ namespace SG.Util
                     {
                         sum += values[i];
                     }
-                    return sum / values.Length;
+                    return Mathf.RoundToInt(sum / (float)values.Length);
                 }
                 return values[0];
             }
             return 0;
+        }
+
+        public static float Average(float[] values)
+        {
+            if (values.Length > 0)
+            {
+                if (values.Length > 1)
+                {
+                    float sum = 0;
+                    for (int i = 0; i < values.Length; i++)
+                    {
+                        sum += values[i];
+                    }
+                    return sum / (float)values.Length;
+                }
+                return values[0];
+            }
+            return 0.0f;
         }
 
         /// <summary> Generate a sine signal </summary>
@@ -515,7 +592,7 @@ namespace SG.Util
         //-------------------------------------------------------------------------------------------------------------------------
         // Linked Scripts 
 
-        
+
         #region LinkedScripts
 
         /// <summary> Check if an object has a SG_HandModelInfo component and assign it to the info parameter. </summary>
@@ -702,7 +779,7 @@ namespace SG.Util
         public static Vector3 ProjectOnTransform2D(Vector3 absPos, Transform relativeTo, MoveAxis normal)
         {
             Vector3 res = ProjectOnTransform(absPos, relativeTo);
-            res[ AxisIndex(normal)] = 0;
+            res[AxisIndex(normal)] = 0;
             return res;
         }
 
@@ -980,6 +1057,16 @@ namespace SG.Util
             }
             return -1;
         }
+
+        public static int ArrayIndex<T>(T[] list, T objectToFind, int startIndex = 0) where T : Component
+        {
+            for (int i = startIndex; i < list.Length; i++)
+            {
+                if (objectToFind == list[i]) { return i; }
+            }
+            return -1;
+        }
+
 
         /// <summary> Check for overlap in lists A and B; it will return all elements that occur both in A and in B, all that occur in A and not B, all that occur in B and not A </summary>
         /// <typeparam name="T"></typeparam>
@@ -1415,7 +1502,7 @@ namespace SG.Util
         /// <param name="rotationSpeed"></param>
         /// <param name="zeroAngularVelocity"></param>
         public static void RotateRigidBody(Rigidbody rigidBody, Quaternion targetRotation, float deltaTime,
-           RotateMode RBRotation, float rotationSpeed, bool zeroAngularVelocity )
+           RotateMode RBRotation, float rotationSpeed, bool zeroAngularVelocity)
         {
             // Always Rotate the RigidBody first.
             bool velocityBasedRotate = RBRotation == RotateMode.OldSLerp;
@@ -1588,7 +1675,7 @@ namespace SG.Util
         /// <summary> Returns the SenseGlove directory on the system; "MyDocuments/SenseGlove/" </summary>
         public static string SenseGloveDir
         {
-            get 
+            get
             {
                 return CombineDir(GetDirectory(StorageDir.MyDocuments), "SenseGlove\\");
             }
@@ -1617,7 +1704,7 @@ namespace SG.Util
 #endif
         }
 
-       
+
         /// <summary> Ensure a directory ends in a "\", if it has any charaters. </summary>
         /// <param name="directory"></param>
         /// <returns></returns>

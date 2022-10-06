@@ -113,6 +113,11 @@ namespace SG
             return deleted;
         }
 
+        public List<Collider> GetColliders()
+        {
+            return this.touchedColliders;
+        }
+
     }
 
     /// <summary> Keeps track of all the colliders of GameObejcts we're touching, provided these contain a particular script. </summary>
@@ -175,6 +180,17 @@ namespace SG
             for (int i=0; i<this.detectedScripts.Count; i++)
             {
                 res[i] =( (T) this.detectedScripts[i].script ); 
+            }
+            return res;
+        }
+
+        public List<Collider> GetColliders()
+        {
+            //TODO: Optimize this by keeping track of a list of all colliders in the zone(?)
+            List<Collider> res = new List<Collider>(this.detectedScripts.Count);
+            for (int i=0; i<this.detectedScripts.Count; i++)
+            {
+                res.AddRange( detectedScripts[i].GetColliders());
             }
             return res;
         }

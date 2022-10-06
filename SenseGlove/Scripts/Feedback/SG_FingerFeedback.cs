@@ -202,12 +202,14 @@ namespace SG
             TouchedMaterialScript = material;
             TouchedDeformScript = TouchedObject.GetComponent<SG_MeshDeform>();
             ForceLevel = 0; //still 0 since OP == EO
+            material.Touch(this);
             UpdateDebugger();
         }
 
         /// <summary> Remove this script's reference to its SG_Material so that it is free to find another </summary>
         public void DetachScript()
         {
+            if (TouchedMaterialScript != null) { TouchedMaterialScript.UnTouch(this); } 
             TouchedCollider = null;
             TouchedObject = null;
             TouchedMaterialScript = null;

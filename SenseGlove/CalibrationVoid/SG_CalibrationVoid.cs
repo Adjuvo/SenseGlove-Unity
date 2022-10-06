@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.SceneManagement;
 
 namespace SG
@@ -45,7 +46,7 @@ namespace SG
 		public float timer_currStage = 0;
 
 
-		public SG_VR_StablePanel[] vrUIElements = new SG_VR_StablePanel[0];
+		public SG_XR_StablePanel[] vrUIElements = new SG_XR_StablePanel[0];
 		public SG_HandAnimator exampleHandLeft, exampleHandRight;
 
 		[Header("Init Settings")]
@@ -88,6 +89,7 @@ namespace SG
 		public string goToSceneName = "";
 		public int goToScene = -1;
 
+		public UnityEvent CalibrationCompleted = new UnityEvent();
 
 
 		public bool Finished
@@ -430,6 +432,14 @@ namespace SG
 				{
 					calibratingLeft = false;
 				}
+
+				Debug.Log("Cancelled " + (ofRightHand ? "Right" : "Left") + " Hand Calibration");
+
+				//if neither go to stage?
+				if (!calibratingLeft && !calibratingRight && currStage != VoidStage.Done)
+				{
+					GoToStage(VoidStage.Done);
+				}
 			}
 			else
 			{
@@ -568,6 +578,7 @@ namespace SG
 					{
 						MainInstr = "Done!";
 					}
+					CalibrationCompleted.Invoke();
 					break;
 			}
 

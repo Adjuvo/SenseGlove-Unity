@@ -20,13 +20,14 @@
         SGCore.Kinematics.BasicHandModel GetKinematics();
 
         /// <summary> Retrieve the latest SG_HandPose from this provider. </summary>
-        /// <param name="handPose"> If true, we force a new update even through we already retireved a pose this frame. </param>
-        /// <returns></returns>
+        /// <param name="handPose"> When returning true, this handPose will contain the latest hand pose data from this device. </param>
+        /// <param name="forcedUpdate"> If true, we force a new update even through we already retrieved a pose this frame. </param>
+        /// <returns> Returns true when a handPose could be created from the device. Returns false if this method fails for a multitude of reasons (device is turned off, disconnected, etc). </returns>
         bool GetHandPose(out SG_HandPose handPose, bool forcedUpdate = false);
 
-        /// <summary> Retrieve Normalized Flexions </summary>
-        /// <param name="flexions"></param>
-        /// <returns></returns>
+        /// <summary> Retrieve Normalized Flexions of this provider. </summary>
+        /// <param name="flexions"> An array that will be of length 5, containing flexion values normalized between 0...1. </param>
+        /// <returns> True if flexions is properly retrieved by this provider. </returns>
         bool GetNormalizedFlexion(out float[] flexions);
 
 

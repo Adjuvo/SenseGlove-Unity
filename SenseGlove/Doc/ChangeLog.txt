@@ -1,7 +1,21 @@
 # Changelog
 All notable changes to the SenseGlove Prefabs will be documented in this file.
 
-You are currently using version 2.3.1
+You are currently using version 2.4
+
+## [v2.4.0] - 2022-10-10
+Haptics refactor, Unity 2019.4+ Update, SenseCom Stability
+
+In this update, we change the way our Haptic effects are defined; from Monobehaviour to ScriptableObject. Before upgrading, take note of your custom SG_Waveforms and SG_Material scripts. This update will override any existing AnimationCurves.
+
+### Changed
+- SG_WaveForm now extends off ScriptableObject as opposed to Monobehaviour.  This allows you to define and re-use a good waveform effect throughout your project, or change it en-masse.
+- SG_Material can now be linked to an SG_MaterialProperties scriptableObject. If none is assigned, they'll use the default material (a step function to 100% of the force). This allows you to define and re-use a good FFB repsonse throughout your project, or change them en-masse.
+- Plugin is now built for Unity 2019.4 and above, with projects that use the Unity XR Plugin management. Various XR examples are included, though they will not work unless you have the Unity Plugin installed.
+- SenseCom Updated to v1.3.0, which stabilizes Bluetooth lag that occured every few seconds if a Nova Glove was paired, but turned off. Also introduces new Nova Icons.
+- The SG_TrackedHand now has a link to an SG_DeviceSelector, as opposed to a single HandPoseProvider / HandFeedbackDevice. This allows one to link multiple kinds of tracking to the SG_TrackedHand.
+- Upgraded minimum Unity Editor versin to 2019.4+, which allows us to unclude XR Rigs into the project. Projects without XR enabled will simple get a 'script not found' warning.
+
 
 ## [v2.3.1] - 2022-06-13
 Grab Events and IMU Script

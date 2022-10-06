@@ -32,11 +32,14 @@ namespace SG.Examples
 		{
 			if (glove != null && glove.IsConnected())
 			{
+#if ENABLE_INPUT_SYSTEM //if Unitys new Input System is enabled....
+#else
 				if (Input.GetKeyDown(sendKey))
 				{
 					glove.SendCmd(waveForm);
 				}
-            }
+#endif
+			}
 		}
 	}
 

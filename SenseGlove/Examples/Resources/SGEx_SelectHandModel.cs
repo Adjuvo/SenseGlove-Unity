@@ -34,9 +34,9 @@ namespace SG.Examples
         {
             get
             {
-                if (this.ActiveHand != null && ActiveHand.realHandSource is SG.SG_HapticGlove)
+                if (this.ActiveHand != null && ActiveHand.RealHandSource != null && ActiveHand.RealHandSource is SG.SG_HapticGlove)
                 {
-                    return (SG.SG_HapticGlove) this.ActiveHand.realHandSource;
+                    return (SG.SG_HapticGlove) this.ActiveHand.RealHandSource;
                 }
                 return null;
             }
@@ -46,12 +46,14 @@ namespace SG.Examples
 
         void Start()
         {
-            leftGlove.connectsTo = HandSide.LeftHand;
-            leftHand.realHandSource = leftGlove;
+            //leftGlove.connectsTo = HandSide.LeftHand;
+            ////leftHand.SetTrackingProvider(leftGlove);
+            //throw new System.NotImplementedException();
             leftHand.HandModelEnabled = false;
 
-            rightGlove.connectsTo = HandSide.RightHand;
-            rightHand.realHandSource = rightGlove;
+            //rightGlove.connectsTo = HandSide.RightHand;
+            ////rightHand.SetTrackingProvider(rightGlove);
+            //throw new System.NotImplementedException();
             rightHand.HandModelEnabled = false;
         }
 
@@ -59,7 +61,7 @@ namespace SG.Examples
         {
             if (this.ActiveHand == null)
             {
-                if (this.rightHand.realHandSource.IsConnected())
+                if (this.rightHand.IsConnected())
                 {
                     this.rightHand.HandModelEnabled = true;
                     this.leftHand.gameObject.SetActive(false);
@@ -67,7 +69,7 @@ namespace SG.Examples
                     ActiveHand = this.rightHand;
                     ActiveHandConnect.Invoke();
                 }
-                else if (this.leftHand.realHandSource.IsConnected())
+                else if (this.leftHand.IsConnected())
                 {
                     this.leftHand.HandModelEnabled = true;
                     this.rightHand.gameObject.SetActive(false);
@@ -78,7 +80,7 @@ namespace SG.Examples
             }
             else
             {
-                if (ActiveHand.realHandSource == null || !ActiveHand.realHandSource.IsConnected())
+                if (ActiveHand.RealHandSource == null || !ActiveHand.RealHandSource.IsConnected())
                 {
                     //Disconnection
                     Debug.Log(ActiveHand.name + " disconnected!");

@@ -37,19 +37,29 @@ namespace SG
         //-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         // Member Variables
 
-        /// <summary> The GameObject from which we will try to take an IHandPoseProvider interface. Can be a SG_HapticGlove, or whaterver else your heart desires </summary>
-        /// <remarks>Has to be a GameObject because Unity does not allow inspector references to Interfaces, only to Monobehaviour Classes.</remarks>
-        [Header("Device I/O Components")]
-        public GameObject handTrackingSource;
-        /// <summary> The GameObject from which we will try to take an IHandFeedbackDevice interface. Can be a SG_HapticGlove, or whaterver else your heart desires </summary>
-        /// <remarks>Has to be a GameObject because Unity does not allow inspector references to Interfaces, only to Monobehaviour Classes.</remarks>
-        public GameObject hapticsSource;
+        //      /// <summary> The GameObject from which we will try to take an IHandPoseProvider interface. Can be a SG_HapticGlove, or whaterver else your heart desires </summary>
+        //      /// <remarks>Has to be a GameObject because Unity does not allow inspector references to Interfaces, only to Monobehaviour Classes.</remarks>
+        //      [Header("Device I/O Components")]
+        //      public GameObject handRealHandSource;
+        //      /// <summary> The GameObject from which we will try to take an IHandFeedbackDevice interface. Can be a SG_HapticGlove, or whaterver else your heart desires </summary>
+        //      /// <remarks>Has to be a GameObject because Unity does not allow inspector references to Interfaces, only to Monobehaviour Classes.</remarks>
+        //      public GameObject hapticsSource;
 
-        /// <summary> The actual source of real-life hand data. Used to gain access to the real hand pose, which is passed to the relevant scripts. </summary>
-        public IHandPoseProvider realHandSource;
+        //      /// <summary> The actual source of real-life hand data. Used to gain access to the real hand pose, which is passed to the relevant scripts. </summary>
+        //      public IHandPoseProvider realHandSource
+        //      {
+        //          get; private set;
+        //      }
 
-        /// <summary> The actual device to send Haptics to. Calling Haptic cmds sent ot this script will be passed to the source. </summary>
-		public IHandFeedbackDevice hapticHardware;
+        //      /// <summary> The actual device to send Haptics to. Calling Haptic cmds sent ot this script will be passed to the source. </summary>
+        //public IHandFeedbackDevice hapticHardware
+        //      {
+        //          get; private set;
+        //      }
+
+        
+
+        public SG_DeviceSelector deviceSelector;
 
         /// <summary> The 3D Hand Model that is  actually rendered to the screen. The script purely holds information on which transforms control which joint. </summary>
         /// <remarks> Required because we use it as in input to geerate the correct HandPoser offsets for the other layers. </remarks>
@@ -119,6 +129,93 @@ namespace SG
         protected SG_HandPose l_renderPose;
 
 
+
+
+        /// <summary> Assigned manually </summary>
+        protected IHandPoseProvider manualPoseProvider = null;
+
+        /// <summary> The device or source used for hand tracking </summary>
+        public IHandPoseProvider RealHandSource
+        {
+            get 
+            { 
+                if (manualPoseProvider != null)
+                {
+                    return this.manualPoseProvider;
+                }
+                return this.deviceSelector != null ? this.deviceSelector.CurrentTracking : null;
+            }
+            set 
+            {
+                this.manualPoseProvider = value;
+                if (manualPoseProvider != null) //I could set it to NULL to clear it.
+                {
+                    this.manualPoseProvider.SetKinematics(this.GetKinematics());
+                }
+            }
+        }
+
+
+        /// <summary> Can be assigned manually to override the typical HapticHardware </summary>
+        protected IHandFeedbackDevice manualHapticHardware = null;
+
+
+        /// <summary> The deivce through whcih to play back Haptc Effects </summary>
+        public IHandFeedbackDevice HapticHardware
+        {
+            get 
+            {
+                if (manualHapticHardware != null)
+                {
+                    return this.manualHapticHardware;
+                }
+                return this.deviceSelector != null ? this.deviceSelector.CurrentHaptics : null;
+            }
+            set
+            {
+                manualHapticHardware = value;
+            }
+        }
+
+
+
+        /// <summary> Optional User that this hand is connected to. </summary>
+        public SG_User User
+        {
+            get; set;
+        }
+
+        public bool GetUser(out SG_User user)
+        {
+            user = this.User;
+            return user != null;
+        }
+
+        /// <summary> If this is the right hand, get the left hand, and vice versa. </summary>
+        /// <param name="other"></param>
+        /// <returns></returns>
+        public bool GetOtherHand(out SG_TrackedHand otherHand)
+        {
+            if (this.User != null)
+            {
+                otherHand = this.TracksRightHand() ? this.User.leftHand : this.User.rightHand;
+            }
+            else
+            {
+                otherHand = null;
+            }
+            return otherHand != null;
+        }
+
+
+        //public void SetTrackingProvider(IHandPoseProvider provider)
+        //{
+        //    Setup(); //ensure setup is properly performed(!)
+        //    this.realHandSource = provider;
+        //    provider.SetKinematics(this.GetHandModel()); //Ensure this provider keeps the same output.
+        //    Debug.Log(this.name + "Linked!");
+        //}
+
         //-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         // Setup Functions
 
@@ -151,6 +248,7 @@ namespace SG
             realHandPoser.MatchJoints(this.handModel);
             virtualHandPoser.MatchJoints(this.handModel);
             renderPoser.MatchJoints(this.handModel);
+            
         }
 
 
@@ -170,45 +268,48 @@ namespace SG
             {
                 this.calibration = this.GetComponentInChildren<SG_CalibrationSequence>();
             }
-
-
-            // Grab the Interfaces off the objects
-            if (handTrackingSource != null)
+            if (this.deviceSelector == null)
             {
-                IHandPoseProvider[] providers = handTrackingSource.GetComponents<IHandPoseProvider>();
-                for (int i = 0; i < providers.Length; i++)
-                {
-                    if (!(providers[i] is SG_TrackedHand && ((SG_TrackedHand)providers[i]) == this)) //ensure we don;t assign ourselves(!)
-                    {
-                        this.realHandSource = providers[i];
-                        break;
-                    }
-                }
-                if (this.realHandSource == null) { Debug.LogError("The handTrackingSource assigned to " + this.name + " does not have an IHandPoseProvider script attached. It's best to assign one or leave this field blank.", this); }
+                this.deviceSelector = this.GetComponent<SG_DeviceSelector>();
             }
 
-            if (hapticsSource != null)
-            {
-                IHandFeedbackDevice[] providers = hapticsSource.GetComponents<IHandFeedbackDevice>();
-                for (int i = 0; i < providers.Length; i++)
-                {
-                    if (!(providers[i] is SG_TrackedHand && ((SG_TrackedHand)providers[i]) == this)) //ensure we don;t assign ourselves(!)
-                    {
-                        this.hapticHardware = providers[i];
-                        break;
-                    }
-                }
-                if (this.hapticHardware == null) { Debug.LogError("The hapticsSource assigned to " + this.name + " does not have an IHandFeedbackDevice script attached. It's best to assign one or leave this field blank.", this); }
-            }
+            //// Grab the Interfaces off the objects
+            //if (handRealHandSource != null)
+            //{
+            //    IHandPoseProvider[] providers = handRealHandSource.GetComponents<IHandPoseProvider>();
+            //    for (int i = 0; i < providers.Length; i++)
+            //    {
+            //        if (!(providers[i] is SG_TrackedHand && ((SG_TrackedHand)providers[i]) == this)) //ensure we don;t assign ourselves(!)
+            //        {
+            //            this.realHandSource = providers[i];
+            //            break;
+            //        }
+            //    }
+            //    if (this.realHandSource == null) { Debug.LogError("The handRealHandSource assigned to " + this.name + " does not have an IHandPoseProvider script attached. It's best to assign one or leave this field blank.", this); }
+            //}
+
+            //if (hapticsSource != null)
+            //{
+            //    IHandFeedbackDevice[] providers = hapticsSource.GetComponents<IHandFeedbackDevice>();
+            //    for (int i = 0; i < providers.Length; i++)
+            //    {
+            //        if (!(providers[i] is SG_TrackedHand && ((SG_TrackedHand)providers[i]) == this)) //ensure we don;t assign ourselves(!)
+            //        {
+            //            this.hapticHardware = providers[i];
+            //            break;
+            //        }
+            //    }
+            //    if (this.hapticHardware == null) { Debug.LogError("The hapticsSource assigned to " + this.name + " does not have an IHandFeedbackDevice script attached. It's best to assign one or leave this field blank.", this); }
+            //}
 
             // Generate a HandModel from this script.
             SGCore.Kinematics.BasicHandModel handModel = this.GetHandModel();
             // Debug.Log(this.name + " Collected a HandModel: " + handModel.ToString());
 
-            if (this.realHandSource != null)
+            if (this.deviceSelector != null)
             {
                 //Tell the realHandSource which kinematic model to use for forward kinematics. 
-                this.realHandSource.SetKinematics(handModel);
+                this.deviceSelector.SetKinematics(handModel);
             }
             else
             {
@@ -500,7 +601,11 @@ namespace SG
             }
             else if (this.passThoughLayer != null && this.passThoughLayer.isActiveAndEnabled)
             {
-                return passThoughLayer.LatestPose;
+                SG_HandPose passPose = passThoughLayer.LatestPose;
+                if (passPose != null)
+                {
+                    return passThoughLayer.LatestPose;
+                }
             }
             return colliderPose;
         }
@@ -511,10 +616,10 @@ namespace SG
 
         protected void UpdateRealHandPose()
         {
-            if (this.realHandSource != null) //if true, l_realHandPose has been assigned and can be used in other updates.
+            if (this.RealHandSource != null) //if true, l_realHandPose has been assigned and can be used in other updates.
             {
                 SG_HandPose nextPose;
-                if (this.realHandSource.GetHandPose(out nextPose)) //it's assigned, but we need to 
+                if (this.RealHandSource.GetHandPose(out nextPose)) //it's assigned, but we need to 
                 {
                     l_realHandPose = nextPose;
                 }
@@ -553,7 +658,7 @@ namespace SG
             {
                 wristPosition = this.handPhysics.WristPosition;
                 wristRotation = this.handPhysics.WristRotation;
-               // Debug.Log("VP: Physics Source");
+                // Debug.Log("VP: Physics Source");
                 wristAssigned = true;
             }
             // Neither Grabbing nor Physics is influencing the wrist position.
@@ -592,8 +697,8 @@ namespace SG
         protected void UpdateHandTracking(float deltaTime)
         {
             // Get the latest real hand pose.
-           // UpdateRealHandPose();
-            
+            // UpdateRealHandPose();
+
 
             // Update the latest collider pose - since the wrist position updates on Physics Step, it will have changed since the PhysicsUpdate.
             //l_virtualPose = GetLatestColliderPose(l_realHandPose);
@@ -603,7 +708,7 @@ namespace SG
             // PassThrough Layer - Tracking only.
             if (this.passThoughLayer != null && this.passThoughLayer.isActiveAndEnabled)
             {
-               // this.passThoughLayer.UpdateColliders(l_virtualPose, deltaTime);
+                // this.passThoughLayer.UpdateColliders(l_virtualPose, deltaTime);
                 this.passThoughLayer.UpdateConstrainedPose(l_virtualPose, this.GetHandModel()); //I can now retieve the latest constrained fingers from this layer during the FixedUpdate
             }
             // FFB colliders
@@ -671,7 +776,7 @@ namespace SG
             {
                 //For now, the target is either the grabbed obj or the real world location.
                 SG_HandPose physicsTarget = wristAssigned ? SG_HandPose.Combine(wristPosition, wristRotation, fingerTracking, false) : SG_HandPose.Combine(l_realHandPose, fingerTracking, false);
-                
+
                 this.handPhysics.UpdateRigidbody(physicsTarget, deltaTime, true); //might as well update colliders in the same function (true)
                 //if (!wristAssigned)
                 //{
@@ -708,9 +813,9 @@ namespace SG
             {
                 return this.handModel.handSide != HandSide.LeftHand;
             }
-            else if (this.realHandSource != null) //in case we don;t have a 3D model to animate, we default to whatever our hand source is linekd to
+            else if (this.RealHandSource != null) //in case we don;t have a 3D model to animate, we default to whatever our hand source is linekd to
             {
-                this.realHandSource.TracksRightHand();
+                this.RealHandSource.TracksRightHand();
             }
             throw new System.MissingMemberException("You're trying to find out which hand " + this.name + " tracks, but it's not linked to a 3D model or Tracking Input!");
         }
@@ -720,9 +825,9 @@ namespace SG
         /// <returns></returns>
         public bool IsConnected()
         {
-            if (realHandSource != null)
+            if (RealHandSource != null)
             {
-                return realHandSource.IsConnected();
+                return RealHandSource.IsConnected();
             }
             return false;
         }
@@ -731,14 +836,13 @@ namespace SG
         /// <param name="handModel"></param>
         public void SetKinematics(BasicHandModel handModel)
         {
-            if (realHandSource != null) { realHandSource.SetKinematics(handModel); }
+            if (RealHandSource != null) { RealHandSource.SetKinematics(handModel); }
         }
 
         /// <summary> If this script has a realHandSource Assigned, we return the Hand Dimensions set to it. Otherwise, we return this script's HandModelInfo dimensions. If you want that one specifically, We recommend using GetHandModel instead. </summary>
         /// <returns></returns>
         public BasicHandModel GetKinematics()
         {
-            if (realHandSource != null) { return realHandSource.GetKinematics(); }
             return this.GetHandModel();
         }
 
@@ -747,9 +851,9 @@ namespace SG
         /// <returns></returns>
         public bool GetHandPose(out SG_HandPose handPose, bool forceUpdate = false)
         {
-            if (realHandSource != null)
+            if (RealHandSource != null)
             {
-                return realHandSource.GetHandPose(out handPose, forceUpdate);
+                return RealHandSource.GetHandPose(out handPose, forceUpdate);
             }
             handPose = null;
             return false;
@@ -760,9 +864,9 @@ namespace SG
         /// <returns></returns>
         public bool GetNormalizedFlexion(out float[] flexions)
         {
-            if (realHandSource != null)
+            if (RealHandSource != null)
             {
-                return realHandSource.GetNormalizedFlexion(out flexions);
+                return RealHandSource.GetNormalizedFlexion(out flexions);
             }
             flexions = new float[5];
             return false;
@@ -773,7 +877,7 @@ namespace SG
         /// <returns></returns>
         public float OverrideGrab()
         {
-            if (realHandSource != null) { return realHandSource.OverrideGrab(); }
+            if (RealHandSource != null) { return RealHandSource.OverrideGrab(); }
             return 0;
         }
 
@@ -781,7 +885,7 @@ namespace SG
         /// <returns></returns>
         public float OverrideUse()
         {
-            if (realHandSource != null) { return realHandSource.OverrideUse(); }
+            if (RealHandSource != null) { return RealHandSource.OverrideUse(); }
             return 0;
         }
 
@@ -793,26 +897,26 @@ namespace SG
         /// <returns></returns>
         public string Name()
         {
-            return this.name + "(" + (this.hapticHardware != null ? this.hapticHardware.Name() : "UNLINKED") + ")";
+            return this.name + "(" + (this.HapticHardware != null ? this.HapticHardware.Name() : "UNLINKED") + ")";
         }
 
         /// <summary> Send a Force-Feedback Command to this script's hapticHardware </summary>
         /// <param name="ffb"></param>
         public void SendCmd(SG_FFBCmd ffb)
         {
-            if (hapticHardware != null) { hapticHardware.SendCmd(ffb); }
+            if (HapticHardware != null) { HapticHardware.SendCmd(ffb); }
         }
 
         /// <summary> Cease all vibrations on script's hapticHardware </summary>
         public void StopAllVibrations()
         {
-            if (hapticHardware != null) { hapticHardware.StopAllVibrations(); }
+            if (HapticHardware != null) { HapticHardware.StopAllVibrations(); }
         }
 
         /// <summary> Stop all haptics (vibration and force-feedback) on this script's hapticHardware </summary>
         public void StopHaptics()
         {
-            if (hapticHardware != null) { hapticHardware.StopHaptics(); }
+            if (HapticHardware != null) { HapticHardware.StopHaptics(); }
         }
 
 
@@ -820,14 +924,14 @@ namespace SG
         /// <param name="fingerCmd"></param>
         public void SendCmd(SGCore.Haptics.SG_TimedBuzzCmd fingerCmd)
         {
-            if (hapticHardware != null) { hapticHardware.SendCmd(fingerCmd); }
+            if (HapticHardware != null) { HapticHardware.SendCmd(fingerCmd); }
         }
 
         /// <summary> Send a command to the Wrist vibrotactile actuators. </summary>
         /// <param name="wristCmd"></param>
         public void SendCmd(SGCore.Haptics.TimedThumpCmd wristCmd)
         {
-            if (hapticHardware != null) { hapticHardware.SendCmd(wristCmd); }
+            if (HapticHardware != null) { HapticHardware.SendCmd(wristCmd); }
         }
 
         /// <summary> Send an impact vibration to this script's hapticHardware. </summary>
@@ -835,9 +939,9 @@ namespace SG
         /// <param name="normalizedVibration"></param>
         public void SendImpactVibration(SG_HandSection location, float normalizedVibration)
         {
-            if (hapticHardware != null)
+            if (HapticHardware != null)
             {
-                hapticHardware.SendImpactVibration(location, normalizedVibration);
+                HapticHardware.SendImpactVibration(location, normalizedVibration);
             }
         }
 
@@ -845,17 +949,17 @@ namespace SG
         /// <param name="waveform"></param>
         public void SendCmd(SG_Waveform waveform)
         {
-            if (hapticHardware != null)
+            if (HapticHardware != null)
             {
-                hapticHardware.SendCmd(waveform);
+                HapticHardware.SendCmd(waveform);
             }
         }
 
         public void SendCmd(ThumperWaveForm waveform)
         {
-            if (hapticHardware != null)
+            if (HapticHardware != null)
             {
-                hapticHardware.SendCmd(waveform);
+                HapticHardware.SendCmd(waveform);
             }
         }
 
@@ -937,7 +1041,7 @@ namespace SG
         {
             // UpdateHandTracking(Time.deltaTime);
             UpdateRealHandPose();
-           // UpdateHandPhysics(Time.deltaTime);
+            // UpdateHandPhysics(Time.deltaTime);
             UpdateVirtualPose();
             UpdateHandTracking(Time.deltaTime);
             UpdateRenderPose();
@@ -945,7 +1049,7 @@ namespace SG
 
         void LateUpdate()
         {
-           // UpdateRealHandPose();
+            // UpdateRealHandPose();
         }
 
         void OnDisable()

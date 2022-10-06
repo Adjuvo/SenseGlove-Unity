@@ -31,9 +31,9 @@ namespace SG
         public float[] normalizedFlexion;
 
 
-        /// <summary> The position in world space of the wrist </summary>
+        /// <summary> The position of the wrist in world space. </summary>
         public Vector3 wristPosition;
-        /// <summary> The rotation in world space of the wrist. </summary>
+        /// <summary> The rotation of the wrist in world space. </summary>
         public Quaternion wristRotation;
 
 
@@ -187,6 +187,21 @@ namespace SG
         //----------------------------------------------------------------------------------------------
         // Utility Functions
 
+        public override string ToString()
+        {
+            string res = this.rightHanded ? "Right Hand Pose" : "Left Hand Pose";
+            res += " [";
+            for (int f = 0; f < this.normalizedFlexion.Length; f++)
+            {
+                res += SG.Util.SG_Util.UniLengthStr(this.normalizedFlexion[f], 2);
+                if (f < normalizedFlexion.Length - 1)
+                {
+                    res += ", ";
+                }
+            }
+            return res + "]";
+        }
+
         /// <summary> Returns the total flexion of each finger in degrees. In Unity, flexion movements create a negative value. The index [0..4] determines the finger (thumb..pinky). </summary>
         public float[] TotalFlexions
         {
@@ -216,6 +231,16 @@ namespace SG
         //    }
         //    return res;
         //}
+
+        /// <summary> Convert this SG_HandPose back into an internal SGCore Pose. Useful when you're passing data back and forth, or for generating Unit Test Data. </summary>
+        /// <returns></returns>
+        public SGCore.HandPose ToInternalPose()
+        {
+            SGCore.Kinematics.Vect3D[][] angles = Util.SG_Conversions.ToEuler(this.jointAngles);
+            SGCore.Kinematics.Quat[][] rotations = Util.SG_Conversions.ToQuaternions(this.jointRotations);
+            SGCore.Kinematics.Vect3D[][] positions = Util.SG_Conversions.ToPosition(this.jointPositions);
+            return new SGCore.HandPose(this.rightHanded, positions, rotations, angles);
+        }
 
         //----------------------------------------------------------------------------------------------
         // Sreialize / Deserialize - Recording

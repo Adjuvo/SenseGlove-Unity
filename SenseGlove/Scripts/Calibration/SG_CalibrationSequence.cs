@@ -149,10 +149,9 @@ namespace SG
 			// Debug.Log(this.name + "(" + (this.linkedHand != null ? (this.linkedHand.TracksRightHand() ? "R" : "L") : "BEFORE LINK") + "): Setup.");
 			if (this.linkedGlove == null)
 			{
-				SG_HapticGlove myGlove = this.linkedHand != null && this.linkedHand.handTrackingSource != null ? this.linkedHand.handTrackingSource.GetComponent<SG_HapticGlove>() : null;
+				SG_HapticGlove myGlove = this.linkedHand != null && this.linkedHand.deviceSelector != null ? this.linkedHand.deviceSelector.GetDevice<SG_HapticGlove>() : null;
 				this.linkedGlove = myGlove;
 			}
-
 			//Also link my instructions to the hand's wrist if we don;t have one yet
 			if (this.instructions3D == null && newHand.statusIndicator != null)
             {
@@ -268,10 +267,13 @@ namespace SG
 				this.internalSequence.Update(Time.deltaTime);
 				//Debug.Log("Gathered " + internalSequence.DataPointCount + " data points over " + internalSequence.elapsedTime + "s");
 
+#if ENABLE_INPUT_SYSTEM //if Unitys new Input System is enabled....
+#else
 				if (Input.GetKeyDown(this.nextStepKey))
 				{
 					NextCalibrationStep();
 				}
+#endif
 
 				if (internalSequence.Completed)
 				{
@@ -280,7 +282,7 @@ namespace SG
 				}
 				else if (CalibrationActive)
 				{
-					if (this.lastStage != internalSequence.CurrentStageInt)
+					if (this.lastStage != internalSequence.CurrentStageInt) //the stage updated...
 					{
 						this.InstructionText = internalSequence.GetCurrentInstuction();
 					}
@@ -289,6 +291,12 @@ namespace SG
 					{
 						this.DebugText = this.internalSequence.GetDebugInfo();
 					}
+
+					//Thumbs Up Goes here(?)
+
+
+
+
 				}
 
 			}
@@ -425,8 +433,11 @@ namespace SG
 			if (!CalibrationActive)
 			{
 				//DebugText = "Calibration Inactive...";
+#if ENABLE_INPUT_SYSTEM //if Unitys new Input System is enabled....
+#else
 				if (Input.GetKeyDown(nextStepKey)) { StartCalibration(); }
 				else if (Input.GetKeyDown(resetCalibrationKey)) { ResetHandCalibration(); }
+#endif
 				if (timer_resetInstr < resetInstrTime)
 				{
 					timer_resetInstr += Time.deltaTime;
@@ -439,10 +450,13 @@ namespace SG
 			else
 			{
 				UpdateCalibration();
+#if ENABLE_INPUT_SYSTEM //if Unitys new Input System is enabled....
+#else
 				if (Input.GetKeyDown(cancelKey))
 				{
 					CancelCalibration();
 				}
+#endif
 			}
 		}
 	}

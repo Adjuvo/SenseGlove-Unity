@@ -5,8 +5,11 @@ using UnityEngine;
 
 namespace SG
 {
+
+
+
     /// <summary> A SG_Interactable that moves along a single (local) axis. You define hof far you can push it in or pull it out from its starting location. </summary>
-    public class SG_Drawer : SG_Grabable
+    public class SG_Drawer : SG_Grabable, IOutputs01Value, IControlledBy01Value
     {
         //--------------------------------------------------------------------------------------------------------------------------------------------------------
         // Drawer Axis
@@ -39,6 +42,13 @@ namespace SG
         /// <summary> How far the drawer had been pushed in/slid out, as a decima; [0 = fully pushed in, 1 = fully pulles out] </summary>
         [Range(0, 1)] public float drawer_slideValue = 0;
 
+
+        /// <summary> INormalizedValue provider implementation </summary>
+        /// <returns></returns>
+        public virtual float Get01Value()
+        {
+            return drawer_slideValue;
+        }
 
         //--------------------------------------------------------------------------------------------------------------------------------------------------------
         // SG_Grabable Overrides
@@ -106,7 +116,7 @@ namespace SG
         {
             get
             {
-                Vector3 localAxis = SG.Util.SG_Util.GetAxis( (Util.SG_Util.MoveAxis) this.moveAxis ); //I can cast to the Utils moveAxis because the also use XYZ at the start
+                Vector3 localAxis = SG.Util.SG_Util.GetAxis( (Util.MoveAxis) this.moveAxis ); //I can cast to the Utils moveAxis because the also use XYZ at the start
                 return this.transform.TransformDirection(localAxis);
             }
         }
@@ -166,9 +176,16 @@ namespace SG
 
                 Vector3 targetDrawerPos = basePos + (baseRot * localPos);
                 this.MyTransform.position = targetDrawerPos;
-
             }
         }
+
+        /// <summary> Ssets the Drawer position at a specific point between its start-and end location(s). </summary>
+        /// <param name="value01"></param>
+        public void SetControlValue(float value01)
+        {
+            SetDrawerAt(value01);
+        }
+
 
         //--------------------------------------------------------------------------------------------------------------------------------------------------------
         // Monobehaviour
@@ -179,6 +196,7 @@ namespace SG
             this.CalculateSliderValue();
         }
 
+  
     }
 
 }

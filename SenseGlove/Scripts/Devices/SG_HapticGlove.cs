@@ -34,8 +34,10 @@ namespace SG
             FollowObjectAutoOffsets,
             /// <summary> Follow a specific transform, but using tracking Offsets determined at the start. </summary>
             FollowObjectManualOffsets,
+            /// <summary> Follow a GameObject without using any offsets. Useful to override any wrist location(s) in example scenes. </summary>
+            FollowObjectNoOffsets,
             /// <summary> This GameObject's own Transform to determine the wrist rotation / position. Useful when you're using parenting to determine hand location(s). </summary>
-            GameObject,
+            MyGameObject,
         }
 #endif
 
@@ -132,6 +134,14 @@ namespace SG
         /// <summary> The Thumper Command sent last frame. </summary>
         protected ThumperCmd lastThumperCmd = ThumperCmd.Off;
 
+        /// <summary> Optionally bypasses Haptic sending. Diables Unity side of our Haptics System </summary>
+        protected bool bypassingHaptics = false;
+
+        public bool BypassHaptics
+        {
+            get { return bypassingHaptics; }
+            set { bypassingHaptics = value; }
+        }
 
         //--------------------------------------------------------------------------------------------------------
         // Connection Functions
@@ -264,12 +274,19 @@ namespace SG
         public bool GetWristLocation(out Vector3 wristPos, out Quaternion wristRot)
         {
 #if UNITY_2019_4_OR_NEWER
-            if (this.wristTrackingMethod == WristTracking.GameObject)
+            if (this.wristTrackingMethod == WristTracking.MyGameObject)
             {
                 wristPos = this.transform.position;
                 wristRot = this.transform.rotation;
                 return true;
             }
+            else if (this.wristTrackingMethod == WristTracking.FollowObjectNoOffsets)
+            {
+                wristPos = this.wristTrackingObj != null ? this.wristTrackingObj.position : this.transform.position;
+                wristRot = this.wristTrackingObj != null ? this.wristTrackingObj.rotation : this.transform.rotation;
+                return true;
+            }
+
             // Validate Offsets
             SGCore.PosTrackingHardware offsets = this.wristTrackingOffsets;
             if ( (this.wristTrackingMethod == WristTracking.FollowObjectAutoOffsets || this.wristTrackingMethod == WristTracking.UnityXR)
@@ -672,7 +689,7 @@ namespace SG
         public void StopAllVibrations()
         {
             hapticStream.ClearVibrations();
-            if (this.lastGlove != null)
+            if (this.lastGlove != null && !this.bypassingHaptics)
             {
                 lastGlove.SendHaptics(lastFFBLevels, SG_BuzzCmd.Off, ThumperCmd.Off);
             }
@@ -682,7 +699,7 @@ namespace SG
         public void StopHaptics()
         {
             hapticStream.ClearAll();
-            if (this.lastGlove != null)
+            if (this.lastGlove != null && !this.bypassingHaptics)
             {
                 lastGlove.SendHaptics(SG_FFBCmd.Off, SG_BuzzCmd.Off, ThumperCmd.Off);
             }
@@ -718,9 +735,9 @@ namespace SG
         public void SendCmd(SG_Waveform waveform)
         {
             //Convert this from a Monobehaviour class into a class that extends off the Timed Buzz/Waveform Cmd.
-            if (Util.SG_Util.OneTrue(waveform.fingers))
+            if (Util.SG_Util.OneTrue(waveform.FingersArray))
             {
-                SG_WaveFormCmd iFingerBuzz = new SG_WaveFormCmd(waveform.waveForm, waveform.duration_s, waveform.magnitude, waveform.fingers, -Time.deltaTime); // -deltaTime so when we evaluate at the end of this frame, they start at 0s.
+                SG_WaveFormCmd iFingerBuzz = new SG_WaveFormCmd(waveform.waveForm, waveform.duration_s, waveform.magnitude, waveform.FingersArray, -Time.deltaTime); // -deltaTime so when we evaluate at the end of this frame, they start at 0s.
                 this.hapticStream.AddCmd(iFingerBuzz);
             }
             if (waveform.wrist && this.DeviceType != SGCore.DeviceType.SENSEGLOVE)
@@ -771,7 +788,7 @@ namespace SG
                 this.lastFFBLevels = newFFB;
                 this.lastBuzzCmd = newBuzz;
                 this.lastThumperCmd = newThumper;
-                if (this.lastGlove != null) //we'll process the timing regardless of whether or not we are connected. So this check comes after.
+                if (this.lastGlove != null && !this.bypassingHaptics) //we'll process the timing regardless of whether or not we are connected. So this check comes after.
                 {
                     this.lastGlove.SendHaptics(newFFB, newBuzz, newThumper); //actually send these.
                 }
@@ -883,13 +900,13 @@ namespace SG
                 UnityEditor.EditorGUILayout.PropertyField(m_wristTrackingMethod, l_wristTracking);
 
                 SG_HapticGlove.WristTracking currWTMethod = (SG_HapticGlove.WristTracking)m_wristTrackingMethod.intValue;
-                if (currWTMethod != SG_HapticGlove.WristTracking.GameObject)
+                if (currWTMethod != SG_HapticGlove.WristTracking.MyGameObject)
                 {
                     if (currWTMethod == SG_HapticGlove.WristTracking.UnityXR)
                     {
                         UnityEditor.EditorGUILayout.PropertyField(m_origin, new GUIContent("Origin", "Optional. When using UnityXR's wrist tracking, the wrist will move relative to this origin."));
                     }
-                    if (currWTMethod == SG_HapticGlove.WristTracking.FollowObjectManualOffsets || currWTMethod == SG_HapticGlove.WristTracking.FollowObjectAutoOffsets)
+                    if (currWTMethod == SG_HapticGlove.WristTracking.FollowObjectManualOffsets || currWTMethod == SG_HapticGlove.WristTracking.FollowObjectAutoOffsets || currWTMethod == SG_HapticGlove.WristTracking.FollowObjectNoOffsets)
                     {
                         UnityEditor.EditorGUILayout.PropertyField(m_wristTrackingObj, new GUIContent("Wrist Tracking Obj", "The GameObject to follow, using offsets"));
                     }

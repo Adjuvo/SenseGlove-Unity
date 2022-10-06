@@ -80,13 +80,16 @@ public class SG_InputSlider : MonoBehaviour
 	// Update is called once per frame
 	void Update ()
     {
-	    //if (Input.GetKeyDown(KeyCode.D))
-     //   {
-     //       slider.value = 100;
-     //   }
-     //   else if (Input.GetKeyDown(KeyCode.A))
-     //   {
-     //       slider.value = 0;
-     //   }
+#if ENABLE_INPUT_SYSTEM //if Unitys new Input System is enabled....
+#else
+        //if (Input.GetKeyDown(KeyCode.D))
+        //   {
+        //       slider.value = 100;
+        //   }
+        //   else if (Input.GetKeyDown(KeyCode.A))
+        //   {
+        //       slider.value = 0;
+        //   }
+#endif
     }
 }

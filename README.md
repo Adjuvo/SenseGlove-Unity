@@ -1,12 +1,14 @@
 # SenseGlove-Unity
-The latest stable Unity SDK for the SenseGlove, built using Unity 2017.4.30f1. Can be imported into Unity 2017.4 and up, which will automatically update the assets for you. Using older Unity versions may cause issues.
+The latest stable Unity SDK for the SenseGlove, built using Unity 2019.4.33f1. Can be imported into Unity 2019.4 and up, which will automatically update the assets for you. Using older Unity versions will cause issues.
 
-Current version is v2.3.1, released on the 13th of June 2022.
+Current version is v2.4.0, released on the 7th of October 2022.
 
 **Important notice**: After 4-5 years of supporting Unity 2017 and 2018, the time has come for us to raise the minimum Unity version from 2017.4 to 2019.4 (LTS version). This update will allow us to make more use of the Unity XR system, and add vr-ready examples to the plugin. This means that your Unity 2017-2018 projects will no longer be able to receive updates to the SenseGlove Unity Plugin. If you'd like to continue using Unity 2017-2018, you can still use versions 1.0.0 - 2.3.1. SenseCom operates independently from the Unity Editor, and can still be used with our plugins of v2.0 and above.
 
 ## Upgrade Guide
 When importing a new version of the Sense Glove SDK, the best practice is to delete the SenseGlove folder before re-importing, since some files may have been removed or placed in a more suitable folder.
+
+When upgrading to v2.4.0 and above, be sure to note the parameters you've used for your SG_Waveforms and SG_Material Scripts: This version puts those parameters into ScriptableObjects, rather than Monobehaviour scripts, and will clear the one's you've defined from the inspector. On the bright side, after this update you will be able to more easily edit materials and waveforms across the project, and port them between projects more easily as well.
 
 ## Backwards Compatability
 As with all unity packages, the SenseGlove Unity Plugin is compatible with the Unity version it is built, and any Unity Editor version released after. It is not recommended to use an earier version of the Unity Editor, as this may cause compiler errors and/or cause prefabs to go missing.

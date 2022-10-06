@@ -122,7 +122,7 @@ namespace SG
         /// <param name="colliderPose"></param>
         /// <param name="handDimensions"></param>
         /// <param name="newConstrainedPose"></param>
-        public void UpdateConstrainedPose(SG_HandPose colliderPose, SGCore.Kinematics.BasicHandModel handDimensions, out SG_HandPose newConstrainedPose)
+        public virtual void UpdateConstrainedPose(SG_HandPose colliderPose, SGCore.Kinematics.BasicHandModel handDimensions, out SG_HandPose newConstrainedPose)
         {
             UpdateConstrainedPose(colliderPose, handDimensions);
             newConstrainedPose = this.constrainedPose;
@@ -131,7 +131,7 @@ namespace SG
         /// <summary> Updates the LastPose of this layer to have the wrist position of the colliderPose, but use the 'angles at lock-time' for the fingers that shouldn't passthrough. </summary>
         /// <param name="colliderPose"></param>
         /// <param name="handDimensions"></param>
-        public void UpdateConstrainedPose(SG_HandPose colliderPose, SGCore.Kinematics.BasicHandModel handDimensions)
+        public virtual void UpdateConstrainedPose(SG_HandPose colliderPose, SGCore.Kinematics.BasicHandModel handDimensions)
         {
             float[][] currentFlex; float[] currentTotals;
             CollectFlexions(colliderPose, out currentFlex, out currentTotals);
@@ -237,7 +237,7 @@ namespace SG
         /// <summary> Updates the collider locations based on the SG_SimpleTracking scripts. Not needed if linked to an SG_TrackedHand poser. </summary>
         /// <param name="pose"></param>
         /// <param name="deltaTime"></param>
-        public void UpdateColliderLocatons(SG_HandPose pose, float deltaTime)
+        public virtual void UpdateColliderLocatons(SG_HandPose pose, float deltaTime)
         {
             for (int i = 0; i < this.fingerColliders.Length; i++)
             {

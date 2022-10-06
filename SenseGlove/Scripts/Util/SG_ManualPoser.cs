@@ -14,7 +14,9 @@ namespace SG
 		/// <summary> Whther or not this pose is meant for a left or right hand. </summary>
 		public bool rightHand = true;
 
+
 		/// <summary> Normalized Thumb Abduction; 0 = thumb parallel to palm, 1 = thumb fully outward. </summary>
+		[Header("Tracking Parameters")]
 		[Range(0, 1)] public float thumbAbduction = 0;
 		/// <summary> Normalized Thumb Flexion; 0 = thumb fully extended (thumbs up), 1 = thumb fully flexed. </summary>
 		[Range(0, 1)] public float thumbFlexion = 0;
@@ -35,6 +37,13 @@ namespace SG
 		/// <summary> Ensure initialization is only done once. </summary>
 		protected bool init = true;
 
+		/// <summary> Overrides Grab behaviour as though you were pressing a Grip button </summary>
+		[Header("Grab Components")]
+		[Range(0, 1)] public float overrideGrab = 0;
+		/// <summary> Overrides Use behaviour as though you were pressing a Trigger button </summary>
+		[Range(0, 1)] public float overrideUse = 0;
+
+		[Header("Optional Components")]
 		public SG_HandModelInfo useHandModel = null;
 
 		//--------------------------------------------------------------------------------------------------------------------------
@@ -65,6 +74,7 @@ namespace SG
 
 			float[] norms;
 			this.GetNormalizedFlexion(out norms);
+
 
 			this.LastPose = FromNormalized(handGeometry, norms, thumbAbduction, fingerSpread);
 			this.LastPose.wristPosition = this.transform.position;
@@ -116,18 +126,18 @@ namespace SG
 			return this.isActiveAndEnabled;
 		}
 
-		/// <summary> Does nto override. </summary>
+		/// <summary> </summary>
 		/// <returns></returns>
 		public float OverrideGrab()
 		{
-			return 0;
+			return overrideGrab;
 		}
 
-		/// <summary> Does not override </summary>
+		/// <summary> </summary>
 		/// <returns></returns>
 		public float OverrideUse()
 		{
-			return 0;
+			return overrideUse;
 		}
 
 
@@ -138,8 +148,11 @@ namespace SG
 
 		public static SG_HandPose FromNormalized(SGCore.Kinematics.BasicHandModel handModel, float[] flexions01, float thumbAbd01, float fingerSpread01)
         {
-			Vect3D[][] handAngles = HandAngles_FromNormalized(handModel.IsRight, flexions01, thumbAbd01, fingerSpread01);
+			Vect3D[][] handAngles = SGCore.Kinematics.Anatomy.HandAngles_FromNormalized(handModel.IsRight, flexions01, thumbAbd01, fingerSpread01);
 			return new SG_HandPose(SGCore.HandPose.FromHandAngles(handAngles, handModel.IsRight, handModel));
+
+			//Vect3D[][] handAngles = HandAngles_FromNormalized(handModel.IsRight, flexions01, thumbAbd01, fingerSpread01);
+			//return new SG_HandPose(SGCore.HandPose.FromHandAngles(handAngles, handModel.IsRight, handModel));
 		}
 
 		public static Vect3D[][] HandAngles_FromNormalized(bool isRight, float[] flexions01, float thumbAbd01, float fingerSpread01)

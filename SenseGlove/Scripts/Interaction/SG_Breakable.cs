@@ -21,6 +21,9 @@ namespace SG
 
         #region Properties
 
+        /// <summary> Whether or not breakign is allowed for this object </summary>
+        public bool breakingAllowed = true;
+
         /// <summary> The Interactable with a material which can break. Represents the 'whole' object </summary>
         [Tooltip("The Interactable with a material which can break. Represents the 'whole' object")]
         public SG_Interactable wholeObject;
@@ -67,6 +70,11 @@ namespace SG
 
         #region BreakLogic
 
+        public void SetBreakable(bool canBreak)
+        {
+            this.breakingAllowed = canBreak;
+        }
+
         /// <summary> Fired when the associated material breaks. </summary>
         /// <param name="source"></param>
         /// <param name="args"></param>
@@ -87,7 +95,7 @@ namespace SG
         /// <summary> Break the object: Hide the whole object, optionally show the broken one and play the particle effect(s) </summary>
         public virtual void Break()
         {
-            if (this.IsBroken()) { return; }
+            if (!breakingAllowed || this.IsBroken()) { return; }
 
             //SG_Interactable senseScript = this.wholeObject.GetComponent<SG_Interactable>();
             //if (senseScript) { senseScript.ReleaseSelf(); }

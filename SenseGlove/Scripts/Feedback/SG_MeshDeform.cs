@@ -8,7 +8,7 @@ namespace SG
     /// A class that can hook itself up to a SG_Interactable or material, and deform its mesh.
     /// </summary>
     [RequireComponent(typeof(SG_Material))]
-    public class SG_MeshDeform : MonoBehaviour
+    public class SG_MeshDeform : MonoBehaviour, IOutputs01Value
     {
         //----------------------------------------------------------------------------------------------
         // Properties
@@ -55,8 +55,22 @@ namespace SG
         /// <summary> Used to enable/disable the mesh deformation. </summary>
         protected bool deforms = true;
 
+        /// <summary> The average "squeeze disance" of each finger inside this DeformScript. </summary>
+        public float AverageSqueezeDist
+        {
+            get; protected set;
+        }
 
         #endregion Properties
+
+
+        /// <summary> Returns the "average squeeze distance" compared to the max displacement to create a value between 0 .. 1  </summary>
+        /// <returns></returns>
+        public float Get01Value()
+        {
+            return this.maxDisplacement == 0 ? (this.atRest ? 0 : 1) : Mathf.Clamp01(AverageSqueezeDist / maxDisplacement);
+        }
+
 
         //----------------------------------------------------------------------------------------------
         // Mesh Deformation
@@ -319,11 +333,16 @@ namespace SG
                 this.ResetPoints(false); //reset only the unique vertices
 
                 //   SenseGlove_Debugger.Log("Applying " + this.vectors.Count + " deformations");
+
+                float deformSum = 0;
                 for (int i = 0; i < this.deformationQueue.Count; i++)
                 {
                     this.DeformMesh(this.deformationQueue[i].absEntryVector, this.deformationQueue[i].absDeformPosition);
+                    deformSum += deformationQueue[i].distance;
                 }
+                AverageSqueezeDist = deformationQueue.Count == 0 ? 0 : deformSum / (float)deformationQueue.Count;
                 this.ClearDeformations(); //empties the deformation queue only.
+
 
                 //SenseGlove_Debugger.Log("UpdateMesh()");
                 myMesh.vertices = deformVerts;
@@ -345,6 +364,7 @@ namespace SG
                 myMesh.RecalculateNormals();
             }
             this.atRest = true;
+            AverageSqueezeDist = 0;
         }
 
         #endregion MeshDeformation
@@ -372,7 +392,6 @@ namespace SG
         {
             this.ResetMesh();
         }
-
 
         #endregion Monobehaviour
 

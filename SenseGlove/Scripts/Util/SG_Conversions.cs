@@ -81,6 +81,16 @@ namespace SG.Util
             return res;
         }
 
+        public static SGCore.Kinematics.Vect3D[][] ToPosition(Vector3[][] pos, bool scale = true)
+        {
+            SGCore.Kinematics.Vect3D[][] res = new SGCore.Kinematics.Vect3D[pos.Length][];
+            for (int f = 0; f < pos.Length; f++)
+            {
+                res[f] = SG_Conversions.ToPosition(pos[f], scale);
+            }
+            return res;
+        }
+
 
 
         //-------------------------------------------------------------------------------------------------------------------------
@@ -132,6 +142,26 @@ namespace SG.Util
             return new SGCore.Kinematics.Quat(-Q.x, -Q.z, -Q.y, Q.w);
         }
 
+        public static SGCore.Kinematics.Quat[] ToQuaternions(Quaternion[] Q)
+        {
+            SGCore.Kinematics.Quat[] res = new SGCore.Kinematics.Quat[Q.Length];
+            for (int i=0; i<res.Length; i++)
+            {
+                res[i] = ToQuaternion(Q[i]);
+            }
+            return res;
+        }
+
+
+        public static SGCore.Kinematics.Quat[][] ToQuaternions(Quaternion[][] Q)
+        {
+            SGCore.Kinematics.Quat[][] res = new SGCore.Kinematics.Quat[Q.Length][];
+            for (int i = 0; i < res.Length; i++)
+            {
+                res[i] = ToQuaternions(Q[i]);
+            }
+            return res;
+        }
 
 
         //-------------------------------------------------------------------------------------------------------------------------

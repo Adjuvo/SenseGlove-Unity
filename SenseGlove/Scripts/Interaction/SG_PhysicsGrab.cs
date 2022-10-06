@@ -230,7 +230,7 @@ namespace SG
             {
                 this.grabRelevance = new bool[0]; //clear this so we re-register it the first frame
                 snapFrame = false; //we don't check for collision the first frame after grabbing.
-                Debug.Log(Time.timeSinceLevelLoad + ": Grabbed Object(s)");
+                //Debug.Log(Time.timeSinceLevelLoad + ": " + (this.handPoseProvider.TracksRightHand() ? "Right Hand" : "Left Hand") + " Grabbed Object(s)");
             }
         }
 
@@ -320,7 +320,8 @@ namespace SG
                 if (!snapFrame) { snapFrame = true; } //set after nothinInHover is assigned so it stays false the first time.
                 if (nothingInHover)
                 {
-                    Debug.Log(Time.timeSinceLevelLoad + ": There's nothing in the hover collider and that's not because the kinematics had changed!");
+                    //Debug.Log(Time.timeSinceLevelLoad + ": There's nothing in the hover collider and that's not because the kinematics had changed!");
+                    //TODO: Add a timing component? If not hovering for x frames / s?
                 }
 
                 bool overrideGrab = this.handPoseProvider != null && this.handPoseProvider.OverrideGrab() > overrideGrabThreshold; //we start with wanting to release based on overriding.
@@ -328,7 +329,7 @@ namespace SG
                 if (shouldRelease) //We can no longer grab anything
                 {
                     //Debug.Log("Detected no grab intent anymore: Override = " + (overrideGrab ? "True" : "False") + ", GrabCodes: " + SG.Util.SG_Util.ToString(grabCodes));
-                    Debug.Log(Time.timeSinceLevelLoad + ": Released Objects");
+                    //Debug.Log(Time.timeSinceLevelLoad + ": Released Objects");
                     this.ReleaseAll();
                 }
             }
