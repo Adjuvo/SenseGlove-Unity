@@ -113,7 +113,7 @@ namespace SG
         // Mirroring
 
 
-        /// <summary> Mirrors this hand pose around the z-axis, to that of the opposite hand </summary>
+        /// <summary> Mirrors this hand pose around the z-axis, to that of the opposite hand. It does not mirror the wrist location, though! </summary>
         /// <returns></returns>
         public SG_HandPose Mirror() //todo: make this part SGCore.HandPose as well.
         {
@@ -145,7 +145,7 @@ namespace SG
                     mirrorAngles[f][j] = new Vector3(-jointAngles[f][j].x, -jointAngles[f][j].y, jointAngles[f][j].z);
                 }
             }
-            return new SG_HandPose(mirrorAngles, mirrorJoints, mirrorPos, newHandedness);
+            return new SG_HandPose(mirrorAngles, mirrorJoints, mirrorPos, newHandedness, this.wristPosition, this.wristRotation, this.normalizedFlexion);
         }
 
 

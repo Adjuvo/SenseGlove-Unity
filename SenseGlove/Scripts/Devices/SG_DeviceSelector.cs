@@ -266,7 +266,7 @@ namespace SG
         {
             if (this.CurrentTracking != null)
             {
-                this.CurrentTracking.GetHandPose(out handPose, forcedUpdate);
+                return this.CurrentTracking.GetHandPose(out handPose, forcedUpdate);
             }
             handPose = null;
             return false;
@@ -392,11 +392,21 @@ namespace SG
         // Monobehaviour
 
         // Use this for initialization
-        void Awake()
+        private void Awake()
         {
             CollectDevices();
             CheckDevices();
         }
+
+#if UNITY_EDITOR
+        private void OnValidate()
+        {
+            if (Application.isPlaying)
+            {
+                CollectDevices(); //Relink...?
+            }
+        }
+#endif
 
     }
 }

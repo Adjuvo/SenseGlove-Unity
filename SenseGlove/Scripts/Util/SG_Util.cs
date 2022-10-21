@@ -1791,6 +1791,54 @@ namespace SG.Util
         }
 
 
+
+        public static Vector3 MirrorPosition(Vector3 originalPos, Vector3 mirrorOrigin, Vector3 mirrorNormal)
+        {
+            Vector3 reflect = Vector3.Reflect(originalPos - mirrorOrigin, mirrorNormal);
+            return reflect + mirrorOrigin;
+        }
+
+
+
+
+        public static Quaternion MirrorX(Quaternion Q)
+        {
+            return new Quaternion(-Q.x, Q.y, Q.z, -Q.w);
+        }
+
+        public static Quaternion MirrorY(Quaternion Q)
+        {
+            return new Quaternion(Q.x, -Q.y, Q.z, -Q.w);
+        }
+
+        public static Quaternion MirrorZ(Quaternion Q)
+        {
+            return new Quaternion(Q.x, Q.y, -Q.z, -Q.w);
+        }
+
+
+        public static Quaternion MirrorRotation(Quaternion Q, Quaternion mirrorOriginRotation, MoveAxis mirrorNormal)
+        {
+//            Quaternion mirrToAbs = mirrorOrigin.rotation;
+            Quaternion localRot = Quaternion.Inverse(mirrorOriginRotation) * Q;
+            Quaternion localMirror = Quaternion.identity;
+            switch (mirrorNormal)
+            {
+                case MoveAxis.X:
+                    localMirror = SG_Util.MirrorX(localRot);
+                    break;
+                case MoveAxis.Y:
+                    localMirror = SG_Util.MirrorY(localRot);
+                    break;
+                case MoveAxis.Z:
+                    localMirror = SG_Util.MirrorZ(localRot);
+                    break;
+            }
+            return localMirror * mirrorOriginRotation;
+        }
+
+
+
     }
 
 }

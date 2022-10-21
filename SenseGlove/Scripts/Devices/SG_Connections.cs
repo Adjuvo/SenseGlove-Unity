@@ -86,6 +86,12 @@ namespace SG.Util
 		{
 			for (int i = 0; i < lastDevices; i++)
 			{
+				string fireNForget;
+				if (SGCore.Util.SGConnect_Android.An_GetFireAndForget(i, out fireNForget)) //there is data available
+                {
+					SG.Util.SG_IAndroid.Andr_WriteHaptics(i, fireNForget);
+					SGCore.Util.SGConnect_Android.An_ClearFireAndForget(i);
+                }
 				string hapticsToSend;
 				if (SGCore.Util.SGConnect_Android.An_GetHaptics(i, out hapticsToSend))
 				{

@@ -1305,62 +1305,67 @@
         <member name="F:SGCore.Haptics.WaveformType.Noise">
             <summary> ???? </summary>
         </member>
-        <member name="T:SGCore.Haptics.Waveform">
+        <member name="T:SGCore.Haptics.Nova_Waveform">
             <summary> Allows for extended vibration commands. Can be applied to any finger, and any actuator, but there is no guarantee the associated actuator will actually do so. </summary>
         </member>
-        <member name="P:SGCore.Haptics.Waveform.Amplitude">
+        <member name="P:SGCore.Haptics.Nova_Waveform.Amplitude">
             <summary> The total amplitude of the wavefrom, represented by 0 (off) or 1 (maximum value) </summary>
         </member>
-        <member name="P:SGCore.Haptics.Waveform.WaveType">
+        <member name="P:SGCore.Haptics.Nova_Waveform.WaveType">
             <summary> The Type of waveform pattern that is used. </summary>
         </member>
-        <member name="P:SGCore.Haptics.Waveform.RepeatAmount">
+        <member name="P:SGCore.Haptics.Nova_Waveform.RepeatAmount">
             <summary> The amount of times to repeat this waveform. 1 is the default. If set to 0, repreats indefinitely. </summary>
         </member>
-        <member name="P:SGCore.Haptics.Waveform.AttackTime">
+        <member name="P:SGCore.Haptics.Nova_Waveform.AttackTime">
             <summary> Time, in seconds, before the signal reaches its maximum amplitude. Set to 0 for instant start. "Fade Time", linear only </summary>
         </member>
-        <member name="P:SGCore.Haptics.Waveform.SustainTime">
+        <member name="P:SGCore.Haptics.Nova_Waveform.SustainTime">
             <summary> Time, in seconds, to keep the signal at one Amplidue. </summary>
         </member>
-        <member name="P:SGCore.Haptics.Waveform.DecayTime">
+        <member name="P:SGCore.Haptics.Nova_Waveform.DecayTime">
             <summary> Time it takes for the effect to fade out after AttackTime+SuatainTime has passed. Set to 0 for instant stop. "Fade Time", linear only </summary>
         </member>
-        <member name="P:SGCore.Haptics.Waveform.FrequencyStart">
+        <member name="P:SGCore.Haptics.Nova_Waveform.FrequencyStart">
             <summary> The Wavefrom Frequency at the start of the wavefrom </summary>
         </member>
-        <member name="P:SGCore.Haptics.Waveform.FrequencyEnd">
+        <member name="P:SGCore.Haptics.Nova_Waveform.FrequencyEnd">
             <summary> The Frequency at the end of the waveform. Keep the same as FrequencyStart to have one conitnuous frequency. </summary>
         </member>
-        <member name="P:SGCore.Haptics.Waveform.FrequencySwitch">
+        <member name="P:SGCore.Haptics.Nova_Waveform.FrequencySwitch">
             <summary> The factor by which to increase Frequency after FST s </summary>
         </member>
-        <member name="P:SGCore.Haptics.Waveform.FrequencySwitchTime">
+        <member name="P:SGCore.Haptics.Nova_Waveform.FrequencySwitchTime">
             <summary> At this perentage of total time, we increase the frequency by FrequencySwicth factor </summary>
         </member>
-        <member name="P:SGCore.Haptics.Waveform.DutyCycle">
+        <member name="P:SGCore.Haptics.Nova_Waveform.DutyCycle">
             <summary> FOR SQUARE WAVES ONLY - The duty cycle of a square wave (30% means it's high 30% or the time, low for the remaining 70%). </summary>
             <remarks> Time it's active: (1 / Frequency) * DutyCycle (between 0...1) </remarks>
         </member>
-        <member name="P:SGCore.Haptics.Waveform.DutyShift">
+        <member name="P:SGCore.Haptics.Nova_Waveform.DutyShift">
             <summary> FOR SQUARE WAVES ONLY - Change in Duty Cycle over the course of the entire signal. </summary>
         </member>
-        <member name="P:SGCore.Haptics.Waveform.EffectTime">
+        <member name="P:SGCore.Haptics.Nova_Waveform.EffectTime">
             <summary> The total command time. </summary>
         </member>
-        <member name="M:SGCore.Haptics.Waveform.#ctor">
+        <member name="M:SGCore.Haptics.Nova_Waveform.#ctor">
             <summary> Default constructor </summary>
         </member>
-        <member name="M:SGCore.Haptics.Waveform.#ctor(SGCore.Haptics.Waveform)">
+        <member name="M:SGCore.Haptics.Nova_Waveform.#ctor(SGCore.Haptics.Nova_Waveform)">
             <summary> Create a new BuzzCommand with the exact same parameters. </summary>
             <param name="wfToCopy"></param>
         </member>
-        <member name="M:SGCore.Haptics.Waveform.#ctor(System.Single,System.Single)">
+        <member name="M:SGCore.Haptics.Nova_Waveform.#ctor(System.Single,System.Single)">
             <summary> A basic waveform to vibrate at a specific amplitude for a specific duration  </summary>
             <param name="amplitude"></param>
             <param name="duration"></param>
         </member>
-        <member name="M:SGCore.Haptics.Waveform.Equals(SGCore.Haptics.Waveform)">
+        <member name="M:SGCore.Haptics.Nova_Waveform.#ctor(System.Single,System.Single,System.Single)">
+            <summary> A basic waveform to vibrate at a specific amplitude for a specific duration  </summary>
+            <param name="amplitude"></param>
+            <param name="duration"></param>
+        </member>
+        <member name="M:SGCore.Haptics.Nova_Waveform.Equals(SGCore.Haptics.Nova_Waveform)">
             <summary> Returns true if a Waveform has the exact same parameters as this one. </summary>
             <param name="other"></param>
             <returns></returns>
@@ -1852,6 +1857,13 @@
             <param name="haptics"></param>
             <returns></returns>
         </member>
+        <member name="M:SGCore.Util.SGConnect_Android.Cs_SendFireNForget(System.Int32,System.String,System.Boolean)">
+            <summary> Write to tthe Fire and Forget track </summary>
+            <param name="deviceIndex"></param>
+            <param name="commands"></param>
+            <param name="clearQueue"></param>
+            <returns></returns>
+        </member>
         <member name="M:SGCore.Util.SGConnect_Android.CS_GetConnectionStates(System.String@)">
             <summary> Retrieve states of each connection on this system.  </summary>
             <returns></returns>
@@ -1866,6 +1878,17 @@
             <summary> Android-Only: Post latest sensor data </summary>
             <param name="deviceIndex"></param>
             <param name="sensorData"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Util.SGConnect_Android.An_GetFireAndForget(System.Int32,System.String@)">
+            <summary> Retrieve the latetst FnF to send, provided it has a length </summary>
+            <param name="deviceIndex"></param>
+            <param name="fNf"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Util.SGConnect_Android.An_ClearFireAndForget(System.Int32)">
+            <summary> Clears Fire-And-Forget queue, lets the C# API know it's been sent. </summary>
+            <param name="deviceIndex"></param>
             <returns></returns>
         </member>
         <member name="M:SGCore.Util.SGConnect_Android.An_GetHaptics(System.Int32,System.String@)">
@@ -3042,41 +3065,41 @@
         <member name="F:SGCore.Nova.Nova_HapticEncoder.maxFreqFactor">
             <summary> Maximum value of minimum frequency factor</summary>
         </member>
-        <member name="M:SGCore.Nova.Nova_HapticEncoder.EncodeParameters(SGCore.Haptics.Waveform)">
+        <member name="M:SGCore.Nova.Nova_HapticEncoder.EncodeParameters(SGCore.Haptics.Nova_Waveform)">
             <summary> Returns an int[] or size 12 containing encoded parameters. Used for encoding, but also for truncating Waveform values to the right resoluation </summary>
             <param name="waveform"></param>
             <returns></returns>
         </member>
-        <member name="M:SGCore.Nova.Nova_HapticEncoder.DecodeParameters(System.Int32[],SGCore.Haptics.Waveform@)">
+        <member name="M:SGCore.Nova.Nova_HapticEncoder.DecodeParameters(System.Int32[],SGCore.Haptics.Nova_Waveform@)">
             <summary> Decode a set of encoded parameters back into a Waveform - Note that these will be limited to the resoulution </summary>
             <param name="encoded"></param>
             <param name="cmd"></param>
             <returns></returns>
         </member>
-        <member name="M:SGCore.Nova.Nova_HapticEncoder.NormalizeParameters(SGCore.Haptics.Waveform)">
+        <member name="M:SGCore.Nova.Nova_HapticEncoder.NormalizeParameters(SGCore.Haptics.Nova_Waveform)">
             <summary> Returns a copy of the original command, where each parameter is normalized to the resoluation of their encoding values. </summary>
             <remarks> e.g. A value of 0.051 on a range 0 .. 1 with a resolution of 100 steps would be normalized to 0.05. </remarks>
             <param name="original"></param>
             <returns></returns>
         </member>
-        <member name="M:SGCore.Nova.Nova_HapticEncoder.EncodeStringParams(SGCore.Haptics.Waveform)">
+        <member name="M:SGCore.Nova.Nova_HapticEncoder.EncodeStringParams(SGCore.Haptics.Nova_Waveform)">
             <summary> Encodes parts of the buzzCommand that does not inlcude finger, identifier or brackets. </summary>
             <param name="waveform"></param>
             <returns></returns>
         </member>
-        <member name="M:SGCore.Nova.Nova_HapticEncoder.DecodeStringParams(System.String,SGCore.Haptics.Waveform@)">
+        <member name="M:SGCore.Nova.Nova_HapticEncoder.DecodeStringParams(System.String,SGCore.Haptics.Nova_Waveform@)">
             <summary> Encodes parts of the buzzCommand that does not inlcude finger, identifier or brackets. </summary>
             <param name="encodedParams"></param>
             <param name="waveform"></param>
             <returns></returns>
         </member>
-        <member name="M:SGCore.Nova.Nova_HapticEncoder.EncodeAsSingle(SGCore.Haptics.Waveform,System.Int32)">
+        <member name="M:SGCore.Nova.Nova_HapticEncoder.EncodeAsSingle(SGCore.Haptics.Nova_Waveform,System.Int32)">
             <summary> Encoded a BuzzCommand as a single command for a finger.  </summary>
             <param name="waveform"></param>
             <param name="fingerConfig"></param>
             <returns></returns>
         </member>
-        <member name="M:SGCore.Nova.Nova_HapticEncoder.DecodeAsSingle(System.String,SGCore.Haptics.Waveform@,System.Int32@)">
+        <member name="M:SGCore.Nova.Nova_HapticEncoder.DecodeAsSingle(System.String,SGCore.Haptics.Nova_Waveform@,System.Int32@)">
             <summary> Decode a command sent to the Nova Back into a Waveform. </summary>
             <param name="command"></param>
             <param name="waveform"></param>
@@ -4280,6 +4303,14 @@
             <param name="commands"></param>
             <returns> Returns true if the command has been sent succesfully. </returns>
         </member>
+        <member name="M:SGCore.DeviceList.SendFireAndForget(System.Int32,System.String,System.String,System.Boolean)">
+            <summary> Sends a "Fire-And-Forget" command that should only be sent once, bypassing the 'normal' haptic queue. </summary>
+            <param name="ipcIndex"></param>
+            <param name="ipcAddress"></param>
+            <param name="commands"></param>
+            <param name="clearQueue"></param>
+            <returns></returns>
+        </member>
         <member name="M:SGCore.DeviceList.Initizalize">
             <summary> Initialize Communications - Not required when compiled with Sockets Mode </summary>
         </member>
@@ -4738,6 +4769,13 @@
             <summary>  </summary>
             <param name="deviceAddress"></param>
             <param name="commands"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.SGConnect.I_SendFireAndForget(System.String,System.String,System.Boolean)">
+            <summary> </summary>
+            <param name="deviceAddress"></param>
+            <param name="commands"></param>
+            <param name="clearQueue"></param>
             <returns></returns>
         </member>
         <member name="M:SGCore.SGConnect.I_GetHapticString(System.String,System.Text.StringBuilder)">
