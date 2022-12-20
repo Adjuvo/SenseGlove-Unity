@@ -195,6 +195,7 @@ namespace SG
         /// <returns></returns>
         public int GetFirstActiveDevice()
         {
+            CheckDevices();
             for (int i = 0; i < this.trackingDevices.Count; i++)
             {
                 if ((trackingDevices[i] != null && trackingDevices[i].IsConnected()) || (feedbackDevices[i] != null && feedbackDevices[i].IsConnected()))
@@ -209,6 +210,7 @@ namespace SG
         /// <returns></returns>
         public T GetDevice<T>() where T : MonoBehaviour
         {
+            CheckDevices();
             for (int i = 0; i < this.trackingDevices.Count; i++) //these should be the same length
             {
                 if (trackingDevices[i] != null && trackingDevices[i] is T)
@@ -252,7 +254,7 @@ namespace SG
 
         public bool IsConnected()
         {
-            return this.activeDeviceIndex > -1;
+            return this.CurrentTracking != null;
         }
 
         public bool TracksRightHand()
@@ -384,7 +386,13 @@ namespace SG
             }
         }
 
-
+        public void SendCmd(SG_NovaWaveform customWaveform, SGCore.Nova.Nova_VibroMotor location)
+        {
+            if (this.CurrentHaptics != null)
+            {
+                this.CurrentHaptics.SendCmd(customWaveform, location);
+            }
+        }
 
 
 

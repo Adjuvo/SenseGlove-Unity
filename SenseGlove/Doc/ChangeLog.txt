@@ -1,7 +1,41 @@
 # Changelog
 All notable changes to the SenseGlove Prefabs will be documented in this file.
 
-You are currently using version 2.4
+You are currently using version 2.4.2
+
+
+## [v2.4.2] - 2022-12-20
+Further Bugfixes, back end updates and haptics q.o.l. changes.
+
+### Changed
+- Added Nova_Waveform support to IHandFeedbackDevice interface.
+- SG_Interactables now also implement the IHandFeedbackDevice interface; passing on any haptic commands to the hands that are holding it.
+- Optimized when and how often the Haptic commands are sent to the Android Back-End.
+
+### Added
+- Nova_Waveform scriptable object, which allows one to define a custom vibration using several parameters. However, this will require a firmware update for your Nova Glove to function properly.
+
+### Fixed
+- Missing SG_TriggerLogic script for example scene 06_Tool.
+- Bug where the CalibrationVoid did not start after the glove has connected.
+- Bug where DK1 Gloves were not recognized by ExampleScene 00_HardwareDiagnostics.
+
+
+
+## [v2.4.1] - 2022-10-21
+Minor Bugfixes and q.o.l. changes 
+
+### Changed
+- Renamed SG_Drawer to SG_SimpleDrawer - as we're working on improved version(s).
+- Removed NOVA 3D model scene as it's currently not functional.
+
+### Added
+- SG_PrecisionPoser, which allows one to pose individual joint angles like the SG_ManualPoser.
+
+### Fixed
+- An issue where the Calibration Void prefabs were not yet updated, resulting in gloves not connecting.
+
+
 
 ## [v2.4.0] - 2022-10-10
 Haptics refactor, Unity 2019.4+ Update, SenseCom Stability

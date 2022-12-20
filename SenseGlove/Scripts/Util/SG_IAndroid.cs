@@ -262,10 +262,10 @@ namespace SG.Util
         /// <param name="deviceIndex"></param>
         /// <param name="cmd"></param>
         /// <returns></returns>
-        public static bool Andr_WriteHaptics(int deviceIndex, string cmd)
+        public static bool Andr_WriteHaptics(int deviceIndex, int channel, string cmd)
         {
             int sendRes;
-            bool successfulCall = CallFunctionGet<int>(fn_SendHaptics, out sendRes, new object[] { deviceIndex, cmd });
+            bool successfulCall = CallFunctionGet<int>(fn_SendHaptics, out sendRes, new object[] { deviceIndex, channel, cmd });
             return successfulCall;
         }
 

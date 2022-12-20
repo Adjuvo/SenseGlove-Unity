@@ -174,6 +174,15 @@ namespace SG.Util
             }
         }
 
+        public void SendCmd(SG_NovaWaveform customWaveform, SGCore.Nova.Nova_VibroMotor location)
+        {
+            IHandFeedbackDevice[] linkedDevices = this.DevicesLinkedToObject;
+            for (int i = 0; i < linkedDevices.Length; i++)
+            {
+                linkedDevices[i].SendCmd(customWaveform, location);
+            }
+        }
+
 
         //------------------------------------------------------------------------------------------------------------------------------
         // Monobehaviour

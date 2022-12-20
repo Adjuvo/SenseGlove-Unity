@@ -86,17 +86,12 @@ namespace SG.Util
 		{
 			for (int i = 0; i < lastDevices; i++)
 			{
-				string fireNForget;
-				if (SGCore.Util.SGConnect_Android.An_GetFireAndForget(i, out fireNForget)) //there is data available
-                {
-					SG.Util.SG_IAndroid.Andr_WriteHaptics(i, fireNForget);
-					SGCore.Util.SGConnect_Android.An_ClearFireAndForget(i);
-                }
-				string hapticsToSend;
-				if (SGCore.Util.SGConnect_Android.An_GetHaptics(i, out hapticsToSend))
-				{
-					SG.Util.SG_IAndroid.Andr_WriteHaptics(i, hapticsToSend);
-				}
+				// No longer required as I pass this on whenever I want.
+				//string hapticsToSend;
+				//if (SGCore.Util.SGConnect_Android.An_GetHaptics(i, out hapticsToSend))
+				//{
+				//	SG.Util.SG_IAndroid.Andr_WriteHaptics(i, hapticsToSend);
+				//}
 				string sData;
 				if (SG.Util.SG_IAndroid.Andr_GetSensorData(i, out sData))
 				{
@@ -143,6 +138,9 @@ namespace SG.Util
 						Log("Could not link Android resources. SGConnect.aar might be missing or broken.");
 					}
 				}
+
+                SGCore.Util.SGConnect_Android.AndroidHapticEvent += SGConnect_Android_AndroidHapticEvent; //subscribe to the event such that we can send haptics as soon as required.
+
 				if (classLinked && libraryInit != 1) //we've not yet initialized the Android library!
 				{
 					libraryInit = SG_IAndroid.Andr_Init();
@@ -161,6 +159,15 @@ namespace SG.Util
 #endif
 		}
 
+		/// <summary> Fires when our C# back-end receives a haptic command to send to the device. Pass it on to the Android Side, please. </summary>
+		/// <param name="source"></param>
+		/// <param name="args"></param>
+		private static void SGConnect_Android_AndroidHapticEvent(object source, SGCore.Util.SGConnect_Android.AndroidHapticEventArgs args)
+		{
+			Log("Sending Haptics to device" + args.DeviceIndex.ToString() + "_" + args.ChannelIndex.ToString() + ": " + args.HapticCommand);
+			SG_IAndroid.Andr_WriteHaptics(args.DeviceIndex, args.ChannelIndex, args.HapticCommand);
+		}
+
 		/// <summary> Disposes of the Android Library if we haven't already. </summary>
 		private static void Andr_TryDispose()
 		{
@@ -176,6 +183,8 @@ namespace SG.Util
 				bool unlinked = SG.Util.SG_IAndroid.DisposeLink(); //explicitly remove the link
 				classLinked = false;
 			}
+			SGCore.Util.SGConnect_Android.AndroidHapticEvent -= SGConnect_Android_AndroidHapticEvent; //Unsubscribe from the event.
+
 #endif
 		}
 

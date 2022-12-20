@@ -50,6 +50,11 @@
         void SendImpactVibration(SG_HandSection location, float normalizedVibration);
 
 
+        /// <summary> Sends a custom waveform to the device, if it is a Nova Glove. </summary>
+        /// <param name="customWaveform"></param>
+        /// <param name="location"></param>
+        void SendCmd(SG_NovaWaveform customWaveform, SGCore.Nova.Nova_VibroMotor location);
+
 
     }
 }

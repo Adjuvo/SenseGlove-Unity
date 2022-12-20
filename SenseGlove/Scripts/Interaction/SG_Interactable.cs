@@ -99,6 +99,11 @@ namespace SG
         {
             if (TrackedHand != null) { ((IHandFeedbackDevice)TrackedHand).SendImpactVibration(location, normalizedVibration); }
         }
+
+        public void SendCmd(SG_NovaWaveform customWaveform, SGCore.Nova.Nova_VibroMotor location)
+        {
+            if (TrackedHand != null) { ((IHandFeedbackDevice)TrackedHand).SendCmd(customWaveform, location); }
+        }
     }
 
     //-------------------------------------------------------------------------------------------------------------------------------------
@@ -884,6 +889,14 @@ namespace SG
             for (int i = 0; i < this.grabbedBy.Count; i++)
             {
                 if (grabbedBy[i] != null && grabbedBy[i].TrackedHand != null) { this.grabbedBy[i].TrackedHand.SendImpactVibration(location, normalizedVibration); }
+            }
+        }
+
+        public void SendCmd(SG_NovaWaveform customWaveform, SGCore.Nova.Nova_VibroMotor location)
+        {
+            for (int i = 0; i < this.grabbedBy.Count; i++)
+            {
+                if (grabbedBy[i] != null && grabbedBy[i].TrackedHand != null) { this.grabbedBy[i].TrackedHand.SendCmd(customWaveform, location); }
             }
         }
 

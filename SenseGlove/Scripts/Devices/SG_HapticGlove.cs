@@ -676,7 +676,7 @@ namespace SG
 
 
         //--------------------------------------------------------------------------------------------------------
-        // HandPoseProvider Interface Functions
+        // HandFeedbackDevice Interface Functions
 
         /// <summary> Returns the name of this GameObjects summary>
         /// <returns></returns>
@@ -776,6 +776,16 @@ namespace SG
                 }
             }
         }
+
+
+        public void SendCmd(SG_NovaWaveform customWaveform, SGCore.Nova.Nova_VibroMotor location)
+        {
+            if (this.lastGlove != null && this.lastGlove is SGCore.Nova.NovaGlove)
+            {
+                ((SGCore.Nova.NovaGlove)this.lastGlove).SendCustomWaveform(customWaveform.GetWaveform(), location);
+            }
+        }
+
 
         /// <summary> Process all haptics that were sent this frame and that are still active. </summary>
         public void UpdateHaptics(float dT)
@@ -890,7 +900,7 @@ namespace SG
             serializedObject.Update();
 
             GUILayout.Label("Connection Settings", UnityEditor.EditorStyles.boldLabel);
-                UnityEditor.EditorGUILayout.PropertyField(m_connectsTo, new GUIContent("Connects To", "What kind of hand sides this SG_HapitcGlove is allowed to connect to"));
+                UnityEditor.EditorGUILayout.PropertyField(m_connectsTo, new GUIContent("Connects To", "What kind of hand sides this SG_HapticGlove is allowed to connect to"));
                 UnityEditor.EditorGUILayout.PropertyField(m_checkCalibrationOnConnect, new GUIContent("Check for Calibration", "If true, we check calibration status at the start of the simulation. Set this to true if you don't have a separate Calibration Scene before this one."));
 
             UnityEditor.EditorGUILayout.Space();

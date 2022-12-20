@@ -963,6 +963,14 @@ namespace SG
             }
         }
 
+        public void SendCmd(SG_NovaWaveform customWaveform, SGCore.Nova.Nova_VibroMotor location)
+        {
+            if (this.HapticHardware != null)
+            {
+                this.HapticHardware.SendCmd(customWaveform, location);
+            }
+        }
+
         //-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         // Monobehaviour
 
