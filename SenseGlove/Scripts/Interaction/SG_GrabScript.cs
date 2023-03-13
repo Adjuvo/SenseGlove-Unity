@@ -149,21 +149,21 @@ namespace SG
         protected override void CollectDebugComponents(out List<GameObject> objects, out List<MeshRenderer> renderers)
         {
             base.CollectDebugComponents(out objects, out renderers);
-			Util.SG_Util.CollectGameObject(this.debugTxt, objects);
+			Util.SG_Util.CollectGameObject(this.debugTxt, ref objects);
             if (this.virtualHoverCollider != null)
             {
-                Util.SG_Util.CollectComponent(virtualHoverCollider, renderers);
-                Util.SG_Util.CollectGameObject(virtualHoverCollider.debugTxt, objects);
+                Util.SG_Util.CollectComponent(virtualHoverCollider, ref renderers);
+                Util.SG_Util.CollectGameObject(virtualHoverCollider.debugTxt, ref objects);
             }
         }
 
         /// <summary> Link this GrabScript to a new TrackedHand. </summary>
         /// <param name="newHand"></param>
         /// <param name="firstLink"></param>
-        protected override void LinkToHand(SG_TrackedHand newHand, bool firstLink)
+        protected override void LinkToHand_Internal(SG_TrackedHand newHand, bool firstLink)
         {
 			// links this newHand.
-            base.LinkToHand(newHand, firstLink);
+            base.LinkToHand_Internal(newHand, firstLink);
 
             // The hand will call my update from now on.
             this.updateSelf = false;
@@ -497,7 +497,7 @@ namespace SG
         /// <summary> Actually Removes an element from the list, and calls a release event. </summary>
         /// <param name="heldIndex"></param>
         /// <returns></returns>
-        protected virtual SG_Interactable ReleaseAt(int heldIndex, bool forceRelease = false)
+        protected virtual bool ReleaseAt(int heldIndex, bool forceRelease = false)
         {
 			SG_Interactable toRelease = heldObjects[heldIndex];
 			bool canRelease = toRelease.TryRelease(this, forceRelease);
@@ -509,8 +509,9 @@ namespace SG
                 //Debug.Log(this.name + " Released " + removed.name);
                 this.GrabbedObject.Invoke(toRelease, this);
                 UpdateDebugger();
+                return true;
 			}
-			return toRelease;
+			return false;
 		}
 
 
@@ -521,12 +522,16 @@ namespace SG
 		/// <returns></returns>
 		public bool ReleaseAll(bool forceRelease = true)
         {
+            int toRelease = this.heldObjects.Count; //all to release
+            int released = 0;
             for (int i = 0; i < this.heldObjects.Count;)
             {
-				ReleaseAt(i, forceRelease); //actually releases no matter what.
+				bool objReleased = ReleaseAt(i, forceRelease);
+                if (!objReleased) { i++; } //if we did not remove it from the list, increase the iterator, otherwise we end up in a loop.
+                else { released++; }
             }
 			UpdateDebugger();
-			return true;
+			return released >= toRelease; //return true if everything is released.
         }
 
 

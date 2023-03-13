@@ -193,14 +193,14 @@ namespace SG
         protected override void CollectDebugComponents(out List<GameObject> objects, out List<MeshRenderer> renderers)
         {
             base.CollectDebugComponents(out objects, out renderers);
-            Util.SG_Util.CollectGameObject(this.debugElement, objects);
+            Util.SG_Util.CollectGameObject(this.debugElement, ref objects);
             for (int i = 0; i < this.wristColliders.Length; i++)
             {
-                SG.Util.SG_Util.CollectComponent(this.wristColliders[i].gameObject, renderers); //grab rendering components
+                SG.Util.SG_Util.CollectComponent(this.wristColliders[i].gameObject, ref renderers); //grab rendering components
             }
             for (int f = 0; f < this.fingerColliders.Length; f++)
             {
-                SG.Util.SG_Util.CollectComponent(this.fingerColliders[f].gameObject, renderers); //grab rendering components
+                SG.Util.SG_Util.CollectComponent(this.fingerColliders[f].gameObject, ref renderers); //grab rendering components
             }
         }
 
@@ -264,9 +264,9 @@ namespace SG
         /// <summary> Links this HandPhysics Layer to a TrackerHand, and collect the releavent offsets.. </summary>
         /// <param name="newHand"></param>
         /// <param name="firstLink"></param>
-        protected override void LinkToHand(SG_TrackedHand newHand, bool firstLink)
+        protected override void LinkToHand_Internal(SG_TrackedHand newHand, bool firstLink)
         {
-            base.LinkToHand(newHand, firstLink);
+            base.LinkToHand_Internal(newHand, firstLink);
             SG_HandPoser3D physicsPoser = newHand.GetPoser(SG_TrackedHand.TrackingLevel.RealHandPose); //might as well. We're mainly using it for the offsets.
 
             //Optional: Scale finger bones

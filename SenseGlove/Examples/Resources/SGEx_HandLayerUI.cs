@@ -295,8 +295,8 @@ namespace SG.Examples
                 this.activeHand.handPhysics.gameObject.SetActive(whichLayer == ShowingLayer.PhysicsLayer);
                 this.activeHand.handPhysics.DebugEnabled = (whichLayer == ShowingLayer.PhysicsLayer);
 
-                this.activeHand.passThoughLayer.gameObject.SetActive(whichLayer == ShowingLayer.PassThroughLayer);
-                this.activeHand.passThoughLayer.DebugEnabled = (whichLayer == ShowingLayer.PassThroughLayer);
+                this.activeHand.projectionLayer.gameObject.SetActive(whichLayer == ShowingLayer.PassThroughLayer);
+                this.activeHand.projectionLayer.DebugEnabled = (whichLayer == ShowingLayer.PassThroughLayer);
 
             }
         }
@@ -368,7 +368,7 @@ namespace SG.Examples
                 activeHand.feedbackLayer.DebugEnabled = false;
                 activeHand.handPhysics.DebugEnabled = false;
                 activeHand.grabScript.DebugEnabled = false;
-                activeHand.passThoughLayer.DebugEnabled = false;
+                activeHand.projectionLayer.DebugEnabled = false;
                 activeHand.gestureLayer.DebugEnabled = false;
 
                 this.gestureUI.gestureLayer = activeHand.gestureLayer;

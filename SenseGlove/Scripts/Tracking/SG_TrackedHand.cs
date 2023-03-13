@@ -31,7 +31,7 @@ namespace SG
             Physics,
             Calibration,
             Gestures,
-            Passthrough,
+            Projection,
         }
 
         //-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -83,8 +83,11 @@ namespace SG
 
         public SG_GestureLayer gestureLayer;
 
-        /// <summary> An optional component to 'lock' finger flexion if the fingers would pass through a non-trigger collider. </summary>
-        public SG_FingerPassThrough passThoughLayer;
+        //    /// <summary> An optional component to 'lock' finger flexion if the fingers would pass through a non-trigger collider. </summary>
+        //    public SG_FingerPassThrough passThoughLayer;
+
+        /// <summary> An optional component that locks the finger flexion when it passes through collider(s). Also used to predict force-feedback activation. </summary>
+        public SG_HandProjection projectionLayer;
 
         /// <summary> The calibration layer of this hand, only required when attached to a Haptic Glove. Without it, you'll need to activate calibration from elsewhere. </summary>
         public SG_CalibrationSequence calibration;
@@ -321,25 +324,25 @@ namespace SG
             //Setup the grabScript, if any, and link it to this hand's posers.
             if (this.grabScript != null)
             {
-                grabScript.LinkToHand(this);
+                grabScript.LinkToHand(this, true);
                 grabScript.SetIgnoreCollision(this.handPhysics, true);
-                grabScript.SetIgnoreCollision(this.passThoughLayer, true);
+                grabScript.SetIgnoreCollision(this.projectionLayer, true);
                 grabScript.SetIgnoreCollision(this.feedbackLayer, true);
             }
 
             //Setup the passThoughLayer, if any, and link it to this hand's posers.
-            if (this.passThoughLayer != null)
+            if (this.projectionLayer != null)
             {
-                passThoughLayer.LinkToHand(this);
-                passThoughLayer.SetIgnoreCollision(this.handPhysics, true);
+                projectionLayer.LinkToHand(this, true);
+                projectionLayer.SetIgnoreCollision(this.handPhysics, true);
                 //passThoughLayer.SetIgnoreCollision(this.grabScript, true); //should have been done if it exists
-                passThoughLayer.SetIgnoreCollision(this.feedbackLayer, true);
+                projectionLayer.SetIgnoreCollision(this.feedbackLayer, true);
             }
 
             //Setup the handPhysics, if any, and link it to this hand's posers.
             if (this.handPhysics != null)
             {
-                this.handPhysics.LinkToHand(this);
+                this.handPhysics.LinkToHand(this, true);
                 //handPhysics.SetIgnoreCollision(this.grabScript, true); //should have been done if it exists
                 //handPhysics.SetIgnoreCollision(this.passThoughLayer, true); //should have been done if it exists
                 handPhysics.SetIgnoreCollision(this.feedbackLayer, true);
@@ -348,7 +351,7 @@ namespace SG
             //Setup the feedbackLayer, if any, and link it to this hand's posers.
             if (this.feedbackLayer != null)
             {
-                this.feedbackLayer.LinkToHand(this);
+                this.feedbackLayer.LinkToHand(this, true);
                 //feedbackLayer.SetIgnoreCollision(this.handPhysics, true); ////should have been done if it exists
                 //feedbackLayer.SetIgnoreCollision(this.passThoughLayer, true); //should have been done if it exists
                 //grabScript.SetIgnoreCollision(this.grabScript, true); //should have been done if it exists
@@ -356,12 +359,12 @@ namespace SG
 
             if (this.statusIndicator != null) //ensure this indicator is here.
             {
-                this.statusIndicator.LinkToHand(this);
+                this.statusIndicator.LinkToHand(this, true);
             }
 
             if (this.gestureLayer != null)
             {
-                this.gestureLayer.LinkToHand(this);
+                this.gestureLayer.LinkToHand(this, true);
             }
 
             if (this.calibration != null) //we have a calibration layer, and it's linked to a Hapitc Glove.
@@ -393,15 +396,15 @@ namespace SG
             if (otherHand != this)
             {
                 //ignore collision between passThroughs, which is the most important one
-                if (this.passThoughLayer != null)
+                if (this.projectionLayer != null)
                 {
-                    this.passThoughLayer.SetIgnoreCollision(otherHand.passThoughLayer, ignoreCollision);
-                    this.passThoughLayer.SetIgnoreCollision(otherHand.handPhysics, ignoreCollision); // My passThrough + other's HandPhysics
+                    this.projectionLayer.SetIgnoreCollision(otherHand.projectionLayer, ignoreCollision);
+                    this.projectionLayer.SetIgnoreCollision(otherHand.handPhysics, ignoreCollision); // My passThrough + other's HandPhysics
                 }
                 //Ignore the others' hand colliders as they jump around between parents.
-                if (otherHand.passThoughLayer != null)
+                if (otherHand.projectionLayer != null)
                 {
-                    otherHand.passThoughLayer.SetIgnoreCollision(this.handPhysics, ignoreCollision); //my handPhysics + other hand's passthrough
+                    otherHand.projectionLayer.SetIgnoreCollision(this.handPhysics, ignoreCollision); //my handPhysics + other hand's passthrough
                 }
                 //Ignore each other's hand physics- as supposedly you should be stopped by your real hands.
                 if (this.handPhysics != null)
@@ -496,8 +499,8 @@ namespace SG
                 case HandLayer.HandModel:
                     if (this.handModel != null) { this.handModel.gameObject.SetActive(active); }
                     break;
-                case HandLayer.Passthrough:
-                    if (this.passThoughLayer != null) { this.passThoughLayer.gameObject.SetActive(active); }
+                case HandLayer.Projection:
+                    if (this.projectionLayer != null) { this.projectionLayer.gameObject.SetActive(active); }
                     break;
                 case HandLayer.Physics:
                     if (this.handPhysics != null) { this.handPhysics.gameObject.SetActive(active); }
@@ -599,12 +602,12 @@ namespace SG
                 this.grabScript.GetFingerTracking(realHandPose, this.GetHandModel(), out grabPose);
                 return grabPose;
             }
-            else if (this.passThoughLayer != null && this.passThoughLayer.isActiveAndEnabled)
+            else if (this.projectionLayer != null && this.projectionLayer.isActiveAndEnabled && this.projectionLayer.useForAnimation)
             {
-                SG_HandPose passPose = passThoughLayer.LatestPose;
+                SG_HandPose passPose = projectionLayer.GetConstrainedPose(colliderPose, this.handModel);
                 if (passPose != null)
                 {
-                    return passThoughLayer.LatestPose;
+                    return passPose;
                 }
             }
             return colliderPose;
@@ -706,11 +709,7 @@ namespace SG
 
             // Update any layers that need to match the colliderPose exactly
             // PassThrough Layer - Tracking only.
-            if (this.passThoughLayer != null && this.passThoughLayer.isActiveAndEnabled)
-            {
-                // this.passThoughLayer.UpdateColliders(l_virtualPose, deltaTime);
-                this.passThoughLayer.UpdateConstrainedPose(l_virtualPose, this.GetHandModel()); //I can now retieve the latest constrained fingers from this layer during the FixedUpdate
-            }
+           
             // FFB colliders
             //if (this.feedbackLayer != null && this.feedbackLayer.isActiveAndEnabled)
             //{
@@ -761,14 +760,22 @@ namespace SG
 
             if (fingerTracking == null) //Finger tracking is NOT determined by something we're holding / hovering ver
             {
-                if (this.passThoughLayer != null && this.passThoughLayer.isActiveAndEnabled && passThoughLayer.LatestPose != null) //try the passthrough layer
+                if (this.projectionLayer != null && this.projectionLayer.isActiveAndEnabled && this.projectionLayer.useForAnimation)
                 {
-                    fingerTracking = passThoughLayer.LatestPose; //this one is updated during Update, so should be up to date
+                    fingerTracking = projectionLayer.GetConstrainedPose(l_virtualPose, this.handModel);
                 }
-                else //no fingerPassThrough Layer. Use the real hand instead.
+                else
                 {
                     fingerTracking = l_realHandPose;
                 }
+                //if (this.passThoughLayer != null && this.passThoughLayer.isActiveAndEnabled && passThoughLayer.LatestPose != null) //try the passthrough layer
+                //{
+                //    fingerTracking = passThoughLayer.LatestPose; //this one is updated during Update, so should be up to date
+                //}
+                //else //no fingerPassThrough Layer. Use the real hand instead.
+                //{
+                //    fingerTracking = l_realHandPose;
+                //}
             }
 
             // At this point, FingerTracking IS assigned. We might still be missing the wrist tracking, and the physics layer needs an update still.
@@ -889,6 +896,18 @@ namespace SG
             return 0;
         }
 
+        public HandTrackingDevice TrackingType()
+        {
+            if (RealHandSource != null) { return RealHandSource.TrackingType(); }
+            return HandTrackingDevice.Unknown;
+        }
+
+        public bool TryGetBatteryLevel(out float value01)
+        {
+            if (RealHandSource != null) { return RealHandSource.TryGetBatteryLevel(out value01); }
+            value01 = -1.0f;
+            return false;
+        }
 
         //-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         // IHandFeedbackDevice functions
@@ -971,6 +990,24 @@ namespace SG
             }
         }
 
+        public bool FlexionLockSupported()
+        {
+            if (this.HapticHardware != null)
+            {
+                return this.HapticHardware.FlexionLockSupported();
+            }
+            return false;
+        }
+
+        public void SetFlexionLocks(bool[] fingers, float[] fingerFlexions)
+        {
+            if (this.HapticHardware != null)
+            {
+                this.HapticHardware.SetFlexionLocks(fingers, fingerFlexions);
+            }
+        }
+
+
         //-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         // Monobehaviour
 
@@ -1038,6 +1075,10 @@ namespace SG
             //UpdatePhsics should be fine
             UpdateRealHandPose();
             UpdateVirtualPose();
+            if (projectionLayer != null && projectionLayer.isActiveAndEnabled)
+            {
+                projectionLayer.UpdateProjections(l_virtualPose);
+            }
             UpdateHandPhysics(Time.fixedDeltaTime);
             //l_virtualPose = l_realHandPose; //Supposedly, this is the only time I _can_ update it...
             //UpdateVirtualPose();

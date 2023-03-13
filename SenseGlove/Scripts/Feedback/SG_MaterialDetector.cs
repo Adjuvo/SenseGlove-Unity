@@ -89,6 +89,40 @@ namespace SG
             return this.materialsTouched.GetColliders();
         }
 
+
+        /// <summary> Retrurns a list of colliders of all non-broken materials </summary>
+        /// <returns></returns>
+        public List<Collider> GetUnbrokenColliders()
+        {
+            List<Collider> res = new List<Collider>();
+            for (int i=0; i<this.materialsTouched.detectedScripts.Count; i++)
+            {
+                if ( materialsTouched.detectedScripts[i].script != null && !((SG_Material)materialsTouched.detectedScripts[i].script).IsBroken() ) //it can't be a broken material (a.k.a. the object is disabled. The collider itself should also be active/ enabled.
+                {
+                    //To be fair, our ScriptDetectors do validate on update. So it should never give me broken colliders or scripts that are null? 
+                    List<Collider> cols = materialsTouched.detectedScripts[i].GetColliders();
+                    for (int j=0; j<cols.Count; j++)
+                    {
+                        res.Add(cols[j]);
+                    }
+                }
+            }
+            return res;
+        }
+
+
+        public bool GetConnectedMaterial(Collider col, out SG_Material materialScript)
+        {
+            MonoBehaviour script;
+            if ( this.materialsTouched.GetAssociatedScript(col, out script))
+            {
+                materialScript = (SG_Material)script;
+                return true;
+            }
+            materialScript = null;
+            return false;
+        }
+
         /// <summary> Returns a list with more details of the materials touched by this script. Do not modify this unless you know what you're doing(!) </summary>
         /// <returns></returns>
         public List<DetectArguments> GetTouchDetails(bool copyArray = false)
@@ -130,7 +164,16 @@ namespace SG
         }
 
 
-
+        public virtual List<Collider> GetDetectionColliders()
+        {
+            Collider[] myColliders = this.gameObject.GetComponents<Collider>();
+            List<Collider> res = new List<Collider>(myColliders.Length);
+            for (int i=0; i<myColliders.Length; i++)
+            {
+                res.Add(myColliders[i]);
+            }
+            return res;
+        }
 
 
 

@@ -457,6 +457,21 @@ PrefabInstance:
       propertyPath: overrideWristLocation
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 114541258151201158, guid: 10165189c26095442b2cefc1acb4c734,
+        type: 3}
+      propertyPath: wristTrackingMethod
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 114710115657912056, guid: 10165189c26095442b2cefc1acb4c734,
+        type: 3}
+      propertyPath: overrideWristLocation
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 114741115281472756, guid: 10165189c26095442b2cefc1acb4c734,
+        type: 3}
+      propertyPath: wristTrackingMethod
+      value: 5
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 10165189c26095442b2cefc1acb4c734, type: 3}
 --- !u!114 &300491875 stripped
@@ -1003,7 +1018,7 @@ GameObject:
   - component: {fileID: 630758945}
   - component: {fileID: 630758946}
   m_Layer: 0
-  m_Name: '[CalibrationVoid Assets]'
+  m_Name: '[CalibrationVoid 2D]'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1041,38 +1056,27 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   user: {fileID: 300491875}
   mainInstructions: {fileID: 1220107219}
-  currStage: 0
-  beginImmedeately: 1
-  timer_currStage: 0
-  vrUIElements:
-  - {fileID: 1220107222}
   exampleHandLeft: {fileID: 1213243919}
   exampleHandRight: {fileID: 253855864}
-  timeForSecondGlove: 1
-  wf_connected: {fileID: 11400000, guid: bc01a3f1918b4e646b2b1dfc72987b01, type: 2}
-  introTime: 2.5
-  introAudio: {fileID: 0}
-  moveFingersAudio: {fileID: 0}
-  openCloseTime: 2
-  wf_movedEnough: {fileID: 11400000, guid: 7e86efd4030933d4abfe2abf270e49e9, type: 2}
-  confirmAudio: {fileID: 0}
-  confirmTime: 0.5
-  thumbsUpThresholds:
-  - 0.2
-  - 0.7
-  - 0.7
-  - 0.7
-  - 0.7
-  thumbPassThreshold: 0.1
   resetSphere: {fileID: 2034026919}
-  wf_Confirmed: {fileID: 11400000, guid: 7e86efd4030933d4abfe2abf270e49e9, type: 2}
-  completionAudio: {fileID: 0}
+  currStage: 0
+  beginImmedeately: 1
+  introTime: 2.5
+  confirmTime: 0.5
+  exampleOpenCloseTime: 2
   changeSceneAfter: 2
+  goToSceneIndex: -1
   goToSceneName: 
-  goToScene: -1
   CalibrationCompleted:
     m_PersistentCalls:
       m_Calls: []
+  wf_connected: {fileID: 11400000, guid: bc01a3f1918b4e646b2b1dfc72987b01, type: 2}
+  wf_movedEnough: {fileID: 11400000, guid: 7e86efd4030933d4abfe2abf270e49e9, type: 2}
+  wf_confirmed: {fileID: 11400000, guid: 7e86efd4030933d4abfe2abf270e49e9, type: 2}
+  introAudio: {fileID: 0}
+  moveFingersAudio: {fileID: 0}
+  confirmAudio: {fileID: 0}
+  completionAudio: {fileID: 0}
 --- !u!1 &684671757
 GameObject:
   m_ObjectHideFlags: 0
@@ -1992,7 +1996,6 @@ GameObject:
   - component: {fileID: 1220107221}
   - component: {fileID: 1220107220}
   - component: {fileID: 1220107219}
-  - component: {fileID: 1220107222}
   m_Layer: 0
   m_Name: VoidMainInstructions
   m_TagString: Untagged
@@ -2075,22 +2078,6 @@ Transform:
   m_Father: {fileID: 630758945}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 90, y: 90, z: 0}
---- !u!114 &1220107222
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1220107218}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 905e19651eb875d408e4461d6f4bd9b7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  posOffset: {x: 0, y: 0, z: 3}
-  rotOffset: {x: 0, y: 0, z: 0}
-  headTransform: {fileID: 0}
-  flySpeed: 2.5
 --- !u!1 &1303288268
 GameObject:
   m_ObjectHideFlags: 0

@@ -11,6 +11,11 @@
         /// <returns></returns>
         bool IsConnected();
 
+        /// <summary> Attempt to retrieve the battery level of this device. Return false if this is a wired device. </summary>
+        /// <param name="value01"></param>
+        /// <returns></returns>
+        bool TryGetBatteryLevel(out float value01);
+
         /// <summary> Ceases all vibrotactile feedback only </summary>
         void StopAllVibrations();
 
@@ -22,6 +27,14 @@
         /// <summary> Send a new Force-Feedback command for this frame. </summary>
         /// <param name="ffb"></param>
         void SendCmd(SGCore.Haptics.SG_FFBCmd ffb);
+
+        /// <summary> Return true if this device supports automatic locking of the fingers at a set flexion. </summary>
+        bool FlexionLockSupported();
+
+        /// <summary> Tell this device to lock specific fingers at set flexions, or to stop doing so (by setting fingers to false). Arrays should be size 5. </summary>
+        /// <param name="fingers"></param>
+        /// <param name="fingerFlexions"></param>
+        void SetFlexionLocks(bool[] fingers, float[] fingerFlexions);
 
 
         // Vibrotactile

@@ -374,6 +374,24 @@ namespace SG
             return false;
         }
 
+
+        /// <summary> Return the script associated with the chosen collider. </summary>
+        /// <param name="col"></param>
+        /// <returns></returns>
+        public bool GetAssociatedScript(Collider col, out MonoBehaviour connectedScript)
+        {
+            for (int i=0; i<this.detectedScripts.Count; i++)
+            {
+                if (detectedScripts[i].ColliderIndex(col) > -1)
+                {
+                    connectedScript = detectedScripts[i].script;
+                    return true;
+                }
+            }
+            connectedScript = null;
+            return false;
+        }
+
         //---------------------------------------------------------------------------------------------------------------------------------------------
         // Check if the object should still be alive
 

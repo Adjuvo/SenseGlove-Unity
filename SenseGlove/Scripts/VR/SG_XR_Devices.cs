@@ -128,7 +128,7 @@ namespace SG
                 get; set;
             }
 
-            public SG_XR_HandReference() 
+            public SG_XR_HandReference()
             {
                 DeviceLinked = false;
                 Hardware = SGCore.PosTrackingHardware.Custom;
@@ -148,7 +148,7 @@ namespace SG
                 this.Hardware = hardwareType;
             }
 
-            
+
         }
 
 
@@ -158,7 +158,7 @@ namespace SG
         /// <summary> In which way UnityXR is accessing the tracking references for the left and the right hand. </summary>
         private static TrackingType trackingMethod = TrackingType.Unknown;
         private static SG_XR_HandReference leftHandTracking = null, rightHandTracking = null;
-        
+
 
         // Timing / Scanning Resources
 
@@ -202,7 +202,7 @@ namespace SG
         /// <returns></returns>
         public static string Report(UnityEngine.XR.InputDevice device, string delim = ", ")
         {
-            return device.name + delim +  device.serialNumber + delim + device.subsystem + delim + device.characteristics;
+            return device.name + delim + device.serialNumber + delim + device.subsystem + delim + device.characteristics;
         }
 
         /// <summary> Returns true if a collection of input characteristics contains another (set of) characteristics).  </summary>
@@ -316,7 +316,7 @@ namespace SG
 
             //It's a headset meant to be used with Vive Trackers.
             if (hmdName.Length > 0 && (hmdName.Contains("vive") | hmdName.Contains("valve")))
-            {   
+            {
                 List<InputDevice> trackers = GetViveTrackers(devices);
                 if (trackers.Count > 0) //there's at least one tracker found
                 {
@@ -334,17 +334,17 @@ namespace SG
                     }
                     else
                     {   //at least one of our two trackers is known. That means if one of them is not, you can find it in the 'others' section (provided it's not empty).
-                        if (rights.Count > 0)  { rightTracker = rights[0]; rightPresent = true; }
+                        if (rights.Count > 0) { rightTracker = rights[0]; rightPresent = true; }
                         else if (others.Count > 0) { rightTracker = others[0]; rightPresent = true; }
-                        
-                        if (lefts.Count > 0)  { leftTracker = lefts[0]; leftPresent = true; }
+
+                        if (lefts.Count > 0) { leftTracker = lefts[0]; leftPresent = true; }
                         else if (others.Count > 0) { leftTracker = others[0]; leftPresent = true; }
                     }
                     //Now we can evaluate the Trackers
                     if (leftPresent)
                     {
                         //if (leftHandTracking == null) { Debug.Log("Linked SG_XR_Devices Left Hand to " + Report(leftTracker)); }
-                        leftHandTracking = new SG_XR_HandReference( leftTracker, SGCore.PosTrackingHardware.ViveTracker );
+                        leftHandTracking = new SG_XR_HandReference(leftTracker, SGCore.PosTrackingHardware.ViveTracker);
                     }
                     else if (leftHandTracking != null)
                     {
@@ -353,7 +353,7 @@ namespace SG
                     if (rightPresent)
                     {
                         //if (rightHandTracking == null) { Debug.Log("Linked SG_XR_Devices Right Hand to " + Report(rightTracker)); }
-                        rightHandTracking = new SG_XR_HandReference(rightTracker, SGCore.PosTrackingHardware.ViveTracker );
+                        rightHandTracking = new SG_XR_HandReference(rightTracker, SGCore.PosTrackingHardware.ViveTracker);
                     }
                     else if (rightHandTracking != null) //could not find a right hand tracking device. So stoppit
                     {
@@ -404,7 +404,7 @@ namespace SG
         {
             List<InputDevice> devices = GetDevices();
 
-           // Debug.Log(ReportDevices(devices));
+            // Debug.Log(ReportDevices(devices));
 
             if (headTracking == null || !headTracking.DeviceLinked)
             {
@@ -413,7 +413,7 @@ namespace SG
                 {
                     headTracking = new SG_XR_LinkedDevice(xrHMD);
                     headTracking.DeviceLinked = true;
-                    
+
                     string hmdName = xrHMD.name.ToLower();
                     if (hmdName.Contains("openxr"))
                     {
@@ -445,7 +445,7 @@ namespace SG
                 lastPing = System.DateTime.UtcNow;
                 CheckDevices();
             }
-            else if ( MissingDevices() )
+            else if (MissingDevices())
             {
                 System.DateTime currTime = System.DateTime.UtcNow;
                 if (currTime.Subtract(lastPing).TotalSeconds >= scanInterval)
@@ -473,11 +473,11 @@ namespace SG
         public static bool GetHandDevice(bool rightHand, out SG_XR_HandReference device)
         {
             CheckUpdate();
-            
+
             //Swapping is only relevant if Vive trackers are involved. Otherwise it does not (yet) make sense(glove).
-            if (HandsSwitched && 
-                ( (rightHandTracking != null && rightHandTracking.Hardware == SGCore.PosTrackingHardware.ViveTracker) 
-                || leftHandTracking != null && leftHandTracking.Hardware == SGCore.PosTrackingHardware.ViveTracker) )
+            if (HandsSwitched &&
+                ((rightHandTracking != null && rightHandTracking.Hardware == SGCore.PosTrackingHardware.ViveTracker)
+                || leftHandTracking != null && leftHandTracking.Hardware == SGCore.PosTrackingHardware.ViveTracker))
             {
                 rightHand = !rightHand;
             }
@@ -521,17 +521,17 @@ namespace SG
                 // Sorted by HMD for my own sanity
 
                 // Vive Pro / Valve Index - Uses trackers
-                if (deviceName.Contains("vive") && ( deviceName.Contains("tracker") || (manufacturerName.Equals("htc") && deviceName.Contains("lhr-") ) ) )
+                if (deviceName.Contains("vive") && (deviceName.Contains("tracker") || (manufacturerName.Equals("htc") && deviceName.Contains("lhr-"))))
                 {
                     return SGCore.PosTrackingHardware.ViveTracker;
                 }
 
                 // Oculus Quest 2 Controllers
-                if (hmdName.Contains("oculus"))
+                if (hmdName.Contains("oculus") || hmdName.Contains("meta"))
                 {
                     if (hmdName.Contains("quest"))
                     {
-                        return SGCore.PosTrackingHardware.Quest2Controller;
+                        return hmdName.Contains("pro") ? SGCore.PosTrackingHardware.QuestProController : SGCore.PosTrackingHardware.Quest2Controller; //xrDevice = "meta quest pro"
                     }
                     else if (hmdName.Contains("rift"))
                     {
@@ -551,7 +551,7 @@ namespace SG
                 if (hmdName.Contains("pico") || deviceName.Contains("pico")) //there is currently no way to distinguish between Pico Neo 3 and Pico Neo 2. Both are a "PicoXR HMD"
                 {
                     //We can't get their current SDK to work with the Neo 2. Besides, that HMD is rarely used anymore. Assuming Neo 3 from now on
-                    return SGCore.PosTrackingHardware.PicoNeo3; 
+                    return SGCore.PosTrackingHardware.PicoNeo3;
                 }
 
                 if (hmdName.Contains("wvr") && deviceName.Contains("tracker")) //Wave VR - Vive Focus
@@ -566,7 +566,7 @@ namespace SG
         public static bool GetTrackingReferenceLocation(bool rightHand, out Vector3 position, out Quaternion rotation)
         {
             SG_XR_HandReference handRef;
-            if ( GetHandDevice(rightHand, out handRef ) ) //GetHandDevice calls CheckDevicesI()
+            if (GetHandDevice(rightHand, out handRef)) //GetHandDevice calls CheckDevicesI()
             {
                 return handRef.TryGetLocation(out position, out rotation);
             }
@@ -610,7 +610,6 @@ namespace SG
         /// <returns></returns>
         public static bool HeadsetOnHead()
         {
-#if UNITY_2019_4_OR_NEWER
             CheckUpdate();
             if (headTracking != null)
             {
@@ -618,12 +617,30 @@ namespace SG
                 headTracking.XRDevice.TryGetFeatureValue(CommonUsages.userPresence, out userPresent);
                 return userPresent;
             }
-            return false;
-#else
-            return true;
-#endif
+            return true; //Default to true - this is probably a 2D or simulated XR Headset...
         }
 
+        public static bool TryCheckForController(out bool isController)
+        {
+            if (leftHandTracking.DeviceLinked)
+            {
+                if ((leftHandTracking.XRDevice.characteristics & InputDeviceCharacteristics.Controller) == InputDeviceCharacteristics.Controller)
+                {
+                    isController = true;
+                    return true;
+                }
+            }
+            else if (rightHandTracking.DeviceLinked)
+            {
+                if ((rightHandTracking.XRDevice.characteristics & InputDeviceCharacteristics.Controller) == InputDeviceCharacteristics.Controller)
+                {
+                    isController = true;
+                    return true;
+                }
+            }
+            isController = false;
+            return false;
+        }
 
     }
 }

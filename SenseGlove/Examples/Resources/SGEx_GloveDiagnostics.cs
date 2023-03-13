@@ -45,7 +45,7 @@ namespace SG.Examples
 		SGCore.Haptics.SG_FFBCmd ffbCmd = SG_FFBCmd.Off;
 		SGCore.Haptics.SG_BuzzCmd buzzCmd = SG_BuzzCmd.Off;
 		SGCore.Haptics.ThumperCmd thumprCmd = ThumperCmd.Off;
-		bool setup = false;
+		//bool setup = false;
 		bool sComRuns = false;
 		int sgThump = 0;
 		string thumpKey = "sgThump";
@@ -324,23 +324,29 @@ namespace SG.Examples
 
 
 						//collect ffb and send.
-						int[] ffb = new int[this.fingerFFB.Length];
+						float[] ffb = new float[this.fingerFFB.Length];
 						for (int f = 0; f < this.fingerFFB.Length; f++)
 						{
-							ffb[f] = (int)fingerFFB[f].SlideValue;
+							ffb[f] = fingerFFB[f].SlideValue / 100.0f;
 						}
-						ffbCmd = new SG_FFBCmd(ffb);
+						//ffbCmd = new SG_FFBCmd(ffb);
 
-						int[] buzz = new int[this.fingerVibration.Length];
+						float[] buzz = new float[this.fingerVibration.Length];
 						for (int f = 0; f < this.fingerVibration.Length; f++)
 						{
-							buzz[f] = (int)fingerVibration[f].SlideValue;
+							buzz[f] = (int)fingerVibration[f].SlideValue / 100.0f;
 						}
-						buzzCmd = new SG_BuzzCmd(buzz);
+						//buzzCmd = new SG_BuzzCmd(buzz);
 
-						thumprCmd = new ThumperCmd((int)thumperVibration.SlideValue);
-
-						hapticGlove.SendHaptics(ffbCmd, buzzCmd, thumprCmd);
+						//thumprCmd = new ThumperCmd((int)thumperVibration.SlideValue);
+						float wrist = thumperVibration.SlideValue / 100.0f;
+						hapticGlove.QueueFFBLevels(ffb);
+						hapticGlove.QueueVibroLevels(buzz);
+						if (hapticGlove is SGCore.Nova.NovaGlove)
+                        {
+							((SGCore.Nova.NovaGlove)hapticGlove).QueueWristLevel(wrist);
+                        }
+						hapticGlove.SendHaptics();
 
 						//update wrist IMU
 						if (handSelector.ActiveHand != null && handSelector.ActiveGlove != null)

@@ -14,15 +14,23 @@ namespace SG
 
         /// <summary> The maximum brake force [0..100%] that the material provides when the finger is at maxForceDist inside the collider. </summary>
         [Header("Force-Feedback Settings")]
-        //public int maxForce = 100;
-
-        ///// <summary> The distance [in m] before the maximum force is reached. 0.02 == 2cm.</summary>
-        //public float maxForceDist = 0.02f; //1 cm
 
         ///// <summary> The Force-Feedback response of an object. X axis [0..1] represtents the maxForceDist in relation to the y-axis, where [1] represents the maxForce. </summary>
-        //public AnimationCurve forceRepsonse = AnimationCurve.Constant(0, 1, 1);
-
         public SG_MaterialProperties materialProperties;
+
+        /// <summary> Retrieve the maximum force (y-axis 1 on the forceResponse) from this SG_Material. </summary>
+        public float MaxForce
+        {
+            get { return this.materialProperties != null ? this.materialProperties.maxForce : 1.0f; }
+        }
+
+        /// <summary> Retrieve the maximum force distance (x-axis 1 on the forceResponse) from this SG_Material. </summary>
+        public float MaxForceDistance
+        {
+            get { return this.materialProperties != null ? this.materialProperties.maxForceDist : 0.0f; }
+        }
+
+        //public AnimationCurve forceRepsonse = AnimationCurve.Constant(0, 1, 1);
 
         //---------------------------------------------------------------------
         //  Breakable properties
@@ -77,7 +85,10 @@ namespace SG
             //TODO: Event?
         }
 
-
+        public bool CanDeform()
+        {
+            return this.deformScript != null;
+        }
 
         /// <summary> Check if this material is broken </summary>
         /// <returns></returns>
@@ -210,6 +221,10 @@ namespace SG
             if (myInteractable == null && this.mustBeGrabbed)
             {
                 this.mustBeGrabbed = false; //we cannot require this material to be grabbed if it's not an interactable.
+            }
+            if (this.deformScript == null)
+            {
+                this.deformScript = this.gameObject.GetComponent<SG_MeshDeform>();
             }
         }
 

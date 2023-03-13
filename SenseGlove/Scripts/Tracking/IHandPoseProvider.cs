@@ -1,8 +1,26 @@
 ﻿namespace SG
 {
+    /// <summary> The Type of device that is used to generate HandPoses. Useful for display, but also for interaction parameters  </summary>
+    public enum HandTrackingDevice
+    { 
+        /// <summary> We do not knwo what kind of hand tracking device this is... </summary>
+        Unknown,
+        /// <summary> This is a hand-held motion controller device. Actions are triggered through button presses. </summary>
+        Controller6DoF,
+        /// <summary> This is an optical (Computer-Vision) solution - Like Quest Hand Tracking - Actions are coming from gestures.  </summary>
+        HandTracking,
+        /// <summary> This is a Haptic Glove. Actions come from both gestures and feedback. </summary>
+        HapticGlove
+    }
+
+
     /// <summary> A class implementing this Interface can provide one with a SG_HandPose. We don't care how or where it comes from. </summary>
     public interface IHandPoseProvider
     {
+        /// <summary> The type of hand tracking generated from this device. Used in grabbing logic. </summary>
+        /// <returns></returns>
+        HandTrackingDevice TrackingType();
+
         /// <summary> Returns true if this HandPose Source is tracking the right hand. Otherwise, it tracks the left hand. </summary>
         /// <returns></returns>
         bool TracksRightHand();
@@ -10,6 +28,11 @@
         /// <summary> Returns true if this device is connected and ready. </summary>
         /// <returns></returns>
         bool IsConnected();
+
+        /// <summary> Attempt to retrieve the battery level of this device. Return false if this is a wired device. </summary>
+        /// <param name="value01"></param>
+        /// <returns></returns>
+        bool TryGetBatteryLevel(out float value01);
 
         /// <summary> Sets the hand dimensions for the forward kinematics of the HandPoseProvider. </summary>
         /// <param name="handModel"></param>
@@ -40,6 +63,7 @@
         /// <remarks> Is a float so we can vary by pressure, but otherwise can be 0 or 1 if your device doesn't support it. </remarks>
         /// <returns></returns>
         float OverrideUse();
+
 
 
     }

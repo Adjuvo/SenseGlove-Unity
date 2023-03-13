@@ -104,6 +104,26 @@ namespace SG
         {
             if (TrackedHand != null) { ((IHandFeedbackDevice)TrackedHand).SendCmd(customWaveform, location); }
         }
+
+        public bool FlexionLockSupported()
+        {
+            return TrackedHand != null && ((IHandFeedbackDevice)TrackedHand).FlexionLockSupported();
+        }
+
+        public void SetFlexionLocks(bool[] fingers, float[] fingerFlexions)
+        {
+            if (TrackedHand != null) { ((IHandFeedbackDevice)TrackedHand).SetFlexionLocks(fingers, fingerFlexions); }
+        }
+
+        public bool TryGetBatteryLevel(out float value01)
+        {
+            if (TrackedHand != null) 
+            { 
+                return ((IHandFeedbackDevice)TrackedHand).TryGetBatteryLevel(out value01);
+            }
+            value01 = 1.0f;
+            return false;
+        }
     }
 
     //-------------------------------------------------------------------------------------------------------------------------------------
@@ -807,6 +827,15 @@ namespace SG
             return this.name;
         }
 
+        /// <summary> Attempt to retrieve the battery level of the device connected to this hand. </summary>
+        /// <param name="value01"></param>
+        /// <returns></returns>
+        public bool TryGetBatteryLevel(out float value01)
+        {
+            value01 = -1.0f;
+            return false;
+        }
+
         /// <summary> Returns true onless overrided. </summary>
         /// <returns></returns>
         public virtual bool IsConnected()
@@ -900,6 +929,24 @@ namespace SG
             }
         }
 
+        public bool FlexionLockSupported()
+        {
+            for (int i = 0; i < this.grabbedBy.Count; i++)
+            {
+                if (grabbedBy[i] != null && grabbedBy[i].TrackedHand != null && grabbedBy[i].TrackedHand.FlexionLockSupported()) { return true; }
+            }
+            return false;
+        }
+
+        public void SetFlexionLocks(bool[] fingers, float[] fingerFlexions)
+        {
+            for (int i = 0; i < this.grabbedBy.Count; i++)
+            {
+                if (grabbedBy[i] != null && grabbedBy[i].TrackedHand != null) { this.grabbedBy[i].TrackedHand.SetFlexionLocks(fingers, fingerFlexions); }
+            }
+        }
+
+
         //---------------------------------------------------------------------------------------------------------------------------------------------------------------------
         // Monobehaviour
 
@@ -948,7 +995,5 @@ namespace SG
         {
             SG.Util.SG_Util.IsQuitting = true;
         }
-
-        
     }
 }

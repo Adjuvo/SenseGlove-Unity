@@ -70,9 +70,9 @@ namespace SG
         }
 
         /// <summary> Gain access to the GrabScript attached to this layer's TrackedHand. </summary>
-        public virtual SG_FingerPassThrough PassthroughLayer
+        public virtual SG_HandProjection ProjectionLayer
         {
-            get { return this.TrackedHand != null ? TrackedHand.passThoughLayer : null; }
+            get { return this.TrackedHand != null ? TrackedHand.projectionLayer : null; }
         }
 
 
@@ -83,12 +83,12 @@ namespace SG
 
         /// <summary> Link this component to a (new) trackedHand. Some guarding in place to make sure we don't call this function when it's not needed. </summary>
         /// <param name="newHand"></param>
-        public void LinkToHand(SG_TrackedHand newHand)
+        public void LinkToHand(SG_TrackedHand newHand, bool forceLink = false)
         {
-            if (this.TrackedHand == null || newHand != this.TrackedHand) //safegaurd
+            if (this.TrackedHand == null || newHand != this.TrackedHand || forceLink) //safegaurd
             {
                 SetupComponents(); //make sure the layer has it's components already.
-                LinkToHand(newHand, firstLink);
+                LinkToHand_Internal(newHand, this.firstLink);
                // Debug.Log(this.name + "(" + (this.TrackedHand != null ? (this.TrackedHand.TracksRightHand() ? "R" : "L") : "BEFORE LINK") + "): Linked to " + this.TrackedHand.name);
                 firstLink = false;
             }
@@ -97,7 +97,7 @@ namespace SG
         /// <summary> Actually (Re)Link this Hand Layer to a new Tracked Hand. Setup all tracking accordingly. Other layers override this function. </summary>
         /// <param name="newHand"></param>
         /// <param name="firstLink">Is only true the first time a link is called.</param>
-        protected virtual void LinkToHand(SG_TrackedHand newHand, bool firstLink)
+        protected virtual void LinkToHand_Internal(SG_TrackedHand newHand, bool firstLink)
         {
             this.TrackedHand = newHand;
         }

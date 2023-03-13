@@ -120,9 +120,9 @@ namespace SG
             }
         }
 
-        protected override void LinkToHand(SG_TrackedHand newHand, bool firstLink)
+        protected override void LinkToHand_Internal(SG_TrackedHand newHand, bool firstLink)
         {
-            base.LinkToHand(newHand, firstLink);
+            base.LinkToHand_Internal(newHand, firstLink);
             if (wristText != null)
             {
                 SG_SimpleTracking link = Util.SG_Util.TryAddComponent<SG_SimpleTracking>(wristText.gameObject);

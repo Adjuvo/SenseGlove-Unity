@@ -14,8 +14,8 @@ namespace SG.Util
 		/// <summary> Singleton instance of the SG_Connections </summary>
 		private static SG_Connections instance = null;
 
-	//	/// <summary> Putting this variable here for now. Need a way to change that in .ini or Build settings. </summary>
-	//	private static bool standaloneMode = false;
+		//	/// <summary> Putting this variable here for now. Need a way to change that in .ini or Build settings. </summary>
+		//	private static bool standaloneMode = false;
 
 		/// <summary> If true, Initialization of communication resources was succesful, so we must dispose of it OnApplicationQuit. </summary>
 		private static bool initialized = false;
@@ -192,76 +192,81 @@ namespace SG.Util
 		/// <summary> Utility method to log to Unity, but also to write the last few messages to a 3D text in the scene. </summary>
 		/// <param name="message"></param>
 		public static void Log(string message)
-        {
+		{
 			Debug.Log("[SenseGlove] " + message);
 
 			if (msgQueue.Count + 1 > maxQueue) { msgQueue.RemoveAt(0); }
 			msgQueue.Add(message);
 
 			if (debugElement != null || debugUIElement != null)
-            {
+			{
 				string msg = "";
-				for (int i=0; i<msgQueue.Count; i++)
-                {
+				for (int i = 0; i < msgQueue.Count; i++)
+				{
 					msg += msgQueue[i];
-					if (i < msgQueue.Count - 1) { msg += "\r\n"; } 
-                }
+					if (i < msgQueue.Count - 1) { msg += "\r\n"; }
+				}
 				if (debugElement != null) { debugElement.text = msg; }
 				if (debugUIElement != null) { debugUIElement.text = msg; }
-            }
-        }
+			}
+		}
 
 
 
 		/// <summary> Create a new instance of SG_Connection in the Scene, if we don't have on e yet. </summary>
 		public static void SetupConnections()
-        {
+		{
 			//Log("Ensuring we have some form of connections available to us!");
 			if (instance == null)
-            {
+			{
 				GameObject connectionObj = new GameObject("[SG Connections]");
 				//Log("Created a new instance!");
 				instance = connectionObj.AddComponent<SG_Connections>();
-            }
-        }
+			}
+		}
 
 		/// <summary> Initialize the SenseGlove back-end, be it SenseCom or Android Class wrappers </summary>
 		protected static void Initialize()
-        {
+		{
 			if (!initialized)
 			{
 				initialized = true;
-				
+
 				if (SGCore.Library.GetBackEndType() == SGCore.Library.BackEndType.AndroidStrings)
-                {
+				{
 					Log("Initalizing AndroidStrings");
 					Andr_TryInitialize();
 				}
+				else if (SGCore.Library.GetBackEndType() == SGCore.Library.BackEndType.Sockets)
+				{
+					Log("Initalizing Socket Communication");
+					SGCore.DeviceList.Initialize();
+				}
 				else
-                {
+				{
 					Log("Initalizing SenseCom");
 					if (!SGCore.SenseCom.ScanningActive()) //TODO: Standalone Mode?
-                    {
+					{
 						if (SGCore.SenseCom.StartupSenseCom())
-                        {
+						{
 							Log("Started up SenseCom.");
 						}
 						else
-                        {
+						{
 							Log("SenseCom is not currently running. You won't be able to communicate with your glove(s) until it is running.");
 						}
 					}
-                }
+				}
 			}
 			else
-            {
+			{
 				//Log("Already initialized a scene before this one.");
-            }
-        }
+			}
+		}
 
 		/// <summary> Dispose of any Android resources. </summary>
 		protected static void Dispose()
-        {
+		{
 			if (initialized)
 			{
 				initialized = false;
@@ -270,11 +275,16 @@ namespace SG.Util
 					Andr_TryDispose();
 					Log("Disposed Communications (Standalone modes only)");
 				}
+				else if (SGCore.Library.GetBackEndType() == SGCore.Library.BackEndType.Sockets)
+				{
+					Log("Disposing Socket Communication");
+					SGCore.DeviceList.Dispose();
+				}
 			}
 			else
-            {
+			{
 				//Log("We never initialized, so we don't have to dispose either");
-            }
+			}
 		}
 
 
@@ -295,37 +305,37 @@ namespace SG.Util
 
 
 		void OnDestroy() //called after OnApplicationQuit for some insane reason.
-        {
-			if (instance ==  this)
-            {
+		{
+			if (instance == this)
+			{
 				//Log("Unlinked SenseGlove Connections from " + this.name);
 				debugElement = null;
 				debugUIElement = null;
 				instance = null; //clear my refernce to the instance, so another can take its place.
-            }
-        }
+			}
+		}
 
 
 		void OnApplicationQuit() //is called before OnDestory
-        {
+		{
 			if (instance == this)
 			{
 				Dispose();
 			}
-        }
+		}
 
 		//Fires when tabbing in / out of this application
 		void OnApplicationFocus(bool hasFocus)
 		{
 			if (hasFocus && loadProfilesOnFocus)
-            {
+			{
 				//Debug.Log("Reloaded SenseGlove Profiles from disk...");
-				SG_HandProfiles.TryLoadFromDisk(); //reload profiles. Done here because this script is always there when using SenseGlove scripts.
-            }
+				SGCore.HG_HandProfiles.TryLoadFromDisk(); //reload profiles. Done here because this script is always there when using SenseGlove scripts.
+			}
 		}
 
 		void Update()
-        {
+		{
 #if UNITY_ANDROID && !UNITY_EDITOR
 			if (classLinked)
 			{

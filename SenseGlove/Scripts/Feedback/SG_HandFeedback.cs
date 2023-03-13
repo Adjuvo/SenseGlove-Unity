@@ -15,6 +15,16 @@ namespace SG
 
         protected bool updateSelf = true;
 
+        /// <summary> TODO: Automatically Detect this based on device </summary>
+        public bool useTraditional = true;
+
+        /// <summary> TODO: Automatically Detect this based on device </summary>
+        public bool useThresholds = true;
+
+        /// <summary> If true, we've yet to warn someone about the projection layer... </summary>
+        protected bool warnProjection = true;
+        protected bool warnThresholds = true;
+
         protected override void CreateComponents()
         {
             if (fingerFeedbackScripts.Length < 5)
@@ -34,10 +44,10 @@ namespace SG
             get { return this; }
         }
 
-        protected override void LinkToHand(SG_TrackedHand newHand, bool firstLink)
+        protected override void LinkToHand_Internal(SG_TrackedHand newHand, bool firstLink)
         {
             //Debug.Log("Linking " + this.name + " to " + newHand.name);
-            base.LinkToHand(newHand, firstLink);
+            base.LinkToHand_Internal(newHand, firstLink);
             hapticHardware = newHand;
 
             SG_HandPoser3D poser = newHand.GetPoser(SG_TrackedHand.TrackingLevel.VirtualPose);
@@ -73,8 +83,8 @@ namespace SG
             base.CollectDebugComponents(out objects, out renderers); //also creates the lists.
             for (int f = 0; f < this.fingerFeedbackScripts.Length; f++)
             {
-                SG.Util.SG_Util.CollectComponent(this.fingerFeedbackScripts[f].gameObject, renderers); //deleteable renderer of the GameObject
-                Util.SG_Util.CollectGameObject(this.fingerFeedbackScripts[f].debugTextElement, objects); //we want to be able to turn off the test completely.
+                SG.Util.SG_Util.CollectComponent(this.fingerFeedbackScripts[f].gameObject, ref renderers); //deleteable renderer of the GameObject
+                Util.SG_Util.CollectGameObject(this.fingerFeedbackScripts[f].debugTextElement, ref objects); //we want to be able to turn off the test completely.
             }
         }
 
@@ -152,15 +162,44 @@ namespace SG
         {
             if (this.isActiveAndEnabled && this.hapticHardware != null && this.hapticHardware.IsConnected()) //don't send FFB when disconnected.
             {
-                int[] forceLevels = new int[5];
-                for (int f = 0; f < forceLevels.Length; f++)
+                if (useTraditional)
                 {
-                    if (fingerFeedbackScripts.Length > f)
+                    int[] forceLevels = new int[5];
+                    for (int f = 0; f < forceLevels.Length; f++)
                     {
-                        forceLevels[f] = fingerFeedbackScripts[f].ForceLevel;
+                        if (fingerFeedbackScripts.Length > f)
+                        {
+                            forceLevels[f] = fingerFeedbackScripts[f].ForceLevel;
+                        }
+                    }
+                    hapticHardware.SendCmd(new SGCore.Haptics.SG_FFBCmd(forceLevels));
+                }
+
+                if ( this.useThresholds ) //Our Device supports locking the fingers at a specific flexion!
+                {
+                    if (hapticHardware.FlexionLockSupported())
+                    {
+                        if (ProjectionLayer == null || !ProjectionLayer.isActiveAndEnabled)
+                        {
+                            if (warnProjection)
+                            {
+                                warnProjection = false;
+                                Debug.LogWarning("Your device Supports Flexion Locking, but your projection layer ");
+                            }
+                        }
+                        else
+                        {
+                            this.ProjectionLayer.GetTouchInformation(out bool[] isTouching, out float[] touchFlexion, true); //we ignore soft materials for now...
+                            this.hapticHardware.SetFlexionLocks(isTouching, touchFlexion);
+                        }
+                    }
+                    else if (warnProjection)
+                    {
+                        warnProjection = false;
+                        Debug.Log( this.hapticHardware.Name() + " does not support Threshold Commands. Disabling this feature." );
                     }
                 }
-                hapticHardware.SendCmd(new SGCore.Haptics.SG_FFBCmd(forceLevels));
+
             }
         }
 

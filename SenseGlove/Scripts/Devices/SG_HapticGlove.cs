@@ -1,4 +1,4 @@
-﻿#define CV_ENABLED
+﻿//#define CV_ENABLED
 #define HG_CUSTOM_INSPECTOR
 
 using SGCore.Kinematics;
@@ -24,12 +24,13 @@ namespace SG
     /// <summary> Interface for a left- or right handed glove built by SenseGlove. Usually either a SenseGlove DK1 or a Nova Glove. </summary>
     public class SG_HapticGlove : MonoBehaviour, IHandPoseProvider, IHandFeedbackDevice
     {
-#if UNITY_2019_4_OR_NEWER
         /// <summary> Method to determine a HapticGlove's wrist location, as SenseGlove device do not come with their own. </summary>
         public enum WristTracking
         {
-            /// <summary> Use UnityXR's positioning System. Assign an origin value to  </summary>
+            /// <summary> Use UnityXR's positioning System. Assign an origin value to move the hands with the origin </summary>
             UnityXR,
+            /// <summary> Use UnityXR's positioning system, but use manual offsets. </summary>
+            UnityXRManualOffsets,
             /// <summary> Follow a specific transform, with tracking offsets determined by the devices detected via SG_XR_Devices. </summary>
             FollowObjectAutoOffsets,
             /// <summary> Follow a specific transform, but using tracking Offsets determined at the start. </summary>
@@ -39,7 +40,6 @@ namespace SG
             /// <summary> This GameObject's own Transform to determine the wrist rotation / position. Useful when you're using parenting to determine hand location(s). </summary>
             MyGameObject,
         }
-#endif
 
         //--------------------------------------------------------------------------------------------------------
         // Variables
@@ -52,13 +52,11 @@ namespace SG
         /// <summary> If true, we check calibration status at the start of the simulation. Set this to true if you don't have a separate Calibration Scene before this one. </summary>
         public bool checkCalibrationOnConnect = false;
 
-#if UNITY_2019_4_OR_NEWER
         /// <summary> The method by which to determine Wrist Position of this SG_HapticGlove when no Optical Tracking is available. </summary>
         public WristTracking wristTrackingMethod = WristTracking.UnityXR;
 
         /// <summary> Optional. When using UnityXR's wrist tracking, the wrist will move relative to this origin. </summary>
         public Transform origin;
-#endif
 
         /// <summary> GameObject controller by a 3rd party tracking script, that is used to take over wrist tracking. </summary>
         public Transform wristTrackingObj;
@@ -90,6 +88,8 @@ namespace SG
         /// <summary> Connection state during the last Hardware Tick. Used to fire Connected/Disconnected events. </summary>
         protected bool wasConnected = false;
 
+        /// <summary> If true, we can still check for the XRRig </summary>
+        protected bool checkOrigin = true;
 
         // Calibration Related
 
@@ -273,7 +273,6 @@ namespace SG
         /// <returns></returns>
         public bool GetWristLocation(out Vector3 wristPos, out Quaternion wristRot)
         {
-#if UNITY_2019_4_OR_NEWER
             if (this.wristTrackingMethod == WristTracking.MyGameObject)
             {
                 wristPos = this.transform.position;
@@ -288,15 +287,15 @@ namespace SG
             }
 
             // Validate Offsets
-            SGCore.PosTrackingHardware offsets = this.wristTrackingOffsets;
             if ( (this.wristTrackingMethod == WristTracking.FollowObjectAutoOffsets || this.wristTrackingMethod == WristTracking.UnityXR)
-                && SG_XR_Devices.GetTrackingHardware(this.TracksRightHand(), out offsets))
+                && SG_XR_Devices.GetTrackingHardware(this.TracksRightHand(), out SGCore.PosTrackingHardware updatedOffsets))
             {
-                this.wristTrackingOffsets = offsets;
+                this.wristTrackingOffsets = updatedOffsets;
             }
+            SGCore.PosTrackingHardware offsets = this.wristTrackingOffsets;
 
             //UnityXR = Whatever Unity returns, but also with the Origin, if any
-            if (this.wristTrackingMethod == WristTracking.UnityXR) //ths 
+            if (this.wristTrackingMethod == WristTracking.UnityXR || wristTrackingMethod == SG_HapticGlove.WristTracking.UnityXRManualOffsets)
             {
                 Vector3 trackerPos;
                 Quaternion trackerRot;
@@ -313,9 +312,6 @@ namespace SG
             }
             // If we get here, we're using either one of the offsets
             return GetWristLocation(this.wristTrackingObj, offsets, out wristPos, out wristRot);
-#else
-            return GetWristLocation(this.wristTrackingObj, this.wristTrackingOffsets, out wristPos, out wristRot);
-#endif
         }
 
         /// <summary> Calculate a 3D position of the wrist, based on an existing tracking hardware and its location. </summary>
@@ -361,6 +357,7 @@ namespace SG
             wristRot = SG.Util.SG_Conversions.ToUnityQuaternion(wRot);
             return true;
         }
+
 
 
         /// <summary> Updates the LastHandPose if needed. At the end of this function, LastHandModel is known. </summary>
@@ -547,6 +544,13 @@ namespace SG
         //--------------------------------------------------------------------------------------------------------
         // HandPoseProvider Interface Functions
 
+        /// <summary> Returns the tracking Type of this device </summary>
+        /// <returns></returns>
+        public HandTrackingDevice TrackingType()
+        {
+            return HandTrackingDevice.HapticGlove; //If other HapitcGlove devices appear, we can use those instead.
+        }
+
         /// <summary> Returns true if this Haptic Glove is configured to connect to the left / right hands. </summary>
         /// <returns></returns>
         public bool TracksRightHand()
@@ -583,6 +587,18 @@ namespace SG
         public bool IsConnected()
         {
             return this.lastGlove != null;
+        }
+
+
+        public bool TryGetBatteryLevel(out float value01)
+        {
+            if (this.lastGlove != null && this.lastGlove.GetBatteryLevel(out float unconv))
+            {
+                value01 = Mathf.Clamp01(unconv + 0.01f); //our battery caps out at 99%. So until I fix this, this is the best we can do.
+                return true;
+            }
+            value01 = -1.0f;
+            return false;
         }
 
         /// <summary> Returns the last handPose retrieved this frame </summary>
@@ -691,7 +707,7 @@ namespace SG
             hapticStream.ClearVibrations();
             if (this.lastGlove != null && !this.bypassingHaptics)
             {
-                lastGlove.SendHaptics(lastFFBLevels, SG_BuzzCmd.Off, ThumperCmd.Off);
+                lastGlove.StopVibrations();
             }
         }
 
@@ -701,7 +717,7 @@ namespace SG
             hapticStream.ClearAll();
             if (this.lastGlove != null && !this.bypassingHaptics)
             {
-                lastGlove.SendHaptics(SG_FFBCmd.Off, SG_BuzzCmd.Off, ThumperCmd.Off);
+                lastGlove.StopHaptics();
             }
         }
 
@@ -786,6 +802,24 @@ namespace SG
             }
         }
 
+        public bool FlexionLockSupported()
+        {
+            if (this.InternalGlove != null && this.InternalGlove is SGCore.Nova.NovaGlove)
+            {
+                return ((SGCore.Nova.NovaGlove)this.InternalGlove).SupportsThresholds;
+            }
+            return false;
+        }
+
+
+        public void SetFlexionLocks(bool[] fingers, float[] fingerFlexions)
+        {
+            if (this.InternalGlove != null && this.InternalGlove is SGCore.Nova.NovaGlove)
+            {
+                ((SGCore.Nova.NovaGlove)this.InternalGlove).QueueThresholdCmd_Flexions(fingers, fingerFlexions);
+            }
+        }
+
 
         /// <summary> Process all haptics that were sent this frame and that are still active. </summary>
         public void UpdateHaptics(float dT)
@@ -800,8 +834,26 @@ namespace SG
                 this.lastThumperCmd = newThumper;
                 if (this.lastGlove != null && !this.bypassingHaptics) //we'll process the timing regardless of whether or not we are connected. So this check comes after.
                 {
-                    this.lastGlove.SendHaptics(newFFB, newBuzz, newThumper); //actually send these.
+                    //actually properly queue the force-feedback.
+                    for (int f=0; f<5; f++)
+                    {
+                        SGCore.Finger finger = (SGCore.Finger)f;
+                        lastGlove.QueueFFBLevel(finger, lastFFBLevels.GetLevel(f) / 100.0f);
+                        lastGlove.QueueVibroLevel(finger, lastBuzzCmd.GetLevel(f) / 100.0f);
+                    }
+                    if (lastGlove is SGCore.Nova.NovaGlove)
+                    {
+                        SGCore.Nova.NovaGlove nova = (SGCore.Nova.NovaGlove)lastGlove;
+                        float properWrist = this.lastThumperCmd.magnitude / 100.0f; //div 100 because the bettwe magnitue is 0 .. 1
+                        nova.QueueWristLevel(properWrist);
+                    }
+
+                    //this.lastGlove.SendHaptics(newFFB, newBuzz, newThumper); //actually send these.
                 }
+            }
+            if (this.lastGlove != null)
+            {
+                this.lastGlove.SendHaptics(); //flush all these all the time(?) to also have the thresholds in there.
             }
         }
 
@@ -852,10 +904,9 @@ namespace SG
         {
             StopHaptics(); //Ensure no Haptics continue after the application quits.
         }
-
     }
 
-#if HG_CUSTOM_INSPECTOR && UNITY_EDITOR && UNITY_2019_4_OR_NEWER
+#if HG_CUSTOM_INSPECTOR && UNITY_EDITOR
 
     // Declare type of Custom Editor
     [UnityEditor.CustomEditor(typeof(SG_HapticGlove))]
@@ -912,7 +963,7 @@ namespace SG
                 SG_HapticGlove.WristTracking currWTMethod = (SG_HapticGlove.WristTracking)m_wristTrackingMethod.intValue;
                 if (currWTMethod != SG_HapticGlove.WristTracking.MyGameObject)
                 {
-                    if (currWTMethod == SG_HapticGlove.WristTracking.UnityXR)
+                    if (currWTMethod == SG_HapticGlove.WristTracking.UnityXR || currWTMethod == SG_HapticGlove.WristTracking.UnityXRManualOffsets)
                     {
                         UnityEditor.EditorGUILayout.PropertyField(m_origin, new GUIContent("Origin", "Optional. When using UnityXR's wrist tracking, the wrist will move relative to this origin."));
                     }
@@ -920,7 +971,7 @@ namespace SG
                     {
                         UnityEditor.EditorGUILayout.PropertyField(m_wristTrackingObj, new GUIContent("Wrist Tracking Obj", "The GameObject to follow, using offsets"));
                     }
-                    if (currWTMethod == SG_HapticGlove.WristTracking.FollowObjectManualOffsets)
+                    if (currWTMethod == SG_HapticGlove.WristTracking.FollowObjectManualOffsets || currWTMethod == SG_HapticGlove.WristTracking.UnityXRManualOffsets)
                     {
                         UnityEditor.EditorGUILayout.PropertyField(m_wristTrackingOffsets, new GUIContent("Wrist Tracking Offsets", "The hardware offsets from tracking reference to the wrist."));
                     }

@@ -45,7 +45,7 @@ namespace SG.Examples
                 hand.SetLayer(SG_TrackedHand.HandLayer.Gestures, false);
                 hand.SetLayer(SG_TrackedHand.HandLayer.Grab, false);
                // hand.SetLayer(SG_TrackedHand.HandLayer.HandModel, active);
-                hand.SetLayer(SG_TrackedHand.HandLayer.Passthrough, false);
+                hand.SetLayer(SG_TrackedHand.HandLayer.Projection, false);
                 hand.SetLayer(SG_TrackedHand.HandLayer.Physics, false);
             }
         }

@@ -1,7 +1,38 @@
 # Changelog
 All notable changes to the SenseGlove Prefabs will be documented in this file.
 
-You are currently using version 2.4.2
+You are currently using version v2.5.0
+
+## [v2.5.0] - 2023-03-13
+New Haptic Features, Projection Layer, and XR Features
+
+### Changed
+- SenseCom version v1.3.1 for Linux, which is compatible with Nova Gloves! (Provided you can get it to show up as an rfcomm device).
+- SenseCom version v1.4.0 for Windows, which has multiple haptic channels per device, allowing for more consisten Nova-Waveforms and even a new way to activate Force-Feedback!
+- Hand Prefab Passthrough Layers have been replaced by the Projection Layer. Instead of reacting to collisions, this layer pre-emptively determines at which flexion your fingers will hit a material!
+- The SG_HandFeedback uses this new Projection layer to tell IHandFeedbackDevices at which flexion to turn on the Force-Feedback. In the case of Nova Gloves running firmware version v1.12, this happens on the glove itself!
+- IHandFeedbackDevice interface now has a function to activate "Flexion Locks": Pass this function an finger and a value between 0.0 - 1.0, and the device should lock force-feedback when (normalized) flexion exceeds the value.
+- IHandTrackingDevice interface: Added TrackingType and GetBatteryLevel functions.
+- SG_HandComponent now explicitly defines LinkToHand and LinkToHand_Internal to distinguish between the two.
+- Calibration Void internal logic is revamped so that both gloves keep track of individual stages.
+
+### Added
+- SG_FingerProjection1DoF, a script that checks over a finger's movement range when and where it will collide with any SG_Materials.
+- SG_HandProjection, which uses multiple SG_FingerProjection1DoF scripts to calculate an appropriate HandPose.
+- Proper Meta Quest Pro mount offsets, as well as a way to automatically detect a Meta Quest Pro - Provided your project is able to distinguish it from a Quest 2!
+- Built-in controller support for the Calibration Void: Skip calibration, or reset the scene using the trigger buttons.
+- SenseGlove_Demo folder, which contains useful features to upgrade one's Demo.
+- Basic Controller Support: It is now possible to use an Oculus controller to simulate SenseGlove Devices using the Grip button. Other controllers can be used, but their wrist location will most likely be off.
+- Demo Menu: A Prefab that can be thrown into a scene (or, under a canvas). It has buttons to reset, exit, as well as glove status icons, watermarks, and a built-in Notification System. Useful only for Desktop Builds.
+- An XR_Popups Prefab to show notifications in an XR simulation as well.
+- A "Hand UI" - A small gizmo that displays device battery status when turned towards the head.
+- An "XR Menu" that links itself to Hand UI prefabs. When one taps on a Hand UI face, this menu appears, and allows one to easily recenter, reset or exit the application.
+
+### Fixed
+- Android: Second glove connecting too late to the Calibration Void, causing us to skip its calibration.
+- SenseCom: When SenseCom crashes, there should still be a SessionLog left behind.
+- Nova Gloves not being compatible with Nova Gloves
+
 
 
 ## [v2.4.2] - 2022-12-20

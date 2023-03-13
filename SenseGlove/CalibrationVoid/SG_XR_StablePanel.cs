@@ -12,7 +12,7 @@ public class SG_XR_StablePanel : MonoBehaviour
 
     public Transform headTransform;
     public float flySpeed = 1.0f;
-    
+
 
     public void UpdateTransform(float dT)
     {
@@ -31,6 +31,10 @@ public class SG_XR_StablePanel : MonoBehaviour
     private void Start()
     {
         qOffset = Quaternion.Euler(rotOffset);
+        if (this.headTransform == null && Camera.main != null)
+        {
+            this.headTransform = Camera.main.transform;
+        }
     }
 
     private void Update()

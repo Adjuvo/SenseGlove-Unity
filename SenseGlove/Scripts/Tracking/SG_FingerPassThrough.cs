@@ -25,11 +25,11 @@ namespace SG
         //------------------------------------------------------------------------------------------------------------
         // HandComponent Functions
 
-        /// <summary> Access the Passthrough Layer linked to this layer's TrackedHand </summary>
-        public override SG_FingerPassThrough PassthroughLayer
-        {
-            get { return this; }
-        }
+        ///// <summary> Access the Passthrough Layer linked to this layer's TrackedHand </summary>
+        //public override SG_FingerPassThrough PassthroughLayer
+        //{
+        //    get { return this; }
+        //}
 
         /// <summary> Collect all physics colliders from this Script </summary>
         /// <returns></returns>
@@ -51,8 +51,8 @@ namespace SG
             base.CollectDebugComponents(out objects, out renderers);
             for (int i = 0; i < this.fingerColliders.Length; i++)
             {
-                Util.SG_Util.CollectComponent(this.fingerColliders[i], renderers);
-                Util.SG_Util.CollectGameObject(this.fingerColliders[i].debugTextElement, objects);
+                Util.SG_Util.CollectComponent(this.fingerColliders[i], ref renderers);
+                Util.SG_Util.CollectGameObject(this.fingerColliders[i].debugTextElement, ref objects);
             }
         }
 
@@ -75,9 +75,9 @@ namespace SG
         /// <summary> Link this layer to a new SG_TrackedHand </summary>
         /// <param name="newHand"></param>
         /// <param name="firstLink"></param>
-        protected override void LinkToHand(SG_TrackedHand newHand, bool firstLink)
+        protected override void LinkToHand_Internal(SG_TrackedHand newHand, bool firstLink)
         {
-            base.LinkToHand(newHand, firstLink);
+            base.LinkToHand_Internal(newHand, firstLink);
             //Link finger colliders to the collider poser.
             SG_HandPoser3D colliderPoser = newHand.GetPoser(SG_TrackedHand.TrackingLevel.VirtualPose);  //might as well. We're mainly using it for the offsets.
             for (int f = 0; f < this.fingerColliders.Length; f++)

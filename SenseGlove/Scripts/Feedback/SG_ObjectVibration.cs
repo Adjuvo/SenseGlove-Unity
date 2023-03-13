@@ -184,6 +184,28 @@ namespace SG.Util
         }
 
 
+        public bool FlexionLockSupported()
+        {
+            IHandFeedbackDevice[] linkedDevices = this.DevicesLinkedToObject;
+            for (int i = 0; i < linkedDevices.Length; i++)
+            {
+                if (linkedDevices[i].FlexionLockSupported())
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public void SetFlexionLocks(bool[] fingers, float[] fingerFlexions)
+        {
+            IHandFeedbackDevice[] linkedDevices = this.DevicesLinkedToObject;
+            for (int i = 0; i < linkedDevices.Length; i++)
+            {
+                linkedDevices[i].SetFlexionLocks(fingers, fingerFlexions);
+            }
+        }
+
         //------------------------------------------------------------------------------------------------------------------------------
         // Monobehaviour
 
@@ -199,5 +221,18 @@ namespace SG.Util
             }
         }
 
+        public bool TryGetBatteryLevel(out float value01)
+        {
+            IHandFeedbackDevice[] linkedDevices = this.DevicesLinkedToObject;
+            for (int i = 0; i < linkedDevices.Length; i++)
+            {
+                if (linkedDevices[i].TryGetBatteryLevel(out value01))
+                {
+                    return true;
+                }
+            }
+            value01 = -1.0f;
+            return false;
+        }
     }
 }

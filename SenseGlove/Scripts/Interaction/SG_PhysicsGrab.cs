@@ -58,8 +58,8 @@ namespace SG
             base.CollectDebugComponents(out objects, out renderers);
             for (int i = 0; i < this.hoverScripts.Length; i++)
             {
-                Util.SG_Util.CollectComponent(hoverScripts[i], renderers);
-                Util.SG_Util.CollectGameObject(hoverScripts[i].debugTxt, objects);
+                Util.SG_Util.CollectComponent(hoverScripts[i], ref renderers);
+                Util.SG_Util.CollectGameObject(hoverScripts[i].debugTxt, ref objects);
             }
         }
 
@@ -73,9 +73,9 @@ namespace SG
             return res;
         }
 
-        protected override void LinkToHand(SG_TrackedHand newHand, bool firstLink)
+        protected override void LinkToHand_Internal(SG_TrackedHand newHand, bool firstLink)
         {
-            base.LinkToHand(newHand, firstLink);
+            base.LinkToHand_Internal(newHand, firstLink);
             //link colliders
             SG_HandPoser3D trackingTargets = newHand.GetPoser(SG_TrackedHand.TrackingLevel.VirtualPose);
             for (int i = 0; i < this.hoverScripts.Length; i++) //link them to wherever they want to be
@@ -330,7 +330,7 @@ namespace SG
                 {
                     //Debug.Log("Detected no grab intent anymore: Override = " + (overrideGrab ? "True" : "False") + ", GrabCodes: " + SG.Util.SG_Util.ToString(grabCodes));
                     //Debug.Log(Time.timeSinceLevelLoad + ": Released Objects");
-                    this.ReleaseAll();
+                    this.ReleaseAll(false);
                 }
             }
         }

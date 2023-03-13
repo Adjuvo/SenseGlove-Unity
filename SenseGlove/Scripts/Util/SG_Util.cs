@@ -1320,11 +1320,11 @@ namespace SG.Util
         /// <param name="component"></param>
         /// <param name="addTo"></param>
         /// <returns></returns>
-        public static bool CollectComponent<T>(Component component, List<T> addTo) where T : Component
+        public static bool CollectComponent<T>(Component component, ref List<T> addTo) where T : Component
         {
             if (component != null)
             {
-                return CollectComponent(component.gameObject, addTo);
+                return CollectComponent(component.gameObject, ref addTo);
             }
             return false;
         }
@@ -1334,7 +1334,7 @@ namespace SG.Util
         /// <param name="collectFrom"></param>
         /// <param name="addTo"></param>
         /// <returns></returns>
-        public static bool CollectComponent<T>(GameObject collectFrom, List<T> addTo) where T : Component
+        public static bool CollectComponent<T>(GameObject collectFrom, ref List<T> addTo) where T : Component
         {
             T comp = collectFrom.GetComponent<T>();
             return SafelyAdd(comp, addTo);
@@ -1345,7 +1345,7 @@ namespace SG.Util
         /// <param name="script"></param>
         /// <param name="list"></param>
         /// <returns></returns>
-        public static bool CollectGameObject<T>(T script, List<GameObject> list) where T : Component
+        public static bool CollectGameObject<T>(T script, ref List<GameObject> list) where T : Component
         {
             if (script != null)
             {
@@ -1836,6 +1836,82 @@ namespace SG.Util
             }
             return localMirror * mirrorOriginRotation;
         }
+
+
+
+
+        public static void Gizmo_DrawWireCapsule(Vector3 start, Vector3 end, Color col, float radius)
+        {
+            Gizmo_DrawWireCapsule(start, end, radius, (end - start).magnitude, col);
+        }
+
+
+        public static void Gizmo_DrawWireCapsule(Vector3 _pos, Vector3 _pos2, float _radius, float _height, Color _color = default(Color))
+        {
+#if UNITY_EDITOR
+            if (_color != default(Color)) UnityEditor.Handles.color = _color;
+
+            var forward = _pos2 - _pos;
+            var _rot = Quaternion.LookRotation(forward);
+            var pointOffset = _radius / 2f;
+            var length = forward.magnitude;
+            var center2 = new Vector3(0f, 0, length);
+
+            Matrix4x4 angleMatrix = Matrix4x4.TRS(_pos, _rot, UnityEditor.Handles.matrix.lossyScale);
+
+            using (new UnityEditor.Handles.DrawingScope(angleMatrix))
+            {
+                UnityEditor.Handles.DrawWireDisc(Vector3.zero, Vector3.forward, _radius);
+                UnityEditor.Handles.DrawWireArc(Vector3.zero, Vector3.up, Vector3.left * pointOffset, -180f, _radius);
+                UnityEditor.Handles.DrawWireArc(Vector3.zero, Vector3.left, Vector3.down * pointOffset, -180f, _radius);
+                UnityEditor.Handles.DrawWireDisc(center2, Vector3.forward, _radius);
+                UnityEditor.Handles.DrawWireArc(center2, Vector3.up, Vector3.right * pointOffset, -180f, _radius);
+                UnityEditor.Handles.DrawWireArc(center2, Vector3.left, Vector3.up * pointOffset, -180f, _radius);
+
+                Gizmo_DrawLine(_radius, 0f, length);
+                Gizmo_DrawLine(-_radius, 0f, length);
+                Gizmo_DrawLine(0f, _radius, length);
+                Gizmo_DrawLine(0f, -_radius, length);
+            }
+#endif
+        }
+
+        private static void Gizmo_DrawLine(float arg1, float arg2, float forward)
+        {
+#if UNITY_EDITOR
+            UnityEditor.Handles.DrawLine(new Vector3(arg1, arg2, 0f), new Vector3(arg1, arg2, forward));
+#endif
+        }
+
+
+        /// <summary> Detect an SG_TrackedHand within the scene. </summary>
+        /// <param name="handSide"></param>
+        /// <returns></returns>
+        public static SG_TrackedHand FindHandInScene(HandSide handSide)
+        {
+            SG_TrackedHand[] hands = GameObject.FindObjectsOfType<SG_TrackedHand>();
+            if (handSide == HandSide.AnyHand && hands.Length > 0)
+            {
+                return hands[0];
+            }
+            bool rightHand = handSide == HandSide.RightHand;
+            for (int i=0; i<hands.Length; i++)
+            {
+                if (hands[i].TracksRightHand() == rightHand)
+                {
+                    return hands[i];
+                }
+            }
+            return null;
+        }
+
+
+
+        public static Vector3 GetClosestPointOnLine(Vector3 point, Vector3 line_start, Vector3 line_end)
+        {
+            return line_start + Vector3.Project(point - line_start, line_end - line_start);
+        }
+
 
 
     }

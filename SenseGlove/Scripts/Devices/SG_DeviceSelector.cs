@@ -228,6 +228,11 @@ namespace SG
         //---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         // HandPoseProvider Implementation
 
+        public HandTrackingDevice TrackingType()
+        {
+            return this.CurrentTracking != null ? this.CurrentTracking.TrackingType() : HandTrackingDevice.Unknown;
+        }
+
 
         public BasicHandModel GetKinematics()
         {
@@ -304,6 +309,19 @@ namespace SG
             return 0.0f;
         }
 
+        public bool TryGetBatteryLevel(out float value01)
+        {
+            if (this.CurrentTracking != null)
+            {
+                return this.CurrentTracking.TryGetBatteryLevel(out value01);
+            }
+            else if (this.CurrentHaptics != null)
+            {
+                return this.CurrentHaptics.TryGetBatteryLevel(out value01);
+            }
+            value01 = -1.0f;
+            return false;
+        }
 
 
 
@@ -394,6 +412,22 @@ namespace SG
             }
         }
 
+        public bool FlexionLockSupported()
+        {
+            if (this.CurrentHaptics != null)
+            {
+                return CurrentHaptics.FlexionLockSupported();
+            }
+            return false;
+        }
+
+        public void SetFlexionLocks(bool[] fingers, float[] fingerFlexions)
+        {
+            if (this.CurrentHaptics != null)
+            {
+                this.CurrentHaptics.SetFlexionLocks(fingers, fingerFlexions);
+            }
+        }
 
 
         //---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -414,6 +448,7 @@ namespace SG
                 CollectDevices(); //Relink...?
             }
         }
+
 #endif
 
     }

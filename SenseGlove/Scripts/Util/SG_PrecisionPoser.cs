@@ -252,10 +252,16 @@ namespace SG
         }
 
 
+        public HandTrackingDevice TrackingType()
+        {
+            return HandTrackingDevice.Unknown;
+        }
 
-
-
-
+        public bool TryGetBatteryLevel(out float value01)
+        {
+            value01 = -1.0f;
+            return false;
+        }
 
 
 
