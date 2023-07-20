@@ -806,8 +806,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ad4be3b6f43d6614597f035ae44bc106, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  linkedGlove: {fileID: 0}
-  linkedHand: {fileID: 0}
+  linkedGlove: {fileID: 114741115281472756}
+  linkedHand: {fileID: 114001878862178238}
   calibrationType: 0
   startCondition: 1
   debugEnabled: 0
@@ -7513,8 +7513,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ad4be3b6f43d6614597f035ae44bc106, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  linkedGlove: {fileID: 0}
-  linkedHand: {fileID: 0}
+  linkedGlove: {fileID: 114541258151201158}
+  linkedHand: {fileID: 114710115657912056}
   calibrationType: 0
   startCondition: 1
   debugEnabled: 0
