@@ -2,6 +2,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+#if UNITY_ANDROID && !UNITY_EDITOR && UNITY_2020_2_OR_NEWER
+using UnityEngine.Android;
+#endif
 
 namespace SG.Util
 {
@@ -124,6 +127,20 @@ namespace SG.Util
 		private static void Andr_TryInitialize()
 		{
 #if UNITY_ANDROID && !UNITY_EDITOR
+#if UNITY_2020_2_OR_NEWER
+			if (!Permission.HasUserAuthorizedPermission(Permission.CoarseLocation)
+			  || !Permission.HasUserAuthorizedPermission(Permission.FineLocation)
+			  || !Permission.HasUserAuthorizedPermission("android.permission.BLUETOOTH_SCAN")
+			  || !Permission.HasUserAuthorizedPermission("android.permission.BLUETOOTH_ADVERTISE")
+			  || !Permission.HasUserAuthorizedPermission("android.permission.BLUETOOTH_CONNECT"))
+			  Permission.RequestUserPermissions(new string[] {
+				Permission.CoarseLocation,
+				Permission.FineLocation,
+				"android.permission.BLUETOOTH_SCAN",
+				"android.permission.BLUETOOTH_ADVERTISE",
+				"android.permission.BLUETOOTH_CONNECT"
+			  });
+#endif
 			if (SGCore.Library.GetBackEndType() == SGCore.Library.BackEndType.AndroidStrings)
 			{
 				if (!classLinked)
@@ -327,12 +344,12 @@ namespace SG.Util
 		//Fires when tabbing in / out of this application
 		void OnApplicationFocus(bool hasFocus)
 		{
-			if (hasFocus && loadProfilesOnFocus)
-			{
-				//Debug.Log("Reloaded SenseGlove Profiles from disk...");
-				SGCore.HG_HandProfiles.TryLoadFromDisk(); //reload profiles. Done here because this script is always there when using SenseGlove scripts.
-			}
-		}
+            if (hasFocus && loadProfilesOnFocus)
+            {
+                //Debug.Log("Reloaded SenseGlove Profiles from disk...");
+                SGCore.HG_HandProfiles.TryLoadFromDisk(); //reload profiles. Done here because this script is always there when using SenseGlove scripts.
+            }
+        }
 
 		void Update()
 		{
