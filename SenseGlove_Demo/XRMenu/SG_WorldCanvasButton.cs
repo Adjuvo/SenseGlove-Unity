@@ -45,15 +45,15 @@ namespace SG.XR
         /// <summary> The hand currently toching this collider </summary>
         protected SG_TrackedHand currentHand = null;
 
-        /// <summary> While the button is being activated, we send this haptic signal to the device. </summary>
-        protected SGCore.Haptics.SG_TimedBuzzCmd lowRumble = new SGCore.Haptics.SG_TimedBuzzCmd(SGCore.Finger.Index, 30, 0.02f); //I want a low rumble while you're selecting it
+       // /// <summary> While the button is being activated, we send this haptic signal to the device. </summary>
+       // protected SGCore.Haptics.SG_TimedBuzzCmd lowRumble = new SGCore.Haptics.SG_TimedBuzzCmd(SGCore.Finger.Index, 30, 0.02f); //I want a low rumble while you're selecting it
 
         /// <summary> Vibration level while tapping this canvas button. </summary>
         [Header("Haptics")]
-        [Range(0, 100)] public int rumbleLevel = 30;
+        [Range(0, 1)] public float rumbleLevel = 1.0f;
 
         /// <summary> A waveform to play when the button is activated. </summary>
-        public SG_Waveform successWaveform;
+        public SG.SG_CustomWaveform successWaveform;
 
         /// <summary> Fires when the button is touched for the first time </summary>
         [Header("Events")]
@@ -194,7 +194,8 @@ namespace SG.XR
                     {
                         if (handsInside[i] != ignoredHand)
                         {
-                            handsInside[i].SendCmd(this.lowRumble);
+                            handsInside[i].SendVibrationCmd(VibrationLocation.WholeHand, this.rumbleLevel, 0.05f, 60.0f);
+                            //Debug.LogError("TODO: Implement this!");
                         }
                     }
                 }
@@ -226,7 +227,7 @@ namespace SG.XR
                 {
                     if (handsInside[i] != ignoredHand)
                     {
-                        handsInside[i].SendCmd(this.successWaveform);
+                        handsInside[i].SendCustomWaveform(this.successWaveform, this.successWaveform.intendedMotor);
                     }
                 }
             }

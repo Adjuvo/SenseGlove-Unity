@@ -1,7 +1,45 @@
 # Changelog
 All notable changes to the SenseGlove Prefabs will be documented in this file.
 
-You are currently using version v2.5.0
+You are currently using version v2.6.0
+
+## [v2.6.0] - 2023-03-22
+Nova 2.0 Update, Calibration and Haptics refactor.
+When updating from v2.5 to v2.6, consult the guide at https://senseglove.gitlab.io/SenseGloveDocs/unity/update-to-2-6.html
+
+### Changed
+- Calibration now runs automatically inside the back-end: No special calibration void or setup is required (though the guided calibration void is still reccomended). Individual fingers begin to move when minimal movement is detected, and calibration can now be confirmed with a thumbs-up.
+- SG_CalibrationVoid control script refactored to use the internal calibration states. 
+- Significant changes to IHandFeedbackDevice functions: Functions are renamed to better inform of the actual behavious (e.g. you're queueing commands that are compiled and sent at the end of the frame). It's also no longer required to create SGCore objects: Force-Feedback and vibration commands are sent as values between 0.0f ... 1.0f. Again, check https://senseglove.gitlab.io/SenseGloveDocs/unity/update-to-2-6.html for more info.
+- SendCmd(SG_Waveform) is now changed to SendLegacyWaveform(SG_Waveform), as we encourage users to start using the SG_CustomWaveforms instead. The SG_Waveform has a resolution that is limited by the framerate of the application, and did not always give the most consistent results.
+- Nova_Waveform scriptableobject changed to SG_CustomWaveform. Contains various parameters to play a consistent waveform on various locations on the glove.
+- SenseCom version v1.6.0, which adds Nova 2.0 icons and troubleshooter. Compatible with both Windows and Linux. (v1.5 was used for internal development of Nova 2.0).
+- SG_DropZone: Now has a 'mustHaveTag' property, which can be left blank to accept any kind of object.
+- SG_HandDetector: Now implements IHandFeedbackDevice; you can pass haptic events to all hands detected within the zone.
+- SG_XR_ControllerButton now automatically switches button input to 'Primary Button' when a Vive Wrist Tracker is detected.
+- SG_HapticGlove: Various changes in calibration and haptics logic, to accomodate for the new functionality.
+- Various IHandFeedbackDevice scripts refactored to use the new functions.
+
+### Added
+- IHandFeedbackDevice: Added QueueWristSqueeze(float) which sets the Nova 2.0's (and other compatible devices') wrist strap position from 'fully relaxed' (0.0f) to 'fully squeezed' (1.0f). 
+- SG_SqueezeOnGrab script, which can be linked to any SG_Interactable. While grabbed, it sets the wrist squeeze to the desired level, until the object is released again. You dynamically change this level via code, or extend off this class for your specialized squeeze haptics.
+- Nova 2.0 Diagnostics Scene, to help you run through the new hardware features.
+
+### Removed
+- SG_HandProfiles, which previously held the location of Hand Profiles. Since these have changed significantly, the class has become obsolete.
+
+### Fixed
+- Vive Focus 3 Trackers + Vive Business Streaming not being recognized as a tracking source due to the removal of InputDevice Characteristics.
+
+
+## [v2.5.2] - 2023-10-02
+Fixes a bug where Android Builds made for minimum API level 32 and higher require additional permissions, causing the app to crash.
+
+## [v2.5.1] - 2023-07-20
+Hotfix to properly link the CalibrationLayers in the SG Hand and User prefabs.
+
+### Changed
+- Prefabs: Linked SG_TrackedHand and SG_HapitcGlove scripts to each hand's CalibrationLayer.
 
 ## [v2.5.0] - 2023-03-13
 New Haptic Features, Projection Layer, and XR Features
@@ -31,7 +69,7 @@ New Haptic Features, Projection Layer, and XR Features
 ### Fixed
 - Android: Second glove connecting too late to the Calibration Void, causing us to skip its calibration.
 - SenseCom: When SenseCom crashes, there should still be a SessionLog left behind.
-- Nova Gloves not being compatible with Nova Gloves
+- Nova Gloves not being compatible with Linux
 
 
 

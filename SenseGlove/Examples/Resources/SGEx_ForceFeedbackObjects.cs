@@ -138,7 +138,7 @@ namespace SG.Examples
         {
             if (activeHand != null && activeHand.calibration != null)
             {
-                activeHand.calibration.StartCalibration(true);
+                activeHand.calibration.ResetCalibration(true);
             }
         }
 
@@ -178,17 +178,6 @@ namespace SG.Examples
             //SG.Util.SG_Util.SetChildren(rightHand.transform, false);
             SetRelevantScripts(leftHand, false);
             SetRelevantScripts(rightHand, false);
-
-            if (leftHand.calibration != null) 
-            { 
-                //leftHand.calibration.gameObject.SetActive(true);
-                leftHand.calibration.startCondition = SG_CalibrationSequence.StartCondition.WhenNeeded;
-            }
-            if (rightHand.calibration != null) 
-            { 
-                //rightHand.calibration.gameObject.SetActive(true);
-                rightHand.calibration.startCondition = SG_CalibrationSequence.StartCondition.WhenNeeded;
-            }
 
             if (objectText != null) { objectText.text = ""; }
             if (nextButton != null)

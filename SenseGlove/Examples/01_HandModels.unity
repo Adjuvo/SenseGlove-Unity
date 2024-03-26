@@ -1766,7 +1766,7 @@ MonoBehaviour:
   grabScript: {fileID: 1959622738}
   handPhysics: {fileID: 1440547890}
   gestureLayer: {fileID: 1428300971}
-  passThoughLayer: {fileID: 445096815}
+  projectionLayer: {fileID: 0}
   calibration: {fileID: 348779708}
   statusIndicator: {fileID: 1022666811}
   overrideWristLocation: 1
@@ -1786,7 +1786,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   connectsTo: 0
-  checkCalibrationOnConnect: 1
   wristTrackingMethod: 0
   origin: {fileID: 0}
   wristTrackingObj: {fileID: 0}
@@ -3157,22 +3156,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ad4be3b6f43d6614597f035ae44bc106, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  linkedGlove: {fileID: 0}
-  linkedHand: {fileID: 0}
-  calibrationType: 0
-  startCondition: 0
+  TrackedHand: {fileID: 0}
   debugEnabled: 0
-  debugText: {fileID: 760328298}
-  nextStepKey: 0
-  cancelKey: 0
-  resetCalibrationKey: 0
-  baseInstrMessage: 
-  instructions3D: {fileID: 0}
+  instructions3D: {fileID: 572768763}
   instructionsUI: {fileID: 0}
-  CalibrationFinished:
+  showConfirmInstructions: 1
+  CalibrationStarted:
     m_PersistentCalls:
       m_Calls: []
-  CalibrationAbort:
+  CalibrationFinished:
     m_PersistentCalls:
       m_Calls: []
 --- !u!4 &348779709
@@ -5799,7 +5791,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!102 &760328298
 TextMesh:
   serializedVersion: 3
@@ -6590,7 +6582,7 @@ MonoBehaviour:
   grabScript: {fileID: 178926568}
   handPhysics: {fileID: 1119631939}
   gestureLayer: {fileID: 824817935}
-  passThoughLayer: {fileID: 247018825}
+  projectionLayer: {fileID: 0}
   calibration: {fileID: 2029087313}
   statusIndicator: {fileID: 873435780}
   overrideWristLocation: 1
@@ -6610,7 +6602,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   connectsTo: 1
-  checkCalibrationOnConnect: 1
   wristTrackingMethod: 0
   origin: {fileID: 0}
   wristTrackingObj: {fileID: 0}
@@ -10048,7 +10039,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!102 &1167843589
 TextMesh:
   serializedVersion: 3
@@ -10426,6 +10417,8 @@ MonoBehaviour:
   - {fileID: 1042751639}
   - {fileID: 1081519280}
   - {fileID: 1718567020}
+  useTraditional: 1
+  useThresholds: 1
 --- !u!4 &1252501379
 Transform:
   m_ObjectHideFlags: 0
@@ -15098,6 +15091,8 @@ MonoBehaviour:
   - {fileID: 747606292}
   - {fileID: 1144784624}
   - {fileID: 613649633}
+  useTraditional: 1
+  useThresholds: 1
 --- !u!4 &1707508859
 Transform:
   m_ObjectHideFlags: 0
@@ -17882,22 +17877,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ad4be3b6f43d6614597f035ae44bc106, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  linkedGlove: {fileID: 0}
-  linkedHand: {fileID: 0}
-  calibrationType: 0
-  startCondition: 0
+  TrackedHand: {fileID: 0}
   debugEnabled: 0
-  debugText: {fileID: 1167843589}
-  nextStepKey: 0
-  cancelKey: 0
-  resetCalibrationKey: 0
-  baseInstrMessage: 
-  instructions3D: {fileID: 0}
+  instructions3D: {fileID: 1437447820}
   instructionsUI: {fileID: 0}
-  CalibrationFinished:
+  showConfirmInstructions: 1
+  CalibrationStarted:
     m_PersistentCalls:
       m_Calls: []
-  CalibrationAbort:
+  CalibrationFinished:
     m_PersistentCalls:
       m_Calls: []
 --- !u!4 &2029087314

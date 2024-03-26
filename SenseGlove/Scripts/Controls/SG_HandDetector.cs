@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using SGCore.Haptics;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -8,8 +9,9 @@ namespace SG
     [System.Serializable]
     public class HandDetectionEvent : UnityEngine.Events.UnityEvent<SG_TrackedHand> { }
 
-    /// <summary> A Zone that detects TrackedHands, rather than objects </summary>
-    public class SG_HandDetector : MonoBehaviour
+    /// <summary> A Zone that detects TrackedHands, rather than objects. </summary>
+    /// <remarks> Extends off IhandFeedbackDevice to send commands to all Hands inside the zone. </remarks>
+    public class SG_HandDetector : MonoBehaviour, IHandFeedbackDevice
 	{
         /// <summary> Whether a HandDetector responds to left hands, righ hands, or any hand. </summary>
 		public enum DetectionType
@@ -438,10 +440,161 @@ namespace SG
         }
 
         /// <summary> Removes all detected hands from this zone </summary>
-        public void RemoveDetections()
+        public void RemoveDetections(bool withEvents = false)
         {
-
+            for (int i = 0; i < this.detectionArguments.Count; i++)
+            {
+                if (detectionArguments[i].eventFired)
+                {
+                    this.HandRemoved.Invoke(detectionArguments[i].hand);
+                }
+            }
+            this.detectionArguments.Clear();
         }
+
+
+
+
+        //-------------------------------------------------------------------------------------------------------------------------
+        // Monobehaviour
+        public string Name()
+        {
+            return this.detectionArguments.Count > 0 ? this.detectionArguments[0].hand.Name() : "N\\A";
+        }
+
+        public bool IsConnected()
+        {
+            return true;
+        }
+
+        public bool TryGetBatteryLevel(out float value01)
+        {
+            if (this.detectionArguments.Count > 0)
+            {
+                return detectionArguments[0].hand.TryGetBatteryLevel(out value01);
+            }
+            value01 = 0.0f;
+            return false;
+        }
+
+        public void StopAllVibrations()
+        {
+            for (int i=0; i < this.detectionArguments.Count; i++)
+            {
+                this.detectionArguments[i].hand.StopAllVibrations();
+            }
+        }
+
+        public void StopHaptics()
+        {
+            for (int i = 0; i < this.detectionArguments.Count; i++)
+            {
+                this.detectionArguments[i].hand.StopHaptics();
+            }
+        }
+
+        public void QueueFFBCmd(SGCore.Finger finger, float value01)
+        {
+            for (int i = 0; i < this.detectionArguments.Count; i++)
+            {
+                this.detectionArguments[i].hand.QueueFFBCmd(finger, value01);
+            }
+        }
+        public void QueueFFBCmd(float[] values01)
+        {
+            for (int i = 0; i < this.detectionArguments.Count; i++)
+            {
+                this.detectionArguments[i].hand.QueueFFBCmd(values01);
+            }
+        }
+
+
+        public bool FlexionLockSupported()
+        {
+            for (int i = 0; i < this.detectionArguments.Count; i++)
+            {
+                if (this.detectionArguments[i].hand.FlexionLockSupported())
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public void SetFlexionLocks(bool[] fingers, float[] fingerFlexions)
+        {
+            for (int i = 0; i < this.detectionArguments.Count; i++)
+            {
+                this.detectionArguments[i].hand.SetFlexionLocks(fingers, fingerFlexions);
+            }
+        }
+
+        public void QueueWristSqueeze(float squeezeLevel01)
+        {
+            for (int i = 0; i < this.detectionArguments.Count; i++)
+            {
+                this.detectionArguments[i].hand.QueueWristSqueeze(squeezeLevel01);
+            }
+        }
+
+        public void StopWristSqueeze()
+        {
+            for (int i = 0; i < this.detectionArguments.Count; i++)
+            {
+                this.detectionArguments[i].hand.StopWristSqueeze();
+            }
+        }
+
+        public void SendLegacyWaveform(SG_Waveform waveform)
+        {
+            this.SendLegacyWaveform(waveform, waveform.amplitude, waveform.duration_s, waveform.intendedLocation);
+        }
+
+        public void SendLegacyWaveform(SG_Waveform waveform, float amplitude, float duration, VibrationLocation location)
+        {
+            for (int i = 0; i < this.detectionArguments.Count; i++)
+            {
+                this.detectionArguments[i].hand.SendLegacyWaveform(waveform, amplitude, duration, location);
+            }
+        }
+
+        public void SendImpactVibration(SG_HandSection location, float normalizedVibration)
+        {
+            for (int i = 0; i < this.detectionArguments.Count; i++)
+            {
+                this.detectionArguments[i].hand.SendImpactVibration(location, normalizedVibration);
+            }
+        }
+
+        public void SendCustomWaveform(SG_CustomWaveform customWaveform, VibrationLocation location)
+        {
+            for (int i = 0; i < this.detectionArguments.Count; i++)
+            {
+                this.detectionArguments[i].hand.SendCustomWaveform(customWaveform, location);
+            }
+        }
+
+
+        public bool HasVibrationMotor(VibrationLocation atLocation)
+        {
+            for (int i = 0; i < this.detectionArguments.Count; i++)
+            {
+                if (this.detectionArguments[i].hand.HasVibrationMotor(atLocation))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public void SendVibrationCmd(VibrationLocation location, float amplitude, float duration, float frequency)
+        {
+            for (int i = 0; i < this.detectionArguments.Count; i++)
+            {
+                this.detectionArguments[i].hand.SendVibrationCmd(location, amplitude, duration, frequency);
+            }
+        }
+
 
         //-------------------------------------------------------------------------------------------------------------------------
         // Monobehaviour

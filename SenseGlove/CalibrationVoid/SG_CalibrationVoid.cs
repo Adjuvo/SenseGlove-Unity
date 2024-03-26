@@ -2,899 +2,734 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
-using UnityEngine.SceneManagement;
+
+/*
+ * Main logic for the Calibration Void, which resets calibration when required, then wait for up to two hands to change their CalibrationState into "Calibration Locked"
+ * Afterwards, it automatically takes you to a next scene if one is specified.
+ */
 
 namespace SG
 {
-	/// <summary> This Script runs up to two calibration sequences at a time, for a left and right hand. After completing, the void will transition to another scene. </summary>
-	public class SG_CalibrationVoid : MonoBehaviour
-	{
-		//-------------------------------------------------------------------------------------------------------------------------------------------------------------
-		// Void Stage Enum
 
-		public enum VoidStage
-		{
-			/// <summary> Waits for "Begin()" to be called before launching into calibration  </summary>
-			WaitForStart,
 
-			/// <summary> Wait until you've got the first glove. </summary>
-			WaitingForFirstGlove,
-
-			/// <summary> 1-2 gloves are calibration </summary>
-			GlovesCalibrating,
-
-			/// <summary>  1-2 gloves are done calibrating. Go to the next phase. </summary>
-			Done,
-			/// <summary> When something goes wrong </summary>
-			NoCalibrationError,
-		}
-
-
-
-		//-------------------------------------------------------------------------------------------------------------------------------------------------------------
-		// Single-Glove Calibration
-
-		public enum GloveStage
-		{
-			/// <summary> This Glove is not (yet) connected. </summary>
-			NotConnected,
-			/// <summary> We're displaying the introduction for X seconds. </summary>
-			Introduction,
-			/// <summary> Collect data while the user moved their finger. Give them some extra encouragement </summary>
-			MoveFingers,
-			/// <summary> We have enough data to compile profiles, but are waiting for the user to confirm with a thumbs up </summary>
-			ConfirmCalibration,
-			/// <summary>  </summary>
-			CalibrationDone,
-		}
-
-
-
-		/// <summary> Keeps track of a Calibration Sequence for one hand </summary>
-		public class SG_IntegratedCalibration
-		{
-			/// <summary> Used for haptics and device recognition. </summary>
-			public SG_TrackedHand Hand { get; set; }
-
-			/// <summary> Calibration Algorithm linked to a single hand </summary>
-			public SG_CalibrationSequence Algorithm { get; set; }
-
-			/// <summary> Animation component of an example hand. </summary>
-			public SG_HandAnimator ExampleHand { get; set; }
-
-			/// <summary> The Glove Calibration Stage </summary>
-			public GloveStage CalibrationStage { get; set; }
-
-			/// <summary> Wafeform to play when the glove is first linked to the simulation. </summary>
-			public SG_Waveform wf_connected { get; set; }
-
-			/// <summary> Waveform that plays when the user has moved their hand enough  </summary>
-			public SG_Waveform wf_movedEnough { get; set; }
-
-			/// <summary> Fired when the user has their thumbs up for a set amount of time. </summary>
-			public SG_Waveform wf_confirmed { get; set; }
-
-			/// <summary> The amount of time we will show the introduction for. </summary>
-			public float IntroTime { get; set; }
-
-			/// <summary> How long one must keep their thumb up before we consider it 'done' </summary>
-			public float ConfirmTime { get; set; }
-
-
-			/// <summary> Introduction Timer - Maybe skipped if the hand has moved enough. </summary>
-			protected float timer_intro;
-			/// <summary> Timer to keep track of how long one's thumb is up. </summary>
-			protected float timer_confirm;
-			/// <summary> Frequency at which our example hand open/closes </summary>
-			protected float openClose_freq;
-
-			/// <summary> Keeps track whether or not the fingers have made a correct gesture for the thumb sup. If they have, we add an offset to our thresholds. </summary>
-			protected bool[] confirmGest = new bool[5];
-
-
-
-			/// <summary> Create a new instance of IntegratedCalibration. Extracts the hand and applies any required changes to the compeonents </summary>
-			/// <param name="hand"></param>
-			public SG_IntegratedCalibration(SG_TrackedHand hand, SG_HandAnimator example, float introTime, float confirmTime, float handOpenCloseFreq)
-			{
-				Hand = hand;
-				Algorithm = hand.calibration;
-
-				Algorithm.calibrationType = SG_CalibrationSequence.CalibrationType.Quick;
-				Algorithm.startCondition = SG_CalibrationSequence.StartCondition.Manual;
-
-				this.IntroTime = introTime;
-				this.ConfirmTime = confirmTime;
-				this.openClose_freq = handOpenCloseFreq;
-
-				this.ExampleHand = example;
-				SG_CalibrationVoid.SetHandExample(this.ExampleHand, false); //turn it off for now...
-
-
-
-				GoToStage(GloveStage.NotConnected);
-			}
-
-			/// <summary> Send a waveform to the hand, but check if it's NULL just in case. </summary>
-			/// <param name="wf"></param>
-			public void SendWaveform(SG_Waveform wf)
-			{
-				if (wf != null) { Hand.SendCmd(wf); }
-			}
-
-
-			/// <summary> Go to your own internal stage </summary>
-			/// <param name="stage"></param>
-			public void GoToStage(GloveStage stage)
-			{
-				//Debug.Log(this.Hand.name + " going from " + this.CalibrationStage.ToString() + " to " + stage.ToString());
-				this.CalibrationStage = stage;
-
-				bool exampleEnabled = stage == GloveStage.MoveFingers || stage == GloveStage.ConfirmCalibration;
-				SG_CalibrationVoid.SetHandExample(this.ExampleHand, exampleEnabled);
-
-				if (stage == GloveStage.Introduction)
-				{
-					timer_intro = 0.0f;
-				}
-				else if (stage == GloveStage.ConfirmCalibration)
-				{
-					timer_confirm = 0.0f;
-
-					//Set example to a nice enough thumbs up.
-
-					SGCore.Kinematics.BasicHandModel handModel = this.Hand.GetHandModel();
-					float[] flexions = new float[5] { 0.0f, 1.0f, 1.0f, 1.0f, 1.0f };
-					float abd = 0.3f;
-					SGCore.Kinematics.Vect3D[][] handAngles = SGCore.Kinematics.Anatomy.HandAngles_FromNormalized(handModel.IsRight, flexions, abd, 0.0f);
-					SGCore.HandPose iPose = SGCore.HandPose.FromHandAngles(handAngles, handModel.IsRight, handModel);
-					SG_HandPose confirmPose = new SG_HandPose(iPose);
-					this.ExampleHand.UpdateHand(confirmPose, true);
-				}
-			}
-
-
-			/// <summary> Update Glove State Logic </summary>
-			/// <param name="dT"></param>
-			public void UpdateGloveState(float dT)
-			{
-				if (CalibrationStage == GloveStage.CalibrationDone)
-				{
-					return; //no need to update anymore...
-				}
-
-
-				if (CalibrationStage == GloveStage.NotConnected)
-				{
-					//Check for a connection....
-					if (Hand.IsConnected())
-					{
-						this.GoToStage(GloveStage.Introduction);
-						SendWaveform(wf_connected);
-						SG_CalibrationVoid.StartCalibration(this.Algorithm);
-						return;
-					}
-				}
-
-				if (this.Algorithm == null || this.Algorithm.internalSequence == null)
-				{
-					return;
-				}
-
-				if (CalibrationStage == GloveStage.Introduction || CalibrationStage == GloveStage.MoveFingers)
-				{
-					if (this.Algorithm.CanAnimate)
-					{
-						GoToStage(GloveStage.ConfirmCalibration);
-						SendWaveform(wf_movedEnough);
-					}
-					if (CalibrationStage == GloveStage.Introduction)
-					{
-						timer_intro += dT;
-						if (timer_intro >= IntroTime) //we've waited long enough. Let's move on to the MoveHands
-						{
-							GoToStage(GloveStage.MoveFingers);
-						}
-					}
-					if (CalibrationStage == GloveStage.MoveFingers)
-					{
-						UpdateMoveFingersAnimation(); //update the example hand open/close position
-					}
-				}
-				else if (CalibrationStage == GloveStage.ConfirmCalibration)
-				{
-					bool thumbsUp = SG_CalibrationVoid.CheckConfirm(true, Hand, Algorithm, ref this.confirmGest);
-					if (thumbsUp)
-					{
-						timer_confirm += dT;
-						if (timer_confirm >= this.ConfirmTime)
-						{
-							this.GoToStage(GloveStage.CalibrationDone);
-							this.SendWaveform(wf_confirmed);
-							Algorithm.internalSequence.ManualCompleted = true; //this will mark it as complete, and our Sequence will work fine.
-						}
-					}
-					else
-					{
-						timer_confirm = 0.0f; //reset the timer.
-					}
-				}
-			}
-
-			/// <summary> Update the Example Hands animation so smoothly open/close. </summary>
-			public void UpdateMoveFingersAnimation()
-			{
-				float animationEval = 0.5f + SG.Util.SG_Util.GetSine(openClose_freq, 0.5f, Time.timeSinceLevelLoad/* + (openCloseTime * 0.75f)*/);
-				float[] allFlex = new float[5] { animationEval, animationEval, animationEval, animationEval, animationEval }; //all finger flexion is equal
-				float abd = 0.6f;
-
-				SGCore.Kinematics.BasicHandModel handModel = this.Hand.GetHandModel();
-				SGCore.Kinematics.Vect3D[][] handAngles = SGCore.Kinematics.Anatomy.HandAngles_FromNormalized(handModel.IsRight, allFlex, abd, 0.0f);
-				SGCore.HandPose iPose = SGCore.HandPose.FromHandAngles(handAngles, handModel.IsRight, handModel);
-
-				SG_HandPose newPose = new SG_HandPose(iPose);
-				this.ExampleHand.UpdateHand(newPose, true);
-			}
-
-
-			/// <summary> Skip the calibration step for this glove, cancelling anything active and setting the Stage to Done. </summary>
-			public void SkipCalibration()
-			{
-				if (this.Algorithm.CalibrationActive)
-				{
-					this.Algorithm.CancelCalibration(); //cancel the calibration
-				}
-				Debug.Log(this.Hand.name + ": Skipping Calibration");
-				this.GoToStage(GloveStage.CalibrationDone);
-				this.SendWaveform(wf_confirmed); //let the user know we acknowledge their request
-			}
-
-			/// <summary> If we're not done yet, allow us to retry the calibration. </summary>
-			public void RetryCalibration()
-			{
-				if (this.CalibrationStage != GloveStage.ConfirmCalibration) //we're only allowed to retry if the user still needs to confirm
-				{
-					Debug.Log("Cannot reset (yet) in the current Calibration Stage");
-					return;
-				}
-				if (this.Algorithm.internalSequence != null)
-				{
-					Debug.Log(this.Hand.name + ": Resetting Calibration");
-					this.Algorithm.internalSequence.Reset();
-					this.GoToStage(GloveStage.MoveFingers);
-				}
-			}
-
-		}
-
-
-		//-------------------------------------------------------------------------------------------------------------------------------------------------------------
-		// Member Variabeles
-
-
-		/// <summary> Used to grab a lef- and right hand reference from. </summary>
-		[Header("Calibration Components")]
-		public SG_User user;
-		/// <summary> The main Instructions to show to the user. </summary>
-		public TextMesh mainInstructions;
-
-		/// <summary> Example Handmodels that will be used to show the user how to move their hand. </summary>
-		public SG_HandAnimator exampleHandLeft, exampleHandRight;
-
-		/// <summary> (Optional) Sphere to reset the calibration with. </summary>
-		public SG_ConfirmZone resetSphere;
-
-		/// <summary> The "Main Stage" of the Calibration Void </summary>
-		[Header("Control Parameters")]
-		public VoidStage currStage = VoidStage.WaitingForFirstGlove;
-		/// <summary> If false, we must wait for a controller press to begin calibration - provided the device you're using has Controllers. </summary>
-		public bool beginImmedeately = true;
-
-		/// <summary> The amount of time were we'll show a 'welcome' message, before one is requested to move their fingers. </summary>
-		public float introTime = 1.5f;
-		/// <summary> The amount of time one must hold a thumbs up before we confirm and close calibration. </summary>
-		public float confirmTime = 0.5f;
-
-		/// <summary> How Long it takes for the example hand to open and close again </summary>
-		public float exampleOpenCloseTime = 2.0f;
-		/// <summary> The Frequency (in Hz) of the example hand - how often per second does it open and close </summary>
-		protected float openClose_freq = 1;
-
-		/// <summary> We load the next scene in a Unity CoRoutine, but we're not opening it until this flag is set to true. </summary>
-		protected bool proceedToNextScene = false;
-		/// <summary> Timer to keep track of us going to the next Scene. </summary>
-		protected float timer_toNextScene = 0.0f;
-
-		/// <summary> Normalized flexion thresholds to make a 'thumbs up' gesture. For thumb (0), flexion must be smaller than. For fingers (1-4) flexion must be greater than </summary>
-		public static float[] thumbsUpThresholds = new float[5] { 0.2f, 0.7f, 0.7f, 0.7f, 0.7f };
-		/// <summary> Once your fingers pass above/below the threshold, it needs to move back over it by this much to cancel. </summary>
-		public static float thumbPassThreshold = 0.1f;
-
-
-		/// <summary> Once completed, the scene will automatically change after this much time has finished. </summary>
+    public class SG_CalibrationVoid : MonoBehaviour
+    {
+        //-------------------------------------------------------------------------------------------------------------------------------------------------------------
+        // Void Stage Enum
+
+        public enum VoidStage
+        {
+            /// <summary> Windows only - check whether the SenseCom process is running, and wait until it does...  </summary>
+            StartupSenseCom,
+
+            /// <summary> Wait until you've got the first glove. </summary>
+            WaitingForFirstGlove,
+
+            /// <summary> 1-2 gloves are calibration </summary>
+            GlovesCalibrating,
+
+            /// <summary>  1-2 gloves are done calibrating. Go to the next phase. </summary>
+            Done,
+
+            /// <summary> When something goes wrong </summary>
+            NoGloves,
+        }
+
+
+        //-------------------------------------------------------------------------------------------------------------------------------------------------------------
+        // Individual Calibration
+
+        /// <summary> Keeps track of calibration state(s) for one glove. </summary>
+        public class IndividualCalibration
+        {
+            public SG_TrackedHand TrackedHand { get; set; }
+
+            public SG_HapticGlove Glove { get; set; }
+
+            public SG_CalibrationSequence CalibrationHelper { get; set; }
+
+            public SG_HandAnimator ExampleHand { get; set; }
+
+            public bool HasReset { get; private set; } //if this glove has been reset during the Calibration Void yet. Should it reconnect, it will reset itself.
+
+            protected float openClose_freq = 1.0f;
+
+            public IndividualCalibration(SG_TrackedHand hand, SG_HandAnimator example, float openCloseTime)
+            {
+                TrackedHand = hand;
+                CalibrationHelper = hand != null ? hand.calibration : null;
+                Glove = hand != null && hand.deviceSelector != null ? hand.deviceSelector.GetDevice<SG_HapticGlove>() : null;
+
+                openClose_freq = 1 / openCloseTime;
+
+                ExampleHand = example;
+                if (example != null)
+                {
+                    example.enabled = false; //it's not allowed to update itself :L
+
+                    Transform exHand = example.transform.parent != null ? example.transform.parent : example.transform;
+                    Transform exParent = hand.handModel != null ? hand.handModel.wristTransform : hand.GetPoser(SG_TrackedHand.TrackingLevel.RenderPose).GetTransform(HandJoint.Wrist);
+                    Vector3 currScale = exHand.localScale;
+                    exHand.localScale = new Vector3(currScale.x * 0.99f, currScale.y * 0.99f, currScale.z * 0.99f); //set the hand to 99% if its starting scale
+                    exHand.parent = exParent;
+                    exHand.localRotation = Quaternion.identity;
+                    exHand.localPosition = Vector3.zero;
+                }
+                this.SetHandExample(false);
+                if (Glove != null)
+                {
+                    Glove.DeviceConnected.AddListener(OnGloveConnected);
+                    Glove.DeviceDisconnected.AddListener(OnGloveDisconnected);
+                    Glove.CalibrationStateChanged.AddListener(OnCalibrationStateChanged);
+                    Debug.Log("Subscribing...");
+                }
+                else
+                {
+                    Debug.LogError("NULL GLOVE!");
+                }
+            }
+
+            ~IndividualCalibration()
+            {
+                UnsubscribeEvents();
+            }
+
+            private void OnCalibrationStateChanged()
+            {
+                if (Glove == null && Glove.InternalGlove != null)
+                {
+                    this.SetHandExample(false);
+                }
+                else
+                {
+                    SGCore.HG_CalibrationState state = Glove.InternalGlove.GetCalibrationState();
+                    this.SetHandExample(state == SGCore.HG_CalibrationState.MoveFingers || state == SGCore.HG_CalibrationState.AllSensorsMoved);
+                    if (state == SGCore.HG_CalibrationState.AllSensorsMoved)
+                    {
+                        ToThumbsUp();
+                    }
+                }
+            }
+
+            public void UnsubscribeEvents()
+            {
+                if (Glove != null)
+                {
+                    //Debug.Log("Unsubscribing...");
+                    Glove.DeviceConnected.RemoveListener(OnGloveConnected);
+                    Glove.DeviceDisconnected.RemoveListener(OnGloveDisconnected);
+                    Glove.CalibrationStateChanged.RemoveListener(OnCalibrationStateChanged);
+                }
+            }
+
+            private void ToThumbsUp()
+            {
+                //Set example to a nice enough thumbs up.
+                SGCore.Kinematics.BasicHandModel handModel = this.TrackedHand.GetHandModel();
+                float[] flexions = new float[5] { 0.0f, 1.0f, 1.0f, 1.0f, 1.0f };
+                float abd = 0.3f;
+                SGCore.Kinematics.Vect3D[][] handAngles = SGCore.Kinematics.Anatomy.HandAngles_FromNormalized(handModel.IsRight, flexions, abd, 0.0f);
+                SGCore.HandPose iPose = SGCore.HandPose.FromHandAngles(handAngles, handModel.IsRight, handModel);
+                SG_HandPose confirmPose = new SG_HandPose(iPose);
+                this.ExampleHand.UpdateHand(confirmPose, true);
+            }
+
+            private void OnGloveConnected()
+            {
+                OnCalibrationStateChanged();
+            }
+
+            private void OnGloveDisconnected()
+            {
+                SetHandExample(false);
+            }
+
+            public void UpdateExample()
+            {
+                if (this.ExampleHand == null && Glove != null && Glove.InternalGlove != null && Glove.InternalGlove.GetCalibrationState() != SGCore.HG_CalibrationState.MoveFingers)
+                    return;
+                //only needed when it's not in 
+
+                float animationEval = 0.5f + SG.Util.SG_Util.GetSine(openClose_freq, 0.5f, Time.timeSinceLevelLoad/* + (openCloseTime * 0.75f)*/);
+                float[] allFlex = new float[5] { animationEval, animationEval, animationEval, animationEval, animationEval }; //all finger flexion is equal
+                float abd = 0.6f;
+
+                SGCore.Kinematics.BasicHandModel handModel = this.TrackedHand.GetHandModel();
+                SGCore.Kinematics.Vect3D[][] handAngles = SGCore.Kinematics.Anatomy.HandAngles_FromNormalized(handModel.IsRight, allFlex, abd, 0.0f);
+                SGCore.HandPose iPose = SGCore.HandPose.FromHandAngles(handAngles, handModel.IsRight, handModel);
+
+                SG_HandPose newPose = new SG_HandPose(iPose);
+                this.ExampleHand.UpdateHand(newPose, true);
+
+            }
+
+            public bool IsConnected()
+            {
+                return Glove.IsConnected();
+            }
+
+            public bool RequiresCalibration()
+            {
+                return Glove != null && Glove.DeviceType != SGCore.DeviceType.SENSEGLOVE && Glove.DeviceType != SGCore.DeviceType.BETADEVICE;
+            }
+
+            /// <summary> Call this whenever you need to reset calibration: When entering the  </summary>
+            public void ResetCalibration(bool forceReset)
+            {
+                if (HasReset && !forceReset)
+                    return;
+
+                if (this.RequiresCalibration() && this.Glove != null && this.Glove.InternalGlove != null)
+                {
+                    Debug.Log("Reset Calibration of the " + (this.Glove.TracksRightHand() ? "right hand" : "left hand"));
+                    this.Glove.InternalGlove.ResetCalibration();
+                    HasReset = true; //let the device know 
+                }
+            }
+
+            public SGCore.HG_CalibrationState GetCalibrationState()
+            {
+                if (Glove == null)
+                    return SGCore.HG_CalibrationState.CalibrationLocked; //done
+
+                if (Glove.IsConnected())
+                {
+                    if (RequiresCalibration())
+                    {
+                        return Glove.InternalGlove.GetCalibrationState();
+                    }
+                    return SGCore.HG_CalibrationState.CalibrationLocked;
+                }
+                return SGCore.HG_CalibrationState.Unknown;
+            }
+
+            public void SetHandExample(bool enabled)
+            {
+                if (ExampleHand != null && ExampleHand.handModelInfo != null)
+                {
+                    bool nowActive = ExampleHand.handModelInfo.gameObject.activeSelf;
+                    if (nowActive != enabled)
+                    {
+                        ExampleHand.handModelInfo.gameObject.SetActive(enabled);
+                    }
+                }
+            }
+
+
+
+        }
+
+
+        //-------------------------------------------------------------------------------------------------------------------------------------------------------------
+        // Void Properties
+
+        [Header("Calibration Components")]
+        [SerializeField] private SG_User user;
+
+        /// <summary> The main Instructions to show to the user. </summary>
+		[SerializeField] private TextMesh mainInstructions;
+
+        /// <summary> Example Handmodels that will be used to show the user how to move their hand. </summary>
+		[SerializeField] private SG_HandAnimator exampleHandLeft, exampleHandRight;
+
+        /// <summary> (Optional) Sphere to reset the calibration with. </summary>
+        [SerializeField] private SG_ConfirmZone resetSphere;
+
+        [SerializeField] private VoidStage currentStage = VoidStage.WaitingForFirstGlove;
+
+        /// <summary> While the main reason to this scene is to calibrate gloves, if we don't find any I'll transition you after this amount.  </summary>
+        [Header("Control Parameters Components")]
+        [SerializeField] private float noGloveTimeout = 30f;
+        /// <summary> The amount of time were we'll show a 'welcome' message, before one is requested to move their fingers. </summary>
+        [SerializeField] private float introTime = 1.5f;
+
+        /// <summary> How Long it takes for the example hand to open and close again </summary>
+        [SerializeField] private float exampleOpenCloseTime = 2.0f;
+
+
+
+        /// <summary> Once completed, the scene will automatically change after this much time has finished. </summary>
 		[Header("Completion Settings")]
-		public float changeSceneAfter = 1.5f;
+        [SerializeField] private float changeSceneAfter = 1.5f;
 
-		/// <summary> If the index > -1, we will change to this Scene after Calibration completes, unless a specific name is provided. </summary>
-		public int goToSceneIndex = -1;
-		/// <summary> If it's not empty, we will change to this scene after calibration compltes. </summary>
-		public string goToSceneName = "";
+        /// <summary> If the index > -1, we will change to this Scene after Calibration completes, unless a specific name is provided. </summary>
+        [SerializeField] private int goToSceneIndex = -1;
+        /// <summary> If it's not empty, we will change to this scene after calibration compltes. </summary>
+        [SerializeField] private string goToSceneName = "";
 
-		/// <summary> This Event fires when the Calibration is completed, but before the next scene is loaded. </summary>
-		public UnityEvent CalibrationCompleted = new UnityEvent();
+        /// <summary> Fires when any state here changes... </summary>
+        public UnityEvent CalibrationStateChanged = new UnityEvent();
+        /// <summary> This Event fires when the Calibration is completed, but before the next scene is loaded. </summary>
+        public UnityEvent CalibrationCompleted = new UnityEvent();
 
-		/// <summary> Calibration algorithm for each glove. </summary>
-		protected SG_IntegratedCalibration leftHandCal = null, rightHandCal = null;
+        /// <summary> Calibration algorithm for each glove. </summary>
+        protected IndividualCalibration leftHandCal = null, rightHandCal = null; //start at NULL so I know they are not (yet) assigned.
 
-		/// <summary> Waveform to send when the glove connects. </summary>
-		[Header("Haptics")]
-		public SG_Waveform wf_connected;
-		/// <summary> Waveform to send when user has moved their fingers enough. </summary>
-		public SG_Waveform wf_movedEnough;
-		/// <summary> Waveform to send when the user confirms their calibration. </summary>
-		public SG_Waveform wf_confirmed;
+        /// <summary> When true, this boolean 'unlocks' the while loop that blocks the next scene from opening until calibration completes </summary>
+        protected bool openNextScene = false;
+        /// <summary> The actual Scene Index to load. </summary>
+        protected int loadSceneIndex = -1;
 
+        protected float timer_currStage = 0.0f;
 
-		/// <summary> Audio that will play once the first Glove connects </summary>
-		[Header("Audio Assets")]
-		public AudioSource introAudio;
-		/// <summary> Audio that will play when the user is prompted to move their fingers. </summary>
-		public AudioSource moveFingersAudio;
-		/// <summary> Audio that playes when the user needs to give a thumb up. </summary>
-		public AudioSource confirmAudio;
-		/// <summary> Plays when all hands have been calibrated. </summary>
-		public AudioSource completionAudio;
+        /// <summary> Whether or not we've evaluated that SenseCom is running... </summary>
+        protected bool sensecomRunning = false;
 
-		/// <summary> Used to play Move Audio only once. </summary>
-		protected bool playMoveAudio = true;
-		/// <summary> Used to play confirm audio only once </summary>
-		protected bool playConfirmAudio = true;
+        protected bool showIntroduction = true;
+        protected SGCore.HG_CalibrationState lastOverallState = SGCore.HG_CalibrationState.Unknown;
 
 
-		//-------------------------------------------------------------------------------------------------------------------------------------------------------------
-		// Accessors
+        //-------------------------------------------------------------------------------------------------------------------------------------------------------------
+        // Accessors
 
-		/// <summary> Returns true if the CalibrationVoid is done. </summary>
-		public bool Finished
-		{
-			get { return currStage >= VoidStage.Done; }
-		}
-
-
-		/// <summary> Access the main instructions text </summary>
+        /// <summary> Access the main instructions text </summary>
 		public string MainInstr
-		{
-			get { return mainInstructions != null ? mainInstructions.text : ""; }
-			set { if (mainInstructions != null) { mainInstructions.text = value; } }
-		}
+        {
+            get { return instructions; }
+            set 
+            {
+                instructions = value;
+                if (mainInstructions != null) 
+                { 
+                    mainInstructions.text = value; 
+                }
+            }
+        }
+
+        private string instructions = "";
+
+        /// <summary> Returns true if this script -can- transition into your next scene. If false, no next scene transition happens. We'll just wait for the user to confirm. </summary>
+        public bool HasSceneTransition
+        {
+            get { return this.loadSceneIndex > -1; }
+        }
+
+        /// <summary> Retrieve the current calibrationvoid stage </summary>
+        public VoidStage CurrentStage { get { return this.currentStage; } }
+
+        /// <summary> Will set the next Scene by it's build Index, and starts a routine to load it in the background if it is valid. </summary>
+        /// <remarks> The intended </remarks>
+        public void SetNextSceneByIndex(int buildIndex)
+        {
+            this.goToSceneIndex = buildIndex;
+        }
+
+        /// <summary> Will set the next Scene by it's name, and starts a routine to load it in the background if it is valid. </summary>
+        public void SetNextSceneByName(string name)
+        {
+            this.goToSceneName = name;
+        }
+
+        //-------------------------------------------------------------------------------------------------------------------------------------------------------------
+        // Utility Functions
+
+        public static SGCore.HG_CalibrationState GetEarliestState(SGCore.HG_CalibrationState d1State, bool d1Connected, SGCore.HG_CalibrationState d2State, bool d2Connected)
+        {
+            if (d1Connected || d2Connected)
+            {
+                SGCore.HG_CalibrationState s1 = d1Connected ? d1State : SGCore.HG_CalibrationState.CalibrationLocked;
+                SGCore.HG_CalibrationState s2 = d2Connected ? d2State : SGCore.HG_CalibrationState.CalibrationLocked;
+                return (SGCore.HG_CalibrationState)(Mathf.Min((int)s1, (int)s2));
+            }
+            return SGCore.HG_CalibrationState.Unknown;
+        }
+
+        public void DestroyExamples()
+        {
+            if (exampleHandLeft != null) { GameObject.Destroy(exampleHandLeft.transform.parent.gameObject); }
+            if (exampleHandRight != null) { GameObject.Destroy(exampleHandRight.transform.parent.gameObject); }
+        }
+
+        //-------------------------------------------------------------------------------------------------------------------------------------------------------------
+        // Calibration Void Functions
+
+        public void CollectComponents()
+        {
+            if (user == null)
+            {
+                user = GameObject.FindObjectOfType<SG_User>();
+            }
 
 
 
-		//-------------------------------------------------------------------------------------------------------------------------------------------------------------
-		// CalibrationVoid Functions
-
-		// Setup / Utility
-
-		/// <summary> Ensure the dev did not forget to turn off the playOnAwake </summary>
-		/// <param name="audio"></param>
-		public static void DisableAwake(AudioSource audio)
-		{
-			if (audio != null) { audio.playOnAwake = false; }
-		}
+            if (user != null)
+            {
+                leftHandCal = new IndividualCalibration(user.leftHand, exampleHandLeft, exampleOpenCloseTime);
+                leftHandCal.SetHandExample(false);
+                rightHandCal = new IndividualCalibration(user.rightHand, exampleHandRight, exampleOpenCloseTime);
+                rightHandCal.SetHandExample(false);
+            }
+        }
 
 
-		/// <summary> Enable / Disable an animator and its associated hand model. </summary>
-		/// <param name="animator"></param>
-		/// <param name="enabled"></param>
-		public static void SetHandExample(SG_HandAnimator animator, bool enabled)
-		{
-			if (animator != null)
-			{
-				animator.enabled = false;
-				if (animator.handModelInfo != null)
-				{
-					animator.handModelInfo.gameObject.SetActive(enabled);
-				}
-			}
-		}
 
-		/// <summary> Ensure that we are the ones checking a Hand's Calibration State, not the glvoe itself! </summary>
+
+        public void GoToStage(VoidStage nextStage, bool forceLoad = false)
+        {
+            if (nextStage == this.currentStage && !forceLoad)
+                return;
+
+            Debug.Log("Calibration Void Moving to " + nextStage.ToString());
+
+            timer_currStage = 0.0f; //reset the timer.
+            this.currentStage = nextStage;
+
+            string instr = "";
+            switch (nextStage)
+            {
+
+                case VoidStage.GlovesCalibrating:
+
+                    if (leftHandCal != null)
+                    {
+                        leftHandCal.ResetCalibration(true);
+                    }
+                    if (rightHandCal != null)
+                    {
+                        rightHandCal.ResetCalibration(true);
+                    }
+
+                    lastOverallState = SGCore.HG_CalibrationState.Unknown;
+
+                    //updates instructions by stage...
+                    instr = "Follow the instructions below your hand..."; //TODO: get this from the HandLayer?
+                    break;
+
+                case VoidStage.Done:
+                    instr = "Calibration Complete!";
+                    if (this.HasSceneTransition)
+                    {
+                        instr += "\nTaking you to the next scene...";
+                        CalibrationCompleted.Invoke();
+                        StartCoroutine(UnlockSceneAfter(this.changeSceneAfter));
+                    }
+                    break;
+
+                case VoidStage.NoGloves:
+                    instr = "Could not find any SenseGlove Devices.";
+                    if (this.HasSceneTransition)
+                    {
+                        instr += "\nTaking you to the next scene...";
+                    }
+                    break;
+
+                case VoidStage.WaitingForFirstGlove:
+                    instr = "Awaiting connection to a glove...";
+                    break;
+
+                case VoidStage.StartupSenseCom:
+                    instr = "Starting up SenseCom...";
+                    break;
+
+            }
+            MainInstr = instr;
+            CalibrationStateChanged.Invoke();
+        }
+
+
+        private void UpdateCurrentState(float dT)
+        {
+            try
+            {
+                timer_currStage += dT; //the amount of time we've spent in this stage.
+                switch (currentStage)
+                {
+                    case VoidStage.GlovesCalibrating:
+
+                        SGCore.HG_CalibrationState leftState = leftHandCal.GetCalibrationState();
+                        bool leftConnected = leftHandCal.IsConnected();
+                        SGCore.HG_CalibrationState rightState = rightHandCal.GetCalibrationState();
+                        bool rightConnected = rightHandCal.IsConnected();
+                        SGCore.HG_CalibrationState overallState = GetEarliestState(leftState, leftConnected, rightState, rightConnected);
+
+                        if (overallState == SGCore.HG_CalibrationState.CalibrationLocked)
+                        {
+                            GoToStage(VoidStage.Done);
+                        }
+                        else
+                        {
+                            //Check Intro.
+                            if (showIntroduction)
+                            {
+                                // welcome etc. stays on for X amount of time OR when the relevant fingers are 
+                                if (timer_currStage >= introTime
+                                    || overallState >= SGCore.HG_CalibrationState.AllSensorsMoved)
+                                {
+                                    showIntroduction = false;
+                                }
+                            }
+                            //Update overall Instructions
+                            if (showIntroduction)
+                            {
+                                MainInstr = "Welcome! it's time to calibrate your fingers";
+                            }
+                            else
+                            {
+
+                                if (overallState != lastOverallState)
+                                {
+                                    if (overallState == SGCore.HG_CalibrationState.AllSensorsMoved)
+                                    {
+                                        MainInstr = "Give us a Thumbs up to confirm your calibration";
+                                    }
+                                    else if (overallState == SGCore.HG_CalibrationState.MoveFingers)
+                                    {
+                                        MainInstr = "Open and close your hand until all your fingers are moving...";
+                                    }
+                                    else
+                                    {
+                                        MainInstr = "Something went wrong...";
+                                    }
+                                }
+                                lastOverallState = overallState;
+                                if (overallState == SGCore.HG_CalibrationState.MoveFingers)
+                                {
+                                    leftHandCal.UpdateExample();
+                                    rightHandCal.UpdateExample();
+                                }
+                            }
+
+                        }
+                        break;
+
+                    case VoidStage.WaitingForFirstGlove:
+
+                        if (timer_currStage >= this.noGloveTimeout)
+                        {
+                            GoToStage(VoidStage.NoGloves);
+                        }
+
+                        //check for any connection
+                        if (leftHandCal.IsConnected() || rightHandCal.IsConnected())
+                        {
+                            GoToStage(VoidStage.GlovesCalibrating);
+                        }
+                        break;
+                    case VoidStage.StartupSenseCom:
+
+                        if (!sensecomRunning) //it wasn't running and we cannae get it to start
+                        {
+                            if (timer_currStage >= noGloveTimeout)
+                            {
+                                this.UnlockNextScene(); //_should_ automagically throw us into the next scene if needed.
+                            }
+                        }
+                        if (SGCore.SenseCom.IsRunning())
+                        {
+                            this.GoToStage(VoidStage.WaitingForFirstGlove);
+                        }
+                        break;
+                    case VoidStage.NoGloves:
+                        if (timer_currStage >= introTime)
+                        {
+                            this.UnlockNextScene(); //_should_ automagically throw us into the next scene if needed.
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError("CALVOID: " + ex.Message);
+                Debug.LogError(ex.StackTrace);
+                Debug.LogError(ex.Source);
+                Debug.LogError(ex.TargetSite);
+                Debug.LogError(ex.InnerException);
+            }
+        }
+
+
+
+
+        //-------------------------------------------------------------------------------------------------------------------------------------------------------------
+        // Scene Transitions
+
+        private void VerifyNextScene()
+        {
+            // Step 1: Evaluate if we have a Scene to transition to, and warn users when their settings are invalid.
+            this.openNextScene = false;
+            int calVoidIndex = UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex;
+            loadSceneIndex = UnityEngine.SceneManagement.SceneManager.GetSceneByName(this.goToSceneName).buildIndex;
+            int sceneTotal = UnityEngine.SceneManagement.SceneManager.sceneCountInBuildSettings;
+            if (loadSceneIndex < 0 && goToSceneName.Length > 0)
+            {
+                Debug.LogError("Could not find \"" + goToSceneName + "\" using GetSceneByName(). Make sure it is included in your Build, and that it is spelled correctly. Or clear the goToSceneName parameter.", this);
+            }
+            if (loadSceneIndex == calVoidIndex) //it's valid Scene Name, that we wanted! (If empty, it returns -1 as well). CalVoidScene can't be -1?
+            {
+                Debug.LogError("goToSceneName \"" + goToSceneName + "\" leads to this Calibration Void. You will be stuck there forever. Are you sure you meant to do that?", this);
+            }
+            if (loadSceneIndex < 0) //we still don't have a proper index from the name.
+            {
+                loadSceneIndex = goToSceneIndex;
+                if (loadSceneIndex == calVoidIndex)
+                {
+                    Debug.LogError("goToSceneIndex of " + loadSceneIndex.ToString() + " leads to this Calibration Void. You will be stuck there forever. Are you sure you meant to do that?", this);
+                }
+                else if (loadSceneIndex >= sceneTotal)
+                {
+                    Debug.LogError("goToSceneIndex of " + loadSceneIndex.ToString() + "is not a valid Build Index, as it's >= " + sceneTotal.ToString(), this);
+                }
+            }
+            //Debug.Log("GoToScene = " + goToSceneName + ", BuildIndex = " + UnityEngine.SceneManagement.SceneManager.GetSceneByName(this.goToSceneName).buildIndex + ", CalVoid = " + calVoidIndex, this);
+            if (loadSceneIndex < 0 || loadSceneIndex >= sceneTotal) //we still don't have a valid Scene index. (The second redundant check is there for sanity's sake)
+            {
+                Debug.Log("No Valid goToSceneName or nextSceneIndex found. The Calibration Void will not automatically continue to the next...", this);
+                loadSceneIndex = -1; //set it to < 0 regardless.
+            }
+        }
+
+
+
+        private IEnumerator TryLoadNextScene()
+        {
+            yield return null; //wait one frame so other scripts can set the next Scene's Build Index / Name during their Start() / Awake().
+            VerifyNextScene(); //evaluates and modifies loadSceneIndex
+            if (this.loadSceneIndex > -1)
+            {
+                Debug.Log("Loading next scene (" + this.loadSceneIndex + ") in the background...");
+                AsyncOperation asyncOperation = UnityEngine.SceneManagement.SceneManager.LoadSceneAsync(this.loadSceneIndex);
+                if (asyncOperation != null)
+                {
+                    //Don't let the Scene activate until you allow it to
+                    asyncOperation.allowSceneActivation = false;
+                    //When the load is still in progress, output the Text and progress bar
+                    while (!asyncOperation.isDone)
+                    {
+                        // Check if the load has finished
+                        if (asyncOperation.progress >= 0.90f)
+                        {
+                            //Wait to you press the space key to activate the Scene
+                            if (openNextScene)
+                            {
+                                //Activates the Scene
+                                asyncOperation.allowSceneActivation = true;
+                            }
+                        }
+                        yield return null;
+                    }
+                }
+                else
+                {
+                    Debug.LogError("Something went wrong creating an AsyncOperation!");
+                }
+            }
+        }
+
+        private IEnumerator UnlockSceneAfter(float time)
+        {
+            yield return new WaitForSeconds(time);
+            UnlockNextScene();
+        }
+
+        /// <summary> If the Calibration Void has a next scene, load it. </summary>
+        public void UnlockNextScene()
+        {
+            //if (this.HasSceneTransition)
+            //{
+            //    Debug.Log("Opening the next Scene...");
+            //}
+            this.openNextScene = true;
+        }
+
+        public void ResetVoid()
+        {
+            SG.Util.SG_SceneControl.ResetScene();
+        }
+
+        public void EndCalibration(bool rightHand)
+        {
+            SGCore.HandLayer.EndCalibration(rightHand);
+        }
+
+        //-------------------------------------------------------------------------------------------------------------------------------------------------------------
+        // Inputs
+
+        public void RetryCalibration(bool rightHand)
+        {
+            if (this.currentStage == VoidStage.GlovesCalibrating)
+            {
+                IndividualCalibration cal = rightHand ? rightHandCal : leftHandCal;
+                if (cal != null)
+                {
+                    cal.ResetCalibration(true);
+                }
+            }
+        }
+
+        /// <summary> Event that fires when a user puts their hand inside the ResetSphere </summary>
 		/// <param name="hand"></param>
-		/// <param name="checkOnStart"></param>
-		public static void SetCalibrationChecks(SG_TrackedHand hand, bool checkOnStart)
-		{
-			if (hand != null && hand.calibration != null && hand.calibration.linkedGlove != null) { hand.calibration.linkedGlove.checkCalibrationOnConnect = checkOnStart; }
-		}
-
-		/// <summary> Safely set a ConfirmZone as active </summary>
-		/// <param name="zone"></param>
-		/// <param name="active"></param>
-		public static void SetZone(SG_ConfirmZone zone, bool active)
-		{
-			if (zone != null)
-			{
-				zone.SetZone(active);
-			}
-		}
-
-		/// <summary>  </summary>
-		/// <param name="shouldCheck"></param>
-		/// <param name="hand"></param>
-		/// <param name="sequence"></param>
-		/// <param name="gest"></param>
-		/// <returns></returns>
-		public static bool CheckConfirm(bool shouldCheck, SG_TrackedHand hand, SG_CalibrationSequence sequence, ref bool[] gest)
-		{
-			if (shouldCheck)
-			{
-				float[] normalizedFlexion;
-				if (hand != null && hand.GetNormalizedFlexion(out normalizedFlexion))
-				{
-					bool allGood = true;
-					//Debug.Log(SG.Util.SG_Util.ToString(normalizedFlexion));
-					for (int f = 0; f < normalizedFlexion.Length && f < gest.Length && f < thumbsUpThresholds.Length; f++)
-					{
-						if (gest[f]) //finger is currently making a gesture
-						{
-							if (f == 0) { gest[f] = normalizedFlexion[f] < thumbsUpThresholds[f] + thumbPassThreshold; }
-							else { gest[f] = normalizedFlexion[f] > thumbsUpThresholds[f] - thumbPassThreshold; }
-						}
-						else //finger is not yet in the right spot
-						{
-							if (f == 0) { gest[f] = normalizedFlexion[f] < thumbsUpThresholds[f]; }
-							else { gest[f] = normalizedFlexion[f] > thumbsUpThresholds[f]; }
-						}
-						if (!gest[f]) { allGood = false; }
-					}
-					return allGood;
-				}
-				return false;
-			}
-			return true;
-		}
-
-
-		/// <summary> Attempt to retrieve the Calibration Layer from one of the hands </summary>
-		/// <param name="hand"></param>
-		/// <param name="calibrationLayer"></param>
-		/// <returns></returns>
-		public static bool GetCalibrationLayer(SG_TrackedHand hand, out SG_CalibrationSequence calibrationLayer)
-		{
-			calibrationLayer = hand != null && hand.calibration != null ? hand.calibration : null;
-			return calibrationLayer != null;
-		}
-
-
-
-		public void CollectComponents()
-		{
-			DisableAwake(introAudio);
-			DisableAwake(moveFingersAudio);
-			DisableAwake(confirmAudio);
-			DisableAwake(completionAudio);
-
-			if (user == null)
-			{
-				user = GameObject.FindObjectOfType<SG_User>();
-			}
-
-			//disable calibration on start. We're going to be the one's to control it.
-			SetCalibrationChecks(user.leftHand, false);
-			SetCalibrationChecks(user.rightHand, false);
-
-			openClose_freq = 1 / exampleOpenCloseTime;
-		}
-
-
-
-
-		public void SetupSequence()
-		{
-			//Do this regardless
-			if (introAudio != null) //the introduction time should be at least as long as thea audio clip accompanying it (though you can override it).
-			{
-				introTime = Mathf.Max(introTime, introAudio.clip.length + 0.5f);
-			}
-
-			if (this.resetSphere != null)
-			{
-				this.resetSphere.instructionsStayVisible = false;
-				this.resetSphere.SetZone(false); //zone it turned off at the start...
-				this.resetSphere.InstructionText = "Retry\r\nCalibration";
-			}
-
-			//Check Scene Setup
-
-			if (GetCalibrationLayer(user.leftHand, out SG_CalibrationSequence leftCalibration)) //if true, a calibration algorithm has been assigned,
-			{
-				this.leftHandCal = new SG_IntegratedCalibration(user.leftHand, this.exampleHandLeft, this.introTime, this.confirmTime, openClose_freq);
-				leftHandCal.wf_connected = this.wf_connected;
-				leftHandCal.wf_confirmed = this.wf_confirmed;
-				leftHandCal.wf_movedEnough = this.wf_movedEnough;
-
-				user.leftHand.feedbackLayer.gameObject.SetActive(false);
-				user.leftHand.grabScript.gameObject.SetActive(false);
-			}
-			else
-			{
-				Debug.LogError("Missing Calibration Layer for left hand!");
-			}
-
-			if (GetCalibrationLayer(user.rightHand, out SG_CalibrationSequence rightCalibration))
-			{
-				this.rightHandCal = new SG_IntegratedCalibration(user.rightHand, this.exampleHandRight, this.introTime, this.confirmTime, openClose_freq);
-				rightHandCal.wf_connected = this.wf_connected;
-				rightHandCal.wf_confirmed = this.wf_confirmed;
-				rightHandCal.wf_movedEnough = this.wf_movedEnough;
-
-				user.rightHand.feedbackLayer.gameObject.SetActive(false);
-				user.rightHand.grabScript.gameObject.SetActive(false);
-			}
-			else
-			{
-				Debug.LogError("Missing Calibration Layer for right hand!");
-			}
-
-
-			// Check for Errors
-			if (leftHandCal == null || rightHandCal == null)
-			{
-				GoToMainStage(VoidStage.NoCalibrationError);
-				return;
-			}
-
-			// Now that we know we're definitely calibrating...
-
-			if (exampleHandLeft != null && user.leftHand != null)
-			{
-				Transform exHand = exampleHandLeft.transform.parent != null ? exampleHandLeft.transform.parent : exampleHandLeft.transform;
-				SG_HandPoser3D poser = user.leftHand.GetPoser(SG_TrackedHand.TrackingLevel.RenderPose);
-				exHand.parent = poser.GetTransform(HandJoint.Wrist);
-				exHand.localRotation = Quaternion.identity;
-				exHand.localPosition = Vector3.zero;
-			}
-			if (exampleHandRight != null && user.rightHand != null)
-			{
-				Transform exHand = exampleHandRight.transform.parent != null ? exampleHandRight.transform.parent : exampleHandRight.transform;
-				SG_HandPoser3D poser = user.rightHand.GetPoser(SG_TrackedHand.TrackingLevel.RenderPose);
-				exHand.parent = poser.GetTransform(HandJoint.Wrist);
-				exHand.localRotation = Quaternion.identity;
-				exHand.localPosition = Vector3.zero;
-			}
-
-
-
-			// Finally, go to the correct stage
-			if (beginImmedeately)
-			{
-				GoToMainStage(VoidStage.WaitingForFirstGlove);
-			}
-			else
-			{
-				GoToMainStage(VoidStage.WaitForStart);
-			}
-		}
-
-
-		// Calibration Controls
-
-
-		/// <summary> Safely start a calibration scene </summary>
-		/// <param name="sequence"></param>
-		public static void StartCalibration(SG_CalibrationSequence sequence)
-		{
-			if (sequence != null)
-			{
-				sequence.StartCalibration(true);
-				if (sequence.internalSequence != null && sequence.internalSequence is SGCore.Calibration.HG_QuickCalibration)
-				{
-					((SGCore.Calibration.HG_QuickCalibration)sequence.internalSequence).autoEndAfter = -1; //disable auto ending.
-				}
-			}
-		}
-
-
-		/// <summary> Event that fires when a user puts their hand inside the ResetSphere </summary>
-		/// <param name="hand"></param>
-		private void ResetSphere_Activated(SG_TrackedHand hand)
-		{
-			if (this.resetSphere != null && this.resetSphere.isActiveAndEnabled)
-			{
-				RetryCalibration();
-			}
-		}
-
-
-
-		public void RetryCalibration()
-		{
-			RetryCalibration(true);
-			RetryCalibration(false);
-		}
-
-		public void RetryCalibration(bool ofRightHand)
-		{
-			//Debug.Log("Re-Trying " + (ofRightHand ? "Right" : "Left") + " hand calibration");
-			SG_IntegratedCalibration calibr = ofRightHand ? rightHandCal : leftHandCal;
-			calibr.RetryCalibration();
-		}
-
-
-		public void SkipCalibration()
-		{
-			SkipCalibration(true);
-			SkipCalibration(false);
-		}
-
-
-		public void SkipCalibration(bool ofRightHand)
-		{
-			//Debug.Log("Skipping " + (ofRightHand ? "Right" : "Left") + " hand calibration");
-			SG_IntegratedCalibration calibr = ofRightHand ? rightHandCal : leftHandCal;
-			calibr.SkipCalibration();
-		}
-
-
-		// Calibration Void Stages
-
-
-
-		/// <summary> Reset the Calibration void Scene in its entirety. </summary>
-		public void ResetVoid()
-		{
-			SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
-		}
-
-		/// <summary> Check the furthest stage out of both gloves, to update the MainInstr properly </summary>
-		/// <returns></returns>
-		public GloveStage GetFurthestStage()
-		{
-			int max = Mathf.Max((int)leftHandCal.CalibrationStage, (int)rightHandCal.CalibrationStage);
-			return (GloveStage)max;
-		}
-
-
-		/// <summary> Go to the next stage of the CalibrationVoid. </summary>
-		/// <param name="nextStage"></param>
-		protected void GoToMainStage(VoidStage nextStage)
-		{
-			currStage = nextStage;
-
-			SetZone(this.resetSphere, false); //turned off by default.
-
-			switch (currStage)
-			{
-				case VoidStage.WaitForStart:
-					MainInstr = "When you're ready to begin\r\npress the trigger on your controller.";
-					break;
-
-				case VoidStage.WaitingForFirstGlove:
-					MainInstr = "Awaiting Connection to glove(s)...";
-					break;
-
-				case VoidStage.GlovesCalibrating: //when the first gloves have connected
-
-					LoadNextScene_InBG(); //at this stage, we can start loading the next scene...
-
-					//MainInstr = "Welcome to SenseGlove! It's time to calibrate";
-
-					if (introAudio != null) { introAudio.Play(); }
-
-					break;
-
-				case VoidStage.Done:
-
-					if (completionAudio != null) { completionAudio.Play(); }
-
-					if (goToSceneName.Length > 0 || goToSceneIndex > -1)
-					{
-						MainInstr = "Done! Bringing you to the next stage...";
-					}
-					else
-					{
-						MainInstr = "Done!";
-					}
-					CalibrationCompleted.Invoke();
-
-					break;
-			}
-		}
-
-
-
-		/// <summary> Update the main CalibrationVoid Logic </summary>
-		public void UpdateMainStage(float dT)
-		{
-			switch (currStage)
-			{
-				case VoidStage.WaitForStart: //we are currently waiting for the user to confirm button...
-
-					bool isController;
-					if (SG_XR_Devices.TryCheckForController(out isController) && !isController)
-					{
-						Debug.Log("VRHeadset has no controller buttons to push, so we're launching straight in.");
-						GoToMainStage(VoidStage.WaitingForFirstGlove);
-					}
-					break;
-
-				case VoidStage.WaitingForFirstGlove:
-
-					//In this stage, we are waiting for any glove to actually connect
-					if (this.GetFurthestStage() > GloveStage.NotConnected)
-					{
-						GoToMainStage(VoidStage.GlovesCalibrating);
-						Debug.Log("There is at least one glove connected. Let's go!");
-					}
-					break;
-
-				case VoidStage.GlovesCalibrating:
-
-					//You're allowed to Complete, but only if Both Gloves are no longer calibrating...
-					if ((leftHandCal.CalibrationStage == GloveStage.CalibrationDone || leftHandCal.CalibrationStage == GloveStage.NotConnected)
-						&& (rightHandCal.CalibrationStage == GloveStage.CalibrationDone || rightHandCal.CalibrationStage == GloveStage.NotConnected))
-					{
-						if (!leftHandCal.Algorithm.CalibrationActive && !rightHandCal.Algorithm.CalibrationActive)
-						{
-							Debug.Log("Both Gloves are either done calibrating, or were not connected. Let's Finish this!");
-							GoToMainStage(VoidStage.Done);
-						}
-					}
-					else
-					{
-						GloveStage furthestStage = this.GetFurthestStage();
-						//if at least one of the hands is moving. otherwise, it stays off.
-						SetZone(this.resetSphere, furthestStage > GloveStage.MoveFingers);
-
-						if (playConfirmAudio && furthestStage == GloveStage.ConfirmCalibration)
-						{
-							playConfirmAudio = false;
-							playMoveAudio = false;
-							if (confirmAudio != null) { confirmAudio.Play(); }
-						}
-						else if (playMoveAudio && furthestStage == GloveStage.MoveFingers)
-						{
-							playMoveAudio = false;
-							if (moveFingersAudio != null) { moveFingersAudio.Play(); }
-						}
-					}
-					break;
-
-				case VoidStage.Done:
-
-					timer_toNextScene += dT;
-					if (timer_toNextScene >= changeSceneAfter)
-					{
-						this.proceedToNextScene = true; //Allows the next level to be loaded (if one is queued. Otherwise, we don't care).
-					}
-					break;
-			}
-		}
-
-
-
-		/// <summary> Update the current states of the void and individual Glove calibration. </summary>
-		/// <param name="dT"></param>
-		protected void UpdateCurrentState(float dT)
-		{
-			if (leftHandCal == null || rightHandCal == null)
-			{
-				Debug.Log("No Calibration Algorithms for the left/right hands!");
-				return;
-			}
-
-			this.leftHandCal.UpdateGloveState(dT);
-			this.rightHandCal.UpdateGloveState(dT);
-
-			UpdateMainStage(dT);
-
-			if (currStage == VoidStage.GlovesCalibrating) //UpdateInstructions
-			{
-				//UpdateMainUI
-				GloveStage furthestStage = GetFurthestStage();
-				if (furthestStage == GloveStage.Introduction)
-				{
-					MainInstr = "Welcome to SenseGlove! It's time to calibrate";
-				}
-				else if (furthestStage == GloveStage.MoveFingers)
-				{
-					MainInstr = "Open and close your real hands until the virtual hands begin to move. Don't forget your Thumb!";
-				}
-				else if (furthestStage == GloveStage.ConfirmCalibration)
-				{
-					MainInstr = "When you are satified with the results, confirm with a Thumbs Up!";
-				}
-			}
-		}
-
-		/// <summary> Start loading the next scene in the background, if one is desired. </summary>
-		void LoadNextScene_InBG()
-		{
-			if (goToSceneName.Length > 0 || goToSceneIndex > -1)
-			{
-				StartCoroutine(LoadSceneAsynch());
-			}
-			else
-			{
-				Debug.Log("No Next Scene is specified, so no background loading in progress.");
-			}
-		}
-
-
-		// Asynch / Background Loading
-
-		/// <summary> Worker routine to begin loading the next scene. </summary>
-		/// <returns></returns>
-		IEnumerator LoadSceneAsynch()
-		{
-			yield return null;
-
-			AsyncOperation asyncOperation = this.goToSceneName.Length > 0 ? SceneManager.LoadSceneAsync(goToSceneName) : SceneManager.LoadSceneAsync(goToSceneIndex);
-			if (asyncOperation != null)
-			{
-				//Don't let the Scene activate until you allow it to
-				asyncOperation.allowSceneActivation = false;
-				//When the load is still in progress, output the Text and progress bar
-				while (!asyncOperation.isDone)
-				{
-					// Check if the load has finished
-					if (asyncOperation.progress >= 0.9f)
-					{
-						//Wait to you press the space key to activate the Scene
-						if (proceedToNextScene)
-							//Activate the Scene
-							asyncOperation.allowSceneActivation = true;
-					}
-					yield return null;
-				}
-			}
-		}
-
-
-		/// <summary> Brings you to the next scene regardless of Calibration stages. </summary>
-		public void GoToNextSceneNow()
-		{
-			proceedToNextScene = true;
-		}
-
-
-
-
-		//-------------------------------------------------------------------------------------------------------------------------------------------------------------
-		// Monobehaviour
-
-		void Awake()
-		{
-			CollectComponents();
-		}
-
-		// Use this for initialization
-		void Start()
-		{
-			SetupSequence();
-		}
-
-		// Update is called once per frame
-		void LateUpdate()
-		{
-			UpdateCurrentState(Time.deltaTime);
-		}
-
-		private void OnEnable()
-		{
-			if (resetSphere != null)
-			{
-				resetSphere.OnConfirm.AddListener(ResetSphere_Activated);
-			}
-		}
-
-
-		private void OnDisable()
-		{
-			if (resetSphere != null)
-			{
-				resetSphere.OnConfirm.RemoveListener(ResetSphere_Activated);
-			}
-		}
-
-	}
+		private void ResetSphereActivated(SG_TrackedHand hand)
+        {
+            if (this.resetSphere != null && this.resetSphere.isActiveAndEnabled)
+            {
+                RetryCalibration(hand.TracksRightHand());
+            }
+        }
+
+
+        //-------------------------------------------------------------------------------------------------------------------------------------------------------------
+        // Monobehaviour
+
+        private void OnEnable()
+        {
+            if (this.resetSphere != null)
+            {
+                this.resetSphere.OnConfirm.AddListener(ResetSphereActivated);
+            }
+        }
+
+        private void OnDisable()
+        {
+            if (this.resetSphere != null)
+            {
+                this.resetSphere.OnConfirm.RemoveListener(ResetSphereActivated);
+            }
+            if (leftHandCal != null)
+            {
+                leftHandCal.UnsubscribeEvents();
+                leftHandCal = null;
+            }
+            if (rightHandCal != null)
+            {
+                rightHandCal.UnsubscribeEvents();
+                rightHandCal = null;
+            }
+        }
+
+
+        // Start is called before the first frame update
+        void Start()
+        {
+            CollectComponents();
+            if (this.resetSphere != null)
+            {
+                this.resetSphere.InstructionText = "Reset\nCalibration";
+            }
+            StartCoroutine(TryLoadNextScene());
+#if UNITY_ANDROID && !UNITY_EDITOR
+            GoToStage(VoidStage.WaitingForFirstGlove, true);
+#else
+            GoToStage(VoidStage.StartupSenseCom, true);
+#endif
+        }
+
+        // Update is called once per frame
+        void Update()
+        {
+            UpdateCurrentState(Time.deltaTime);
+        }
+
+#if UNITY_EDITOR
+        private void OnValidate()
+        {
+            if (this.changeSceneAfter < 0.0f)
+            {
+                this.changeSceneAfter = 0.01f;
+            }
+        }
+#endif
+
+    }
 }

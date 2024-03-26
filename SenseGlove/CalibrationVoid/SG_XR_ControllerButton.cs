@@ -97,11 +97,24 @@ namespace SG.XR
 
         protected void CheckPressed()
         {
-            InputDevice device;
+            SG_XR_Devices.SG_XR_HandReference device;
             if (SG_XR_Devices.GetHandDevice(this.handedNess, out device))
             {
+                // Auto-Determine what to listen to depending on the System. TODO: Move this into SGSettings?
+                if (firstUpdate && device.DeviceLinked && device.Hardware != SGCore.PosTrackingHardware.Custom) //we can acutall grab the hardware and it is linked!
+                {
+                    firstUpdate = false;
+                    if (device.Hardware == SGCore.PosTrackingHardware.ViveFocus3WristTracker) //Special case for Vive Trackers, where we use the primary button as opposed to the trigger.
+                    {
+                        LinkedButton = handedNess ? XRControllerBtn.RightPrimaryBtn : XRControllerBtn.LeftPrimaryBtn;
+                    }
+                    //else
+                    //{
+                    //    LinkedButton = handedNess ? XRControllerBtn.RightTrigger : XRControllerBtn.LeftTrigger;
+                    //}
+                }
                 bool pressed;
-                if (device.TryGetFeatureValue(this.button, out pressed))
+                if (device.XRDevice.TryGetFeatureValue(this.button, out pressed))
                 {
                     if (firstUpdate)
                     {
@@ -115,12 +128,18 @@ namespace SG.XR
                         if (this.IsPressed && !pressed)
                         {
                             //Debug.Log(this.listenTo.ToString() + " - " + button.name + " is Released");
-                            ButtonReleased.Invoke();
+                            if (SGCore.HandLayer.DeviceConnected(this.handedNess)) //Only if we have a glove connected....
+                            {
+                                ButtonReleased.Invoke();
+                            }
                         }
                         else if (!this.IsPressed && pressed)
                         {
                             //Debug.Log(this.listenTo.ToString() + " - " + button.name + " is Pressed");
-                            ButtonPressed.Invoke();
+                            if (SGCore.HandLayer.DeviceConnected(this.handedNess)) //Only if we have a glove connected....
+                            {
+                                ButtonPressed.Invoke();
+                            }
                         }
                         this.IsPressed = pressed;
                     }

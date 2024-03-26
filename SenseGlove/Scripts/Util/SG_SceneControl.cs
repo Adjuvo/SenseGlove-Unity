@@ -27,6 +27,15 @@ namespace SG.Util
 			}
 		}
 
+		public static int GetCurrentSceneIndex()
+        {
+			return UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex;
+		}
+
+		public static bool IsValidScene(int index)
+        {
+			return index > -1 && index < UnityEngine.SceneManagement.SceneManager.sceneCountInBuildSettings;
+		}
 
 		/// <summary> Resets the current scene </summary>
 		/// <remarks> nonstatic function to call via Buttons / UI. </remarks>
@@ -64,6 +73,13 @@ namespace SG.Util
         {
 			SG_SceneControl.ToFirstScene();
         }
+
+		/// <summary> Safely load a specific scene </summary>
+		/// <param name="buildIndex"></param>
+		public static void LoadScene(uint buildIndex)
+        {
+			UnityEngine.SceneManagement.SceneManager.LoadScene((int)buildIndex);
+		}
 
 		//--------------------------------------------------------------------------------------------------------------------------
 		// Monobehaviour

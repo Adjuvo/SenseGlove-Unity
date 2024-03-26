@@ -82,6 +82,8 @@ namespace SG
         {
             SGCore.Diagnostics.Debugger.DebugLevel = this.DLL_debugLevel;
             SGCore.Diagnostics.Debugger.Instance.DebugMessageRecieved += Instance_DebugMessageRecieved;
+
+            Debug.Log("Debugging SenseGlove Core Back End; using SGCore version " + SGCore.Library.Version + " and " + SGCore.Library.SGConnectVersion);
         }
 
         //runs after all Update() methods have been called.

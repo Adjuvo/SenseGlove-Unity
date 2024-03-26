@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections;
+using UnityEngine;
 
 namespace SG.XR
 {
@@ -157,6 +158,12 @@ namespace SG.XR
             }
         }
 
+        private IEnumerator RecenterAfter(float timeInSeconds)
+        {
+            yield return new WaitForSeconds(timeInSeconds);
+            ApplyLastLocation(vrRig.rigRoot.transform);
+            //Debug.Log("Recetneren die hap!");
+        }
 
         //--------------------------------------------------------------------------------------------------------------------------
         // Monobehaviour
@@ -168,14 +175,23 @@ namespace SG.XR
                 this.roomCenter = this.transform;
             }
 
-            // Scan for VRRigs in case you load this Room Setup into an existing scene.
-            if (this.vrRig == null && headsetDetection == null)
-            {   // nothing's been assigned, so let's try
-                this.headsetDetection = GameObject.FindObjectOfType<SG_XR_Setup>();
-                if (headsetDetection == null) //still null
-                {
-                    this.vrRig = GameObject.FindObjectOfType<SG_XR_Rig>();
-                }
+            //// Scan for VRRigs in case you load this Room Setup into an existing scene.
+            //if (this.vrRig == null && headsetDetection == null)
+            //{   // nothing's been assigned, so let's try
+            //    this.headsetDetection = GameObject.FindObjectOfType<SG_XR_Setup>();
+            //    if (headsetDetection == null) //still null
+            //    {
+            //        this.vrRig = GameObject.FindObjectOfType<SG_XR_Rig>();
+            //    }
+            //}
+
+        }
+
+        private void Start()
+        {
+            if (keepBetweenSessions)
+            {
+                StartCoroutine(RecenterAfter(0.1f));
             }
         }
 
@@ -195,20 +211,20 @@ namespace SG.XR
 			}
 		}
 
-		void Update()
-        {
-            if (vrInit && vrRig != null)
-            {
-                VRHeadsetFound(vrRig);
-            }
-#if ENABLE_INPUT_SYSTEM //if Unitys new Input System is enabled....
-#else
-            if (Input.GetKeyDown(recenterHotKey))
-            {
-                this.Recenter();
-            }
-#endif
-        }
+//        void Update()
+//        {
+//            if (vrInit && vrRig != null)
+//            {
+//                VRHeadsetFound(vrRig);
+//            }
+//#if ENABLE_INPUT_SYSTEM //if Unitys new Input System is enabled....
+//#else
+//                        if (Input.GetKeyDown(recenterHotKey))
+//                        {
+//                            this.Recenter();
+//                        }
+//#endif
+//            }
 
+        }
     }
-}

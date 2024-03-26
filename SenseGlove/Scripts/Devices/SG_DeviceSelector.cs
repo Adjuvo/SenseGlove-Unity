@@ -135,6 +135,13 @@ namespace SG
             }
         }
 
+        /// <summary> Clears the list of devices from this script. </summary>
+        public void ClearDevices()
+        {
+            this.trackingDevices.Clear();
+            this.feedbackDevices.Clear();
+        }
+
         public int ListIndex(IHandPoseProvider device)
         {
             if (device == null)
@@ -228,13 +235,13 @@ namespace SG
         //---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         // HandPoseProvider Implementation
 
-        public HandTrackingDevice TrackingType()
+        public virtual HandTrackingDevice TrackingType()
         {
             return this.CurrentTracking != null ? this.CurrentTracking.TrackingType() : HandTrackingDevice.Unknown;
         }
 
 
-        public BasicHandModel GetKinematics()
+        public virtual BasicHandModel GetKinematics()
         {
             if (this.handModelToUse == null) //ensures it exists
             {
@@ -244,7 +251,7 @@ namespace SG
         }
 
 
-        public void SetKinematics(BasicHandModel handModel)
+        public virtual void SetKinematics(BasicHandModel handModel)
         {
             this.handModelToUse = handModel;
             for (int i = 0; i < this.trackingDevices.Count; i++)
@@ -257,19 +264,19 @@ namespace SG
         }
 
 
-        public bool IsConnected()
+        public virtual bool IsConnected()
         {
             return this.CurrentTracking != null;
         }
 
-        public bool TracksRightHand()
+        public virtual bool TracksRightHand()
         {
             return this.intendedFor != HandSide.LeftHand;
         }
 
 
 
-        public bool GetHandPose(out SG_HandPose handPose, bool forcedUpdate = false)
+        public virtual bool GetHandPose(out SG_HandPose handPose, bool forcedUpdate = false)
         {
             if (this.CurrentTracking != null)
             {
@@ -279,7 +286,7 @@ namespace SG
             return false;
         }
 
-        public bool GetNormalizedFlexion(out float[] flexions)
+        public virtual bool GetNormalizedFlexion(out float[] flexions)
         {
             if (this.CurrentTracking != null)
             {
@@ -291,7 +298,7 @@ namespace SG
 
 
 
-        public float OverrideGrab()
+        public virtual float OverrideGrab()
         {
             if (this.CurrentTracking != null)
             {
@@ -300,7 +307,7 @@ namespace SG
             return 0.0f;
         }
 
-        public float OverrideUse()
+        public virtual float OverrideUse()
         {
             if (this.CurrentTracking != null)
             {
@@ -309,7 +316,7 @@ namespace SG
             return 0.0f;
         }
 
-        public bool TryGetBatteryLevel(out float value01)
+        public virtual bool TryGetBatteryLevel(out float value01)
         {
             if (this.CurrentTracking != null)
             {
@@ -330,7 +337,7 @@ namespace SG
 
 
 
-        public string Name()
+        public virtual string Name()
         {
             if (this.CurrentHaptics != null)
             {
@@ -340,47 +347,23 @@ namespace SG
         }
 
 
-        public void SendCmd(SG_FFBCmd ffb)
+        public virtual void QueueFFBCmd(SGCore.Finger finger, float value01)
         {
             if (this.CurrentHaptics != null)
             {
-                this.CurrentHaptics.SendCmd(ffb);
+                this.CurrentHaptics.QueueFFBCmd(finger, value01);
             }
         }
 
-        public void SendCmd(SG_TimedBuzzCmd fingerCmd)
+        public virtual void QueueFFBCmd(float[] values01)
         {
             if (this.CurrentHaptics != null)
             {
-                this.CurrentHaptics.SendCmd(fingerCmd);
+                this.CurrentHaptics.QueueFFBCmd(values01);
             }
         }
 
-        public void SendCmd(TimedThumpCmd wristCmd)
-        {
-            if (this.CurrentHaptics != null)
-            {
-                this.CurrentHaptics.SendCmd(wristCmd);
-            }
-        }
-
-        public void SendCmd(ThumperWaveForm waveform)
-        {
-            if (this.CurrentHaptics != null)
-            {
-                this.CurrentHaptics.SendCmd(waveform);
-            }
-        }
-
-        public void SendCmd(SG_Waveform waveform)
-        {
-            if (this.CurrentHaptics != null)
-            {
-                this.CurrentHaptics.SendCmd(waveform);
-            }
-        }
-
-        public void SendImpactVibration(SG_HandSection location, float normalizedVibration)
+        public virtual void SendImpactVibration(SG_HandSection location, float normalizedVibration)
         {
             if (this.CurrentHaptics != null)
             {
@@ -388,7 +371,7 @@ namespace SG
             }
         }
 
-        public void StopAllVibrations()
+        public virtual void StopAllVibrations()
         {
             if (this.CurrentHaptics != null)
             {
@@ -396,7 +379,7 @@ namespace SG
             }
         }
 
-        public void StopHaptics()
+        public virtual void StopHaptics()
         {
             if (this.CurrentHaptics != null)
             {
@@ -404,15 +387,15 @@ namespace SG
             }
         }
 
-        public void SendCmd(SG_NovaWaveform customWaveform, SGCore.Nova.Nova_VibroMotor location)
+        public virtual void SendCustomWaveform(SG_CustomWaveform customWaveform, VibrationLocation location)
         {
             if (this.CurrentHaptics != null)
             {
-                this.CurrentHaptics.SendCmd(customWaveform, location);
+                this.CurrentHaptics.SendCustomWaveform(customWaveform, location);
             }
         }
 
-        public bool FlexionLockSupported()
+        public virtual bool FlexionLockSupported()
         {
             if (this.CurrentHaptics != null)
             {
@@ -421,7 +404,7 @@ namespace SG
             return false;
         }
 
-        public void SetFlexionLocks(bool[] fingers, float[] fingerFlexions)
+        public virtual void SetFlexionLocks(bool[] fingers, float[] fingerFlexions)
         {
             if (this.CurrentHaptics != null)
             {
@@ -430,18 +413,67 @@ namespace SG
         }
 
 
+        public virtual void QueueWristSqueeze(float squeezeLevel01)
+        {
+            if (this.CurrentHaptics != null)
+            {
+                this.CurrentHaptics.QueueWristSqueeze(squeezeLevel01);
+            }
+        }
+
+        public virtual void StopWristSqueeze()
+        {
+            if (this.CurrentHaptics != null)
+            {
+                this.CurrentHaptics.StopWristSqueeze();
+            }
+        }
+
+        public virtual bool HasVibrationMotor(VibrationLocation atLocation)
+        {
+            if (this.CurrentHaptics != null)
+            {
+                return this.CurrentHaptics.HasVibrationMotor(atLocation);
+            }
+            return false;
+        }
+
+        public virtual void SendVibrationCmd(VibrationLocation location, float amplitude, float duration, float frequency)
+        {
+            if (this.CurrentHaptics != null)
+            {
+                this.CurrentHaptics.SendVibrationCmd(location, amplitude, duration, frequency);
+            }
+        }
+
+
+        public virtual void SendLegacyWaveform(SG_Waveform waveform)
+        {
+            this.SendLegacyWaveform(waveform, waveform.amplitude, waveform.duration_s, waveform.intendedLocation);
+        }
+
+        public virtual void SendLegacyWaveform(SG_Waveform waveform, float amplitude, float duration, VibrationLocation location)
+        {
+            if (CurrentHaptics != null)
+            {
+                CurrentHaptics.SendLegacyWaveform(waveform, amplitude, duration, location);
+            }
+        }
+
+
+
         //---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         // Monobehaviour
 
         // Use this for initialization
-        private void Awake()
+        protected virtual void Awake()
         {
             CollectDevices();
             CheckDevices();
         }
 
 #if UNITY_EDITOR
-        private void OnValidate()
+        protected virtual void OnValidate()
         {
             if (Application.isPlaying)
             {

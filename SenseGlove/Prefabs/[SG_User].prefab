@@ -806,22 +806,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ad4be3b6f43d6614597f035ae44bc106, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  linkedGlove: {fileID: 114741115281472756}
-  linkedHand: {fileID: 114001878862178238}
-  calibrationType: 0
-  startCondition: 1
+  TrackedHand: {fileID: 0}
   debugEnabled: 0
-  debugText: {fileID: 102409770321426102}
-  nextStepKey: 0
-  cancelKey: 0
-  resetCalibrationKey: 0
-  baseInstrMessage: 
-  instructions3D: {fileID: 0}
+  instructions3D: {fileID: 102672295802800088}
   instructionsUI: {fileID: 0}
-  CalibrationFinished:
+  showConfirmInstructions: 1
+  CalibrationStarted:
     m_PersistentCalls:
       m_Calls: []
-  CalibrationAbort:
+  CalibrationFinished:
     m_PersistentCalls:
       m_Calls: []
 --- !u!1 &1088148308992782
@@ -7513,22 +7506,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ad4be3b6f43d6614597f035ae44bc106, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  linkedGlove: {fileID: 114541258151201158}
-  linkedHand: {fileID: 114710115657912056}
-  calibrationType: 0
-  startCondition: 1
+  TrackedHand: {fileID: 0}
   debugEnabled: 0
-  debugText: {fileID: 102890614423363730}
-  nextStepKey: 0
-  cancelKey: 0
-  resetCalibrationKey: 0
-  baseInstrMessage: 
-  instructions3D: {fileID: 0}
+  instructions3D: {fileID: 102700778390871594}
   instructionsUI: {fileID: 0}
-  CalibrationFinished:
+  showConfirmInstructions: 1
+  CalibrationStarted:
     m_PersistentCalls:
       m_Calls: []
-  CalibrationAbort:
+  CalibrationFinished:
     m_PersistentCalls:
       m_Calls: []
 --- !u!1 &1525177412001052
@@ -9309,7 +9295,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &4861546315893886
 Transform:
   m_ObjectHideFlags: 0
@@ -13249,7 +13235,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &4922941301490910
 Transform:
   m_ObjectHideFlags: 0

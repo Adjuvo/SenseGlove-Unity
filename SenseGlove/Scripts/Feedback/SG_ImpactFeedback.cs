@@ -8,7 +8,7 @@ namespace SG
     public class SG_ImpactFeedback : MonoBehaviour
     {
         /// <summary> The GameObject from which te retrieve the hapitcHardware. </summary>
-        public GameObject hapticsObject;
+        public MonoBehaviour handFeedbackDeviceScript;
 
         /// <summary> Hardware that can accept the SenseGlove Impact commands. </summary>
         public IHandFeedbackDevice hapticHardware;
@@ -73,9 +73,9 @@ namespace SG
 
         private void Start()
         {
-            if (this.hapticHardware == null && this.hapticsObject != null)
+            if (this.hapticHardware == null && this.handFeedbackDeviceScript != null)
             {
-                this.hapticHardware = this.hapticsObject.GetComponent<IHandFeedbackDevice>();
+                this.hapticHardware = (IHandFeedbackDevice)handFeedbackDeviceScript;
             }
         }
 
@@ -93,7 +93,7 @@ namespace SG
 
         private void OnCollisionEnter(Collision collision)
         {
-            if (CanImpact)
+            if (CanImpact && hapticHardware != null)
             {
                 float magnitude = SmoothedVelocity.magnitude;
                 if (magnitude >= this.minImpactSpeed)

@@ -262,14 +262,15 @@ namespace SG.Examples
 
         public bool ProceedCalibration()
         {
-            bool res = currStep < mustCalibrateAt || calibratedOnce;
-            if (!calibratedOnce && activeHand != null && activeHand.calibration.CalibrationActive)
-            {
-                bool canAnimate = ((SGCore.Calibration.HG_QuickCalibration)activeHand.calibration.internalSequence).CanAnimate;
-                Debug.Log("Animate : " + canAnimate);
-                res = res || canAnimate;
-            }
-            return res;
+            return true;
+            //bool res = currStep < mustCalibrateAt || calibratedOnce;
+            //if (!calibratedOnce && activeHand != null && activeHand.calibration.CalibrationActive)
+            //{
+            //    bool canAnimate = ((SGCore.Calibration.HG_QuickCalibration)activeHand.calibration.internalSequence).CanAnimate;
+            //    Debug.Log("Animate : " + canAnimate);
+            //    res = res || canAnimate;
+            //}
+            //return res;
         }
 
         public void DisableAllNoneEssentialsExcept(ShowingLayer whichLayer)
@@ -398,12 +399,6 @@ namespace SG.Examples
             prevBtn.onClick.AddListener(PreviousInstruction);
 
             GoToStep(0);
-
-
-            handSelector.leftHand.calibration.startCondition = SG_CalibrationSequence.StartCondition.Manual;
-            handSelector.leftGlove.checkCalibrationOnConnect = false;
-            handSelector.rightHand.calibration.startCondition = SG_CalibrationSequence.StartCondition.Manual;
-            handSelector.rightGlove.checkCalibrationOnConnect = false;
             handSelector.ActiveHandConnect.AddListener(TrackedHandAssigned);
 
         }
@@ -420,7 +415,7 @@ namespace SG.Examples
                 if (!calibrationStarted && this.currStep > -1 && this.instructions[currStep].activeLayer == ShowingLayer.CalibrationLayer)
                 {
                     calibrationStarted = true;
-                    this.activeHand.calibration.StartCalibration(true);
+                    this.activeHand.calibration.ResetCalibration(true);
                 }
 
 

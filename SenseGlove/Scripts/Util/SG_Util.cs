@@ -1380,7 +1380,6 @@ namespace SG.Util
         }
 
 
-
         /// <summary> Colliect Colliders from this object and all its children and add them to listToAdd. Returns the number of colliders that were added. </summary>
         /// <param name="obj"></param>
         /// <param name="addToList"></param>
@@ -1819,22 +1818,24 @@ namespace SG.Util
 
         public static Quaternion MirrorRotation(Quaternion Q, Quaternion mirrorOriginRotation, MoveAxis mirrorNormal)
         {
-//            Quaternion mirrToAbs = mirrorOrigin.rotation;
             Quaternion localRot = Quaternion.Inverse(mirrorOriginRotation) * Q;
             Quaternion localMirror = Quaternion.identity;
             switch (mirrorNormal)
             {
                 case MoveAxis.X:
+                case MoveAxis.NegativeX:
                     localMirror = SG_Util.MirrorX(localRot);
                     break;
                 case MoveAxis.Y:
+                case MoveAxis.NegativeY:
                     localMirror = SG_Util.MirrorY(localRot);
                     break;
                 case MoveAxis.Z:
+                case MoveAxis.NegativeZ:
                     localMirror = SG_Util.MirrorZ(localRot);
                     break;
             }
-            return localMirror * mirrorOriginRotation;
+            return mirrorOriginRotation * localMirror;
         }
 
 
@@ -1912,7 +1913,14 @@ namespace SG.Util
             return line_start + Vector3.Project(point - line_start, line_end - line_start);
         }
 
-
+        /// <summary> Comapres two tags. If the scriptTag is empty, return true </summary>
+        /// <param name="snapTag"></param>
+        /// <param name="otherTag"></param>
+        /// <returns></returns>
+        public static bool MatchingTag(string scriptTag, string objTag) //todo : move this to SG_Util?
+        {
+            return scriptTag.Length == 0 || objTag.Equals(scriptTag, System.StringComparison.OrdinalIgnoreCase); //contained inside a method so it's consistent everywhere. Can also be length 0 - in which case no filters are applied
+        }
 
     }
 

@@ -107,7 +107,7 @@ namespace SG
         }
 
         /// <summary> Restores the PhysicsBody back to its original paramaters. </summary>
-        public void RestorePhysicsBody()
+        public virtual void RestorePhysicsBody()
         {
             if (this.rbDefaults != null) { this.SetPhysicsbody(this.rbDefaults); }
         }
@@ -146,7 +146,7 @@ namespace SG
 
         /// <summary> Return this object base to it's original position, determined by the SaveCurrentLocation. (Called during Setup) </summary>
         /// <param name="resetRBStats">If true, this paratmeter resets the Rigidbody's stats as well (UseGravity, IsKinematic </param>
-        public void ResetLocation(bool resetRBStats)
+        public virtual void ResetLocation(bool resetRBStats)
         {
             Transform myTransf = this.MyTransform;
             Vector3 currBasePos; Quaternion currBaseRot;

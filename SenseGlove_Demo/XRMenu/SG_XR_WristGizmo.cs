@@ -360,7 +360,8 @@ namespace SG.XR
             }
             if (this.tappedWaveform != null)
             {
-                hand.SendCmd(this.tappedWaveform);
+                //Debug.LogError("TODO: Implement Timed Waveforms!");
+                //hand.SendCmd(this.tappedWaveform);
             }
             this.OnMenuTapped.Invoke();
         }
@@ -443,7 +444,7 @@ namespace SG.XR
                 //Logic for re-hiding.
                 if (!MenuFunctional) //no longer funcitonal
                 {
-                    Debug.Log("Hide Wrist Icons.");
+                    //Debug.Log("Hide Wrist Icons.");
                     this.FaceItemsVisible = false;
                 }
             }
@@ -454,8 +455,10 @@ namespace SG.XR
                 {
                     this.fader.SetFadeLevel(1.0f); //force visibility
                     this.FaceItemsVisible = true;
-                    this.linkedHand.SendCmd(this.visibleWaveform);
-                    Debug.Log("Show Wrist Icons");
+                    //Debug.LogError("TODO: Implement Timed Waveforms!");
+                  
+                    //his.linkedHand.SendCmd(this.visibleWaveform);
+                    //Debug.Log("Show Wrist Icons");
                 }
             }
 

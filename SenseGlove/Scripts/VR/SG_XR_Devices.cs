@@ -310,6 +310,21 @@ namespace SG
             return headTracking == null || rightHandTracking == null || leftHandTracking == null;
         }
 
+        public static bool GetBySerialNumber(List<InputDevice> devices, string sn, out InputDevice deviceWithSN)
+        {
+            for (int i=0; i<devices.Count; i++)
+            {
+                if (devices[i].serialNumber.Contains(sn))
+                {
+                    deviceWithSN = devices[i];
+                    return true;
+                }
+            }
+            deviceWithSN = new InputDevice();
+            return false;
+        }
+
+
         private static void TryLinkHands(List<InputDevice> devices)
         {
             string hmdName = headTracking != null ? headTracking.XRDevice.name.ToLower() : "";
@@ -317,51 +332,70 @@ namespace SG
             //It's a headset meant to be used with Vive Trackers.
             if (hmdName.Length > 0 && (hmdName.Contains("vive") | hmdName.Contains("valve")))
             {
-                List<InputDevice> trackers = GetViveTrackers(devices);
-                if (trackers.Count > 0) //there's at least one tracker found
+                if (hmdName.Contains("streaming") || hmdName.Contains("focus")) //it's a Vive Focus... via business streaming (newer versions / OpenVR Version)
                 {
-                    // It is possible to map a Vive Tracker to the left or right hand via Binding UI.
-                    // In that case, the tracker COULD have a clear handed-ness associated with it (Unless you assigned it to the knee or something).
-                    UnityEngine.XR.InputDevice leftTracker = new InputDevice(), rightTracker = new InputDevice();
-                    bool leftPresent = false, rightPresent = false;
-                    List<InputDevice> lefts, rights, others;
-                    SplitByHanded(trackers, out lefts, out rights, out others);
+                    //Grab TKR_RIGHT? TKR_LEFT
+                    InputDevice leftDevice;
+                    if (GetBySerialNumber(devices, "TKR_LEFT",  out leftDevice))
+                    {
+                        leftHandTracking = new SG_XR_HandReference(leftDevice, IdentifyTrackingHardware(hmdName, leftDevice.name, leftDevice.manufacturer, trackingMethod));
+                        //Debug.Log("Linked SG_XR_Devices Left Hand to " + Report(leftDevice));
+                    }
+                    InputDevice rightDevice;
+                    if (GetBySerialNumber(devices, "TKR_RIGHT", out rightDevice))
+                    {
+                        rightHandTracking = new SG_XR_HandReference(rightDevice, IdentifyTrackingHardware(hmdName, rightDevice.name, rightDevice.manufacturer, trackingMethod));
+                        //Debug.Log("Linked SG_XR_Devices Right Hand to " + Report(rightDevice));
+                    }
+                }
+                else
+                {
+                    List<InputDevice> trackers = GetViveTrackers(devices);
+                    if (trackers.Count > 0) //there's at least one tracker found
+                    {
+                        // It is possible to map a Vive Tracker to the left or right hand via Binding UI.
+                        // In that case, the tracker COULD have a clear handed-ness associated with it (Unless you assigned it to the knee or something).
+                        UnityEngine.XR.InputDevice leftTracker = new InputDevice(), rightTracker = new InputDevice();
+                        bool leftPresent = false, rightPresent = false;
+                        List<InputDevice> lefts, rights, others;
+                        SplitByHanded(trackers, out lefts, out rights, out others);
 
-                    if (lefts.Count == 0 && rights.Count == 0) //Neither tracker has been assigned a proper index through SteamVR. So we default to right, left.
-                    {
-                        rightTracker = trackers[0]; rightPresent = true;
-                        if (trackers.Count > 1) { leftTracker = trackers[1]; leftPresent = true; }
-                    }
-                    else
-                    {   //at least one of our two trackers is known. That means if one of them is not, you can find it in the 'others' section (provided it's not empty).
-                        if (rights.Count > 0) { rightTracker = rights[0]; rightPresent = true; }
-                        else if (others.Count > 0) { rightTracker = others[0]; rightPresent = true; }
+                        if (lefts.Count == 0 && rights.Count == 0) //Neither tracker has been assigned a proper index through SteamVR. So we default to right, left.
+                        {
+                            rightTracker = trackers[0]; rightPresent = true;
+                            if (trackers.Count > 1) { leftTracker = trackers[1]; leftPresent = true; }
+                        }
+                        else
+                        {   //at least one of our two trackers is known. That means if one of them is not, you can find it in the 'others' section (provided it's not empty).
+                            if (rights.Count > 0) { rightTracker = rights[0]; rightPresent = true; }
+                            else if (others.Count > 0) { rightTracker = others[0]; rightPresent = true; }
 
-                        if (lefts.Count > 0) { leftTracker = lefts[0]; leftPresent = true; }
-                        else if (others.Count > 0) { leftTracker = others[0]; leftPresent = true; }
-                    }
-                    //Now we can evaluate the Trackers
-                    if (leftPresent)
-                    {
-                        //if (leftHandTracking == null) { Debug.Log("Linked SG_XR_Devices Left Hand to " + Report(leftTracker)); }
-                        leftHandTracking = new SG_XR_HandReference(leftTracker, SGCore.PosTrackingHardware.ViveTracker);
-                    }
-                    else if (leftHandTracking != null)
-                    {
-                        leftHandTracking.DeviceLinked = false;
-                    }
-                    if (rightPresent)
-                    {
-                        //if (rightHandTracking == null) { Debug.Log("Linked SG_XR_Devices Right Hand to " + Report(rightTracker)); }
-                        rightHandTracking = new SG_XR_HandReference(rightTracker, SGCore.PosTrackingHardware.ViveTracker);
-                    }
-                    else if (rightHandTracking != null) //could not find a right hand tracking device. So stoppit
-                    {
-                        rightHandTracking.DeviceLinked = false;
+                            if (lefts.Count > 0) { leftTracker = lefts[0]; leftPresent = true; }
+                            else if (others.Count > 0) { leftTracker = others[0]; leftPresent = true; }
+                        }
+                        //Now we can evaluate the Trackers
+                        if (leftPresent)
+                        {
+                            //if (leftHandTracking == null) { Debug.Log("Linked SG_XR_Devices Left Hand to " + Report(leftTracker)); }
+                            leftHandTracking = new SG_XR_HandReference(leftTracker, SGCore.PosTrackingHardware.ViveTracker);
+                        }
+                        else if (leftHandTracking != null)
+                        {
+                            leftHandTracking.DeviceLinked = false;
+                        }
+                        if (rightPresent)
+                        {
+                            //if (rightHandTracking == null) { Debug.Log("Linked SG_XR_Devices Right Hand to " + Report(rightTracker)); }
+                            rightHandTracking = new SG_XR_HandReference(rightTracker, SGCore.PosTrackingHardware.ViveTracker);
+                        }
+                        else if (rightHandTracking != null) //could not find a right hand tracking device. So stoppit
+                        {
+                            rightHandTracking.DeviceLinked = false;
+                        }
                     }
                 }
             }
-            else if (hmdName.Contains("wvr hmd")) //Vive Focus with wrist trackers (TrackedDevices). Requires Vive Input Utility?
+            else if (hmdName.Contains("wvr hmd")) //Legacy Vive Focus with wrist trackers (TrackedDevices). Requires Vive Input Utility?
             {
                 InputDevice leftDevice;
                 if (TryGetDevice(devices, InputDeviceCharacteristics.TrackedDevice | InputDeviceCharacteristics.Left, out leftDevice))
@@ -529,9 +563,17 @@ namespace SG
                 // Oculus Quest 2 Controllers
                 if (hmdName.Contains("oculus") || hmdName.Contains("meta"))
                 {
-                    if (hmdName.Contains("quest"))
+                    if (hmdName.Contains("quest")) //xrDevice = "meta quest pro" "meta quest 3" etc
                     {
-                        return hmdName.Contains("pro") ? SGCore.PosTrackingHardware.QuestProController : SGCore.PosTrackingHardware.Quest2Controller; //xrDevice = "meta quest pro"
+                        if (hmdName.Contains("3"))
+                        {
+                            return SGCore.PosTrackingHardware.Quest3Controller;
+                        }
+                        else if (hmdName.Contains("pro"))
+                        {
+                            return SGCore.PosTrackingHardware.QuestProController;
+                        }
+                        return SGCore.PosTrackingHardware.Quest2Controller; 
                     }
                     else if (hmdName.Contains("rift"))
                     {
@@ -554,7 +596,7 @@ namespace SG
                     return SGCore.PosTrackingHardware.PicoNeo3;
                 }
 
-                if (hmdName.Contains("wvr") && deviceName.Contains("tracker")) //Wave VR - Vive Focus
+                if (hmdName.Contains("wvr") && deviceName.Contains("tracker") || hmdName.Contains("focus")) //Wave VR - Vive Focus
                 {
                     return SGCore.PosTrackingHardware.ViveFocus3WristTracker; //this is a Vive Pro Wrist Tracker.
                 }

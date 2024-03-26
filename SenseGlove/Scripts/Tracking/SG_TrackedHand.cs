@@ -37,28 +37,6 @@ namespace SG
         //-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         // Member Variables
 
-        //      /// <summary> The GameObject from which we will try to take an IHandPoseProvider interface. Can be a SG_HapticGlove, or whaterver else your heart desires </summary>
-        //      /// <remarks>Has to be a GameObject because Unity does not allow inspector references to Interfaces, only to Monobehaviour Classes.</remarks>
-        //      [Header("Device I/O Components")]
-        //      public GameObject handRealHandSource;
-        //      /// <summary> The GameObject from which we will try to take an IHandFeedbackDevice interface. Can be a SG_HapticGlove, or whaterver else your heart desires </summary>
-        //      /// <remarks>Has to be a GameObject because Unity does not allow inspector references to Interfaces, only to Monobehaviour Classes.</remarks>
-        //      public GameObject hapticsSource;
-
-        //      /// <summary> The actual source of real-life hand data. Used to gain access to the real hand pose, which is passed to the relevant scripts. </summary>
-        //      public IHandPoseProvider realHandSource
-        //      {
-        //          get; private set;
-        //      }
-
-        //      /// <summary> The actual device to send Haptics to. Calling Haptic cmds sent ot this script will be passed to the source. </summary>
-        //public IHandFeedbackDevice hapticHardware
-        //      {
-        //          get; private set;
-        //      }
-
-        
-
         public SG_DeviceSelector deviceSelector;
 
         /// <summary> The 3D Hand Model that is  actually rendered to the screen. The script purely holds information on which transforms control which joint. </summary>
@@ -132,7 +110,15 @@ namespace SG
         protected SG_HandPose l_renderPose;
 
 
+        public SG_HandPose RealHandPose
+        {
+            get { return l_realHandPose; }
+        }
 
+        public SG_HandPose VirtualHandPose
+        {
+            get { return l_virtualPose; }
+        }
 
         /// <summary> Assigned manually </summary>
         protected IHandPoseProvider manualPoseProvider = null;
@@ -367,11 +353,11 @@ namespace SG
                 this.gestureLayer.LinkToHand(this, true);
             }
 
-            if (this.calibration != null) //we have a calibration layer, and it's linked to a Hapitc Glove.
+            if (this.calibration != null)
             {
-                this.calibration.LinkHand(this);
-                this.LinkCalibrationEvents();
+                this.calibration.LinkToHand(this, true);
             }
+
             this.UpdateHandState();
 
 
@@ -423,24 +409,6 @@ namespace SG
             }
         }
 
-
-        protected void LinkCalibrationEvents()
-        {
-            if (!calibrationLink && this.calibration != null && this.calibration.linkedGlove != null) //subscribe
-            {
-                this.calibration.linkedGlove.CalibrationStateChanged.AddListener(UpdateHandState);
-                calibrationLink = true;
-            }
-        }
-
-        protected void UnlinkCalibrationEvents()
-        {
-            if (this.calibrationLink && this.calibration != null && this.calibration.linkedGlove != null)
-            {
-                this.calibrationLink = false;
-                this.calibration.linkedGlove.CalibrationStateChanged.RemoveListener(UpdateHandState);
-            }
-        }
 
 
         //-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -921,10 +889,18 @@ namespace SG
 
         /// <summary> Send a Force-Feedback Command to this script's hapticHardware </summary>
         /// <param name="ffb"></param>
-        public void SendCmd(SG_FFBCmd ffb)
+        public void QueueFFBCmd(SGCore.Finger finger, float value01)
         {
-            if (HapticHardware != null) { HapticHardware.SendCmd(ffb); }
+            if (HapticHardware != null) { HapticHardware.QueueFFBCmd(finger, value01); }
         }
+
+        /// <summary> Send a Force-Feedback Command to this script's hapticHardware </summary>
+        /// <param name="ffb"></param>
+        public void QueueFFBCmd(float[] values01)
+        {
+            if (HapticHardware != null) { HapticHardware.QueueFFBCmd(values01); }
+        }
+
 
         /// <summary> Cease all vibrations on script's hapticHardware </summary>
         public void StopAllVibrations()
@@ -939,19 +915,32 @@ namespace SG
         }
 
 
-        /// <summary> Send a command to the finger vibrotactile actuators, if any </summary>
-        /// <param name="fingerCmd"></param>
-        public void SendCmd(SGCore.Haptics.SG_TimedBuzzCmd fingerCmd)
+        public void SendLegacyWaveform(SG_Waveform waveform)
         {
-            if (HapticHardware != null) { HapticHardware.SendCmd(fingerCmd); }
+            this.SendLegacyWaveform(waveform, waveform.amplitude, waveform.duration_s, waveform.intendedLocation);
         }
 
-        /// <summary> Send a command to the Wrist vibrotactile actuators. </summary>
-        /// <param name="wristCmd"></param>
-        public void SendCmd(SGCore.Haptics.TimedThumpCmd wristCmd)
+        public void SendLegacyWaveform(SG_Waveform waveform, float amplitude, float duration, VibrationLocation location)
         {
-            if (HapticHardware != null) { HapticHardware.SendCmd(wristCmd); }
+            if (HapticHardware != null)
+            {
+                HapticHardware.SendLegacyWaveform(waveform, amplitude, duration, location);
+            }
         }
+
+        ///// <summary> Send a command to the finger vibrotactile actuators, if any </summary>
+        ///// <param name="fingerCmd"></param>
+        //public void SendCmd(SGCore.Haptics.SG_TimedBuzzCmd fingerCmd)
+        //{
+        //    if (HapticHardware != null) { HapticHardware.SendCmd(fingerCmd); }
+        //}
+
+        ///// <summary> Send a command to the Wrist vibrotactile actuators. </summary>
+        ///// <param name="wristCmd"></param>
+        //public void SendCmd(SGCore.Haptics.TimedThumpCmd wristCmd)
+        //{
+        //    if (HapticHardware != null) { HapticHardware.SendCmd(wristCmd); }
+        //}
 
         /// <summary> Send an impact vibration to this script's hapticHardware. </summary>
         /// <param name="location"></param>
@@ -964,29 +953,29 @@ namespace SG
             }
         }
 
-        /// <summary> Sends a Waveform to this script's linked hardware. </summary>
-        /// <param name="waveform"></param>
-        public void SendCmd(SG_Waveform waveform)
-        {
-            if (HapticHardware != null)
-            {
-                HapticHardware.SendCmd(waveform);
-            }
-        }
+        ///// <summary> Sends a Waveform to this script's linked hardware. </summary>
+        ///// <param name="waveform"></param>
+        //public void SendCmd(SG_Waveform waveform)
+        //{
+        //    if (HapticHardware != null)
+        //    {
+        //        HapticHardware.SendCmd(waveform);
+        //    }
+        //}
 
-        public void SendCmd(ThumperWaveForm waveform)
-        {
-            if (HapticHardware != null)
-            {
-                HapticHardware.SendCmd(waveform);
-            }
-        }
+        //public void SendCmd(ThumperWaveForm waveform)
+        //{
+        //    if (HapticHardware != null)
+        //    {
+        //        HapticHardware.SendCmd(waveform);
+        //    }
+        //}
 
-        public void SendCmd(SG_NovaWaveform customWaveform, SGCore.Nova.Nova_VibroMotor location)
+        public void SendCustomWaveform(SG_CustomWaveform customWaveform, VibrationLocation location)
         {
             if (this.HapticHardware != null)
             {
-                this.HapticHardware.SendCmd(customWaveform, location);
+                this.HapticHardware.SendCustomWaveform(customWaveform, location);
             }
         }
 
@@ -1007,6 +996,39 @@ namespace SG
             }
         }
 
+        public void QueueWristSqueeze(float squeezeLevel01)
+        {
+            if (this.HapticHardware != null)
+            {
+                this.HapticHardware.QueueWristSqueeze(squeezeLevel01);
+            }
+        }
+
+        public void StopWristSqueeze()
+        {
+            if (this.HapticHardware != null)
+            {
+                this.HapticHardware.StopWristSqueeze();
+            }
+        }
+
+        public void SendVibrationCmd(VibrationLocation location, float amplitude, float duration, float frequency)
+        {
+            if (this.HapticHardware != null)
+            {
+                this.HapticHardware.SendVibrationCmd(location, amplitude, duration, frequency);
+            }
+        }
+
+
+        public bool HasVibrationMotor(VibrationLocation atLocation)
+        {
+            if (this.HapticHardware != null)
+            {
+                return this.HapticHardware.HasVibrationMotor(atLocation);
+            }
+            return false;
+        }
 
         //-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         // Monobehaviour
@@ -1014,43 +1036,8 @@ namespace SG
         /// <summary> Updates the TrackedHand layers based on the HandState of the linked glove. Called when the CalibrationStage changes. </summary>
         public void UpdateHandState()
         {
-            //Debug.Log(this.name + ": HandState has changed to " + this.gloveHardware.CalibrationStage.ToString());
-            if (this.calibration != null && this.calibration.linkedGlove != null)
-            {
-                if (this.statusIndicator != null)
-                {
-                    //Debug.Log(this.name + ": Have to change hand state to " + gloveHardware.CalibrationStage.ToString());
-                    if (this.calibration.linkedGlove.IsConnected())
-                    {
-                        switch (this.calibration.linkedGlove.GetCalibrationStage())
-                        {
-                            case SGCore.Calibration.CalibrationStage.MoveFingers:
-                                this.statusIndicator.SetMaterials(SG_HandStateIndicator.HandState.CheckRanges);
-                                break;
-                            case SGCore.Calibration.CalibrationStage.CalibrationNeeded:
-                                this.statusIndicator.SetMaterials(SG_HandStateIndicator.HandState.CalibrationNeeded);
-                                break;
-                            case SGCore.Calibration.CalibrationStage.Calibrating:
-                                this.statusIndicator.SetMaterials(SG_HandStateIndicator.HandState.Calibrating);
-                                break;
-                            default:
-                                this.statusIndicator.SetMaterials(SG_HandStateIndicator.HandState.Default);
-                                break;
-                        }
-                    }
-                    else { this.statusIndicator.SetMaterials(SG_HandStateIndicator.HandState.Disconnected); }
+            //TODO: Edit Colours
 
-                    //Update Text
-                    if (calibration.linkedGlove != null && calibration.linkedGlove.GetCalibrationStage() == SGCore.Calibration.CalibrationStage.MoveFingers)
-                    {
-                        statusIndicator.WristText = "Please move\r\nyour fingers";
-                    }
-                    else
-                    {
-                        statusIndicator.WristText = "";
-                    }
-                }
-            }
         }
 
 
@@ -1101,16 +1088,6 @@ namespace SG
             // UpdateRealHandPose();
         }
 
-        void OnDisable()
-        {
-            LinkCalibrationEvents();
-        }
-
-        void OnEnabled()
-        {
-            UnlinkCalibrationEvents();
-        }
-
         void OnApplicationQuit()
         {
             StopHaptics();
@@ -1126,6 +1103,8 @@ namespace SG
                 UpdateDebugLines();
             }
         }
+
+
 #endif
 
 

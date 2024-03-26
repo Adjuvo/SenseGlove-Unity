@@ -36,7 +36,8 @@ namespace SG.Examples
 #else
 				if (Input.GetKeyDown(sendKey))
 				{
-					glove.SendCmd(waveForm);
+					//glove.SendCmd(waveForm);
+					Debug.LogError("TODO: Implement Timing!");
 				}
 #endif
 			}

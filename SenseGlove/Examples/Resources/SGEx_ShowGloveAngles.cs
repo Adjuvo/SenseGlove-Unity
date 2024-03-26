@@ -66,9 +66,9 @@ namespace SG.Examples
                         {
                             sensors[f] = new float[3]
                             {
-                            sData.SensorValues[f][0].x,
-                            sData.SensorValues[f][0].y,
-                            sData.SensorValues[f][0].z
+                            sData.SensorValues[f].x,
+                            sData.SensorValues[f].y,
+                            sData.SensorValues[f].z
                             };
                         }
                     }

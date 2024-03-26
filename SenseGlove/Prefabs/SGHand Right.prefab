@@ -4703,22 +4703,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ad4be3b6f43d6614597f035ae44bc106, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  linkedGlove: {fileID: 114461882457900484}
-  linkedHand: {fileID: 114969439650229696}
-  calibrationType: 0
-  startCondition: 1
+  TrackedHand: {fileID: 0}
   debugEnabled: 0
-  debugText: {fileID: 102494982417913674}
-  nextStepKey: 0
-  cancelKey: 0
-  resetCalibrationKey: 0
-  baseInstrMessage: 
-  instructions3D: {fileID: 0}
+  instructions3D: {fileID: 102609208774090220}
   instructionsUI: {fileID: 0}
-  CalibrationFinished:
+  showConfirmInstructions: 1
+  CalibrationStarted:
     m_PersistentCalls:
       m_Calls: []
-  CalibrationAbort:
+  CalibrationFinished:
     m_PersistentCalls:
       m_Calls: []
 --- !u!1 &1675143918416410
@@ -6348,7 +6341,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &4138989897987684
 Transform:
   m_ObjectHideFlags: 0

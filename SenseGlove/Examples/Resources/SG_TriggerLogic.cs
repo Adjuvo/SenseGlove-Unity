@@ -10,6 +10,7 @@ public class SG_TriggerLogic : MonoBehaviour
 
 	/// <summary> The trigger logic will respond to the flexion of this finger, which is given as value between 0..1. </summary>
 	public SGCore.Finger respondsTo = SGCore.Finger.Index;
+	public SG.VibrationLocation vibrationLocation = SG.VibrationLocation.WholeHand;
 
 	[Range(0, 1)] public float startFlexion = 0.2f; //when finger flexion is above this value, trigger pressure will ramp up from 0% 
 	[Range(0, 1)] public float endFlexion = 0.8f; //when finger flexion is at this value, the trigger pressure it at 100%
@@ -55,8 +56,8 @@ public class SG_TriggerLogic : MonoBehaviour
 			int amplitude = Mathf.RoundToInt(100.0f * latestPressure); //calculate intensity
 			if (amplitude > 0)
 			{
-				SGCore.Haptics.SG_TimedBuzzCmd vibration = new SGCore.Haptics.SG_TimedBuzzCmd(this.respondsTo, amplitude, 0.02f); //send the command
-				grabable.SendCmd(vibration);
+				//SGCore.Haptics.SG_TimedBuzzCmd vibration = new SGCore.Haptics.SG_TimedBuzzCmd(this.respondsTo, amplitude, 0.02f); //send the command
+				grabable.SendVibrationCmd(this.vibrationLocation, amplitude, 0.1f, 170.0f);
 			}
 
         }

@@ -58,37 +58,26 @@ namespace SG
 
         /// <summary> Send a Force-Feedback command to the TrackedHand linked to these Args </summary>
         /// <param name="ffb"></param>
-        public void SendCmd(SG_FFBCmd ffb)
+        public void QueueFFBCmd(SGCore.Finger finger, float value01)
         {
-            if (TrackedHand != null) { ((IHandFeedbackDevice)TrackedHand).SendCmd(ffb); }
+            if (TrackedHand != null) { ((IHandFeedbackDevice)TrackedHand).QueueFFBCmd(finger, value01); }
         }
 
-        /// <summary> Send a Vibration command to the TrackedHand linked to these Args </summary>
-        /// <param name="fingerCmd"></param>
-        public void SendCmd(SG_TimedBuzzCmd fingerCmd)
+        /// <summary> Send a Force-Feedback command to the TrackedHand linked to these Args </summary>
+        /// <param name="ffb"></param>
+        public void QueueFFBCmd(float[] values01)
         {
-            if (TrackedHand != null) { ((IHandFeedbackDevice)TrackedHand).SendCmd(fingerCmd); }
+            if (TrackedHand != null) { ((IHandFeedbackDevice)TrackedHand).QueueFFBCmd(values01); }
         }
 
-        /// <summary> Send a Thumper command to the TrackedHand linked to these Args </summary>
-        /// <param name="wristCmd"></param>
-        public void SendCmd(TimedThumpCmd wristCmd)
+        public void SendLegacyWaveform(SG_Waveform waveform)
         {
-            if (TrackedHand != null) {  ((IHandFeedbackDevice)TrackedHand).SendCmd(wristCmd); }
+            this.SendLegacyWaveform(waveform, waveform.amplitude, waveform.duration_s, waveform.intendedLocation);
         }
 
-        /// <summary> Send a Thumper command to the TrackedHand linked to these Args </summary>
-        /// <param name="waveform"></param>
-        public void SendCmd(ThumperWaveForm waveform)
+        public void SendLegacyWaveform(SG_Waveform waveform, float amplitude, float duration, VibrationLocation location)
         {
-            if (TrackedHand != null) { ((IHandFeedbackDevice)TrackedHand).SendCmd(waveform); }
-        }
-
-        /// <summary> Send a WaveForm command to the TrackedHand linked to these Args </summary>
-        /// <param name="waveform"></param>
-        public void SendCmd(SG_Waveform waveform)
-        {
-            if (TrackedHand != null) { ((IHandFeedbackDevice)TrackedHand).SendCmd(waveform); }
+            if (TrackedHand != null) { ((IHandFeedbackDevice)TrackedHand).SendLegacyWaveform(waveform, amplitude, duration, location); ; }
         }
 
 
@@ -100,9 +89,9 @@ namespace SG
             if (TrackedHand != null) { ((IHandFeedbackDevice)TrackedHand).SendImpactVibration(location, normalizedVibration); }
         }
 
-        public void SendCmd(SG_NovaWaveform customWaveform, SGCore.Nova.Nova_VibroMotor location)
+        public void SendCustomWaveform(SG_CustomWaveform customWaveform, VibrationLocation location)
         {
-            if (TrackedHand != null) { ((IHandFeedbackDevice)TrackedHand).SendCmd(customWaveform, location); }
+            if (TrackedHand != null) { ((IHandFeedbackDevice)TrackedHand).SendCustomWaveform(customWaveform, location); }
         }
 
         public bool FlexionLockSupported()
@@ -123,6 +112,32 @@ namespace SG
             }
             value01 = 1.0f;
             return false;
+        }
+
+        public void QueueWristSqueeze(float squeezeLevel01)
+        {
+            if (TrackedHand != null)
+            {
+                ((IHandFeedbackDevice)TrackedHand).QueueWristSqueeze(squeezeLevel01);
+            }
+        }
+
+        public void StopWristSqueeze()
+        {
+            if (TrackedHand != null)
+            {
+                ((IHandFeedbackDevice)TrackedHand).StopWristSqueeze();
+            }
+        }
+
+        public void SendVibrationCmd(VibrationLocation location, float amplitude, float duration, float frequency)
+        {
+            ((IHandFeedbackDevice)TrackedHand).SendVibrationCmd(location, amplitude, duration, frequency);
+        }
+
+        public bool HasVibrationMotor(VibrationLocation atlocation)
+        {
+            return ((IHandFeedbackDevice)TrackedHand).HasVibrationMotor(atlocation);
         }
     }
 
@@ -265,6 +280,8 @@ namespace SG
         /// <summary> Fires just before this object is officially released by a GrabScript. </summary>
         public SG_GrabbedObjectEvent ObjectReleased = new SG_GrabbedObjectEvent();
 
+        /// <summary> Fires during the OnDestroy monobehaviour call of this Object, just before it is released by any Hands. </summary>
+        public UnityEngine.Events.UnityEvent ObjectDestroyed = new UnityEngine.Events.UnityEvent();
 
         /// <summary> The last Grab Arguments that were applied to this Interactable. Useful if you wish to send Haptics just after a hand just releases. Is NULL when no hand has ever grabbed or released this object </summary>
         public GrabArguments LastGrabbedBy
@@ -276,6 +293,8 @@ namespace SG
         //---------------------------------------------------------------------------------------------------------------------------------------------------------------------
         // Utility Functions
 
+        /// <summary> Returns the numebr of scripts grabbing on this this interactable </summary>
+        public int GrabbedByCount { get { return this.grabbedBy.Count; } }
 
         /// <summary> If we set the isKinematic value of our RigidBody, it causes PhysX in Unity 2019+ to have an anyeurism and fire OnTriggerExit/OnTriggerEnter again. If this value is true, you shouldn't need ot affect your logic </summary>
         public bool KinematicChanged
@@ -464,7 +483,7 @@ namespace SG
         }
 
         /// <summary> Set the GrabbedText to show the list of GrabScripts holding on to me. </summary>
-        public void UpdateDebugger()
+        public virtual void UpdateDebugger()
         {
             if (debugTxt != null)
             {
@@ -846,6 +865,14 @@ namespace SG
         /// <summary> Stop All vibrations on the hands that are holding on to this object. </summary>
         public void StopAllVibrations()
         {
+            if (this.grabbedBy.Count == 0)
+            {
+                if (this.LastGrabbedBy != null)
+                {
+                    this.LastGrabbedBy.StopAllVibrations();
+                }
+                return;
+            }
             for (int i=0; i<this.grabbedBy.Count; i++)
             {
                 if (grabbedBy[i] != null && grabbedBy[i].TrackedHand != null) { this.grabbedBy[i].TrackedHand.StopAllVibrations(); }
@@ -855,6 +882,14 @@ namespace SG
         /// <summary> Stop All Haptics on the hands that are holding on to this object. </summary>
         public void StopHaptics()
         {
+            if (this.grabbedBy.Count == 0)
+            {
+                if (this.LastGrabbedBy != null)
+                {
+                    this.LastGrabbedBy.StopHaptics();
+                }
+                return;
+            }
             for (int i = 0; i < this.grabbedBy.Count; i++)
             {
                 if (grabbedBy[i] != null && grabbedBy[i].TrackedHand != null) { this.grabbedBy[i].TrackedHand.StopHaptics(); }
@@ -863,69 +898,71 @@ namespace SG
 
         /// <summary> Send a force-feedback command to all hands holding on to this object </summary>
         /// <param name="ffb"></param>
-        public void SendCmd(SG_FFBCmd ffb)
+        public void QueueFFBCmd(SGCore.Finger finger, float value01)
         {
             for (int i = 0; i < this.grabbedBy.Count; i++)
             {
-                if (grabbedBy[i] != null && grabbedBy[i].TrackedHand != null) { this.grabbedBy[i].TrackedHand.SendCmd(ffb); }
+                if (grabbedBy[i] != null && grabbedBy[i].TrackedHand != null) { this.grabbedBy[i].TrackedHand.QueueFFBCmd(finger, value01); }
             }
         }
 
-        /// <summary> Send a buzz command to all hands holding on to this object </summary>
+
+        /// <summary> Send a force-feedback command to all hands holding on to this object </summary>
         /// <param name="ffb"></param>
-        public void SendCmd(SG_TimedBuzzCmd fingerCmd)
+        public void QueueFFBCmd(float[] values01)
         {
             for (int i = 0; i < this.grabbedBy.Count; i++)
             {
-                if (grabbedBy[i] != null && grabbedBy[i].TrackedHand != null) { this.grabbedBy[i].TrackedHand.SendCmd(fingerCmd); }
+                if (grabbedBy[i] != null && grabbedBy[i].TrackedHand != null) { this.grabbedBy[i].TrackedHand.QueueFFBCmd(values01); }
             }
         }
 
-        /// <summary> Send a wrist command to all hands holding on to this object </summary>
-        /// <param name="ffb"></param>
-        public void SendCmd(TimedThumpCmd wristCmd)
+        public void SendLegacyWaveform(SG_Waveform waveform)
+        {
+            this.SendLegacyWaveform(waveform, waveform.amplitude, waveform.duration_s, waveform.intendedLocation);
+        }
+
+        public void SendLegacyWaveform(SG_Waveform waveform, float amplitude, float duration, VibrationLocation location)
         {
             for (int i = 0; i < this.grabbedBy.Count; i++)
             {
-                if (grabbedBy[i] != null && grabbedBy[i].TrackedHand != null) { this.grabbedBy[i].TrackedHand.SendCmd(wristCmd); }
+                if (grabbedBy[i] != null && grabbedBy[i].TrackedHand != null) { this.grabbedBy[i].TrackedHand.SendLegacyWaveform(waveform, amplitude, duration, location); }
             }
         }
 
-        /// <summary> Send a waveform command to all hands holding on to this object </summary>
-        /// <param name="ffb"></param>
-        public void SendCmd(ThumperWaveForm waveform)
-        {
-            for (int i = 0; i < this.grabbedBy.Count; i++)
-            {
-                if (grabbedBy[i] != null && grabbedBy[i].TrackedHand != null) { this.grabbedBy[i].TrackedHand.SendCmd(waveform); }
-            }
-        }
-
-        /// <summary> Send a waveform command to all hands holding on to this object </summary>
-        /// <param name="ffb"></param>
-        public void SendCmd(SG_Waveform waveform)
-        {
-            for (int i = 0; i < this.grabbedBy.Count; i++)
-            {
-                if (grabbedBy[i] != null && grabbedBy[i].TrackedHand != null) { this.grabbedBy[i].TrackedHand.SendCmd(waveform); }
-            }
-        }
 
         /// <summary> Send an impact vibration command to all hands holding on to this object </summary>
         /// <param name="ffb"></param>
         public void SendImpactVibration(SG_HandSection location, float normalizedVibration)
         {
+            if (this.grabbedBy.Count == 0)
+            {
+                if (this.LastGrabbedBy != null)
+                {
+                    this.LastGrabbedBy.SendImpactVibration(location, normalizedVibration);
+                }
+                return;
+            }
             for (int i = 0; i < this.grabbedBy.Count; i++)
             {
                 if (grabbedBy[i] != null && grabbedBy[i].TrackedHand != null) { this.grabbedBy[i].TrackedHand.SendImpactVibration(location, normalizedVibration); }
             }
         }
 
-        public void SendCmd(SG_NovaWaveform customWaveform, SGCore.Nova.Nova_VibroMotor location)
+        public void SendCustomWaveform(SG_CustomWaveform customWaveform, VibrationLocation location)
         {
+            //Debug.LogError("Play " + customWaveform.name + " to " + location);
+            if (this.grabbedBy.Count == 0)
+            {
+                if (this.LastGrabbedBy != null)
+                {
+                    this.LastGrabbedBy.SendCustomWaveform(customWaveform, location);
+                }
+                return;
+            }
             for (int i = 0; i < this.grabbedBy.Count; i++)
             {
-                if (grabbedBy[i] != null && grabbedBy[i].TrackedHand != null) { this.grabbedBy[i].TrackedHand.SendCmd(customWaveform, location); }
+                if (grabbedBy[i] != null && grabbedBy[i].TrackedHand != null) { this.grabbedBy[i].TrackedHand.SendCustomWaveform(customWaveform, location); }
             }
         }
 
@@ -946,6 +983,54 @@ namespace SG
             }
         }
 
+        public void QueueWristSqueeze(float squeezeLevel01)
+        {
+            for (int i = 0; i < this.grabbedBy.Count; i++)
+            {
+                if (grabbedBy[i] != null && grabbedBy[i].TrackedHand != null) { this.grabbedBy[i].TrackedHand.QueueWristSqueeze(squeezeLevel01); }
+            }
+        }
+
+        public void StopWristSqueeze()
+        {
+            if (this.grabbedBy.Count == 0)
+            {
+                if (this.LastGrabbedBy != null)
+                {
+                    this.LastGrabbedBy.StopWristSqueeze();
+                }
+                return;
+            }
+            for (int i = 0; i < this.grabbedBy.Count; i++)
+            {
+                if (grabbedBy[i] != null && grabbedBy[i].TrackedHand != null) { this.grabbedBy[i].TrackedHand.StopWristSqueeze(); }
+            }
+        }
+
+        public void SendVibrationCmd(VibrationLocation location, float amplitude, float duration, float frequency)
+        {
+            if (this.grabbedBy.Count == 0)
+            {
+                if (this.LastGrabbedBy != null)
+                {
+                    this.LastGrabbedBy.SendVibrationCmd(location, amplitude, duration, frequency);
+                }
+                return;
+            }
+            for (int i = 0; i < this.grabbedBy.Count; i++)
+            {
+                if (grabbedBy[i] != null && grabbedBy[i].TrackedHand != null) { this.grabbedBy[i].TrackedHand.SendVibrationCmd(location, amplitude, duration, frequency); }
+            }
+        }
+
+        public bool HasVibrationMotor(VibrationLocation atLocation)
+        {
+            for (int i = 0; i < this.grabbedBy.Count; i++)
+            {
+                if (grabbedBy[i] != null && grabbedBy[i].TrackedHand != null && grabbedBy[i].TrackedHand.HasVibrationMotor(atLocation) ) { return true; }
+            }
+            return false;
+        }
 
         //---------------------------------------------------------------------------------------------------------------------------------------------------------------------
         // Monobehaviour
@@ -991,9 +1076,16 @@ namespace SG
             }
         }
 
+        protected virtual void OnDestroy()
+        {
+            ObjectDestroyed.Invoke();
+        }
+
         protected virtual void OnApplicationQuit()
         {
             SG.Util.SG_Util.IsQuitting = true;
         }
+
+        
     }
 }

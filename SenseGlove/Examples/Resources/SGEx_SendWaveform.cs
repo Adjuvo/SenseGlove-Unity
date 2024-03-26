@@ -45,7 +45,8 @@ namespace SG.Examples
             {
 				if (glove != null)
                 {
-					glove.SendCmd(waveFormToSend);
+					Debug.LogError("TODO: Implement Timing!");
+					//glove.SendCmd(waveFormToSend);
                 }
 			}
         }

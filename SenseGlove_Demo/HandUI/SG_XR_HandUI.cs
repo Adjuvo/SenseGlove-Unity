@@ -117,7 +117,7 @@ namespace SG.XR
         protected bool tapLocked = false;
 
         /// <summary> The waveform to play when a hand taps this Hand UI. </summary>
-        public SG_Waveform tappedWaveform;
+        public SG.SG_CustomWaveform tappedWaveform;
 
         /// <summary> This event fires when this menu is tapped by another SG_TrackedHand. </summary>
         public UnityEngine.Events.UnityEvent OnMenuTapped = new UnityEngine.Events.UnityEvent();
@@ -141,7 +141,7 @@ namespace SG.XR
 
 
         /// <summary> Waveform to play when the menu becomes visible / interactable with. </summary>
-        public SG_Waveform visibleWaveform;
+        public SG.SG_CustomWaveform visibleWaveform;
         /// <summary> If set to true, the visible wafefrom has been fired, and we must wait for the menu to become invisible again before we allow it to fire once more... </summary>
         protected bool visibleFired = false;
         /// <summary> The visibility the menu must drop to before we're allowed to fire another visibleWaveform </summary>
@@ -487,6 +487,7 @@ namespace SG.XR
         /// <param name="hand"></param>
         public void MenuTapped(SG_TrackedHand hand)
         {
+            Debug.Log(this.name + " is tapped! Locked = " + tapLocked + " menuFunctional = " + this.MenuFunctional.ToString() + " active = " + this.isActiveAndEnabled);
             if (tapLocked || !MenuFunctional || !this.isActiveAndEnabled) //we're not allowed to do anything
             {
                 return;
@@ -499,7 +500,8 @@ namespace SG.XR
             }
             if (this.tappedWaveform != null)
             {
-                hand.SendCmd(this.tappedWaveform);
+                //Debug.LogError("TODO: Implement Timed Waveforms!");
+                hand.SendCustomWaveform(this.tappedWaveform, this.tappedWaveform.intendedMotor);
             }
             this.OnMenuTapped.Invoke();
         }
@@ -567,7 +569,8 @@ namespace SG.XR
                 if (faceVisible && !visibleFired)
                 {
                     visibleFired = true; //fire the visibility waveform
-                    this.linkedHand.SendCmd(this.visibleWaveform);
+                    //Debug.LogError("TODO: Implement Timed Waveforms!");
+                    this.linkedHand.SendCustomWaveform(this.visibleWaveform, this.visibleWaveform.intendedMotor);
                 }
                 else if (visibleFired && visibility <= cooldownVisibility) // Reset when we drop below cooldownVisibility .
                 {

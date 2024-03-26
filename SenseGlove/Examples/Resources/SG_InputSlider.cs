@@ -25,6 +25,8 @@ public class SG_InputSlider : MonoBehaviour
     }
 
 
+    public UnityEngine.Events.UnityEvent OnValueChanged = new UnityEngine.Events.UnityEvent();
+
     private void UpdateTextFromSlider(float newValue)
     {
         if (!alreadyEditing)
@@ -33,6 +35,7 @@ public class SG_InputSlider : MonoBehaviour
             //Debug.Log("Slider: Text should be " + newValue);
             textField.text = newValue.ToString();
             alreadyEditing = false;
+            this.OnValueChanged.Invoke();
         }
     }
 
@@ -51,6 +54,7 @@ public class SG_InputSlider : MonoBehaviour
             {
                 slider.value = 0;
             }
+            this.OnValueChanged.Invoke();
             alreadyEditing = false;
         }
     }

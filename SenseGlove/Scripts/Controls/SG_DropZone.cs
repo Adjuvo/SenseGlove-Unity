@@ -61,6 +61,9 @@ namespace SG
         [Header("DropZone Components")]
         public List<SG_Grabable> objectsToGet = new List<SG_Grabable>();
 
+        /// <summary> Optional: The tag the SG_Grabable(s) should have in order for them to qualify for detection. If left empty, no tag is required... </summary>
+        [SerializeField] protected string mustHaveTag = "";
+
         //Splitting the functionality into two: One script (colliderDetection) is solely responsible for decting "in zone or not". Another set is responsible for the event arguments / logic.
         //Both run parallel to each other (the sizes/indices should be the same).
 
@@ -94,9 +97,33 @@ namespace SG
         public DropZoneEvent ObjectRemoved = new DropZoneEvent();
 
         private bool setup = true;
+        private bool tagChange = false;
 
         //-------------------------------------------------------------------------------------------------------------------------
         // Basic DropZone Functions
+
+        /// <summary> Retrieve a copy of the string determining what tag this zone responds to. </summary>
+        /// <returns></returns>
+        public string GetRequiredTag()
+        {
+            return string.Copy(this.mustHaveTag);
+        }
+
+
+        public virtual void SetRequiredTag(string newTag) //used to (re) set tags and such for required objects
+        {
+            if (newTag.Equals(this.mustHaveTag, System.StringComparison.OrdinalIgnoreCase))
+            {
+                return; //no need to screw around with tags and detections and the like...
+            }
+            this.mustHaveTag = string.Copy(newTag); //copy over.
+            //Debug.LogError("TODO: Do something with detection parameters now that we changed the tag(s)...");
+        }
+
+        public bool HasCorrectTag(string objTag)
+        {
+            return this.mustHaveTag.Length == 0 || objTag.Equals(this.mustHaveTag, System.StringComparison.OrdinalIgnoreCase);
+        }
 
 
         /// <summary> Returns the number of objects currently inside this DropZone </summary>
@@ -136,7 +163,7 @@ namespace SG
         {
             if (this.objectsToGet.Count == 0 || this.objectsToGet.Count != this.detectionArguments.Count) { return false; }
             //Don't go here unless we have at least the correct abount of objects inside.
-            for (int i=0; i<this.detectionArguments.Count; i++)
+            for (int i = 0; i < this.detectionArguments.Count; i++)
             {
                 if (!detectionArguments[i].eventFired) //there's at least one whose event has not yet fired.
                 {
@@ -145,7 +172,23 @@ namespace SG
             }
             return true;
         }
-        
+
+
+        /// <summary> Returns a list of all objects in this zone that have been detected and have fired their events. </summary>
+        /// <returns></returns>
+        public virtual SG_Grabable[] GetDetectedObjects()
+        {
+            List<SG_Grabable> res = new List<SG_Grabable>();
+            for (int i = 0; i < this.detectionArguments.Count; i++)
+            {
+                if (this.detectionArguments[i].eventFired)
+                {
+                    res.Add(detectionArguments[i].grabable);
+                }
+            }
+            return res.ToArray();
+        }
+
 
 
         //-------------------------------------------------------------------------------------------------------------------------
@@ -156,7 +199,7 @@ namespace SG
         /// <returns></returns>
         protected int ArgumentIndex(SG_Grabable obj)
         {
-            for (int i=0; i<this.detectionArguments.Count; i++)
+            for (int i = 0; i < this.detectionArguments.Count; i++)
             {
                 if (detectionArguments[i].grabable == obj)
                 {
@@ -180,22 +223,25 @@ namespace SG
         {
             //Step1 : Check if it has an Interactable Scrip attached.
             SG_Grabable interactable;
-            if ( Util.SG_Util.GetScript(col, out interactable) )
+            if (Util.SG_Util.GetScript(col, out interactable))
             {
-                if (!interactable.KinematicChanged)
+                if (HasCorrectTag(interactable.tag))
                 {
-                   // Debug.Log(this.name + " (" + Time.timeSinceLevelLoad + ") Colliding with " + interactable.name + "(" + col.name + ") without changing Kinematicisim");
-                    if (this.CanDetect(interactable)) //this is an object relevant to us. Hurray!
+                    if (!interactable.KinematicChanged)
                     {
-                        //Step 2 : Check if this is one relevant to us
-                        int collidersInZone = this.colliderDetection.AddToList(interactable, col, this); //returns the (new) number of colliders associated with this script
-                        if (collidersInZone == 1) //this is the first collider of this script we've found. Do something!
+                        // Debug.Log(this.name + " (" + Time.timeSinceLevelLoad + ") Colliding with " + interactable.name + "(" + col.name + ") without changing Kinematicisim");
+                        if (this.CanDetect(interactable)) //this is an object relevant to us. Hurray!
                         {
-                            DropZoneArgs args = GenerateZoneArguments(interactable);
-                            AddToList(args);
-                            UpdateDetections(0); //check them at t=0;
-                            UpdateDebugger();
-                            //Debug.Log(args.grabable.name + " entered " + this.name + " with its first collider.");
+                            //Step 2 : Check if this is one relevant to us
+                            int collidersInZone = this.colliderDetection.AddToList(interactable, col, this); //returns the (new) number of colliders associated with this script
+                            if (collidersInZone == 1) //this is the first collider of this script we've found. Do something!
+                            {
+                                DropZoneArgs args = GenerateZoneArguments(interactable);
+                                AddToList(args);
+                                UpdateDetections(0); //check them at t=0;
+                                UpdateDebugger();
+                                //Debug.Log(args.grabable.name + " entered " + this.name + " with its first collider.");
+                            }
                         }
                     }
                 }
@@ -259,7 +305,7 @@ namespace SG
         /// <returns></returns>
         protected virtual void UpdateDetections(float dT)
         {
-            for (int i=0; i<this.detectionArguments.Count; i++)
+            for (int i = 0; i < this.detectionArguments.Count; i++)
             {
                 CheckObject(detectionArguments[i], dT);
             }
@@ -275,7 +321,7 @@ namespace SG
             {
                 if (args.eventTimer < this.detectionTime)
                 {
-                    args.eventTimer += dT; 
+                    args.eventTimer += dT;
                 }
                 else // capping the value at detectionTime so as to avoid any overflow. I know, that would require someone to hover for weeks. But I'm paranoid.
                 { args.eventTimer = detectionTime; }
@@ -414,11 +460,14 @@ namespace SG
             {
                 for (int i = 0; i < this.detectionArguments.Count;)
                 {
-                    if (detectionArguments[i].grabable == null ////Grabable was deleted.
-                        || !colliderDetection.IsDetected(detectionArguments[i].grabable)) // OR it no longer occus in detectedColliders because a collider was deleted.
+                    if (
+                        detectionArguments[i].grabable == null ////Grabable was deleted.
+                        || !colliderDetection.IsDetected(detectionArguments[i].grabable) // OR it no longer occus in detectedColliders because a collider was deleted.
+                        || (tagChange && !HasCorrectTag(detectionArguments[i].grabable.tag)) //or the tag no longer matches
+                        )
                     {
                         detectionArguments.RemoveAt(i);
-                      //  Debug.Log("Cleaning a deleted script at index " + i);
+                        //  Debug.Log("Cleaning a deleted script at index " + i);
                     }
                     else
                     {
@@ -426,6 +475,7 @@ namespace SG
                     }
                 }
             }
+            tagChange = false;
         }
 
 
@@ -450,7 +500,10 @@ namespace SG
 
         protected virtual void OnTriggerEnter(Collider other)
         {
-            TryAddCollider(other);
+            if (this.enabled)
+            {
+                TryAddCollider(other);
+            }
         }
 
 

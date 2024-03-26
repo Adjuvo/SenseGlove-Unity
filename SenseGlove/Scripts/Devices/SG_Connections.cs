@@ -262,7 +262,7 @@ namespace SG.Util
 				else
 				{
 					Log("Initalizing SenseCom");
-					if (!SGCore.SenseCom.ScanningActive()) //TODO: Standalone Mode?
+					if (!SGCore.SenseCom.IsRunning()) //TODO: Standalone Mode?
 					{
 						if (SGCore.SenseCom.StartupSenseCom())
 						{
@@ -344,11 +344,13 @@ namespace SG.Util
 		//Fires when tabbing in / out of this application
 		void OnApplicationFocus(bool hasFocus)
 		{
-            if (hasFocus && loadProfilesOnFocus)
+#if UNITY_ANDROID && !UNITY_EDITOR
+			if (hasFocus && loadProfilesOnFocus)
             {
                 //Debug.Log("Reloaded SenseGlove Profiles from disk...");
-                SGCore.HG_HandProfiles.TryLoadFromDisk(); //reload profiles. Done here because this script is always there when using SenseGlove scripts.
+                SGCore.HandLayer.LoadCalibrationFromDisk(); //reload profiles. Done here because this script is always there when using SenseGlove scripts.
             }
+#endif
         }
 
 		void Update()

@@ -15,9 +15,11 @@ namespace SG
         /// <summary> The Right TrackedHand.Hidden until it(re)connects) </summary>
         public SG_TrackedHand rightHand;
 
+#if ENABLE_INPUT_SYSTEM //if Unitys new Input System is enabled....
+#else
         /// <summary> Hotkey to swap SenseGlove hands. </summary>
         public KeyCode swapHandsKey = KeyCode.None;
-
+#endif
 
         /// <summary> Optional component to have the user assign the correct variables of a VR headset </summary>
         public SG_XR_Rig vrRig;
@@ -163,16 +165,12 @@ namespace SG
 
                 if (leftGlove != null)
                 {
-#if UNITY_2019_4_OR_NEWER
                     leftGlove.origin = vrRig.rigRoot.transform;
-#endif
                     leftGlove.SetTrackingHardware(vrRig.leftHandReference, vrRig.hardwareFamily);
                 }
                 if (rightGlove != null)
                 {
-#if UNITY_2019_4_OR_NEWER
                     rightGlove.origin = vrRig.rigRoot.transform;
-#endif
                     rightGlove.SetTrackingHardware(vrRig.rightHandReference, vrRig.hardwareFamily);
                 }
 

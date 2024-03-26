@@ -148,6 +148,24 @@ namespace SG
             return false;
         }
 
+        /// <summary> Clear material reference of all the fingers so you can look for another. Usefult if Unity is dumb. </summary>
+        public virtual void ClearFFB()
+        {
+            for (int f=0; f<this.fingerFeedbackScripts.Length; f++)
+            {
+                this.fingerFeedbackScripts[f].DetachScript();
+            }
+        }
+
+        /// <summary> Clear the material reference of a specific finger so you can look for another. Usefult if Unity is dumb  /summary>
+        /// <param name="finger"></param>
+        public virtual void ClearFFB(SGCore.Finger finger)
+        {
+            int f = (int)finger;
+            if (f < this.fingerFeedbackScripts.Length) { this.fingerFeedbackScripts[f].DetachScript(); }
+        }
+
+
         public virtual void UpdateColliders()
         {
             for (int f=0; f<this.fingerFeedbackScripts.Length; f++)
@@ -164,15 +182,15 @@ namespace SG
             {
                 if (useTraditional)
                 {
-                    int[] forceLevels = new int[5];
+                    float[] forceLevels = new float[5];
                     for (int f = 0; f < forceLevels.Length; f++)
                     {
                         if (fingerFeedbackScripts.Length > f)
                         {
-                            forceLevels[f] = fingerFeedbackScripts[f].ForceLevel;
+                            forceLevels[f] = fingerFeedbackScripts[f].ForceLevel / 100.0f;
                         }
                     }
-                    hapticHardware.SendCmd(new SGCore.Haptics.SG_FFBCmd(forceLevels));
+                    hapticHardware.QueueFFBCmd(forceLevels);
                 }
 
                 if ( this.useThresholds ) //Our Device supports locking the fingers at a specific flexion!

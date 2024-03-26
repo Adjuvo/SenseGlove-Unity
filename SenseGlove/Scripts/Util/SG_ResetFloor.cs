@@ -21,7 +21,7 @@ namespace SG.Util
             base.OnObjectDetected(args);
             if (args.grabable.tag.Contains(this.resetTag))
             {
-                Debug.Log("Resetting " + args.grabable.name);
+               // Debug.Log("Resetting " + args.grabable.name);
                 args.grabable.ResetLocation(true);
             }
         }

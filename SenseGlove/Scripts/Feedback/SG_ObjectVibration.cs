@@ -53,13 +53,14 @@ namespace SG.Util
         /// <param name="fallBackToLastGrab">If true, we fall back to the last GrabScript that was holding on to me. </param>
         public static void SendThroughObject(SG.SG_Waveform waveform, SG.SG_Interactable interactable, bool fallBackToLastGrab = true)
         {
+            //Debug.LogError("TODO: Implement Timing!");
             if (interactable.IsGrabbed())
             {
-                interactable.SendCmd(waveform);
+                interactable.SendLegacyWaveform(waveform);
             }
             else if (fallBackToLastGrab && interactable.LastGrabbedBy != null)
             {
-                interactable.LastGrabbedBy.SendCmd(waveform);
+                interactable.LastGrabbedBy.SendLegacyWaveform(waveform);
             }
         }
 
@@ -100,50 +101,62 @@ namespace SG.Util
 
         /// <summary> Sends a command to the object that is holding on to this object </summary>
         /// <param name="ffb"></param>
-        public void SendCmd(SG_FFBCmd ffb)
+        public void QueueFFBCmd(SGCore.Finger finger, float value01)
         {
             IHandFeedbackDevice[] linkedDevices = this.DevicesLinkedToObject;
             for (int i=0; i<linkedDevices.Length; i++)
             {
-                linkedDevices[i].SendCmd(ffb);
+                linkedDevices[i].QueueFFBCmd(finger, value01);
             }
         }
 
-        public void SendCmd(SG_TimedBuzzCmd fingerCmd)
+        /// <summary> Sends a command to the object that is holding on to this object </summary>
+        /// <param name="ffb"></param>
+        public void QueueFFBCmd(float[] values01)
         {
             IHandFeedbackDevice[] linkedDevices = this.DevicesLinkedToObject;
             for (int i = 0; i < linkedDevices.Length; i++)
             {
-                linkedDevices[i].SendCmd(fingerCmd);
+                linkedDevices[i].QueueFFBCmd(values01);
             }
         }
 
-        public void SendCmd(TimedThumpCmd wristCmd)
-        {
-            IHandFeedbackDevice[] linkedDevices = this.DevicesLinkedToObject;
-            for (int i = 0; i < linkedDevices.Length; i++)
-            {
-                linkedDevices[i].SendCmd(wristCmd);
-            }
-        }
 
-        public void SendCmd(ThumperWaveForm waveform)
-        {
-            IHandFeedbackDevice[] linkedDevices = this.DevicesLinkedToObject;
-            for (int i = 0; i < linkedDevices.Length; i++)
-            {
-                linkedDevices[i].SendCmd(waveform);
-            }
-        }
+        //public void SendCmd(SG_TimedBuzzCmd fingerCmd)
+        //{
+        //    IHandFeedbackDevice[] linkedDevices = this.DevicesLinkedToObject;
+        //    for (int i = 0; i < linkedDevices.Length; i++)
+        //    {
+        //        linkedDevices[i].SendCmd(fingerCmd);
+        //    }
+        //}
 
-        public void SendCmd(SG_Waveform waveform)
-        {
-            IHandFeedbackDevice[] linkedDevices = this.DevicesLinkedToObject;
-            for (int i = 0; i < linkedDevices.Length; i++)
-            {
-                linkedDevices[i].SendCmd(waveform);
-            }
-        }
+        //public void SendCmd(TimedThumpCmd wristCmd)
+        //{
+        //    IHandFeedbackDevice[] linkedDevices = this.DevicesLinkedToObject;
+        //    for (int i = 0; i < linkedDevices.Length; i++)
+        //    {
+        //        linkedDevices[i].SendCmd(wristCmd);
+        //    }
+        //}
+
+        //public void SendCmd(ThumperWaveForm waveform)
+        //{
+        //    IHandFeedbackDevice[] linkedDevices = this.DevicesLinkedToObject;
+        //    for (int i = 0; i < linkedDevices.Length; i++)
+        //    {
+        //        linkedDevices[i].SendCmd(waveform);
+        //    }
+        //}
+
+        //public void SendCmd(SG_Waveform waveform)
+        //{
+        //    IHandFeedbackDevice[] linkedDevices = this.DevicesLinkedToObject;
+        //    for (int i = 0; i < linkedDevices.Length; i++)
+        //    {
+        //        linkedDevices[i].SendCmd(waveform);
+        //    }
+        //}
 
         public void SendImpactVibration(SG_HandSection location, float normalizedVibration)
         {
@@ -153,9 +166,6 @@ namespace SG.Util
                 linkedDevices[i].SendImpactVibration(location, normalizedVibration);
             }
         }
-
-
-
         public void StopAllVibrations()
         {
             IHandFeedbackDevice[] linkedDevices = this.DevicesLinkedToObject;
@@ -174,12 +184,12 @@ namespace SG.Util
             }
         }
 
-        public void SendCmd(SG_NovaWaveform customWaveform, SGCore.Nova.Nova_VibroMotor location)
+        public void SendCustomWaveform(SG_CustomWaveform customWaveform, VibrationLocation location)
         {
             IHandFeedbackDevice[] linkedDevices = this.DevicesLinkedToObject;
             for (int i = 0; i < linkedDevices.Length; i++)
             {
-                linkedDevices[i].SendCmd(customWaveform, location);
+                linkedDevices[i].SendCustomWaveform(customWaveform, location);
             }
         }
 
@@ -206,6 +216,20 @@ namespace SG.Util
             }
         }
 
+        public void SendLegacyWaveform(SG_Waveform waveform)
+        {
+            this.SendLegacyWaveform(waveform, waveform.amplitude, waveform.duration_s, waveform.intendedLocation);
+        }
+
+        public void SendLegacyWaveform(SG_Waveform waveform, float amplitude, float duration, VibrationLocation location)
+        {
+            IHandFeedbackDevice[] linkedDevices = this.DevicesLinkedToObject;
+            for (int i = 0; i < linkedDevices.Length; i++)
+            {
+                linkedDevices[i].SendLegacyWaveform(waveform, amplitude, duration, location);
+            }
+        }
+
         //------------------------------------------------------------------------------------------------------------------------------
         // Monobehaviour
 
@@ -214,10 +238,6 @@ namespace SG.Util
             if (this.sendThroughObject == null)
             {
                 this.sendThroughObject = this.GetComponent<SG_Interactable>();
-            }
-            if (this.waveformToSend == null)
-            {
-                this.waveformToSend = this.GetComponent<SG_Waveform>();
             }
         }
 
@@ -232,6 +252,46 @@ namespace SG.Util
                 }
             }
             value01 = -1.0f;
+            return false;
+        }
+
+        public void QueueWristSqueeze(float squeezeLevel01)
+        {
+            IHandFeedbackDevice[] linkedDevices = this.DevicesLinkedToObject;
+            for (int i = 0; i < linkedDevices.Length; i++)
+            {
+                linkedDevices[i].QueueWristSqueeze(squeezeLevel01);
+            }
+        }
+
+        public void StopWristSqueeze()
+        {
+            IHandFeedbackDevice[] linkedDevices = this.DevicesLinkedToObject;
+            for (int i = 0; i < linkedDevices.Length; i++)
+            {
+                linkedDevices[i].StopWristSqueeze();
+            }
+        }
+
+        public void SendVibrationCmd(VibrationLocation location, float amplitude, float duration, float frequency)
+        {
+            IHandFeedbackDevice[] linkedDevices = this.DevicesLinkedToObject;
+            for (int i = 0; i < linkedDevices.Length; i++)
+            {
+                linkedDevices[i].SendVibrationCmd(location, amplitude, duration, frequency);
+            }
+        }
+
+        public bool HasVibrationMotor(VibrationLocation atLocation)
+        {
+            IHandFeedbackDevice[] linkedDevices = this.DevicesLinkedToObject;
+            for (int i = 0; i < linkedDevices.Length; i++)
+            {
+                if (linkedDevices[i].HasVibrationMotor(atLocation))
+                {
+                    return true;
+                }
+            }
             return false;
         }
     }

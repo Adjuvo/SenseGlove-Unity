@@ -29,6 +29,8 @@ namespace SG.Util
         private static readonly string fn_paired = "GetPaired_Serialized";
         private static readonly string fn_ConnStates = "GetConnectionStates";
         private static readonly string fn_retryConnections = "ReleaseIdleConnections";
+        private static readonly string fn_addWhiteList = "AddToWhiteList";
+        private static readonly string fn_removeWhiteList = "RemoveFromWhiteList";
 
         /// <summary> Singleton instance - There should only be one of this class. </summary>
         private static SG_IAndroid instance = new SG_IAndroid();
@@ -294,6 +296,17 @@ namespace SG.Util
             return succesfullCall;
         }
 
+        public static bool Andr_AddToWhiteList(string containString)
+        {
+            bool succesfullCall = CallFunctionGet(fn_addWhiteList, out bool added, new object[] { containString });
+            return succesfullCall && added;
+        }
+
+        public static bool Andr_RemoveFromWhiteList(string containString)
+        {
+            bool succesfullCall = CallFunctionGet(fn_removeWhiteList, out bool added, new object[] { containString });
+            return succesfullCall && added;
+        }
 
 
     }

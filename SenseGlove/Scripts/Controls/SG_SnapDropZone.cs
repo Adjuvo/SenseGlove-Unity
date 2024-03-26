@@ -133,7 +133,7 @@ namespace SG
             snapArgs.InitiateSmoothSnap(); //Always SmoothSnap first. if this obj has no Smoothed snapping, it will fire ObjectSnapped during the next FixedUpdate.
             //from this point on, it's locked.
 
-            if (useParenting) 
+            if (useParenting)
             {
                 args.grabable.MyTransform.parent = this.ParentTransform;
             }
@@ -173,7 +173,7 @@ namespace SG
                     snapArgs.snapTimer += dT;
                     if (snapSmoothing == null || snapArgs.snapTimer >= this.snapSmoothing.movementTime) //if any point the smoothing is deleted
                     {
-                       // Debug.Log(this.name + ": Finished snapping " + args.grabable + ". You should now be able to pick it up again");
+                        // Debug.Log(this.name + ": Finished snapping " + args.grabable + ". You should now be able to pick it up again");
                         this.FinishSnap(snapArgs);
                     }
                     else
@@ -184,7 +184,7 @@ namespace SG
                 }
                 else if (snapArgs.grabable.IsGrabbed()) //this fires when the snapping is complete but the object is grabbed once more.
                 {
-                   // Debug.Log(this.name + ": " + snapArgs.grabable.name + " is grabbed, restoring the parenting (RB?).");
+                    // Debug.Log(this.name + ": " + snapArgs.grabable.name + " is grabbed, restoring the parenting (RB?).");
                     snapArgs.RestoreParent(); //restores if it isn't already. 
                 }
             }
@@ -205,6 +205,23 @@ namespace SG
             }
         }
 
+        /// <summary> Return the amount of objects fully snapped to this Zone </summary>
+        public int SnappedObjectCount
+        {
+            get
+            {
+                int res = 0;
+                for (int i = 0; i < this.detectionArguments.Count; i++)
+                {
+                    SnapZoneArgs snapArgs = (SnapZoneArgs)detectionArguments[i];
+                    if (snapArgs.snapComplete)
+                    {
+                        res++;
+                    }
+                }
+                return res;
+            }
+        }
 
         /// <summary> Returns true if all objectsToGot in this zone have been snapped. </summary>
         /// <returns></returns>
@@ -292,11 +309,11 @@ namespace SG
                 SnapZoneArgs snapArgs;
                 if (index > -1) //I've already detected this object
                 {
-                    snapArgs = (SnapZoneArgs) this.detectionArguments[index];
+                    snapArgs = (SnapZoneArgs)this.detectionArguments[index];
                 }
                 else //it's never been added the list a.k.a. we've never been detected before. In fact, the object may be too far away to detect (yet).
                 {
-                    snapArgs = (SnapZoneArgs) this.GenerateZoneArguments(grabable);
+                    snapArgs = (SnapZoneArgs)this.GenerateZoneArguments(grabable);
                     this.detectionArguments.Add(snapArgs); //normally I'd advide to use AddToList, but that one also checks for ArgumentIndex, which we've already detremined is -1.
                 }
 

@@ -22,7 +22,7 @@ namespace SG
         /// <summary> Above these flexions, the hand is considered 'open' </summary>
         protected static float[] openHandThresholds = new float[5] { 0.1f, 0.2f, 0.2f, 0.2f, 0.2f };
         /// <summary> below these flexions, the hand is considered 'open' </summary>
-        protected static float[] closedHandThresholds = new float[5] { 2, 0.9f, 0.9f, 0.9f, 0.9f }; //set to -360 so it won;t trigger for now
+        protected static float[] closedHandThresholds = new float[5] { 2, 1.0f, 1.0f, 0.9f, 0.9f }; //set to -360 so it won;t trigger for now
 
         protected float releaseThreshold = 0.05f;
         protected bool[] grabRelevance = new bool[5];
@@ -330,6 +330,7 @@ namespace SG
                 {
                     //Debug.Log("Detected no grab intent anymore: Override = " + (overrideGrab ? "True" : "False") + ", GrabCodes: " + SG.Util.SG_Util.ToString(grabCodes));
                     //Debug.Log(Time.timeSinceLevelLoad + ": Released Objects");
+                    //Debug.LogError(this.name + " is releasing! Codes = " + SG.Util.SG_Util.ToString(grabCodes));
                     this.ReleaseAll(false);
                 }
             }

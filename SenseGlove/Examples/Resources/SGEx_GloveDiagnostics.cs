@@ -42,25 +42,25 @@ namespace SG.Examples
 
 
 		SGCore.HapticGlove hapticGlove = null;
-		SGCore.Haptics.SG_FFBCmd ffbCmd = SG_FFBCmd.Off;
-		SGCore.Haptics.SG_BuzzCmd buzzCmd = SG_BuzzCmd.Off;
-		SGCore.Haptics.ThumperCmd thumprCmd = ThumperCmd.Off;
+		//SGCore.Haptics.SG_FFBCmd ffbCmd = SG_FFBCmd.Off;
+		//SGCore.Haptics.SG_BuzzCmd buzzCmd = SG_BuzzCmd.Off;
+		//SGCore.Haptics.ThumperCmd thumprCmd = ThumperCmd.Off;
 		//bool setup = false;
 		bool sComRuns = false;
 		int sgThump = 0;
 		string thumpKey = "sgThump";
 
-		private static readonly SGCore.Haptics.SG_ThumperCmd[] thumpersAvailable = new SG_ThumperCmd[]
+		private static readonly SGCore.SG.SG_ThumperCmd[] thumpersAvailable = new SGCore.SG.SG_ThumperCmd[]
 		{
-			SGCore.Haptics.SG_ThumperCmd.Impact_Thump_100,
-			SGCore.Haptics.SG_ThumperCmd.Impact_Thump_30,
-			SGCore.Haptics.SG_ThumperCmd.Impact_Thump_10,
-			SGCore.Haptics.SG_ThumperCmd.Button_Double_100,
-			SGCore.Haptics.SG_ThumperCmd.Button_Double_60,
-			SGCore.Haptics.SG_ThumperCmd.Object_Grasp_100,
-			SGCore.Haptics.SG_ThumperCmd.Object_Grasp_60,
-			SGCore.Haptics.SG_ThumperCmd.Object_Grasp_30,
-			SGCore.Haptics.SG_ThumperCmd.Cue_Game_Over
+			SGCore.SG.SG_ThumperCmd.Impact_Thump_100,
+			SGCore.SG.SG_ThumperCmd.Impact_Thump_30,
+			SGCore.SG.SG_ThumperCmd.Impact_Thump_10,
+			SGCore.SG.SG_ThumperCmd.Button_Double_100,
+			SGCore.SG.SG_ThumperCmd.Button_Double_60,
+			SGCore.SG.SG_ThumperCmd.Object_Grasp_100,
+			SGCore.SG.SG_ThumperCmd.Object_Grasp_60,
+			SGCore.SG.SG_ThumperCmd.Object_Grasp_30,
+			SGCore.SG.SG_ThumperCmd.Cue_Game_Over
 		};
 
 
@@ -207,7 +207,7 @@ namespace SG.Examples
 		{
 			if (hapticGlove != null && hapticGlove is SGCore.SG.SenseGlove)
 			{
-				SGCore.Haptics.SG_ThumperCmd cmd = thumpersAvailable[sgThump];
+				SGCore.SG.SG_ThumperCmd cmd = thumpersAvailable[sgThump];
 				((SGCore.SG.SenseGlove)hapticGlove).QueueWristCommand(cmd);
 				hapticGlove.SendHaptics(); //immedeately sedn
 			}
@@ -221,7 +221,7 @@ namespace SG.Examples
 			//}
 			if (this.handSelector.ActiveHand != null)
             {
-				this.handSelector.ActiveHand.calibration.StartCalibration(false);
+				this.handSelector.ActiveHand.calibration.ResetCalibration(false);
             }
         }
 

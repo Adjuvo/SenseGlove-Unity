@@ -1,4 +1,4 @@
-﻿#define DEBUG_SG_BATT //if defined, we enter debug more for this script.
+﻿//#define DEBUG_SG_BATT //if defined, we enter debug more for this script.
 
 using System.Collections;
 using System.Collections.Generic;
