@@ -58,6 +58,7 @@ public class SG_TriggerLogic : MonoBehaviour
 			{
 				//SGCore.Haptics.SG_TimedBuzzCmd vibration = new SGCore.Haptics.SG_TimedBuzzCmd(this.respondsTo, amplitude, 0.02f); //send the command
 				grabable.SendVibrationCmd(this.vibrationLocation, amplitude, 0.1f, 170.0f);
+				grabable.QueueFFBCmd(SGCore.Finger.Index, latestPressure);
 			}
 
         }

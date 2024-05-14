@@ -510,6 +510,12 @@ namespace SG.Util
             posOffset = Quaternion.Inverse(reference.rotation) * (obj.position - reference.position);
         }
 
+        public static void CalculateOffsets(Vector3 objPosition, Quaternion objRotation, Vector3 referencePosition, Quaternion referenceRotaton,  out Vector3 posOffset, out Quaternion rotOffset)
+        {
+            rotOffset = Quaternion.Inverse(referenceRotaton) * objRotation;
+            posOffset = Quaternion.Inverse(referenceRotaton) * (objPosition - referencePosition);
+        }
+
 
         public static Vector3 CalculateTargetPosition(Transform refrence, Vector3 posOffset, Quaternion rotOffset)
         {
@@ -1920,6 +1926,89 @@ namespace SG.Util
         public static bool MatchingTag(string scriptTag, string objTag) //todo : move this to SG_Util?
         {
             return scriptTag.Length == 0 || objTag.Equals(scriptTag, System.StringComparison.OrdinalIgnoreCase); //contained inside a method so it's consistent everywhere. Can also be length 0 - in which case no filters are applied
+        }
+
+
+
+
+        /// <summary> Turns a 3D Hand Model's position into a SG_HandPose that would result in the hand being there. We'll assume the other one is placed in the reference pose...</summary>
+        /// <returns></returns>
+        public static SG.SG_HandPose ExtractHandPose(SG.SG_HandModelInfo posedHandModel, SG.SG_HandModelInfo baseHandModel)
+        {
+            // Quaternion[][] angles = pose.jointRotations;
+            // Quaternion[][] corrections = handModelInfo.FingerCorrections;
+            // Transform[][] fingerJoints = handModelInfo.FingerJoints;
+            // fingerJoints[f][j].rotation = handModelInfo.wristTransform.rotation * (angles[f][j] * corrections[f][j]);
+            //SG_HandPose res = SG_HandPose.Idle(posedHandModel.IsRightHand); //TODO: Remove this baseHandModel and make one at the end only.
+
+            Vector3 wristPos = posedHandModel.wristTransform.position;
+            Quaternion wristRot = posedHandModel.wristTransform.rotation;
+            Quaternion wristRot_inverse = Quaternion.Inverse(posedHandModel.wristTransform.rotation);
+
+            Transform[][] joints = posedHandModel.FingerJoints;
+            Quaternion[][] corrections = baseHandModel.FingerCorrections;
+
+            Quaternion toWrist = Quaternion.Inverse(posedHandModel.wristTransform.rotation);
+
+            Vector3[][] jointAngles = new Vector3[5][];
+            Vector3[][] jointPositions = new Vector3[5][];
+            Quaternion[][] jointRotations = new Quaternion[5][];
+            float[] normalizedFlexion = new float[5];
+            for (int f = 0; f < 5; f++)
+            {
+                jointPositions[f] = new Vector3[4];
+                jointRotations[f] = new Quaternion[4];
+                for (int j = 0; j < 4; j++)
+                {
+                    jointRotations[f][j] = toWrist * joints[f][j].rotation * Quaternion.Inverse(corrections[f][j]); //the corrections have to come from the BASE model, not the posed one. Then it should work.
+                    jointPositions[f][j] = wristRot_inverse * (joints[f][j].position - wristPos); //this I think is validated to be correct
+                }
+                //Now calculate the Joint Angles and the normalized (flexion)
+                jointAngles[f] = new Vector3[3];
+                float sumFlex = 0.0f;
+                Quaternion previousRot = wristRot;
+                for (int j = 0; j < 3; j++)
+                {
+                    Quaternion currRot = jointRotations[f][j];
+                    Quaternion dRot = (Quaternion.Inverse(previousRot) * currRot);
+                    jointAngles[f][j] = SG.Util.SG_Util.NormalizeAngles(dRot.eulerAngles);
+                    sumFlex += jointAngles[f][j].z;
+                    previousRot = currRot;
+                }
+                float iFlex = -sumFlex * Mathf.Deg2Rad; //internal Unity works with radians
+                normalizedFlexion[f] = SGCore.Kinematics.Anatomy.NormalizeFlexion((SGCore.Finger)f, iFlex);
+            }
+            return new SG_HandPose(jointAngles, jointRotations, jointPositions, posedHandModel.IsRightHand, wristPos, wristRot, normalizedFlexion);
+        }
+
+
+        public static SG.SG_TrackedHand GetHandMatchingSide(bool rightHand, SG.SG_TrackedHand[] hands)
+        {
+            for (int i=0; i<hands.Length; i++)
+            {
+                if (hands[1] != null && hands[i].TracksRightHand() == rightHand)
+                {
+                    return hands[i];
+                }
+            }
+            return null;
+        }
+
+        public static SG.SG_TrackedHand GetHandMatchingSide(bool rightHand, SG.SG_User user)
+        {
+            if (user == null)
+                return null;
+            return GetHandMatchingSide(rightHand, new SG_TrackedHand[] { user.leftHand, user.rightHand }); //since I cannot trust you to have assigned a left hand to the user's left hand.
+        }
+
+        public static SG.SG_TrackedHand GetHandMatchingSide(bool rightHand)
+        {
+            SG_User user = GameObject.FindObjectOfType<SG_User>(); //first we look for a User
+            if (user != null)
+            {
+                return GetHandMatchingSide(rightHand, user);
+            }
+            return GetHandMatchingSide( rightHand, GameObject.FindObjectsOfType<SG_TrackedHand>() ); //And then for individual TrackedHands...
         }
 
     }

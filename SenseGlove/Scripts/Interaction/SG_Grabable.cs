@@ -115,7 +115,7 @@ namespace SG
         /// <summary> Set this Grabable's PhysicsBody to specific values (but they will return to defaults when released) </summary>
         /// <param name="useGravity"></param>
         /// <param name="isKinematic"></param>
-        public void SetPhysicsbody(bool useGravity, bool isKinematic, RigidbodyConstraints constraints)
+        public void SetPhysicsbody(bool useGravity, bool isKinematic, RigidbodyConstraints constraints, bool saveAsDefault = false)
         {
             if (this.physicsBody != null)
             {
@@ -123,6 +123,15 @@ namespace SG
                 this.IsKinematic = isKinematic; //via the offical setting
                 this.physicsBody.constraints = constraints;
             }
+            if (saveAsDefault)
+            {
+                SetDefaultPhysicsParameters(useGravity, isKinematic, constraints);
+            }
+        }
+
+        public void SetDefaultPhysicsParameters(bool useGravity, bool isKinematic, RigidbodyConstraints constraints)
+        {
+            this.rbDefaults = new Util.RigidBodyStats(useGravity, isKinematic, constraints);
         }
 
 
@@ -210,6 +219,21 @@ namespace SG
 
         //-------------------------------------------------------------------------------------------------------------------------
         // Grabable Functions
+
+        public override bool ControlsFingerTracking()
+        {
+            return this.snapOptions != null && this.snapOptions.controlsFingerAnimation;
+        }
+
+        public override void GetFingerTracking(SG_HandPose realHandPose, SG_GrabScript connectedScript, out SG_HandPose overridePose)
+        {
+            if (this.snapOptions != null)
+            {
+                overridePose = this.snapOptions.GetOverridePose(realHandPose, connectedScript);
+                return;
+            }
+            base.GetFingerTracking(realHandPose, connectedScript, out overridePose);
+        }
 
 
         /// <summary> The Grabable always favours the PhysicsBody - which is why we override it. </summary>

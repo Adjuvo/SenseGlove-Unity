@@ -286,12 +286,12 @@ namespace SG
 		public string MainInstr
         {
             get { return instructions; }
-            set 
+            set
             {
                 instructions = value;
-                if (mainInstructions != null) 
-                { 
-                    mainInstructions.text = value; 
+                if (mainInstructions != null)
+                {
+                    mainInstructions.text = value;
                 }
             }
         }
@@ -391,18 +391,28 @@ namespace SG
 
                     lastOverallState = SGCore.HG_CalibrationState.Unknown;
 
+                    if (this.resetSphere != null)
+                    {
+                        this.resetSphere.SetZone(true);
+                    }
+
                     //updates instructions by stage...
                     instr = "Follow the instructions below your hand..."; //TODO: get this from the HandLayer?
                     break;
 
                 case VoidStage.Done:
                     instr = "Calibration Complete!";
+                    if (this.resetSphere != null)
+                    {
+                        this.resetSphere.SetZone(false);
+                    }
                     if (this.HasSceneTransition)
                     {
                         instr += "\nTaking you to the next scene...";
                         CalibrationCompleted.Invoke();
                         StartCoroutine(UnlockSceneAfter(this.changeSceneAfter));
                     }
+
                     break;
 
                 case VoidStage.NoGloves:
@@ -411,14 +421,26 @@ namespace SG
                     {
                         instr += "\nTaking you to the next scene...";
                     }
+                    if (this.resetSphere != null)
+                    {
+                        this.resetSphere.SetZone(false);
+                    }
                     break;
 
                 case VoidStage.WaitingForFirstGlove:
                     instr = "Awaiting connection to a glove...";
+                    if (this.resetSphere != null)
+                    {
+                        this.resetSphere.SetZone(false);
+                    }
                     break;
 
                 case VoidStage.StartupSenseCom:
                     instr = "Starting up SenseCom...";
+                    if (this.resetSphere != null)
+                    {
+                        this.resetSphere.SetZone(false);
+                    }
                     break;
 
             }

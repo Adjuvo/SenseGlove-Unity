@@ -133,6 +133,14 @@ namespace SG
             }
         }
 
+        public virtual SG_FingerFeedback GetFeedbackScript(int finger)
+        {
+            if (finger > -1 && finger < this.fingerFeedbackScripts.Length)
+            {
+                return this.fingerFeedbackScripts[finger];
+            }
+            return null;
+        }
 
         //-------------------------------------------------------------------------------------------------------------------------------------------
         // Functions

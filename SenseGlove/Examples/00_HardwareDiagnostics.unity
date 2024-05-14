@@ -1564,6 +1564,9 @@ MonoBehaviour:
   slider: {fileID: 802896517}
   textField: {fileID: 1805279525}
   title: {fileID: 501436915}
+  OnValueChanged:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!114 &160585688
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4954,6 +4957,9 @@ MonoBehaviour:
   slider: {fileID: 1754262976}
   textField: {fileID: 259452595}
   title: {fileID: 411242750}
+  OnValueChanged:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!114 &472943139
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6280,6 +6286,9 @@ MonoBehaviour:
   slider: {fileID: 777697267}
   textField: {fileID: 1199219400}
   title: {fileID: 386747927}
+  OnValueChanged:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &590378971
 GameObject:
   m_ObjectHideFlags: 0
@@ -6528,7 +6537,7 @@ MonoBehaviour:
   grabScript: {fileID: 0}
   handPhysics: {fileID: 0}
   gestureLayer: {fileID: 0}
-  passThoughLayer: {fileID: 0}
+  projectionLayer: {fileID: 0}
   calibration: {fileID: 814954879}
   statusIndicator: {fileID: 1445845394}
   overrideWristLocation: 1
@@ -6548,7 +6557,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   connectsTo: 0
-  checkCalibrationOnConnect: 0
   wristTrackingMethod: 0
   origin: {fileID: 0}
   wristTrackingObj: {fileID: 0}
@@ -7958,6 +7966,9 @@ MonoBehaviour:
   slider: {fileID: 1092376868}
   textField: {fileID: 1505834578}
   title: {fileID: 2058858757}
+  OnValueChanged:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!114 &807106256
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8147,22 +8158,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ad4be3b6f43d6614597f035ae44bc106, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  linkedGlove: {fileID: 0}
-  linkedHand: {fileID: 0}
-  calibrationType: 0
-  startCondition: 1
+  TrackedHand: {fileID: 0}
   debugEnabled: 0
-  debugText: {fileID: 347241492}
-  nextStepKey: 0
-  cancelKey: 0
-  resetCalibrationKey: 0
-  baseInstrMessage: 
   instructions3D: {fileID: 0}
   instructionsUI: {fileID: 0}
-  CalibrationFinished:
+  showConfirmInstructions: 1
+  CalibrationStarted:
     m_PersistentCalls:
       m_Calls: []
-  CalibrationAbort:
+  CalibrationFinished:
     m_PersistentCalls:
       m_Calls: []
 --- !u!1 &835264078
@@ -8494,6 +8498,9 @@ MonoBehaviour:
   slider: {fileID: 1846788482}
   textField: {fileID: 1531150832}
   title: {fileID: 732710089}
+  OnValueChanged:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!114 &909370226
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9256,22 +9263,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ad4be3b6f43d6614597f035ae44bc106, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  linkedGlove: {fileID: 0}
-  linkedHand: {fileID: 0}
-  calibrationType: 0
-  startCondition: 0
+  TrackedHand: {fileID: 0}
   debugEnabled: 0
-  debugText: {fileID: 0}
-  nextStepKey: 0
-  cancelKey: 0
-  resetCalibrationKey: 0
-  baseInstrMessage: 
   instructions3D: {fileID: 0}
   instructionsUI: {fileID: 781764325}
-  CalibrationFinished:
+  showConfirmInstructions: 1
+  CalibrationStarted:
     m_PersistentCalls:
       m_Calls: []
-  CalibrationAbort:
+  CalibrationFinished:
     m_PersistentCalls:
       m_Calls: []
 --- !u!1 &994172630
@@ -12100,6 +12100,9 @@ MonoBehaviour:
   slider: {fileID: 1740372720}
   textField: {fileID: 1973523858}
   title: {fileID: 1299545410}
+  OnValueChanged:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!114 &1384446171
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12846,22 +12849,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ad4be3b6f43d6614597f035ae44bc106, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  linkedGlove: {fileID: 0}
-  linkedHand: {fileID: 0}
-  calibrationType: 0
-  startCondition: 1
+  TrackedHand: {fileID: 0}
   debugEnabled: 0
-  debugText: {fileID: 725264753}
-  nextStepKey: 0
-  cancelKey: 0
-  resetCalibrationKey: 0
-  baseInstrMessage: 
   instructions3D: {fileID: 0}
   instructionsUI: {fileID: 0}
-  CalibrationFinished:
+  showConfirmInstructions: 1
+  CalibrationStarted:
     m_PersistentCalls:
       m_Calls: []
-  CalibrationAbort:
+  CalibrationFinished:
     m_PersistentCalls:
       m_Calls: []
 --- !u!1 &1445845392
@@ -15111,6 +15107,9 @@ MonoBehaviour:
   slider: {fileID: 1647294922}
   textField: {fileID: 1672311136}
   title: {fileID: 2094228764}
+  OnValueChanged:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!114 &1617016904
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -15431,9 +15430,10 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: 'Advanced SenseGlove Diagnostics Scene
+  m_Text: 'Advanced SenseGlove Diagnostics Scene FOR DK1 AND NOVA 1.0 ONLY!
 
-    Used to test hardware functions'
+    Used
+    to test hardware functions'
 --- !u!222 &1649617303
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -16097,6 +16097,9 @@ MonoBehaviour:
   slider: {fileID: 330543768}
   textField: {fileID: 186574299}
   title: {fileID: 95932720}
+  OnValueChanged:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!114 &1705162631
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -17504,6 +17507,9 @@ MonoBehaviour:
   slider: {fileID: 1989960134}
   textField: {fileID: 1856096959}
   title: {fileID: 2066089198}
+  OnValueChanged:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!114 &1838545512
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -19199,6 +19205,9 @@ MonoBehaviour:
   slider: {fileID: 1556423448}
   textField: {fileID: 278003518}
   title: {fileID: 1698280365}
+  OnValueChanged:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!114 &2012510921
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -19611,7 +19620,7 @@ MonoBehaviour:
   grabScript: {fileID: 0}
   handPhysics: {fileID: 0}
   gestureLayer: {fileID: 0}
-  passThoughLayer: {fileID: 0}
+  projectionLayer: {fileID: 0}
   calibration: {fileID: 1445674838}
   statusIndicator: {fileID: 2017636440}
   overrideWristLocation: 1
@@ -19631,7 +19640,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   connectsTo: 1
-  checkCalibrationOnConnect: 0
   wristTrackingMethod: 0
   origin: {fileID: 0}
   wristTrackingObj: {fileID: 0}
@@ -19980,6 +19988,9 @@ MonoBehaviour:
   slider: {fileID: 1555231374}
   textField: {fileID: 1888062747}
   title: {fileID: 1004812056}
+  OnValueChanged:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!114 &2075346300
 MonoBehaviour:
   m_ObjectHideFlags: 0

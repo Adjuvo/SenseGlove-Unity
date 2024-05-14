@@ -172,7 +172,6 @@ namespace SG
             get { return this.handSide != HandSide.LeftHand; }
         }
 
-
         //----------------------------------------------------------------------------------------------
         // Functions
 

@@ -282,7 +282,10 @@ namespace SG
 			return Util.SG_Util.PrintContents(this.heldObjects, delim);
         }
 
-
+        public SG_Interactable[] GrabbedObjects()
+        {
+            return this.heldObjects.ToArray();
+        }
 
 
         //-------------------------------------------------------------------------------------------------------------------------------------------------------------

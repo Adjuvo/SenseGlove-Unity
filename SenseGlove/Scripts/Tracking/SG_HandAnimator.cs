@@ -126,14 +126,26 @@ namespace SG
         /// <param name="data"></param>
         public virtual void UpdateHand(SG_HandPose pose, bool fingersOnly = false)
         {
+            SetHandToPose(handModelInfo, pose, fingersOnly);
+        }
+
+
+
+        /// <summary> Now a Static Function so we could possibly re-use it across multiple scripts (e.g. FingerTrackingOverrride). </summary>
+        /// <param name="handModelInfo"></param>
+        /// <param name="pose"></param>
+        /// <param name="fingersOnly"></param>
+        public static void SetHandToPose(SG_HandModelInfo handModelInfo, SG_HandPose pose, bool fingersOnly = false)
+        {
             if (pose != null)
             {
                 if (!fingersOnly)
                 {
-                    handModelInfo.wristTransform.rotation = pose.wristRotation;
-                    handModelInfo.wristTransform.position = pose.wristPosition;
+                    //handModelInfo.wristTransform.rotation = pose.wristRotation;
+                    //handModelInfo.wristTransform.position = pose.wristPosition;
+                    handModelInfo.transform.rotation = pose.wristRotation;
+                    handModelInfo.transform.position = pose.wristPosition;
                 }
-
                 Quaternion[][] angles = pose.jointRotations;
                 Quaternion[][] corrections = handModelInfo.FingerCorrections;
                 Transform[][] fingerJoints = handModelInfo.FingerJoints;
@@ -148,7 +160,7 @@ namespace SG
                                 if (pose.jointRotations[f].Length > j)
                                 {
                                     fingerJoints[f][j].rotation = handModelInfo.wristTransform.rotation
-                                        * (angles[f][j] * corrections[f][j]);
+                                        * angles[f][j] * corrections[f][j];
                                 }
                             }
                         }
@@ -156,7 +168,6 @@ namespace SG
                 }
             }
         }
-
 
         /// <summary> 
         /// Update the (absolute) wrist orientation, which moves realtive to the (absolute) lower arm transform. 

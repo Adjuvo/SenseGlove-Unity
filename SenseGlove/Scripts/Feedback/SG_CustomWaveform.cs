@@ -28,8 +28,8 @@ namespace SG
         public bool RepeatInfinite = false;
 
         [Header("Frequency Parameters")]
-        [ Range(SGCore.CustomWaveform.freqRangeMin, SGCore.CustomWaveform.freqRangeMax) ] public int startFrequency = 60;
-        [ Range(SGCore.CustomWaveform.freqRangeMin, SGCore.CustomWaveform.freqRangeMax) ] public int endFrequency = 60;
+        [ Range(SGCore.CustomWaveform.freqRangeMin, SGCore.CustomWaveform.freqRangeMax) ] public int startFrequency = 180;
+        [ Range(SGCore.CustomWaveform.freqRangeMin, SGCore.CustomWaveform.freqRangeMax) ] public int endFrequency = 180;
         
         [ Range(0.0f, 1.0f) ] public float frequencySwitchTime = 0.0f;
         [ Range(SGCore.CustomWaveform.minFreqFactor, SGCore.CustomWaveform.maxFreqFactor) ] public float frequencySwitchMultiplier = 1.0f;

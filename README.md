@@ -1,9 +1,11 @@
 # SenseGlove-Unity
 The latest stable Unity SDK for the SenseGlove, built using Unity 2019.4.33f1. Can be imported into Unity 2019.4 and up, which will automatically update the assets for you. Using older Unity versions will cause issues.
 
-Current version is v2.6.1, released on the 10th of April 2024.
+Current version is v2.6.2, released on the 14th of May 2024.
 
 **Important notice**: After 4-5 years of supporting Unity 2017 and 2018, the time has come for us to raise the minimum Unity version from 2017.4 to 2019.4 (LTS version). This update will allow us to make more use of the Unity XR system, and add vr-ready examples to the plugin. This means that your Unity 2017-2018 projects will no longer be able to receive updates to the SenseGlove Unity Plugin. If you'd like to continue using Unity 2017-2018, you can still use versions 1.0.0 - 2.3.1. SenseCom operates independently from the Unity Editor, and can still be used with our plugins of v2.0 and above.
+
+Furthermore; you can find more extensive documentation of the Unity Plugin at [docs.senseglove.com/unity](https://senseglove.gitlab.io/SenseGloveDocs/unity/overview.html)
 
 ## Upgrade Guide
 When importing a new version of the Sense Glove SDK, the best practice is to delete the SenseGlove folder before re-importing, since some files may have been removed or placed in a more suitable folder.
@@ -30,5 +32,5 @@ The first thing one should do is ensure that their Sense Glove is working.
 3.  Extract the relevant .zip file from the SenseCom folder, and run the program with the same name.
 4.  A small UI should show up, indicating your connection states. If the hand is blue, you're good to go!
 5.	Import the unitypackage into your Unity project.
-6.	Open the 00_HardWareDiagnostics scene in the Examples folder and press play. You should now see a virtual hand and glove moving.
-7.  Verify that the glove model's movement matches that of its real-life counterpart, and test out some of the haptic functions. If it moves correctly, you're all set to go! If not, please contact the Sense Glove team.
+6.	When using a Nova 1.0 or SenseGlove DK1: Open the 00_HardWareDiagnostics scene in the Examples folder and press play. When using a Nova 2.0, please open 14_Nova2_Diagnostics instead. You should now see a virtual hand and (in the case of the DK1, a glove) moving.
+7.  Verify that the virtual hand is moving, and test out some of the haptic functions. If it moves correctly, you're all set to go! If not, please contact the Sense Glove team.
