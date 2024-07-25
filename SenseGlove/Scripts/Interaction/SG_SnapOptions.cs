@@ -32,10 +32,12 @@ namespace SG
 
         /// <summary> Global Setting. Setting this to true this reveals the rest of the settings. </summary>
         public bool controlsFingerAnimation = false;
+        /// <summary> Whether or not to show the preview of finger limits. </summary>
+        public bool previewLimits = false;
 
         [SerializeField] protected FingerTrackingOverrideMode thumb_overrideMode = FingerTrackingOverrideMode.MatchPreview;
-        [SerializeField] [Range(0.0f, 1.0f)] protected float thumb_minFlexion = 0.0f;
-        [SerializeField] [Range(0.0f, 1.0f)] protected float thumb_maxFlexion = 1.0f;
+        [SerializeField] [Range(0.0f, 1.0f)] protected float thumb_minFlexion = 0.0f; 
+        [SerializeField] [Range(0.0f, 1.0f)] protected float thumb_maxFlexion = 1.0f; 
 
         [SerializeField] protected FingerTrackingOverrideMode index_overrideMode = FingerTrackingOverrideMode.MatchPreview;
         [SerializeField] [Range(0.0f, 1.0f)] protected float index_minFlexion = 0.0f;
@@ -80,6 +82,7 @@ namespace SG
         [HideInInspector] public Vector3 left_relWristPos = Vector3.zero;
         [HideInInspector] public Quaternion left_relWristRot = Quaternion.identity;
 
+        protected const float fingerCapsuleRadius = 0.01f;
 
         //--------------------------------------------------------------------------------------------------------------------------------------------
         // GrabArgument Generation.
@@ -97,7 +100,7 @@ namespace SG
             if (overridePose != null)
             {
                 // Where should the Wrist be in 3D Space
-                Vector3 obj_wrist_Pos = grabScript.TrackedHand.TracksRightHand() ? this.right_relWristPos : this.left_relWristPos;
+                Vector3 obj_wrist_Pos    = grabScript.TrackedHand.TracksRightHand() ? this.right_relWristPos : this.left_relWristPos;
                 Quaternion obj_wrist_Rot = grabScript.TrackedHand.TracksRightHand() ? this.right_relWristRot : this.left_relWristRot;
                 Vector3 wristPos; Quaternion wristRot;
                 SG.Util.SG_Util.CalculateTargetLocation(objectTransf, obj_wrist_Pos, obj_wrist_Rot, out wristPos, out wristRot); //whis is where the Wrist Pos needs to be, but I need the Grab Reference.
@@ -119,6 +122,42 @@ namespace SG
 
         //--------------------------------------------------------------------------------------------------------------------------------------------
         // Tracking Overrides
+
+        public FingerTrackingOverrideMode[] FingerOverrides
+        {
+            get { return new FingerTrackingOverrideMode[5] { thumb_overrideMode, index_overrideMode, middle_overrideMode, ring_overrideMode, pinky_overrideMode }; }
+        }
+
+        public float[] MaxFingerFlexions
+        {
+            get
+            {
+                return new float[]
+                {
+                    thumb_minFlexion,
+                    index_minFlexion,
+                    middle_minFlexion,
+                    ring_minFlexion,
+                    pinky_minFlexion
+                };
+            }
+        }
+
+        public float[] MinFingerFlexions
+        {
+            get
+            {
+                return new float[]
+                {
+                    thumb_maxFlexion,
+                    index_maxFlexion,
+                    middle_maxFlexion,
+                    ring_maxFlexion,
+                    pinky_maxFlexion
+                };
+            }
+        }
+
 
 
         /// <summary> Loads any (Serialized) finger tracking poses into this SnapOptions' memort </summary>
@@ -161,7 +200,7 @@ namespace SG
                     Vector3[][] pos = new Vector3[5][];
                     Vector3[][] hA = new Vector3[5][];
                     FingerTrackingOverrideMode[] overrides = new FingerTrackingOverrideMode[5] { thumb_overrideMode, index_overrideMode, middle_overrideMode, ring_overrideMode, pinky_overrideMode };
-                    for (int f = 0; f < 5; f++)
+                    for (int f=0; f<5; f++)
                     {
                         if (overrideModes[f] == FingerTrackingOverrideMode.MatchPreview)
                         {
@@ -170,7 +209,7 @@ namespace SG
                             rots[f] = overrideFingers.jointRotations[f];
                             hA[f] = overrideFingers.jointAngles[f];
                         }
-                        else if (overrideModes[f] == FingerTrackingOverrideMode.Limited && (realHandPose.normalizedFlexion[f] < fingerLimits[f][0] || realHandPose.normalizedFlexion[f] > fingerLimits[f][1]))
+                        else if (overrideModes[f] == FingerTrackingOverrideMode.Limited && (realHandPose.normalizedFlexion[f] < fingerLimits[f][0] || realHandPose.normalizedFlexion[f] > fingerLimits[f][1]) )
                         {   //fingerlimits [0] is min, [1] is max. We only need to 'do something about this' when our normalized flexion gets outside of bounds. otherwise, just use the real finger tracking.
                             nF[f] = Mathf.Clamp(realHandPose.normalizedFlexion[f], fingerLimits[f][0], fingerLimits[f][1]);
                             float abdForUpdate = realHandPose.jointAngles[f][0].y;
@@ -232,7 +271,7 @@ namespace SG
                 Debug.Log(this.name + ": Could not find base Hand Models. Make sure you have an SG_User and/or SG_TrackedHand in your scene, and that its GameObject is enabled!", this);
             }
         }
-
+        
         /// <summary> Spawns a copt of the baseHand's HandModelInfo and returns you a reference to said script. </summary>
         /// <param name="baseHand"></param>
         /// <returns></returns>
@@ -244,11 +283,6 @@ namespace SG
                 return null;
             }
             GameObject copy = GameObject.Instantiate(baseHand.handModel.gameObject, Vector3.zero, Quaternion.identity); //TODO: After spawning, place me at the "most likely" pose / location based on SnapOptions (if any)
-
-            if (this.linkedGrabable == null)
-            {
-                this.linkedGrabable = this.GetComponent<SG_Grabable>();
-            }
 
             if (this.linkedGrabable != null && this.linkedGrabable.MyTransform != null)
             {
@@ -288,12 +322,6 @@ namespace SG
             if (handmodel_forPosing != null)
             {
                 SG_HandPose newPose = stored_overridePose != null ? stored_overridePose : SG_HandPose.Idle(handmodel_forPosing.IsRightHand);
-
-                if (this.linkedGrabable == null)
-                {
-                    this.linkedGrabable = this.GetComponent<SG_Grabable>();
-                }
-
                 if (this.linkedGrabable != null)
                 {
                     Vector3 posePos; Quaternion poseRot;
@@ -370,10 +398,6 @@ namespace SG
                 overrideSerialized = overridePose.Serialize();
 
                 //Now, calculate the offsets, if any exist.
-                if (this.linkedGrabable == null)
-                {
-                    this.linkedGrabable = this.GetComponent<SG_Grabable>();
-                }
                 if (linkedGrabable != null)
                 {
                     Vector3 wP; Quaternion wR;
@@ -495,6 +519,91 @@ namespace SG
             };
         }
 
+        protected void OnDrawGizmosSelected()
+        {
+            if (this.controlsFingerAnimation && this.previewLimits)
+            {
+                DrawFingerLimitsPoses(left_baseHand, left_posedHand);
+                DrawFingerLimitsPoses(right_baseHand, right_posedHand);
+            }
+        }
+
+        private void DrawFingerLimitsPoses(SG_TrackedHand baseHand, SG_HandModelInfo posedHand)
+        {
+            if (baseHand == null || posedHand == null)
+                return;
+
+            FingerTrackingOverrideMode[] modes = this.FingerOverrides;
+            float[] mins = MinFingerFlexions;
+            float[] maxs = MaxFingerFlexions;
+            Vector3 wristPos = posedHand.wristTransform.position;
+            Quaternion wristRot = posedHand.wristTransform.rotation;
+            for (int f = 0; f < 5; f++)
+            {
+                if (modes[f] == FingerTrackingOverrideMode.Limited)
+                {
+                    // Draw lowe limit
+                    Vector3[] lowerPreview = CalculateFingerTracking(f, mins[f], baseHand.handModel.HandKinematics, wristPos, wristRot);
+                    DrawFingerLines(lowerPreview, wristPos, Color.yellow);
+
+                    // Draw upper limit (if it's not the same
+                    if ( !SGCore.Kinematics.Values.FloatEquals( mins[f], maxs[f]) ) //if they're not equal
+                    {
+                        Vector3[] upperPreview = CalculateFingerTracking(f, maxs[f], baseHand.handModel.HandKinematics, wristPos, wristRot);
+                        DrawFingerLines(upperPreview, wristPos, Color.red);
+                    }
+                }
+            }
+        }
+
+        private static Vector3[] CalculateFingerTracking(int f, float normalizedFlexion, SGCore.Kinematics.BasicHandModel handModel, Vector3 wristPos, Quaternion wristRot)
+        {
+            //Step 1: Forward kinematics
+            SGCore.Finger finger = (SGCore.Finger)f;
+            float[] flexions = SGCore.Kinematics.Anatomy.Flexions_FromNormalized(finger, normalizedFlexion);
+            SGCore.Kinematics.Vect3D[] jointAngles_sg = new SGCore.Kinematics.Vect3D[]
+            {
+                new SGCore.Kinematics.Vect3D( 0.0f, flexions[0], 0.0f ),
+                new SGCore.Kinematics.Vect3D( 0.0f, flexions[1], 0.0f ),
+                new SGCore.Kinematics.Vect3D( 0.0f, flexions[2], 0.0f )
+            };
+            SGCore.Kinematics.Quat startRot;
+            if (f == 0)
+            {
+                int LR = handModel.IsRight ? 1 : -1;
+                startRot = SGCore.Kinematics.Quat.FromAngleAxis(Mathf.Deg2Rad * (-90 * LR), 1.0f, 0.0f, 0.0f);
+            }
+            else
+            {
+                startRot = handModel.GetJointRotation(finger);
+            }
+
+            SGCore.Kinematics.Vect3D[] jointPositions_sg;
+            SGCore.Kinematics.Quat[] jointRotations_sg;
+            SGCore.Kinematics.JointKinematics.ForwardKinematics(handModel.GetJointPosition(finger), startRot,
+                handModel.Get3DLengths(finger), jointAngles_sg, out jointPositions_sg, out jointRotations_sg);
+
+            Vector3[] localPositions = SG.Util.SG_Conversions.ToUnityPositions(jointPositions_sg);
+            Vector3[] worldPositions = new Vector3[localPositions.Length];
+
+            //Step 2 : Calculate world positions
+            for (int i=0; i< localPositions.Length; i++)
+            {
+                worldPositions[i] = wristPos + (wristRot * localPositions[i]);
+            }
+            return worldPositions;
+        }
+
+        private static void DrawFingerLines(Vector3[] fingerPos, Vector3 wristPos, Color color)
+        {
+            //Debug.DrawLine(wristPos, fingerPos[0], color); //we can skip the wrist position as that's the same for both
+            for (int f=1; f< fingerPos.Length; f++)
+            {
+                //Debug.DrawLine(fingerPos[f - 1], fingerPos[f], color);
+                SG.Util.SG_Util.Gizmo_DrawWireCapsule(fingerPos[f - 1], fingerPos[f], color, fingerCapsuleRadius);
+            }
+        }
+
 #endif
 
     }
@@ -515,6 +624,9 @@ namespace SG
         private UnityEditor.SerializedProperty m_overrideFingerTracking;
         private GUIContent l_overrideFingerTracking;
 
+        private UnityEditor.SerializedProperty m_previewLimits;
+        private GUIContent l_previewLimits;
+
         private UnityEditor.SerializedProperty[] m_fingerEnums = new SerializedProperty[0];
         private GUIContent[] l_fingerEnums = new GUIContent[0];
 
@@ -532,6 +644,9 @@ namespace SG
 
             m_overrideFingerTracking = serializedObject.FindProperty("controlsFingerAnimation");
             l_overrideFingerTracking = new GUIContent("Controls Finger Animation", "");
+
+            m_previewLimits = serializedObject.FindProperty("previewLimits");
+            l_previewLimits = new GUIContent("Preview Finger Limits", "");
 
             m_fingerEnums = new SerializedProperty[5]
             {
@@ -596,10 +711,12 @@ namespace SG
             GUILayout.Label("Finger Tracking Overrides", UnityEditor.EditorStyles.boldLabel);
 
             UnityEditor.EditorGUILayout.PropertyField(m_overrideFingerTracking, l_overrideFingerTracking);
+            UnityEditor.EditorGUILayout.PropertyField(m_previewLimits, l_previewLimits);
+
             if (myScript.controlsFingerAnimation)
             {
                 //Draw the rest of the finger(s).
-                for (int f = 0; f < m_fingerEnums.Length; f++)
+                for (int f=0; f< m_fingerEnums.Length; f++)
                 {
                     FingerTrackingOverrideMode ovrMethod = (FingerTrackingOverrideMode)m_fingerEnums[f].intValue;
 
@@ -661,7 +778,7 @@ namespace SG
                     {
                         myScript.ResetLeftPose();
                     }
-
+                    
                 }
                 if (myScript.right_serializedPosed.Length > 0)
                 {
@@ -686,10 +803,10 @@ namespace SG
                     }
                 }
             }
-
-
             serializedObject.ApplyModifiedProperties(); //call this at the end to apply the changed properties.
         }
+
+
     }
 #endif
 

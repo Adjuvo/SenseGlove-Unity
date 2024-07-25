@@ -119,27 +119,64 @@ namespace SG.Util
 		}
 
 
-		//----------------------------------------------------------------------------------------------------
-		// Initalization / Disposing of Android Resources.
-
-		/// <summary> Initialized the Android Library is we haven't already </summary>
-		/// <remarks> This function could be called every time we switch scenes, and thatshouldn't break things. </remarks>
-		private static void Andr_TryInitialize()
+        //----------------------------------------------------------------------------------------------------
+        // Initalization / Disposing of Android Resources.
+#if UNITY_ANDROID && !UNITY_EDITOR && UNITY_2020_2_OR_NEWER
+		private static void DisplayNoPermissionsError()
 		{
+            //Spawn an error message that says permission is required for hand tracking functionality
+            GameObject errorObject = new GameObject("BluetoothDeniedError");
+            TextMesh text = errorObject.AddComponent<TextMesh>();
+            //for now hardcoded
+            errorObject.transform.SetParent(Camera.main.transform);
+            errorObject.transform.localPosition = new Vector3(0, 0, 0.3f);
+            errorObject.transform.localScale = new Vector3(0.007f, 0.007f, 0.007f);
+            text.text = "Permission for nearby devices required for glove functionality";
+            text.color = Color.red;
+            text.anchor = TextAnchor.MiddleCenter;
+        }
+
+        private static void PermissionCallbacks_PermissionDeniedAndDontAskAgain(string permissionName)
+        {
+            Debug.LogWarning($"{permissionName} PermissionDeniedAndDontAskAgain");
+            DisplayNoPermissionsError();
+        }
+
+		private static void PermissionCallbacks_PermissionDenied(string permissionName)
+		{
+			Debug.LogWarning($"{permissionName} PermissionCallbacks_PermissionDenied");
+			DisplayNoPermissionsError();
+
+        }
+
+        private static void PermissionCallbacks_PermissionGranted(string permissionName)
+        {
+            Debug.LogWarning($"{permissionName} PermissionCallbacks_PermissionGranted");
+            Andr_TryInitialize();
+        }
+
+
+#endif
+
+        /// <summary> Initialized the Android Library is we haven't already </summary>
+        /// <remarks> This function could be called every time we switch scenes, and thatshouldn't break things. </remarks>
+        private static void Andr_TryInitialize()
+        {
+
 #if UNITY_ANDROID && !UNITY_EDITOR
 #if UNITY_2020_2_OR_NEWER
-			if (!Permission.HasUserAuthorizedPermission(Permission.CoarseLocation)
-			  || !Permission.HasUserAuthorizedPermission(Permission.FineLocation)
-			  || !Permission.HasUserAuthorizedPermission("android.permission.BLUETOOTH_SCAN")
-			  || !Permission.HasUserAuthorizedPermission("android.permission.BLUETOOTH_ADVERTISE")
-			  || !Permission.HasUserAuthorizedPermission("android.permission.BLUETOOTH_CONNECT"))
-			  Permission.RequestUserPermissions(new string[] {
-				Permission.CoarseLocation,
-				Permission.FineLocation,
-				"android.permission.BLUETOOTH_SCAN",
-				"android.permission.BLUETOOTH_ADVERTISE",
-				"android.permission.BLUETOOTH_CONNECT"
-			  });
+            //If permission isnt granted, it will ask for permission and return out of this function, if the function is allowed to continue then the application will crash. If permission is granted then this function gets called again
+		    //Otherwise, this function won't be called again and something will be done to show the user that the correct permissions is needed to continue
+		    if (!Permission.HasUserAuthorizedPermission("android.permission.BLUETOOTH_CONNECT"))
+            {
+                PermissionCallbacks callbacks = new PermissionCallbacks();
+                callbacks.PermissionDenied += PermissionCallbacks_PermissionDenied;
+                callbacks.PermissionGranted += PermissionCallbacks_PermissionGranted;
+                callbacks.PermissionDeniedAndDontAskAgain += PermissionCallbacks_PermissionDeniedAndDontAskAgain;
+                Permission.RequestUserPermission("android.permission.BLUETOOTH_CONNECT", callbacks);
+                return;
+            }
+
 #endif
 			if (SGCore.Library.GetBackEndType() == SGCore.Library.BackEndType.AndroidStrings)
 			{
@@ -174,12 +211,12 @@ namespace SG.Util
 				Log("C# Library does not support Android back-end! It supports " + SGCore.Library.GetBackEndType().ToString());
 			}
 #endif
-		}
+        }
 
-		/// <summary> Fires when our C# back-end receives a haptic command to send to the device. Pass it on to the Android Side, please. </summary>
-		/// <param name="source"></param>
-		/// <param name="args"></param>
-		private static void SGConnect_Android_AndroidHapticEvent(object source, SGCore.Util.SGConnect_Android.AndroidHapticEventArgs args)
+        /// <summary> Fires when our C# back-end receives a haptic command to send to the device. Pass it on to the Android Side, please. </summary>
+        /// <param name="source"></param>
+        /// <param name="args"></param>
+        private static void SGConnect_Android_AndroidHapticEvent(object source, SGCore.Util.SGConnect_Android.AndroidHapticEventArgs args)
 		{
 			Log("Sending Haptics to device" + args.DeviceIndex.ToString() + "_" + args.ChannelIndex.ToString() + ": " + args.HapticCommand);
 			SG_IAndroid.Andr_WriteHaptics(args.DeviceIndex, args.ChannelIndex, args.HapticCommand);
@@ -344,7 +381,7 @@ namespace SG.Util
 		//Fires when tabbing in / out of this application
 		void OnApplicationFocus(bool hasFocus)
 		{
-#if UNITY_ANDROID && !UNITY_EDITOR
+#if !UNITY_ANDROID || UNITY_EDITOR
 			if (hasFocus && loadProfilesOnFocus)
             {
                 //Debug.Log("Reloaded SenseGlove Profiles from disk...");

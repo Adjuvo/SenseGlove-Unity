@@ -133,7 +133,11 @@ namespace SG
             return null;
         }
 
-
+        public void ResetCalibration()
+        {
+            SGCore.HandLayer.ResetCalibration(true);
+            SGCore.HandLayer.ResetCalibration(false);
+        }
 
 
         /// <summary> Swaps the trackedObjects of two TrackedHands. </summary>

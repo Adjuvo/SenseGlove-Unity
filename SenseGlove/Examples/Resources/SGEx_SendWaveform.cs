@@ -45,8 +45,15 @@ namespace SG.Examples
             {
 				if (glove != null)
                 {
-					Debug.LogError("TODO: Implement Timing!");
-					//glove.SendCmd(waveFormToSend);
+					if (glove.DeviceType == SGCore.DeviceType.NOVA_2_GLOVE)
+                    {
+						Debug.LogError("This Example is made for Nova 1.0 and Dk1 Exoskeleton Gloves. The Nova 2.0 uses a vastly different vibration method. " +
+							"Check out the SG_CustomWaveform class, and/or https://senseglove.gitlab.io/SenseGloveDocs/unity/unity-haptics");
+                    }
+                    else
+                    {
+						glove.SendLegacyWaveform(waveFormToSend);
+					}
                 }
 			}
         }

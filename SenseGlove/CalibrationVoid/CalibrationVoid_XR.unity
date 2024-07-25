@@ -967,7 +967,7 @@ MonoBehaviour:
   introTime: 2.5
   exampleOpenCloseTime: 2
   changeSceneAfter: 2
-  goToSceneIndex: -1
+  goToSceneIndex: 1
   goToSceneName: 
   CalibrationStateChanged:
     m_PersistentCalls:

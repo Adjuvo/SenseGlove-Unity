@@ -205,6 +205,53 @@ namespace SG
         //    Debug.Log(this.name + "Linked!");
         //}
 
+
+
+
+
+
+        protected static Vector3 wristPosCorrection_L = Vector3.zero;
+        protected static Quaternion wristRotCorrection_L = Quaternion.identity;
+
+        protected static Vector3 wristPosCorrection_R = Vector3.zero;
+        protected static Quaternion wristRotCorrection_R = Quaternion.identity;
+
+
+        public void CalculateWristCorrection(Vector3 intendedWristPosition, Quaternion intendedWristRotation)
+        {
+            //We'll calculate the wrist corrections that place our current(!) wrist position onto the intended position / rotation
+
+            if (this.deviceSelector.GetHandPose(out SG_HandPose nPose))
+            {
+                Vector3 nWristPos = nPose.wristPosition; 
+                Quaternion nWristRot = nPose.wristRotation; //'normal' location
+                if (this.TracksRightHand())
+                {
+                    SG.Util.SG_Util.CalculateOffsets(intendedWristPosition, intendedWristRotation, nWristPos, nWristRot, out wristPosCorrection_R, out wristRotCorrection_R);
+                }
+                else
+                {
+                    SG.Util.SG_Util.CalculateOffsets(intendedWristPosition, intendedWristRotation, nWristPos, nWristRot, out wristPosCorrection_L, out wristRotCorrection_L);
+                }
+            }
+        }
+
+        public void ResetWristCorrection()
+        {
+            if (this.TracksRightHand())
+            {
+                wristPosCorrection_R = Vector3.zero;
+                wristRotCorrection_R = Quaternion.identity;
+            }
+            else
+            {
+                wristPosCorrection_L = Vector3.zero;
+                wristRotCorrection_L = Quaternion.identity;
+            }
+        }
+
+
+
         //-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         // Setup Functions
 
@@ -592,7 +639,12 @@ namespace SG
                 SG_HandPose nextPose;
                 if (this.RealHandSource.GetHandPose(out nextPose)) //it's assigned, but we need to 
                 {
-                    l_realHandPose = nextPose;
+                    l_realHandPose = new SG_HandPose(nextPose); //deep copy the value(s)
+
+                    //add the correction - if any
+                    Vector3 posOffset = this.TracksRightHand() ? wristPosCorrection_R : wristPosCorrection_L;
+                    Quaternion rotOffset = this.TracksRightHand() ? wristRotCorrection_R : wristRotCorrection_L;
+                    SG.Util.SG_Util.CalculateTargetLocation(nextPose.wristPosition, nextPose.wristRotation, posOffset, rotOffset, out l_realHandPose.wristPosition, out l_realHandPose.wristRotation);
                 }
             }
             if (this.overrideWristLocation)

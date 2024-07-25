@@ -31,6 +31,9 @@ namespace SG.XR
         /// <summary> If set to true, the rotation is stored exclusively for this scene (a.k.a. we add the scene name to the Key). </summary>
         public bool exclusiveToScene = false;
 
+        /// <summary> If set to true, perform recentering again based on the users current position. </summary>
+        public bool recenterOnStartScene = false;
+
         /// <summary> Optional Hotkey for debugging / easy access </summary>
         public KeyCode recenterHotKey = KeyCode.None;
 
@@ -192,6 +195,10 @@ namespace SG.XR
             if (keepBetweenSessions)
             {
                 StartCoroutine(RecenterAfter(0.1f));
+            }
+            if(recenterOnStartScene)
+            {
+                Recenter();
             }
         }
 

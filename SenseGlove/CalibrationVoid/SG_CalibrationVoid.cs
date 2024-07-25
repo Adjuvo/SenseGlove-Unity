@@ -253,7 +253,7 @@ namespace SG
         [SerializeField] private float changeSceneAfter = 1.5f;
 
         /// <summary> If the index > -1, we will change to this Scene after Calibration completes, unless a specific name is provided. </summary>
-        [SerializeField] private int goToSceneIndex = -1;
+        [SerializeField] private int goToSceneIndex = 1;
         /// <summary> If it's not empty, we will change to this scene after calibration compltes. </summary>
         [SerializeField] private string goToSceneName = "";
 

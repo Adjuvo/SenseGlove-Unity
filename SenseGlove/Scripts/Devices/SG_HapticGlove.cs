@@ -1,5 +1,6 @@
-﻿//#define CV_ENABLED
+//#define CV_ENABLED
 #define HG_CUSTOM_INSPECTOR
+//#define GRAB_WT_FROM_SETTINGS
 
 using SGCore.Kinematics;
 using UnityEngine;
@@ -133,6 +134,9 @@ namespace SG
         /// <summary> Contains legacy vibration commands for Nova 1.0 and DK1.0 </summary>
         protected LegacyCommand[] legacyFingers = new LegacyCommand[5];
         protected LegacyCommand legacyWrist = null;
+
+
+
 
         //--------------------------------------------------------------------------------------------------------
         // Connection Functions
@@ -277,11 +281,19 @@ namespace SG
             }
 
             // Validate Offsets
-            if ((this.wristTrackingMethod == WristTracking.FollowObjectAutoOffsets || this.wristTrackingMethod == WristTracking.UnityXR)
-                && SG_XR_Devices.GetTrackingHardware(this.TracksRightHand(), out SGCore.PosTrackingHardware updatedOffsets))
+            if (this.wristTrackingMethod == WristTracking.FollowObjectAutoOffsets || this.wristTrackingMethod == WristTracking.UnityXR)
             {
-                this.wristTrackingOffsets = updatedOffsets;
+
+#if GRAB_WT_FROM_SETTINGS
+                this.wristTrackingOffsets = SG_Core.Settings.GetInternalTrackerType(this.TracksRightHand()); //grab it from Settings
+#else
+                if (SG_XR_Devices.GetTrackingHardware(this.TracksRightHand(), out SGCore.PosTrackingHardware updatedOffsets)) //grab from SG_XR_Devices
+                {
+                    this.wristTrackingOffsets = updatedOffsets;
+                }
+#endif
             }
+
 
             SGCore.PosTrackingHardware offsets = this.wristTrackingOffsets;
 
@@ -536,7 +548,15 @@ namespace SG
         {
             SG_HandPose handPose = new SG_HandPose(iPose); //convert this into Unity Notation
             //and add the position / rotation of the wrist-taken from Unity.
-            this.GetWristLocation(out handPose.wristPosition, out handPose.wristRotation);
+
+            //Vector3 nWristPos; Quaternion nWristRot; //'normal' location from the API
+            this.GetWristLocation(out handPose.wristPosition, out handPose.wristRotation); //the same
+
+            //Vector3 posOffset = this.TracksRightHand() ? wristPosCorrection_R : wristPosCorrection_L;
+            //Quaternion rotOffset = this.TracksRightHand() ? wristRotCorrection_R : wristRotCorrection_L;
+
+            //SG.Util.SG_Util.CalculateTargetLocation(nWristPos, nWristRot, posOffset, rotOffset, out handPose.wristPosition, out handPose.wristRotation);
+
             return handPose;
         }
 

@@ -13,15 +13,15 @@ MonoBehaviour:
   m_Name: N2_Connection
   m_EditorClassIdentifier: 
   intendedMotor: 8
-  amplitude: 0.4
+  amplitude: 0.204
   waveformType: 1
   attackTime: 0.1
   sustainTime: 0
   decayTime: 0
   RepeatAmount: 2
   RepeatInfinite: 0
-  startFrequency: 60
-  endFrequency: 60
+  startFrequency: 170
+  endFrequency: 170
   frequencySwitchTime: 0
   frequencySwitchMultiplier: 1
   hapticGeneratorFile: {fileID: 0}

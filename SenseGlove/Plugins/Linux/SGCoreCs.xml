@@ -1100,6 +1100,96 @@
             <param name="single"></param>
             <returns></returns>
         </member>
+        <member name="F:SGCore.Util.SC_ExitCode.E_UNKNOW">
+            <summary> Unknown Exit Code  </summary>
+        </member>
+        <member name="F:SGCore.Util.SC_ExitCode.E_CO_DESTRUCTOR">
+            <summary> Exited because the Connection was destructed. </summary>
+        </member>
+        <member name="F:SGCore.Util.SC_ExitCode.E_CO_OPEN_ERROR">
+            <summary> Exited because there was an error while opening. </summary>
+        </member>
+        <member name="F:SGCore.Util.SC_ExitCode.E_CO_SEND_ERROR">
+            <summary> Exited because there was an error while sending. </summary>
+        </member>
+        <member name="F:SGCore.Util.SC_ExitCode.E_CO_THREAD_ENDED">
+            <summary> Exited because the unmanaged thread of this connection has ended. </summary>
+        </member>
+        <member name="F:SGCore.Util.SC_ExitCode.E_DS_NOT_SGDEVICE">
+            <summary> Exited because the DeviceScanner does not think this is a Sense Glove Device </summary>
+        </member>
+        <member name="F:SGCore.Util.SC_ExitCode.E_DS_NOT_OPENED">
+            <summary> Exited because there was an error in opening the port. </summary>
+        </member>
+        <member name="F:SGCore.Util.SC_ExitCode.E_DS_PORTGONE">
+            <summary> Exited because this port is no longer connected to the system. </summary>
+        </member>
+        <member name="F:SGCore.Util.SC_ExitCode.E_DS_ENDCONNECTS">
+            <summary> Exited because the DeviceScanner is cleaning up </summary>
+        </member>
+        <member name="F:SGCore.Util.SC_ExitCode.E_DS_IDLE_DEVICE">
+            <summary> Exited because this SenseGlove device is not yet ready. Tryign again later. </summary>
+        </member>
+        <member name="F:SGCore.Util.SC_ExitCode.E_DS_NO_CONST">
+            <summary> Exited because this SenseGlove device is not yet ready. Tryign again later. </summary>
+        </member>
+        <member name="F:SGCore.Util.SC_ExitCode.E_SG_RECONNECT">
+            <summary> Exited because the SGDevice is being reconnected with another connection. </summary>
+        </member>
+        <member name="F:SGCore.Util.SC_ExitCode.E_SG_DESTRUCTOR">
+            <summary> Exited because the parent SGDevice is being cleaned up. </summary>
+        </member>
+        <member name="F:SGCore.Util.SC_ExitCode.E_SG_RESET_REQUEST">
+            <summary> The device has requested a reset. </summary>
+        </member>
+        <member name="F:SGCore.Util.SC_ExitCode.E_SG_NO_PACKETS">
+            <summary> No packets have been received for the longest time. </summary>
+        </member>
+        <member name="F:SGCore.Util.SC_ExitCode.E_CT_DESTRUCTOR">
+            <summary> Connection Test Destructor </summary>
+        </member>
+        <member name="F:SGCore.Util.SC_ExitCode.E_CT_EXITCHECK">
+            <summary> Connection Test Thread Exit </summary>
+        </member>
+        <member name="F:SGCore.Util.SC_TestState.TS_UNKNOWN">
+            <summary> Undefined Testing State </summary>
+        </member>
+        <member name="F:SGCore.Util.SC_TestState.TS_CREATED_NOTSTARTED">
+            <summary> We've created a testing state </summary>
+        </member>
+        <member name="F:SGCore.Util.SC_TestState.TS_ENTERED_THREAD">
+            <summary> We've entered the the testing thread </summary>
+        </member>
+        <member name="F:SGCore.Util.SC_TestState.TS_ATTEMPTING_CONNECTION">
+            <summary> I'm Attempting a connection </summary>
+        </member>
+        <member name="F:SGCore.Util.SC_TestState.TS_CONNECTED">
+            <summary> Succesfully connected </summary>
+        </member>
+        <member name="F:SGCore.Util.SC_TestState.TS_AWAITING_NEXT_ATTEMPT">
+            <summary> Awaiting the next connection attempt. </summary>
+        </member>
+        <member name="F:SGCore.Util.SC_TestState.TS_CONST_ERROR">
+            <summary> Constants Error. Need to try again. </summary>
+        </member>
+        <member name="F:SGCore.Util.SC_TestState.TS_NEW_SGDEVICE">
+            <summary> YAY </summary>
+        </member>
+        <member name="F:SGCore.Util.SC_TestState.TS_EXISTING_SGDEVICE">
+            <summary> Yay 2 </summary>
+        </member>
+        <member name="F:SGCore.Util.SC_TestState.TS_REACHED_ATTEMPT_LIMIT">
+            <summary> We have reached the limit of the amount of times we can connect to this device, and have stopped. </summary>
+        </member>
+        <member name="F:SGCore.Util.SC_TestState.TS_THREAD_ERROR">
+            <summary> Critical Error, we must stop. </summary>
+        </member>
+        <member name="F:SGCore.Util.SC_TestState.TS_NOTSGDEVICE">
+            <summary> This was not a SenseGlove Device, so we have stopped the tester. </summary>
+        </member>
+        <member name="F:SGCore.Util.SC_TestState.TS_IDLING">
+            <summary> If we've failed to connect to a BTSerial too many times, we enter an idling state. Checks the release variable every X ms to see if we're allowed to try again...  </summary>
+        </member>
         <member name="T:SGCore.Util.FileIO">
             <summary> Ensures that .txt files are properly handled by Unity. </summary>
         </member>
@@ -1975,6 +2065,73 @@
             <param name="clampValues"> If true, any smoothed output pose cannot 'extend' beyond the latest (predicted) values. </param>
             <returns></returns>
         </member>
+        <member name="T:SGCore.FirmwareCodes">
+            <summary> One of the fingers on the hand </summary>
+        </member>
+        <member name="F:SGCore.FirmwareCodes.Unknown">
+            <summary> Unknown Exit Code  </summary>
+        </member>
+        <member name="F:SGCore.FirmwareCodes.StartupInitialized">
+            <summary> Successfully Initialized a worker thread to upload Firmware. Exuberance! </summary>
+        </member>
+        <member name="F:SGCore.FirmwareCodes.UploadCompleted">
+            <summary> Successfully uploaded firmware, yay! </summary>
+        </member>
+        <member name="F:SGCore.FirmwareCodes.SGConnectException">
+            <summary> An exception has occured, but SGConnect has caught it. Your code is safe. But check your logs! </summary>
+        </member>
+        <member name="F:SGCore.FirmwareCodes.NotHostingProcess">
+            <summary> You're calling upload firmware, but you're not the one hosting the process... </summary>
+        </member>
+        <member name="F:SGCore.FirmwareCodes.InvalidDeviceIndex">
+            <summary> No device with this index exists. You may have called this after a SenseCom crash! </summary>
+        </member>
+        <member name="F:SGCore.FirmwareCodes.UploadInProgress">
+            <summary> Firmware is already in the process of being uploaded! </summary>
+        </member>
+        <member name="F:SGCore.FirmwareCodes.DeviceNULL">
+            <summary> This Device is Null for some reason. This should not happend by should be chekced for regardless </summary>
+        </member>
+        <member name="F:SGCore.FirmwareCodes.DeviceNotConnected">
+            <summary> This device is already connected! </summary>
+        </member>
+        <!-- Badly formed XML comment ignored for member "F:SGCore.FirmwareCodes.InvalidChunkSize" -->
+        <member name="F:SGCore.FirmwareCodes.EmptyPath">
+            <summary> path is empty! </summary>
+        </member>
+        <member name="F:SGCore.FirmwareCodes.UnsupportedFileType">
+            <summary> It;s now a .bin file </summary>
+        </member>
+        <member name="F:SGCore.FirmwareCodes.StartUploadException">
+            <summary> An exception occured but we were able to catch it in the Startup phase. Check your logs. </summary>
+        </member>
+        <member name="F:SGCore.FirmwareCodes.NoFileExists">
+            <summary> The file could not be found </summary>
+        </member>
+        <member name="F:SGCore.FirmwareCodes.FileEmpty">
+            <summary> Fiel path is empty </summary>
+        </member>
+        <member name="F:SGCore.FirmwareCodes.ErrorReadingFile">
+            <summary> An error occured while reading the file </summary>
+        </member>
+        <member name="F:SGCore.FirmwareCodes.InitialCommandTimeout">
+            <summary> The initial command timed out. Could not verify that the SG has received it! </summary>
+        </member>
+        <member name="F:SGCore.FirmwareCodes.InitialCommandError">
+            <summary> Error processing initial command. Don't worry, no data has been exchanged yet. But we might need a restart. </summary>
+        </member>
+        <member name="F:SGCore.FirmwareCodes.ChunkError">
+            <summary> There was an error sending over some data at one point... </summary>
+        </member>
+        <!-- Badly formed XML comment ignored for member "F:SGCore.FirmwareCodes.FinalConfimrationError" -->
+        <!-- Badly formed XML comment ignored for member "F:SGCore.FirmwareCodes.DisconnectedDuringUpload" -->
+        <member name="F:SGCore.FirmwareCodes.UploadThreadException">
+            <summary> An exception occured but we were able to catch it in the worker thread. Check your logs. </summary>
+        </member>
+        <member name="F:SGCore.FirmwareCodes.NotSupportedInBuild">
+            <summary> This is not supported in the current build of SGConnect, for this platform. </summary>
+        </member>
+        <!-- Badly formed XML comment ignored for member "F:SGCore.FirmwareCodes.NoConstantsReceived" -->
         <member name="T:SGCore.HapticChannelType">
             <summary> Different types of Haptic Channels - with different behaviours </summary>
         </member>
@@ -2348,6 +2505,13 @@
         <member name="M:SGCore.Nova.Nova2Glove.GetHardwareVersion">
             <summary> Get the hardware sub-version of this Nova Glove (v1.1, v1.2 etc). </summary>
             <returns></returns>
+        </member>
+        <member name="M:SGCore.Nova.Nova2Glove.FirmwareString">
+            <summary> Returns the Firmware String of this device. Includes odd firmware notations. </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Nova.Nova2Glove.CheckFirmwareVersion">
+            <summary> check if the firmware version of this glove has updated </summary>
         </member>
         <member name="M:SGCore.Nova.Nova2Glove.ToString">
             <summary>  </summary>
@@ -2931,6 +3095,10 @@
         </member>
         <member name="M:SGCore.Nova.NovaGlove.GetDeviceType">
             <summary> Return the SGCore deviceType wihtout having to cast. Used to deterime which icons to show, etc. </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Nova.NovaGlove.FirmwareString">
+            <summary> Returns the Firmware String of this device. Includes odd firmware notations. </summary>
             <returns></returns>
         </member>
         <member name="M:SGCore.Nova.NovaGlove.HasBattery">
@@ -4347,6 +4515,10 @@
         <member name="P:SGCore.DeviceModel.SubFirmwareVer">
             <summary> Sub firmware version runnning on the device's microcontroller (as v4.12, this is the .12) </summary>
         </member>
+        <member name="P:SGCore.DeviceModel.FirmwareString">
+            <summary> Returns the (raw) firmware string stored on this device. Includes odd characters like 1.6.2.1.1.1a.gggg  </summary>
+            <returns></returns>
+        </member>
         <member name="M:SGCore.DeviceModel.ParseFunctions(System.Int32,System.Int32)">
             <summary> Convert an integer into an array of functions. </summary>
             <param name="value"></param>
@@ -4704,6 +4876,10 @@
             <param name="glovePos">The 3D Position of the glove, in mm, relative to your origin</param>
             <param name="gloveRot">The 3D Rotation of the glove, relative to your origin</param>
         </member>
+        <member name="M:SGCore.HapticGlove.IsCompatibleWith(SGCore.PosTrackingHardware)">
+            <summary> Returns true if this device is compatible with the selected trackingHardware. E.g. We have offsets available. </summary>
+            <param name="trackingHardware"></param>
+        </member>
         <member name="T:SGCore.SenseCom">
             <summary> SenseCom application interface </summary>
         </member>
@@ -4892,6 +5068,21 @@
             <param name="pidVidContains"></param>
             <returns></returns>
         </member>
+        <member name="M:SGCore.SGConnect.I_OTAFirmwareUpload(System.Int32,System.String,System.Int32)">
+            <summary>  </summary>
+            <param name="deviceIndex"></param>
+            <param name="fwFilePath"></param>
+            <param name="chunkSize"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.SGConnect.I_GetFirmwareProgress">
+            <summary> Returns frimware progess -1 or 0 .. 100 </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.SGConnect.I_GetLastFirmwareResult">
+            <summary> Returns last FW resullt - if one exists </summary>
+            <returns></returns>
+        </member>
         <member name="M:SGCore.SGConnect.InitCommunications">
             <summary>  Returns 1 if the communications were initialized of, 0 if this wasn't possible, -1 if the dll is missing. </summary>
             <returns></returns>
@@ -4945,6 +5136,21 @@
         <member name="M:SGCore.SGConnect.RemoveFromSerialWhiteList(System.String)">
             <summary> Add a string to the PID / VID whitelist. This is for Windows / Linux Purposes. Returns true if it was indeed added </summary>
             <param name="pidVidContains"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.SGConnect.OTAFirmwareUpload(System.Int32,System.String,System.Int32)">
+            <summary> Attempt a firmware upload - the file will be checked. </summary>
+            <param name="deviceIndex"></param>
+            <param name="fwFilePath"></param>
+            <param name="chunkSize"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.SGConnect.GetFirmwareProgress">
+            <summary> -2 = broken, -1 = no upload, 0 -- 100 = progress. </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.SGConnect.GetLastFirmwareResult">
+            <summary> 12 -- success. Anything else ==  wrong :O </summary>
             <returns></returns>
         </member>
         <member name="T:SGCore.Library">
@@ -5024,6 +5230,9 @@
         </member>
         <member name="M:SGCore.SGDevice.GetSubFirmwareVersion">
             <summary> Retrieve this device's sub firmware version. v4.12 returns 12. </summary>
+        </member>
+        <member name="M:SGCore.SGDevice.CheckFirmwareVersion">
+            <summary> Check if the Firmware version of this glove has been updated, and if so, apply it to this glove. </summary>
         </member>
         <member name="M:SGCore.SGDevice.FirmwareString">
             <summary> Retreive the Device's firmware as a string. Ex. "v4.7" </summary>

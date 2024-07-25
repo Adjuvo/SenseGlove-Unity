@@ -174,15 +174,32 @@ namespace SG.Examples
 					if (this.fingerVibration.Length > 2) { this.fingerVibration[2].gameObject.SetActive(false); }
 					if (this.fingerVibration.Length > 3) { this.fingerVibration[3].gameObject.SetActive(false); }
 					if (this.fingerVibration.Length > 4) { this.fingerVibration[4].gameObject.SetActive(false); }
-                }
+
+					titleText.text = "Connected to " + hapticGlove.GetDeviceID() + " running firmware "
+						+ hapticGlove.FirmwareString();
+				}
 				else if (hapticGlove.GetDeviceType() == SGCore.DeviceType.SENSEGLOVE)
                 {
 					this.thumperVibration.gameObject.SetActive(false);
 					this.SGThumperVibration.SetActive(true);
+
+					titleText.text = "Connected to " + hapticGlove.GetDeviceID() + " running firmware "
+						+ hapticGlove.FirmwareString();
                 }
+				else if (hapticGlove.GetDeviceType() == SGCore.DeviceType.NOVA_2_GLOVE)
+                {
+					for (int i=0; i<this.fingerFFB.Length; i++)
+						this.fingerFFB[i].gameObject.SetActive(false);
+
+					for (int i = 0; i < this.fingerVibration.Length; i++)
+						this.fingerVibration[i].gameObject.SetActive(false);
+
+					thumperVibration.gameObject.SetActive(false);
+
+					titleText.text = "ERROR: This example is meant for Nova 1.0 and Dk1 Exoskeleton Gloves. You can find a more comprehevsive Nova 2.0 Diagnostics inside the Examples folder; 14_Nova2_Diagnostics";
+				}
             }
-			titleText.text = "Connected to " + hapticGlove.GetDeviceID() + " running firmware v"
-				+ hapticGlove.GetFirmwareVersion() + "." + hapticGlove.GetSubFirmwareVersion();
+
 
 			//Hardware
 			this.CalibrateIMU();
@@ -316,12 +333,20 @@ namespace SG.Examples
             {
 				if (hapticGlove != null)
 				{
+					string fw = hapticGlove.FirmwareString();
+					if (fw.Length > 0 && fw[0] != 'v') { fw = 'v' + fw; }
 					if (hapticGlove.IsConnected())
 					{
-						titleText.text = "Connected to " + hapticGlove.GetDeviceID() + " running firmware v"
-							+ hapticGlove.GetFirmwareVersion() + "." + hapticGlove.GetSubFirmwareVersion() + "\r\n"
-							+ "Receiving " + hapticGlove.PacketsPerSecondReceived() + " packets/s";
-
+						if (hapticGlove.GetDeviceType() == SGCore.DeviceType.NOVA_2_GLOVE)
+						{
+							titleText.text = "ERROR: This example is meant for Nova 1.0 and Dk1 Exoskeleton Gloves. You can find a more comprehevsive Nova 2.0 Diagnostics inside the Examples folder; 14_Nova2_Diagnostics";
+						}
+						else
+						{
+							titleText.text = "Connected to " + hapticGlove.GetDeviceID() + " running firmware "
+								+ fw + "\r\n"
+								+ "Receiving " + hapticGlove.PacketsPerSecondReceived() + " packets/s";
+						}
 
 						//collect ffb and send.
 						float[] ffb = new float[this.fingerFFB.Length];
