@@ -61,7 +61,7 @@ namespace SG
             get
             {
                 CheckDevices();
-                return activeDeviceIndex > -1 ? trackingDevices[activeDeviceIndex] : null;
+                return activeDeviceIndex > -1 && activeDeviceIndex < trackingDevices.Count ?  trackingDevices[activeDeviceIndex] : null;
             }
         }
 
@@ -71,7 +71,7 @@ namespace SG
             get
             {
                 CheckDevices();
-                return activeDeviceIndex > -1 ? feedbackDevices[activeDeviceIndex] : null;
+                return activeDeviceIndex > -1 && activeDeviceIndex < feedbackDevices.Count ? feedbackDevices[activeDeviceIndex] : null;
             }
         }
 
@@ -447,12 +447,16 @@ namespace SG
         }
 
 
+#pragma warning disable CS0618 // Type or member is obsolete
         public virtual void SendLegacyWaveform(SG_Waveform waveform)
+#pragma warning restore CS0618 // Type or member is obsolete
         {
             this.SendLegacyWaveform(waveform, waveform.amplitude, waveform.duration_s, waveform.intendedLocation);
         }
 
+#pragma warning disable CS0618 // Type or member is obsolete
         public virtual void SendLegacyWaveform(SG_Waveform waveform, float amplitude, float duration, VibrationLocation location)
+#pragma warning restore CS0618 // Type or member is obsolete
         {
             if (CurrentHaptics != null)
             {

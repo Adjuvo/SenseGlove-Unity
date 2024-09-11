@@ -10,7 +10,9 @@ namespace SG.Examples
 		/// <summary> The glove to send the virbtation to </summary>
 		public SG_HapticGlove glove;
 		/// <summary> The WaveForm to send to the glove(s). </summary>
+#pragma warning disable CS0618 // Type or member is obsolete
 		public SG_Waveform waveForm;
+#pragma warning restore CS0618 // Type or member is obsolete
 
 		/// <summary> Optional instruction elements </summary>
 		public UnityEngine.UI.Text instructions;

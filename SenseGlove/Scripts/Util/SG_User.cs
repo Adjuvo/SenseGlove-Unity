@@ -24,9 +24,6 @@ namespace SG
         /// <summary> Optional component to have the user assign the correct variables of a VR headset </summary>
         public SG_XR_Rig vrRig;
 
-        /// <summary> Optional component that automatically detects vr headsets. </summary>
-        public SG_XR_Setup headsetDetection;
-
         /// <summary> Whether or nog we should still be checking for VR assets.  </summary>
         protected bool vrInit = true;
 
@@ -143,60 +140,18 @@ namespace SG
         /// <summary> Swaps the trackedObjects of two TrackedHands. </summary>
         public void SwapHands()
         {
-            if (leftGlove != null && rightGlove != null)
-            {
-                leftGlove.SwapTracking(rightGlove); //swaps around the tracked objects (only relevant when using said tracking method, of course.
-            }
-            SG_XR_Devices.SwitchHands(); //will fire SG_XR_Devices.
+            //if (leftGlove != null && rightGlove != null)
+            //{
+            //    leftGlove.SwapTracking(rightGlove); //swaps around the tracked objects (only relevant when using said tracking method, of course.
+            //}
+            //SG_XR_Devices.SwitchHands(); //will fire SG_XR_Devices.
+            SG_HandTracking.HandTrackingSwapped = !SG_HandTracking.HandTrackingSwapped; //invert
         }
 
         private void SG_XR_Devices_HandsAreSwapped(object sender, System.EventArgs e)
         {
             UpdateVisuals(true);
         }
-
-
-
-        /// <summary> Assign a VR headset to this user, which also assignes tracking parameters to both hands. </summary>
-        /// <param name="detectedVRSet"></param>
-        public void AssignVRSet(SG_XR_Rig detectedVRSet)
-        {
-            if (vrInit)
-            {
-                vrInit = false; //no longer need to initilaize
-                vrRig = detectedVRSet;
-                Debug.Log("Assgined " + detectedVRSet.name + " to the SenseGlove setup");
-
-                if (leftGlove != null)
-                {
-                    leftGlove.origin = vrRig.rigRoot.transform;
-                    leftGlove.SetTrackingHardware(vrRig.leftHandReference, vrRig.hardwareFamily);
-                }
-                if (rightGlove != null)
-                {
-                    rightGlove.origin = vrRig.rigRoot.transform;
-                    rightGlove.SetTrackingHardware(vrRig.rightHandReference, vrRig.hardwareFamily);
-                }
-
-                //Swap Tracking Refences if needed
-                bool swappedBefore = SG_XR_Devices.HandsSwitched;
-                if (swappedBefore)
-                {
-                    if (leftGlove != null && rightGlove != null) //swap the trackedobjects in case we're using the older methods.
-                    {
-                        leftGlove.SwapTracking(rightGlove); //swaps around the tracked objects (only relevant when using said tracking method, of course.
-                    }
-                }
-                UpdateVisuals(true);
-            }
-        }
-
-
-
-
-
-
-
 
         /// <summary> Based on our state(s) [controllers found, devices found, calibration states], udeterime which model(s) are shown and which are hidden. </summary>
         public void UpdateVisuals(bool forceUpdate)
@@ -234,23 +189,16 @@ namespace SG
 
         void OnEnable()
         {
-            if (this.headsetDetection != null)
-            {
-                this.headsetDetection.vrSetDetected.AddListener(AssignVRSet);
-            }
             SG_XR_Devices.HandsAreSwapped += SG_XR_Devices_HandsAreSwapped;
         }
 
         void OnDisable()
         {
-            if (this.headsetDetection != null)
-            {
-                this.headsetDetection.vrSetDetected.RemoveListener(AssignVRSet);
-            }
             SG_XR_Devices.HandsAreSwapped -= SG_XR_Devices_HandsAreSwapped;
         }
 
 
+        
 
         // Use this for initialization
         void Awake()
@@ -271,24 +219,14 @@ namespace SG
             }
             this.rightGlove = CheckHapticGlove(this.rightHand);
             if (rightGlove != null) { rightGlove.connectsTo = HandSide.RightHand; }
-
-            if (this.vrRig != null || this.headsetDetection != null)
-            {   //leave these alone unless we're using is for checking headsets
-                RightHandEnabled = false;
-                LeftHandEnabled = false;
-            }
         }
 
         void Start()
         {
             // Scan for VRRigs in case you load this User into an existing scene.
-            if (this.vrRig == null && headsetDetection == null)
-            {   // nothing's been assigned, so let's try
-                this.headsetDetection = GameObject.FindObjectOfType<SG_XR_Setup>();
-                if (headsetDetection == null) //still null
-                {
-                    this.vrRig = GameObject.FindObjectOfType<SG_XR_Rig>();
-                }
+            if (this.vrRig == null)
+            {
+                this.vrRig = GameObject.FindObjectOfType<SG_XR_Rig>();
             }
             //ignore collisions between perticular colliders, as determined by TrackedHand.
             if (this.leftHand != null && this.rightHand != null)
@@ -301,11 +239,6 @@ namespace SG
         // Update is called once per frame
         void Update()
         {
-            if (vrInit && vrRig != null) //if at any point we assing one
-            {
-                AssignVRSet(vrRig);
-            }
-
             if (timer_hwChecks <= hwCheckTime)
             {
                 timer_hwChecks += Time.deltaTime;

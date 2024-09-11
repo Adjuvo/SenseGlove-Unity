@@ -53,7 +53,7 @@ namespace SG
 
 #if UNITY_2019_4_OR_NEWER
         /// <summary> The Tracking type that we're using to determine (controller) locations. Required to correct all these standards back to their native tracking method. </summary>
-        public enum TrackingType
+        public enum TrackingPluginType
         {
             /// <summary> Not (yet) sure which Tracking method is used... </summary>
             Unknown,
@@ -64,6 +64,9 @@ namespace SG
             /// <summary> We're using OpenXR, which does whatever it wants. </summary>
             OpenXR
         }
+
+
+
 
         /// <summary> Class to contain an Input Device, along with any accessors / functions we might require </summary>
         /// <remarks> I can also null this class. </remarks>
@@ -156,7 +159,7 @@ namespace SG
 
         private static SG_XR_LinkedDevice headTracking = null;
         /// <summary> In which way UnityXR is accessing the tracking references for the left and the right hand. </summary>
-        private static TrackingType trackingMethod = TrackingType.Unknown;
+        private static TrackingPluginType trackingMethod = TrackingPluginType.Unknown;
         private static SG_XR_HandReference leftHandTracking = null, rightHandTracking = null;
 
 
@@ -290,6 +293,28 @@ namespace SG
                     others.Add(devices[i]);
                 }
             }
+        }
+
+        public static TrackingPluginType GetTrackingPluginType()
+        {
+            return TrackingPluginType.Unknown;
+        }
+
+
+
+
+
+
+        public static string ListXRDevices()
+        {
+            List<UnityEngine.XR.InputDevice> xrDevices = new List<InputDevice>();
+            UnityEngine.XR.InputDevices.GetDevices(xrDevices);
+            string report = "UnityEngine.XR.InputDevices.GetDevices has found " + xrDevices.Count + " device(s):";
+            foreach (UnityEngine.XR.InputDevice device in xrDevices)
+            {
+                report += "\nName: \"" + device.name + "\", Manufacturer: \"" + device.manufacturer + "\", Characteristics: \"" + device.characteristics.ToString() + "\"";
+            }
+            return report;
         }
 
         //----------------------------------------------------------------------------------------------------------------------------
@@ -451,15 +476,15 @@ namespace SG
                     string hmdName = xrHMD.name.ToLower();
                     if (hmdName.Contains("openxr"))
                     {
-                        trackingMethod = TrackingType.OpenXR;
+                        trackingMethod = TrackingPluginType.OpenXR;
                     }
                     else
                     {
-                        trackingMethod = TrackingType.Native;
+                        trackingMethod = TrackingPluginType.Native;
                     }
                     //Debug.Log("Linked SG_XR_Devices Head Tracking to " + Report(xrHMD) + ", Concluded we're using " + trackingMethod.ToString() + " tracking");
 #if UNITY_EDITOR
-                    if (trackingMethod == TrackingType.OpenXR)
+                    if (trackingMethod == TrackingPluginType.OpenXR)
                     {
                         Debug.LogWarning("It looks like you're using OpenXR to manage your devices. Unfortunately, that plugin makes it difficult for " +
                             "SenseGlove to check which device you're using. To prevent this from happening, override your Trackign Hardware in any SG_HapticGlove(s) you're using.");
@@ -545,7 +570,7 @@ namespace SG
         //----------------------------------------------------------------------------------------------------------------------------
         // SG Plugin Functionality
 
-        public static SGCore.PosTrackingHardware IdentifyTrackingHardware(string hmdName, string deviceName, string manufacturerName, TrackingType trackingAPI)
+        public static SGCore.PosTrackingHardware IdentifyTrackingHardware(string hmdName, string deviceName, string manufacturerName, TrackingPluginType trackingAPI)
         {
             if (deviceName.Length > 0)
             {
@@ -646,7 +671,47 @@ namespace SG
             return false;
         }
 
+
 #endif
+
+        /// <summary> Will return a specific hardware OR Unknown (not yet determined) or Custom (checked, but not part of our list) </summary>
+        /// <returns></returns>
+        public static TrackingHardware GetDeterminedTrackingHardware()
+        {
+            if (GetHandDevice(true, out SG_XR_HandReference handRefR))
+            {
+                return SG.Util.SG_Conversions.ToUnityTracking(handRefR.Hardware);
+            }
+            else if (GetHandDevice(false, out SG_XR_HandReference handRefL))
+            {
+                return SG.Util.SG_Conversions.ToUnityTracking(handRefL.Hardware);
+            }
+            return TrackingHardware.Unknown;
+        }
+
+
+        /// <summary> Retireve the location of our Tracking Reference. </summary>
+        public static bool GetTrackingDeviceLocation_InPlayArea(bool rightHand, out Vector3 position, out Quaternion rotation)
+        {
+            return GetTrackingReferenceLocation(rightHand, out position, out rotation);
+        }
+
+
+        public static bool GetTrackingDeviceLocation(bool rightHand, Transform xrRoot, out Vector3 position, out Quaternion rotation)
+        {
+            if (xrRoot == null)
+            {
+                return GetTrackingDeviceLocation_InPlayArea(rightHand, out position, out rotation);
+            }
+            Vector3 refPos; Quaternion refRot;
+            bool got = GetTrackingDeviceLocation_InPlayArea(rightHand, out refPos, out refRot);
+            rotation = xrRoot.rotation * refRot;
+            position = xrRoot.position + (xrRoot.rotation * refPos);
+            return got;
+        }
+
+
+
 
         /// <summary> Returns true if there is a valid headset connected that is on the user' head. </summary>
         /// <returns></returns>

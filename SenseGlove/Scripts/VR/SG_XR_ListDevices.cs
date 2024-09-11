@@ -145,10 +145,10 @@ public class SG_XR_ListDevices : MonoBehaviour
 
     private static string TrackingString(SG.SG_HapticGlove glove)
     {
-        if (glove != null)
-        {
-            return glove.wristTrackingMethod.ToString() + "/" + glove.wristTrackingOffsets.ToString();
-        }
+        //if (glove != null)
+        //{
+        //    return glove.wristTrackingMethod.ToString() + "/" + glove.wristTrackingOffsets.ToString();
+        //}
         return "N\\A";
     }
 

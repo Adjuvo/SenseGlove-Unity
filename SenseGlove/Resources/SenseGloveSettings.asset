@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 714e020d4060b264eabc4229c92cef95, type: 3}
+  m_Name: SenseGloveSettings
+  m_EditorClassIdentifier: 
+  SGCommunications: 0
+  ForceBluetoothPermissionsDialog: 0
+  WristTrackingMethod: 0
+  GlobalWristTrackingOffsets: 2
+  customPosOffsetRight: {x: 0, y: 0, z: 0}
+  customRotOffsetRight: {x: 0, y: 0, z: 0}
+  customPosOffsetLeft: {x: 0, y: 0, z: 0}
+  customRotOffsetLeft: {x: 0, y: 0, z: 0}
+  leftQuat: 1
+  rightQuat: 0
+  customLeftQuat: {x: 0, y: 0, z: 0, w: 1}
+  customRightQuat: {x: 0, y: 0, z: 0, w: 1}

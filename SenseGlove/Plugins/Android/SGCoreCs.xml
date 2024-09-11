@@ -2123,6 +2123,9 @@
         <member name="F:SGCore.FirmwareCodes.ChunkError">
             <summary> There was an error sending over some data at one point... </summary>
         </member>
+        <member name="F:SGCore.FirmwareCodes.ChunkTimeout">
+            <summary> We timed out while waiting for a response on our next chunk... </summary>
+        </member>
         <!-- Badly formed XML comment ignored for member "F:SGCore.FirmwareCodes.FinalConfimrationError" -->
         <!-- Badly formed XML comment ignored for member "F:SGCore.FirmwareCodes.DisconnectedDuringUpload" -->
         <member name="F:SGCore.FirmwareCodes.UploadThreadException">
@@ -2215,6 +2218,21 @@
         <member name="T:SGCore.HandLayer">
             <summary> A way to access all sorts of Hand Tracking and -Haptics without needing to cache any device instances.
             Use this layer if you don't care where a HandPose is coming from, and are fine with calling generic haptic functions. </summary>
+        </member>
+        <member name="F:SGCore.HandLayer.defaultLeftHandModel">
+            <summary> Hand Model for the left hand that will be used when none is passed to the kinematics </summary>
+        </member>
+        <member name="F:SGCore.HandLayer.defaultRightHandModel">
+            <summary> Hand Model for the righ that will be used when none is passed to the kinematics </summary>
+        </member>
+        <member name="M:SGCore.HandLayer.GetDefaultHandModel(System.Boolean)">
+            <summary> Retrieve a copy of the default Hand Model used to animate glove(s). </summary>
+            <param name="rightHand"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.HandLayer.SetDefaultHandModel(SGCore.Kinematics.BasicHandModel)">
+            <summary> Set a new Hand Model to use as default when none is passed in GetHandPose function. </summary>
+            <param name="newModel"></param>
         </member>
         <member name="M:SGCore.HandLayer.DeviceConnected(System.Boolean)">
             <summary> Returns true if there is a HapticGlove Device connected that corresponds to the chosen hand. </summary>
@@ -2994,6 +3012,15 @@
             <summary> Encodes the values of a CustomWaveform into a command that can be sent to the Nova Glove. </summary>
             <param name="waveform"></param>
             <param name="motor"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.Nova.Nova_HapticEncoder.ToNova2Command(SGCore.CustomWaveform,System.Int32,System.Int32[])">
+            <summary>
+            
+            </summary>
+            <param name="waveform"></param>
+            <param name="motor"></param>
+            <param name="fwVersion"></param>
             <returns></returns>
         </member>
         <member name="M:SGCore.Nova.Nova_HapticEncoder.DecodeWaveform(System.String,SGCore.CustomWaveform@,System.Int32@)">
@@ -4219,6 +4246,12 @@
         <member name="F:SGCore.CustomWaveform.maxDecayTime">
             <summary> The maximum attack time, in seconds. Used for Encoding. </summary>
         </member>
+        <member name="F:SGCore.CustomWaveform.minPauseTime">
+            <summary> The maximum pause time, in seconds. Used for Encoding. </summary>
+        </member>
+        <member name="F:SGCore.CustomWaveform.maxPauseTime">
+            <summary> The maximum pause time, in seconds. Used for Encoding. </summary>
+        </member>
         <member name="F:SGCore.CustomWaveform.freqRangeMin">
             <summary> Minimum Frequency Range </summary>
         </member>
@@ -4260,6 +4293,9 @@
         </member>
         <member name="P:SGCore.CustomWaveform.DecayTime">
             <summary> Time it takes for the effect to fade out after AttackTime+SuatainTime has passed. Limited to 0.01 - 1s. Set to 0 for instant stop. Linear only </summary>
+        </member>
+        <member name="P:SGCore.CustomWaveform.PauseTime">
+            <summary> Time in between vibration effects (Useful when repeating more than once). </summary>
         </member>
         <member name="P:SGCore.CustomWaveform.FrequencyStart">
             <summary> The Wavefrom Frequency at the start of the wavefrom. Limited between [10 - 500Hz] for Nova Gloves </summary>
@@ -5236,6 +5272,10 @@
         </member>
         <member name="M:SGCore.SGDevice.FirmwareString">
             <summary> Retreive the Device's firmware as a string. Ex. "v4.7" </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.SGDevice.GetFirmwareVersionNumbers">
+            <summary> Used for actual compariason(s). </summary>
             <returns></returns>
         </member>
         <member name="M:SGCore.SGDevice.SetHapticChannels(SGCore.HapticChannelInfo)">

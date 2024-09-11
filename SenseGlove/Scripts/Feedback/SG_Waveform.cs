@@ -4,6 +4,7 @@ namespace SG
 {
 	/// <summary> Create a vibration pattern to send to specific fingers, or the wrist. </summary>
 	[CreateAssetMenu(fileName = "Waveform", menuName = "SenseGlove/Legacy Waveform", order = 1)]
+	[System.Obsolete("This class is deprecated and will be removed soon. Use an SG_CustomWaveform instead.", false)]
 	public class SG_Waveform : ScriptableObject
 	{
 		//--------------------------------------------------------------------------------------------

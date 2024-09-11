@@ -70,12 +70,16 @@ namespace SG
             if (TrackedHand != null) { ((IHandFeedbackDevice)TrackedHand).QueueFFBCmd(values01); }
         }
 
+#pragma warning disable CS0618 // Type or member is obsolete
         public void SendLegacyWaveform(SG_Waveform waveform)
+#pragma warning restore CS0618 // Type or member is obsolete
         {
             this.SendLegacyWaveform(waveform, waveform.amplitude, waveform.duration_s, waveform.intendedLocation);
         }
 
+#pragma warning disable CS0618 // Type or member is obsolete
         public void SendLegacyWaveform(SG_Waveform waveform, float amplitude, float duration, VibrationLocation location)
+#pragma warning restore CS0618 // Type or member is obsolete
         {
             if (TrackedHand != null) { ((IHandFeedbackDevice)TrackedHand).SendLegacyWaveform(waveform, amplitude, duration, location); ; }
         }
@@ -917,12 +921,16 @@ namespace SG
             }
         }
 
+#pragma warning disable CS0618 // Type or member is obsolete
         public void SendLegacyWaveform(SG_Waveform waveform)
+#pragma warning restore CS0618 // Type or member is obsolete
         {
             this.SendLegacyWaveform(waveform, waveform.amplitude, waveform.duration_s, waveform.intendedLocation);
         }
 
+#pragma warning disable CS0618 // Type or member is obsolete
         public void SendLegacyWaveform(SG_Waveform waveform, float amplitude, float duration, VibrationLocation location)
+#pragma warning restore CS0618 // Type or member is obsolete
         {
             for (int i = 0; i < this.grabbedBy.Count; i++)
             {

@@ -1,7 +1,86 @@
 # Changelog
 All notable changes to the SenseGlove Prefabs will be documented in this file.
 
-You are currently using version v2.6.0
+You are currently using version v2.7.0
+
+## [v2.7.0] - 2023-09-11
+Wrist Tracking Refactor and Settings Menu
+
+### Added
+- SenseGlove Settings menu; accessible via the menu at the top. This is where you'll access project-wide settings for SenseGlove, including Wrist Offsets and Tracking Source(s), via SenseGlove > Settings.
+- Can now select whether or not an Android "Bluetooth Permissions Dialog" is opened from the simulation. Required on Quest, should not be used on Vive Focus / XR Elite. Setting will be automatically changed based on the offset
+- SG_XR_SceneTrackingLinks: Contains the current Scene's reference to the headset and controller locations. Used by SenseGlove for Wrist Tracking.
+- SG_Core: A replacement for the SG_Connections class that handles communications and is used to access the SenseGlove Settings at runtime. Used to access the SenseGlove Settings at Runtime.
+- SG_HandTracking; A class used to access Hand Tracking for SenseGlove Haptic Gloves using static functions. The SG_HapticGlove now pulls its data from here.
+- SG_XR_Troubleshooting: A Script that checks various project settings and runtime variables and reports anything that might be going wrong in your project.
+- SenseGlove Troubleshooter Prefab: An object you can drop into your scene to run an SG_XR_Troubleshooting
+- SG_XR_Diagnostics scene: Example XR Scene that uses the SenseGlove Troubleshooter Prefab.
+- XR_HandTrackingOnly scene: Scene that showcases the SG_HandTracking functions in XR by displaying omly a wireframe of all joints.
+
+
+### Changed
+- Updates to Internal Hand tracking solvers now allow the thumb to extend much further. Reasonable tracking improvements after proper calibration.
+- Added SG_XR_SceneTrackingLinks to all XR Example Scenes.
+- Added a method to SG_HandPose to retrieve position / rotation data in a single Vector3 / Quaternion array, in either world or local space.
+- Functions related to SG_Waveform are now marked as deprecated.
+- The Origin Prefab now has scale [1, 1, 1], the internal GameObjects are now smaller.
+
+
+### Fixed
+- Bluetooth Permissions dialog being required for all systems, which caused a failure to initialize on the Vive Focus 3 / XR Elite. Now optional under the SenseGlove Settings.
+- A bug in SG_DeviceSelector that could cause an IndexOutOfRangeException trying to send haptics to a device that does not implement IHandFeedbackDevice
+
+
+### Removed
+- Reduntant XR Examples, replaced with SG_XR_Diagnostics and XR_HandTrackingOnly scene.
+- Examples using legacy waveforms a.k.a SG_Waveform.
+
+
+
+## [v2.6.3] - 2023-07-25
+Bugfixes, Quest Pro, Bluetooth Permissions
+
+### Added
+- Quest Pro offsets for Nova 2.0.
+- XR Template Example.
+- Option to 'calibrate' the wrist offsets using SG_TrackedHand: Give it the desired location of the wrist, and it will calculate (additional) offsets to have the hand(s) appear there.
+
+### Changed
+- Added warning(s) when running examples not compatible with Nova 2.0.
+- Added visualization of finger movement limits inside SG_SnapOptions
+- CalibrationVoid's 'Next Scene' is now set to 1 by default.
+
+### Fixed
+- Permission dialog for Bluetooth Devices is now spawned on runtime. When rejected, a message appears in front of the user.
+- Bug in SenseCom where Troubleshoot would bring you to the first glove that was connected, rather than a specific glove.
+- Exceptions in HandLayer example
+
+
+
+## [v2.6.2] - 2023-05-14
+Diagnostics Patch, Doc update, SnapOptions Update
+
+### Changed
+
+- Updated Readme with more links to docs.senseglove.com and Nova 2.0 specific instructions.
+- Replaced outdated images in folder with more up-to-date ones.
+- SG_SnapOptions now allows you to use (a copy of) the 3D Hand Model(s) to determine where the object will snap to when grabbed. Also adds an option to override (individual) finger tracking while the object is being held.
+- SG_Grabable: Can now set the physics body of grabable objects (if they have one). Also added the option to (re)set it's PhysicsBody Defaults: What it will revert to when released.
+
+### Fixed
+- SGEx_Nova2Diagnostics not being included in examples folder.
+- CustomWaveforms using a non-optimal frequency as default value.
+
+
+
+
+## [v2.6.1] - 2023-04-10
+Nova 2.0 Patch
+
+### Fixed
+- Fixes a bug in SGCore back end for Nova 2.0 gloves running firmware version v1.1 or higher.
+- Also adds Task System Scripts (which were already included in package v2.6.0) as .cs files to the repository so we can link to their code.
+
 
 ## [v2.6.0] - 2023-03-22
 Nova 2.0 Update, Calibration and Haptics refactor.

@@ -1,6 +1,5 @@
 //#define CV_ENABLED
 #define HG_CUSTOM_INSPECTOR
-//#define GRAB_WT_FROM_SETTINGS
 
 using SGCore.Kinematics;
 using UnityEngine;
@@ -26,23 +25,6 @@ namespace SG
     /// <summary> Interface for a left- or right handed glove built by SenseGlove. Usually either a SenseGlove DK1 or a Nova Glove. </summary>
     public class SG_HapticGlove : MonoBehaviour, IHandPoseProvider, IHandFeedbackDevice
     {
-        /// <summary> Method to determine a HapticGlove's wrist location, as SenseGlove device do not come with their own. </summary>
-        public enum WristTracking
-        {
-            /// <summary> Use UnityXR's positioning System. Assign an origin value to move the hands with the origin </summary>
-            UnityXR,
-            /// <summary> Use UnityXR's positioning system, but use manual offsets. </summary>
-            UnityXRManualOffsets,
-            /// <summary> Follow a specific transform, with tracking offsets determined by the devices detected via SG_XR_Devices. </summary>
-            FollowObjectAutoOffsets,
-            /// <summary> Follow a specific transform, but using tracking Offsets determined at the start. </summary>
-            FollowObjectManualOffsets,
-            /// <summary> Follow a GameObject without using any offsets. Useful to override any wrist location(s) in example scenes. </summary>
-            FollowObjectNoOffsets,
-            /// <summary> This GameObject's own Transform to determine the wrist rotation / position. Useful when you're using parenting to determine hand location(s). </summary>
-            MyGameObject,
-        }
-
         //--------------------------------------------------------------------------------------------------------
         // Variables
 
@@ -50,17 +32,6 @@ namespace SG
 
         /// <summary> What kind of hand sides this SG_HapitcGlove is allowed to connect to. </summary>
         public HandSide connectsTo = HandSide.RightHand;
-
-        /// <summary> The method by which to determine Wrist Position of this SG_HapticGlove when no Optical Tracking is available. </summary>
-        public WristTracking wristTrackingMethod = WristTracking.UnityXR;
-
-        /// <summary> Optional. When using UnityXR's wrist tracking, the wrist will move relative to this origin. </summary>
-        public Transform origin;
-
-        /// <summary> GameObject controller by a 3rd party tracking script, that is used to take over wrist tracking. </summary>
-        public Transform wristTrackingObj;
-        /// <summary> The hardware family of our 3rd party wrist trackers. Determines wrist offsets. If set to Custom, we will use the offsets recorded during Start(). </summary>
-        public SGCore.PosTrackingHardware wristTrackingOffsets = SGCore.PosTrackingHardware.Custom;
 
         /// <summary> The last Calibration State of this glove </summary>
         public SGCore.HG_CalibrationState LastCalibrationState { get; protected set; }
@@ -134,9 +105,6 @@ namespace SG
         /// <summary> Contains legacy vibration commands for Nova 1.0 and DK1.0 </summary>
         protected LegacyCommand[] legacyFingers = new LegacyCommand[5];
         protected LegacyCommand legacyWrist = null;
-
-
-
 
         //--------------------------------------------------------------------------------------------------------
         // Connection Functions
@@ -219,23 +187,6 @@ namespace SG
             return false;
         }
 
-        public void SwapTracking(SG_HapticGlove otherHand)
-        {
-            if (otherHand != null)
-            {
-                Transform myTrackedObject = this.wristTrackingObj;
-                this.wristTrackingObj = otherHand.wristTrackingObj;
-                otherHand.wristTrackingObj = myTrackedObject;
-            }
-        }
-
-        public void SetTrackingHardware(Transform trackingRefrence, SGCore.PosTrackingHardware hardwareType)
-        {
-            wristTrackingObj = trackingRefrence;
-            wristTrackingOffsets = hardwareType;
-        }
-
-
         /// <summary> Calculates the 3D position of the glove hardware origin. Mostly used in representing a 3D model of the hardware. If you wish to know where the hand is; use GetWristLocation instead. </summary>
         /// <param name="trackedObject"></param>
         /// <param name="hardware"></param>
@@ -260,108 +211,6 @@ namespace SG
             gloveRot = trackedObject.rotation;
             return false;
         }
-
-        /// <summary> Calculate a 3D position of the wrist, based on an existing tracking hardware and its location. </summary>
-        /// <param name="wristPos"></param>
-        /// <param name="wristRot"></param>
-        /// <returns></returns>
-        public bool GetWristLocation(out Vector3 wristPos, out Quaternion wristRot)
-        {
-            if (this.wristTrackingMethod == WristTracking.MyGameObject)
-            {
-                wristPos = this.transform.position;
-                wristRot = this.transform.rotation;
-                return true;
-            }
-            else if (this.wristTrackingMethod == WristTracking.FollowObjectNoOffsets)
-            {
-                wristPos = this.wristTrackingObj != null ? this.wristTrackingObj.position : this.transform.position;
-                wristRot = this.wristTrackingObj != null ? this.wristTrackingObj.rotation : this.transform.rotation;
-                return true;
-            }
-
-            // Validate Offsets
-            if (this.wristTrackingMethod == WristTracking.FollowObjectAutoOffsets || this.wristTrackingMethod == WristTracking.UnityXR)
-            {
-
-#if GRAB_WT_FROM_SETTINGS
-                this.wristTrackingOffsets = SG_Core.Settings.GetInternalTrackerType(this.TracksRightHand()); //grab it from Settings
-#else
-                if (SG_XR_Devices.GetTrackingHardware(this.TracksRightHand(), out SGCore.PosTrackingHardware updatedOffsets)) //grab from SG_XR_Devices
-                {
-                    this.wristTrackingOffsets = updatedOffsets;
-                }
-#endif
-            }
-
-
-            SGCore.PosTrackingHardware offsets = this.wristTrackingOffsets;
-
-            //UnityXR = Whatever Unity returns, but also with the Origin, if any
-            if (this.wristTrackingMethod == WristTracking.UnityXR || wristTrackingMethod == SG_HapticGlove.WristTracking.UnityXRManualOffsets)
-            {
-                Vector3 trackerPos;
-                Quaternion trackerRot;
-                if (SG_XR_Devices.GetTrackingReferenceLocation(this.TracksRightHand(), out trackerPos, out trackerRot))
-                {
-                    //Calculate world position by using the Origin property.
-                    Quaternion worldRot = origin != null ? origin.rotation * trackerRot : trackerRot;
-                    Vector3 worldPos = origin != null ? origin.position + (origin.rotation * trackerPos) : trackerPos;
-                    return GetWristLocation(worldPos, worldRot, offsets, out wristPos, out wristRot);
-                }
-                wristPos = Vector3.zero;
-                wristRot = Quaternion.identity;
-                return false;
-            }
-            // If we get here, we're using either one of the offsets
-            return GetWristLocation(this.wristTrackingObj, offsets, out wristPos, out wristRot);
-        }
-
-        /// <summary> Calculate a 3D position of the wrist, based on an existing tracking hardware and its location. </summary>
-        /// <param name="trackedObject"></param>
-        /// <param name="hardware"></param>
-        /// <param name="wristPos"></param>
-        /// <param name="wristRot"></param>
-        /// <returns></returns>
-        public bool GetWristLocation(Transform trackedObject, SGCore.PosTrackingHardware hardware, out Vector3 wristPos, out Quaternion wristRot)
-        {
-            if (trackedObject == null)
-            {
-                wristPos = this.transform.position;
-                wristRot = this.transform.rotation;
-                return false;
-            }
-            return GetWristLocation(trackedObject.position, trackedObject.rotation, hardware, out wristPos, out wristRot);
-        }
-
-        /// <summary> Calculate a 3D position of the wrist, based on an existing tracking hardware and its location. </summary>
-        /// <param name="trackedObject"></param>
-        /// <param name="hardware"></param>
-        /// <param name="wristPos"></param>
-        /// <param name="wristRot"></param>
-        /// <returns></returns>
-        public virtual bool GetWristLocation(Vector3 trackedObjPos, Quaternion trackedObjRot, SGCore.PosTrackingHardware hardware, out Vector3 wristPos, out Quaternion wristRot)
-        {
-            if (this.lastGlove == null || hardware == SGCore.PosTrackingHardware.Custom)
-            {
-                wristPos = trackedObjPos;
-                wristRot = trackedObjRot;
-                return true;
-            }
-
-            //if we get here, lastGlove is not null. We know what we're dealing with
-            SGCore.Kinematics.Vect3D trackedPos = SG.Util.SG_Conversions.ToPosition(trackedObjPos, true);
-            SGCore.Kinematics.Quat trackedRot = SG.Util.SG_Conversions.ToQuaternion(trackedObjRot);
-
-            SGCore.Kinematics.Vect3D wPos; SGCore.Kinematics.Quat wRot;
-            lastGlove.GetWristLocation(trackedPos, trackedRot, hardware, out wPos, out wRot);
-
-            wristPos = SG.Util.SG_Conversions.ToUnityPosition(wPos);
-            wristRot = SG.Util.SG_Conversions.ToUnityQuaternion(wRot);
-            return true;
-        }
-
-
 
         /// <summary> Updates the LastHandPose if needed. At the end of this function, LastHandModel is known. </summary>
         /// <param name="forceUpdate"></param>
@@ -477,6 +326,7 @@ namespace SG
             {
                 lastHandPose = ToUnityPose(SGCore.HandPose.DefaultIdle(this.TracksRightHand(), this.handDimensions));
             }
+            SG_HandTracking.SetBasicHandModel(handModel);
         }
 
         /// <summary> Retrieve the hand dimensions used for this glove's default  </summary>
@@ -547,16 +397,7 @@ namespace SG
         protected SG_HandPose ToUnityPose(SGCore.HandPose iPose)
         {
             SG_HandPose handPose = new SG_HandPose(iPose); //convert this into Unity Notation
-            //and add the position / rotation of the wrist-taken from Unity.
-
-            //Vector3 nWristPos; Quaternion nWristRot; //'normal' location from the API
-            this.GetWristLocation(out handPose.wristPosition, out handPose.wristRotation); //the same
-
-            //Vector3 posOffset = this.TracksRightHand() ? wristPosCorrection_R : wristPosCorrection_L;
-            //Quaternion rotOffset = this.TracksRightHand() ? wristRotCorrection_R : wristRotCorrection_L;
-
-            //SG.Util.SG_Util.CalculateTargetLocation(nWristPos, nWristRot, posOffset, rotOffset, out handPose.wristPosition, out handPose.wristRotation);
-
+            SG_HandTracking.GetWristLocation(iPose.isRight, out handPose.wristPosition, out handPose.wristRotation); //and add the wrist location from the Tracking Layer...
             return handPose;
         }
 
@@ -723,7 +564,9 @@ namespace SG
 
         /// <summary> Send a Legacy Waveform command that is Supported by Nova 1.0 and SenseGlove DK1 only </summary>
         /// <param name="waveform"></param>
+#pragma warning disable CS0618 // Type or member is obsolete
         public virtual void SendLegacyWaveform(SG_Waveform waveform)
+#pragma warning restore CS0618 // Type or member is obsolete
         {
             SendLegacyWaveform(waveform, waveform.amplitude, waveform.duration_s, waveform.intendedLocation);
         }
@@ -733,7 +576,9 @@ namespace SG
         /// <param name="location"></param>
         /// <param name="amplitude"></param>
         /// <param name="duration"></param>
+#pragma warning disable CS0618 // Type or member is obsolete
         public virtual void SendLegacyWaveform(SG_Waveform waveform, float amplitude, float duration, VibrationLocation location)
+#pragma warning restore CS0618 // Type or member is obsolete
         {
             if (location == VibrationLocation.Unknown || amplitude <= 0.0f || duration <= 0.0f)
             {
@@ -755,26 +600,9 @@ namespace SG
                     legacyWrist = new LegacyWaveform(waveform.amplitude, waveform.duration_s, waveform.waveForm, -Time.deltaTime);
                 }
             }
-            //Convert this from a Monobehaviour class into a class that extends off the Timed Buzz/Waveform Cmd.
-            //if (Util.SG_Util.OneTrue(waveform.FingersArray))
-            //{
-            //    SG_WaveFormCmd iFingerBuzz = new SG_WaveFormCmd(waveform.waveForm, waveform.duration_s, waveform.magnitude, waveform.FingersArray, -Time.deltaTime); // -deltaTime so when we evaluate at the end of this frame, they start at 0s.
-            //    this.hapticStream.AddCmd(iFingerBuzz);
-            //}
-            //if (waveform.wrist && this.DeviceType != SGCore.DeviceType.SENSEGLOVE)
-            //{
-            //    ThumperWaveForm iWristCmd = new ThumperWaveForm(waveform.magnitude, waveform.duration_s, waveform.waveForm, -Time.deltaTime); // -deltaTime so when we evaluate at the end of this frame, they start at 0s.
-            //    this.hapticStream.AddCmd(iWristCmd);
-            //}
         }
 
-        ///// <summary> Send a Thumper command that is defined by a WaveForm to this Glove. </summary>
-        ///// <param name="waveform"></param>
-        //public virtual void SendCmd(ThumperWaveForm waveform)
-        //{
-        //    waveform.elapsedTime = -Time.deltaTime;
-        //    this.hapticStream.AddCmd(waveform);
-        //}
+
 
         /// <summary> Send an impact vibration to this HapitcGlove, along with the location and a vibration impact level 0...1. </summary>
         /// <param name="location"></param>
@@ -835,7 +663,6 @@ namespace SG
                 {
                     SG_CustomWaveform.CallCorrectWaveform(this.lastGlove, customWaveform.GetWaveform(), loc);
                 }
-                //((SGCore.Nova.NovaGlove)this.lastGlove).SendCustomWaveform(customWaveform.GetWaveform(), location);
             }
         }
 
@@ -878,34 +705,6 @@ namespace SG
         /// <summary> Process all haptics that were sent this frame and that are still active. </summary>
         public virtual void UpdateHaptics(float dT)
         {
-            //SG_FFBCmd newFFB; SG_BuzzCmd newBuzz; ThumperCmd newThumper;
-            //if (this.hapticStream.FlushHaptics(dT, this.lastFFBLevels, lastBuzzCmd, lastThumperCmd, out newFFB, out newBuzz, out newThumper)) //processes Hapitcs in queue, and returns true if any of the new effects are different from the last
-            //{
-            //    //Debug.Log(this.name + ": Compiled " + newFFB.ToString() + ", " + newBuzz.ToString() + ", " + newThumper.ToString());
-            //    //I see no reson to update these unless they were different
-            //    this.lastFFBLevels = newFFB;
-            //    this.lastBuzzCmd = newBuzz;
-            //    this.lastThumperCmd = newThumper;
-            //    if (this.lastGlove != null && !this.bypassingHaptics) //we'll process the timing regardless of whether or not we are connected. So this check comes after.
-            //    {
-            //        //actually properly queue the force-feedback.
-            //        for (int f=0; f<5; f++)
-            //        {
-            //            SGCore.Finger finger = (SGCore.Finger)f;
-            //            lastGlove.QueueFFBLevel(finger, lastFFBLevels.GetLevel(f) / 100.0f);
-            //            lastGlove.QueueVibroLevel(finger, lastBuzzCmd.GetLevel(f) / 100.0f);
-            //        }
-            //        if (lastGlove is SGCore.Nova.NovaGlove)
-            //        {
-            //            SGCore.Nova.NovaGlove nova = (SGCore.Nova.NovaGlove)lastGlove;
-            //            float properWrist = this.lastThumperCmd.magnitude / 100.0f; //div 100 because the bettwe magnitue is 0 .. 1
-            //            nova.QueueWristLevel(properWrist);
-            //        }
-
-            //        //this.lastGlove.SendHaptics(newFFB, newBuzz, newThumper); //actually send these.
-            //    }
-            //}
-
             for (int f = 0; f < this.legacyFingers.Length; f++)
             {
                 if (UpdateAndEvaluate(ref legacyFingers[f], dT, out float amplitude))
@@ -927,10 +726,6 @@ namespace SG
             if (this.lastGlove != null)
             {
                 bool sent = this.lastGlove.SendHaptics(); // Shushing everything!
-                //if (sent)
-                //{
-                //    Debug.Log(Time.time + ": Sent Haptics to Glove!");
-                //}
             }
         }
 
@@ -967,12 +762,6 @@ namespace SG
         //--------------------------------------------------------------------------------------------------------
         // Utility Functions 
 
-        ///// <summary> Access the latest FFB level. </summary>
-        //public float[] LastFFBCommand
-        //{
-        //    get { return this.lastFFBLevels; }
-        //}
-
         private void CheckCalibrationState()
         {
             SGCore.HG_CalibrationState newState = SGCore.HandLayer.GetCalibrationState(this.TracksRightHand());
@@ -993,7 +782,7 @@ namespace SG
 
         protected void Start()
         {
-            SG.Util.SG_Connections.SetupConnections();
+            SG_Core.Setup();
             UpdateDeviceType();
             timer_checkHW = hwTimer; //ensures we check it next frame!
         }
@@ -1075,29 +864,6 @@ namespace SG
 
             GUILayout.Label("Connection Settings", UnityEditor.EditorStyles.boldLabel);
             UnityEditor.EditorGUILayout.PropertyField(m_connectsTo, new GUIContent("Connects To", "What kind of hand sides this SG_HapticGlove is allowed to connect to"));
-
-            UnityEditor.EditorGUILayout.Space();
-            GUILayout.Label("Wrist Tracking Settings", UnityEditor.EditorStyles.boldLabel);
-
-            GUIContent l_wristTracking = new GUIContent("Wrist Tracking Method", "The method by which to determine Wrist Position of this SG_HapticGlove when no Optical Tracking is available.");
-            UnityEditor.EditorGUILayout.PropertyField(m_wristTrackingMethod, l_wristTracking);
-
-            SG_HapticGlove.WristTracking currWTMethod = (SG_HapticGlove.WristTracking)m_wristTrackingMethod.intValue;
-            if (currWTMethod != SG_HapticGlove.WristTracking.MyGameObject)
-            {
-                if (currWTMethod == SG_HapticGlove.WristTracking.UnityXR || currWTMethod == SG_HapticGlove.WristTracking.UnityXRManualOffsets)
-                {
-                    UnityEditor.EditorGUILayout.PropertyField(m_origin, new GUIContent("Origin", "Optional. When using UnityXR's wrist tracking, the wrist will move relative to this origin."));
-                }
-                if (currWTMethod == SG_HapticGlove.WristTracking.FollowObjectManualOffsets || currWTMethod == SG_HapticGlove.WristTracking.FollowObjectAutoOffsets || currWTMethod == SG_HapticGlove.WristTracking.FollowObjectNoOffsets)
-                {
-                    UnityEditor.EditorGUILayout.PropertyField(m_wristTrackingObj, new GUIContent("Wrist Tracking Obj", "The GameObject to follow, using offsets"));
-                }
-                if (currWTMethod == SG_HapticGlove.WristTracking.FollowObjectManualOffsets || currWTMethod == SG_HapticGlove.WristTracking.UnityXRManualOffsets)
-                {
-                    UnityEditor.EditorGUILayout.PropertyField(m_wristTrackingOffsets, new GUIContent("Wrist Tracking Offsets", "The hardware offsets from tracking reference to the wrist."));
-                }
-            }
 
             UnityEditor.EditorGUILayout.Space();
             GUILayout.Label("Events", UnityEditor.EditorStyles.boldLabel);

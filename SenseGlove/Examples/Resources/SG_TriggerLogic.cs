@@ -17,6 +17,8 @@ public class SG_TriggerLogic : MonoBehaviour
 
 	/// <summary> The last calculated pressure </summary>
 	private float latestPressure = 0.0f;
+	private float lastCmdSent = 0.0f;
+	public const float sendCooldown = 0.1f; //100 ms
 
 	/// <summary> The Trigger Pressure as calculated by this script.. </summary>
 	public float TriggerPressure
@@ -54,9 +56,11 @@ public class SG_TriggerLogic : MonoBehaviour
 
 			//Update Haptics
 			int amplitude = Mathf.RoundToInt(100.0f * latestPressure); //calculate intensity
-			if (amplitude > 0)
+			float time = Time.timeSinceLevelLoad;
+			if (amplitude > 0 && time - lastCmdSent >= sendCooldown)
 			{
 				//SGCore.Haptics.SG_TimedBuzzCmd vibration = new SGCore.Haptics.SG_TimedBuzzCmd(this.respondsTo, amplitude, 0.02f); //send the command
+				lastCmdSent = time;
 				grabable.SendVibrationCmd(this.vibrationLocation, amplitude, 0.1f, 170.0f);
 				grabable.QueueFFBCmd(SGCore.Finger.Index, latestPressure);
 			}

@@ -17,7 +17,9 @@ namespace SG.Util
         public SG_Interactable sendThroughObject;
 
         /// <summary> The waveform to be sent through the Interactable to the IHandFeedbackDevice. </summary>
+#pragma warning disable CS0618 // Type or member is obsolete
         public SG_Waveform waveformToSend;
+#pragma warning restore CS0618 // Type or member is obsolete
 
         public bool fallBackToLastGrabbed = true;
 
@@ -51,7 +53,9 @@ namespace SG.Util
         /// <param name="waveform"></param>
         /// <param name="interactable"></param>
         /// <param name="fallBackToLastGrab">If true, we fall back to the last GrabScript that was holding on to me. </param>
+#pragma warning disable CS0618 // Type or member is obsolete
         public static void SendThroughObject(SG.SG_Waveform waveform, SG.SG_Interactable interactable, bool fallBackToLastGrab = true)
+#pragma warning restore CS0618 // Type or member is obsolete
         {
             //Debug.LogError("TODO: Implement Timing!");
             if (interactable.IsGrabbed())
@@ -75,7 +79,9 @@ namespace SG.Util
         /// <summary> Send a custom waveform to the object linked tothis script. </summary>
         /// <param name="customWaveform"></param>
         /// <param name="fallBackToLastGrab"></param>
+#pragma warning disable CS0618 // Type or member is obsolete
         public void SendWaveForm(SG_Waveform customWaveform)
+#pragma warning restore CS0618 // Type or member is obsolete
         {
             SendThroughObject(customWaveform, this.sendThroughObject, this.fallBackToLastGrabbed);
         }
@@ -216,12 +222,16 @@ namespace SG.Util
             }
         }
 
+#pragma warning disable CS0618 // Type or member is obsolete
         public void SendLegacyWaveform(SG_Waveform waveform)
+#pragma warning restore CS0618 // Type or member is obsolete
         {
             this.SendLegacyWaveform(waveform, waveform.amplitude, waveform.duration_s, waveform.intendedLocation);
         }
 
+#pragma warning disable CS0618 // Type or member is obsolete
         public void SendLegacyWaveform(SG_Waveform waveform, float amplitude, float duration, VibrationLocation location)
+#pragma warning restore CS0618 // Type or member is obsolete
         {
             IHandFeedbackDevice[] linkedDevices = this.DevicesLinkedToObject;
             for (int i = 0; i < linkedDevices.Length; i++)

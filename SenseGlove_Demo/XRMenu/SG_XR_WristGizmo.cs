@@ -107,7 +107,9 @@ namespace SG.XR
         protected bool tapLocked = false;
 
         /// <summary> The waveform to play when a hand taps this Hand UI. </summary>
+#pragma warning disable CS0618 // Type or member is obsolete
         public SG_Waveform tappedWaveform;
+#pragma warning restore CS0618 // Type or member is obsolete
 
         /// <summary> This event fires when this menu is tapped by another SG_TrackedHand. </summary>
         public UnityEngine.Events.UnityEvent OnMenuTapped = new UnityEngine.Events.UnityEvent();
@@ -129,7 +131,9 @@ namespace SG.XR
         public GameObject[] faceItems = new GameObject[0];
 
         /// <summary> Waveform to play when the menu becomes visible / interactable with. </summary>
+#pragma warning disable CS0618 // Type or member is obsolete
         public SG_Waveform visibleWaveform;
+#pragma warning restore CS0618 // Type or member is obsolete
 
         //if the tap hover is not assigned, hide the UI
 

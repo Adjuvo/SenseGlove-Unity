@@ -1,2 +1,2 @@
-SenseGlove Unity Plugin version 2.6.3
-Compiled on 2024-07-25 14:41:03 with Unity version 2019.4.33f1
+SenseGlove Unity Plugin version 2.7.0
+Compiled on 2024-09-11 13:53:34 with Unity version 2020.3.20f1

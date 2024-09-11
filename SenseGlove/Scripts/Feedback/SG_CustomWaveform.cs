@@ -23,6 +23,7 @@ namespace SG
         [ Range(SGCore.CustomWaveform.minAttackTime,  SGCore.CustomWaveform.maxAttackTime) ]  public float attackTime = 0.0f;
         [ Range(SGCore.CustomWaveform.minSustainTime, SGCore.CustomWaveform.maxSustainTime) ] public float sustainTime = 1.0f;
         [ Range(SGCore.CustomWaveform.minDecayTime,   SGCore.CustomWaveform.maxDecayTime) ]   public float decayTime = 0.0f;
+        [ Range(SGCore.CustomWaveform.minPauseTime,   SGCore.CustomWaveform.maxPauseTime) ]   public float pauseTime = 0.0f;
 
         [Range(1, SGCore.CustomWaveform.maxRepeatAmount)] public int RepeatAmount = 1;
         public bool RepeatInfinite = false;
@@ -83,7 +84,7 @@ namespace SG
             iWaveForm.RepeatAmount = this.RepeatAmount;
             iWaveForm.SustainTime = this.sustainTime;
             iWaveForm.WaveType = this.waveformType;
-
+            iWaveForm.PauseTime = this.pauseTime;
             //Debug.Log("Regenerated Waveform " + iWaveForm.ToString());
         }
 

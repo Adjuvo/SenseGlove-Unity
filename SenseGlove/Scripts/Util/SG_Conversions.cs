@@ -7,6 +7,82 @@ namespace SG.Util
     /// <summary> Utility class specifically for converting between SenseGlove's internal coordinate system and Unity's coordinate system. </summary>
 	public static class SG_Conversions
     {
+        //----------------------------------------------------------------------------------------------------------------------------------------
+        // Enumerators
+
+        public static SGCore.PosTrackingHardware ToInternalTracking(TrackingHardware detectedHardware)
+        {
+            switch (detectedHardware)
+            {
+                case TrackingHardware.Quest3Controller:
+                    return SGCore.PosTrackingHardware.Quest3Controller;
+                case TrackingHardware.Quest2Controller:
+                    return SGCore.PosTrackingHardware.Quest2Controller;
+                case TrackingHardware.QuestProController:
+                    return SGCore.PosTrackingHardware.QuestProController;
+
+                case TrackingHardware.ViveFocus3Tracker:
+                    return SGCore.PosTrackingHardware.ViveFocus3WristTracker;
+                case TrackingHardware.ViveTracker:
+                    return SGCore.PosTrackingHardware.ViveTracker;
+
+                case TrackingHardware.ViveUltimateTracker:
+                    return SGCore.PosTrackingHardware.OculusTouch; //Returning OccTouch for now since both Nova 1 and 2 are defs not compatible with that yet.
+
+                case TrackingHardware.PicoNeo3Controller:
+                    return SGCore.PosTrackingHardware.PicoNeo3;
+                case TrackingHardware.PicoNeo2Controller:
+                    return SGCore.PosTrackingHardware.PicoNeo2;
+
+                default:
+                    return SGCore.PosTrackingHardware.Custom;
+            }
+        }
+
+        public static TrackingHardware ToUnityTracking(SGCore.PosTrackingHardware iHardware)
+        {
+            switch (iHardware)
+            {
+                case SGCore.PosTrackingHardware.Quest3Controller:
+                    return TrackingHardware.Quest3Controller;
+                case SGCore.PosTrackingHardware.Quest2Controller:
+                    return TrackingHardware.Quest2Controller;
+                case SGCore.PosTrackingHardware.QuestProController:
+                    return TrackingHardware.QuestProController;
+
+                case SGCore.PosTrackingHardware.ViveFocus3WristTracker:
+                    return TrackingHardware.ViveFocus3Tracker;
+                case SGCore.PosTrackingHardware.ViveTracker:
+                    return TrackingHardware.ViveTracker;
+
+                case SGCore.PosTrackingHardware.Custom:
+                    return TrackingHardware.Custom; //Returning OccTouch for now since both Nova 1 and 2 are defs not compatible with that yet.
+
+                case SGCore.PosTrackingHardware.PicoNeo3:
+                    return TrackingHardware.PicoNeo3Controller;
+                case SGCore.PosTrackingHardware.PicoNeo2:
+                    return TrackingHardware.PicoNeo2Controller;
+
+
+                default:
+                    return TrackingHardware.Unknown;
+            }
+        }
+
+        public static string GetFriendlyDeviceName(SGCore.DeviceType type)
+        {
+            switch (type)
+            {
+                case SGCore.DeviceType.NOVA_2_GLOVE:
+                    return "Nova 2";
+                case SGCore.DeviceType.NOVA:
+                    return "Nova 1";
+                case SGCore.DeviceType.SENSEGLOVE:
+                    return "SenseGlove DK1";
+                default:
+                    return "Generic SenseGlove Device";
+            }
+        }
 
         //-------------------------------------------------------------------------------------------------------------------------
         // Positions

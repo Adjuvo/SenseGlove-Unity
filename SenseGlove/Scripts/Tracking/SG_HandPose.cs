@@ -37,6 +37,8 @@ namespace SG
         public Quaternion wristRotation;
 
 
+        public const int JointCount = 21; //4 per finger + wrist
+
         //----------------------------------------------------------------------------------------------
         // Construction
 
@@ -106,6 +108,181 @@ namespace SG
         public static SG_HandPose Idle(bool right)
         {
             return new SG_HandPose(SGCore.HandPose.DefaultIdle(right));
+        }
+
+
+
+
+        public static Quaternion CalculateWorldRotation(Quaternion localRot, Quaternion wristRot)
+        {
+            return wristRot * localRot;
+        }
+
+        public static Vector3 CalculateWorldPosition(Vector3 localPos, Vector3 wristPos, Quaternion wristRot)
+        {
+            return wristPos + (wristRot * localPos);
+        }
+
+        public void GetJointLocations(bool inWorldSpace, out Vector3[] positions, out Quaternion[] rotations)
+        {
+            if (inWorldSpace)
+            {
+                positions = new Vector3[JointCount]
+                {
+                    this.wristPosition,
+
+                    CalculateWorldPosition(this.jointPositions[0][0], this.wristPosition, this.wristRotation),
+                    CalculateWorldPosition(this.jointPositions[0][1], this.wristPosition, this.wristRotation),
+                    CalculateWorldPosition(this.jointPositions[0][2], this.wristPosition, this.wristRotation),
+                    CalculateWorldPosition(this.jointPositions[0][3], this.wristPosition, this.wristRotation),
+
+                    CalculateWorldPosition(this.jointPositions[1][0], this.wristPosition, this.wristRotation),
+                    CalculateWorldPosition(this.jointPositions[1][1], this.wristPosition, this.wristRotation),
+                    CalculateWorldPosition(this.jointPositions[1][2], this.wristPosition, this.wristRotation),
+                    CalculateWorldPosition(this.jointPositions[1][3], this.wristPosition, this.wristRotation),
+
+                    CalculateWorldPosition(this.jointPositions[2][0], this.wristPosition, this.wristRotation),
+                    CalculateWorldPosition(this.jointPositions[2][1], this.wristPosition, this.wristRotation),
+                    CalculateWorldPosition(this.jointPositions[2][2], this.wristPosition, this.wristRotation),
+                    CalculateWorldPosition(this.jointPositions[2][3], this.wristPosition, this.wristRotation),
+
+                    CalculateWorldPosition(this.jointPositions[3][0], this.wristPosition, this.wristRotation),
+                    CalculateWorldPosition(this.jointPositions[3][1], this.wristPosition, this.wristRotation),
+                    CalculateWorldPosition(this.jointPositions[3][2], this.wristPosition, this.wristRotation),
+                    CalculateWorldPosition(this.jointPositions[3][3], this.wristPosition, this.wristRotation),
+
+                    CalculateWorldPosition(this.jointPositions[4][0], this.wristPosition, this.wristRotation),
+                    CalculateWorldPosition(this.jointPositions[4][1], this.wristPosition, this.wristRotation),
+                    CalculateWorldPosition(this.jointPositions[4][2], this.wristPosition, this.wristRotation),
+                    CalculateWorldPosition(this.jointPositions[4][3], this.wristPosition, this.wristRotation),
+
+                };
+                rotations = new Quaternion[JointCount]
+                {
+                    this.wristRotation,
+
+                    CalculateWorldRotation(this.jointRotations[0][0], this.wristRotation),
+                    CalculateWorldRotation(this.jointRotations[0][1], this.wristRotation),
+                    CalculateWorldRotation(this.jointRotations[0][2], this.wristRotation),
+                    CalculateWorldRotation(this.jointRotations[0][3], this.wristRotation),
+
+                    CalculateWorldRotation(this.jointRotations[1][0], this.wristRotation),
+                    CalculateWorldRotation(this.jointRotations[1][1], this.wristRotation),
+                    CalculateWorldRotation(this.jointRotations[1][2], this.wristRotation),
+                    CalculateWorldRotation(this.jointRotations[1][3], this.wristRotation),
+
+                    CalculateWorldRotation(this.jointRotations[2][0], this.wristRotation),
+                    CalculateWorldRotation(this.jointRotations[2][1], this.wristRotation),
+                    CalculateWorldRotation(this.jointRotations[2][2], this.wristRotation),
+                    CalculateWorldRotation(this.jointRotations[2][3], this.wristRotation),
+
+                    CalculateWorldRotation(this.jointRotations[3][0], this.wristRotation),
+                    CalculateWorldRotation(this.jointRotations[3][1], this.wristRotation),
+                    CalculateWorldRotation(this.jointRotations[3][2], this.wristRotation),
+                    CalculateWorldRotation(this.jointRotations[3][3], this.wristRotation),
+
+                    CalculateWorldRotation(this.jointRotations[4][0], this.wristRotation),
+                    CalculateWorldRotation(this.jointRotations[4][1], this.wristRotation),
+                    CalculateWorldRotation(this.jointRotations[4][2], this.wristRotation),
+                    CalculateWorldRotation(this.jointRotations[4][3], this.wristRotation),
+                };
+            }
+            else
+            {
+                positions = new Vector3[JointCount]
+                {
+                    this.wristPosition,
+
+                    this.jointPositions[0][0],
+                    this.jointPositions[0][1],
+                    this.jointPositions[0][2],
+                    this.jointPositions[0][3],
+
+                    this.jointPositions[1][0],
+                    this.jointPositions[1][1],
+                    this.jointPositions[1][2],
+                    this.jointPositions[1][3],
+
+                    this.jointPositions[2][0],
+                    this.jointPositions[2][1],
+                    this.jointPositions[2][2],
+                    this.jointPositions[2][3],
+
+                    this.jointPositions[3][0],
+                    this.jointPositions[3][1],
+                    this.jointPositions[3][2],
+                    this.jointPositions[3][3],
+
+                    this.jointPositions[4][0],
+                    this.jointPositions[4][1],
+                    this.jointPositions[4][2],
+                    this.jointPositions[4][3],
+
+                };
+                rotations = new Quaternion[JointCount]
+                {
+                    this.wristRotation,
+
+                    this.jointRotations[0][0],
+                    this.jointRotations[0][1],
+                    this.jointRotations[0][2],
+                    this.jointRotations[0][3],
+
+                    this.jointRotations[1][0],
+                    this.jointRotations[1][1],
+                    this.jointRotations[1][2],
+                    this.jointRotations[1][3],
+
+                    this.jointRotations[2][0],
+                    this.jointRotations[2][1],
+                    this.jointRotations[2][2],
+                    this.jointRotations[2][3],
+
+                    this.jointRotations[3][0],
+                    this.jointRotations[3][1],
+                    this.jointRotations[3][2],
+                    this.jointRotations[3][3],
+
+                    this.jointRotations[4][0],
+                    this.jointRotations[4][1],
+                    this.jointRotations[4][2],
+                    this.jointRotations[4][3],
+                };
+            }
+        }
+
+
+        public static string[] JointNames()
+        {
+            return new string[JointCount]
+            {
+                "Wrist",
+
+                "Thumb CMC",
+                "Thumb MCP",
+                "Thumb IP",
+                "Thumb Tip",
+
+                "Index MCP",
+                "Index PIP",
+                "Index DIP",
+                "Index Tip",
+
+                "Middle MCP",
+                "Middle PIP",
+                "Middle DIP",
+                "Middle Tip",
+
+                "Ring MCP",
+                "Ring PIP",
+                "Ring DIP",
+                "Ring Tip",
+
+                "Pinky MCP",
+                "Pinky PIP",
+                "Pinky DIP",
+                "Pinky Tip"
+            };
         }
 
 

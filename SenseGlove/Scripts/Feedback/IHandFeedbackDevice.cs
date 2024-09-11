@@ -181,14 +181,18 @@
 
         /// <summary> Send a Wavefrom command from the inspector to this device. </summary>
         /// <param name="waveform"></param>
+#pragma warning disable CS0618 // Type or member is obsolete
         void SendLegacyWaveform(SG_Waveform waveform);
+#pragma warning restore CS0618 // Type or member is obsolete
 
         /// <summary> Send a waveform command, but allow for overrides. </summary>
         /// <param name="waveform"></param>
         /// <param name="amplitude"></param>
         /// <param name="duration"></param>
         /// <param name="location"></param>
+#pragma warning disable CS0618 // Type or member is obsolete
         void SendLegacyWaveform(SG_Waveform waveform, float amplitude, float duration, VibrationLocation location);
+#pragma warning restore CS0618 // Type or member is obsolete
 
         /// <summary> Send a Haptic Pulse to mimic an impact at a specific velocity </summary>
         /// <param name="location"></param>
