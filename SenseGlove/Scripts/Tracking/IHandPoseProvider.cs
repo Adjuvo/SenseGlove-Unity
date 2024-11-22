@@ -8,7 +8,7 @@
         /// <summary> This is a hand-held motion controller device. Actions are triggered through button presses. </summary>
         Controller6DoF,
         /// <summary> This is an optical (Computer-Vision) solution - Like Quest Hand Tracking - Actions are coming from gestures.  </summary>
-        HandTracking,
+        OpticalHandTracking,
         /// <summary> This is a Haptic Glove. Actions come from both gestures and feedback. </summary>
         HapticGlove
     }

@@ -297,6 +297,11 @@ namespace SG
 
         public static TrackingPluginType GetTrackingPluginType()
         {
+            CheckUpdate();
+            if (headTracking != null && headTracking.DeviceLinked)
+            {
+                return headTracking.XRDevice.name.ToLower().Contains("openxr") ? TrackingPluginType.OpenXR : TrackingPluginType.UnityXR;
+            }
             return TrackingPluginType.Unknown;
         }
 

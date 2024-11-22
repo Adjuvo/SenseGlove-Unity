@@ -5409,6 +5409,9 @@
         <member name="F:SGCore.PosTrackingHardware.Quest3Controller">
             <summary> Meta Quest 3 Controllers.  </summary>
         </member>
+        <member name="F:SGCore.PosTrackingHardware.PicoMotionTracker">
+            <summary> Pico Motion Tracker placed inside the curved plastic strap. </summary>
+        </member>
         <member name="T:SGCore.Tracking">
             <summary> Utility class containing tracking offset information </summary>
         </member>

@@ -29,6 +29,8 @@ namespace SG.Util
                 case TrackingHardware.ViveUltimateTracker:
                     return SGCore.PosTrackingHardware.OculusTouch; //Returning OccTouch for now since both Nova 1 and 2 are defs not compatible with that yet.
 
+                case TrackingHardware.PicoMotionTracker:
+                    return SGCore.PosTrackingHardware.PicoMotionTracker;
                 case TrackingHardware.PicoNeo3Controller:
                     return SGCore.PosTrackingHardware.PicoNeo3;
                 case TrackingHardware.PicoNeo2Controller:
@@ -58,6 +60,8 @@ namespace SG.Util
                 case SGCore.PosTrackingHardware.Custom:
                     return TrackingHardware.Custom; //Returning OccTouch for now since both Nova 1 and 2 are defs not compatible with that yet.
 
+                case SGCore.PosTrackingHardware.PicoMotionTracker:
+                    return TrackingHardware.PicoMotionTracker;
                 case SGCore.PosTrackingHardware.PicoNeo3:
                     return TrackingHardware.PicoNeo3Controller;
                 case SGCore.PosTrackingHardware.PicoNeo2:

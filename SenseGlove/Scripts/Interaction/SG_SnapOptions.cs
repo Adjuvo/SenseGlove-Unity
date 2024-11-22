@@ -774,7 +774,7 @@ namespace SG
 
                 if (myScript.left_serializedPosed.Length > 0)
                 {
-                    if (GUILayout.Button("Reset Left Pose"))
+                    if (GUILayout.Button("Reset Left Hand Pose"))
                     {
                         myScript.ResetLeftPose();
                     }
@@ -790,7 +790,7 @@ namespace SG
 
                 if (myScript.right_serializedPosed.Length > 0)
                 {
-                    if (GUILayout.Button("Reset Right Fingers"))
+                    if (GUILayout.Button("Reset Right Hand Pose"))
                     {
                         myScript.ResetRightPose();
                     }

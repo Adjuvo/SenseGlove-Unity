@@ -1,7 +1,18 @@
 # Changelog
 All notable changes to the SenseGlove Prefabs will be documented in this file.
 
-You are currently using version v2.7.0
+You are currently using version v2.7.1
+
+## [v2.7.1] - 2023-11-22
+Pico Motion Tracking Offsets and OpenXR Compensation
+
+### Added
+- Tracking offsets for Pico Motion Trackers, using the SenseGlove Tracking Mount for said device. More doucmentation to follow.
+
+### Changed
+- SenseGlove Settings will no longer automatically enable / disable 'show Bluetooth permissions' option when switching Tracking Hardware
+- SG_XR_Devices can now detect when the OpenXR Plugin is used, and attempt to compensate for the fact it uses a different tracking reference on controllers. Currently only working for Quest 3.
+
 
 ## [v2.7.0] - 2023-09-11
 Wrist Tracking Refactor and Settings Menu

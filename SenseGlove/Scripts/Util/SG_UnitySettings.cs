@@ -58,6 +58,9 @@ namespace SG
         /// <summary> A Vive Ultimate Tracker; standalone solution, that still needs to be mapped to a headset(!) </summary>
         ViveUltimateTracker,
 
+        /// <summary> Pico Neo Motion Tracker. Small white cylinder inisde a strap. </summary>
+        PicoMotionTracker,
+
         /// <summary> Pico Neo 3 Controllers - Standalone HMD that requires PicoXR XR Plugin </summary>
         PicoNeo3Controller,
 
@@ -199,23 +202,23 @@ namespace SG
 
         // Device Linking
 
-#if UNITY_EDITOR
-        private void OnValidate()
-        {
-            TrackingHardware currentHW = GlobalWristTrackingOffsets;
-            if (this.lastWristHW != currentHW) //only when you change tracking hardware and it's not a special one...
-            {
-                if (currentHW != TrackingHardware.Unknown && currentHW != TrackingHardware.AutoDetect && currentHW != TrackingHardware.Custom)
-                {
-                    //Update the BT permissions
-                    ForceBluetoothPermissionsDialog = currentHW == TrackingHardware.Quest2Controller
-                        || currentHW == TrackingHardware.Quest3Controller
-                        || currentHW == TrackingHardware.QuestProController;
-                }
-            }
-            this.lastWristHW = this.GlobalWristTrackingOffsets;
-        }
-#endif
+//#if UNITY_EDITOR
+//        private void OnValidate()
+//        {
+//            TrackingHardware currentHW = GlobalWristTrackingOffsets;
+//            if (this.lastWristHW != currentHW) //only when you change tracking hardware and it's not a special one...
+//            {
+//                if (currentHW != TrackingHardware.Unknown && currentHW != TrackingHardware.AutoDetect && currentHW != TrackingHardware.Custom)
+//                {
+//                    //Update the BT permissions
+//                    ForceBluetoothPermissionsDialog = currentHW == TrackingHardware.Quest2Controller
+//                        || currentHW == TrackingHardware.Quest3Controller
+//                        || currentHW == TrackingHardware.QuestProController;
+//                }
+//            }
+//            this.lastWristHW = this.GlobalWristTrackingOffsets;
+//        }
+//#endif
 
     }
 }

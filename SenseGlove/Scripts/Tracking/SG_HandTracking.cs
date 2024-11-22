@@ -160,6 +160,9 @@ namespace SG
                 //TODO: Else if there's something loaded from a config file (win only?)
                 else
                 {
+                    //Using a Fixed compensation. Let's see if additional compensation is needed because OpenXR.
+                    CheckOpenXRCompenstation(offsets, rightHand, ref trackerPos, ref trackerRot);
+
                     SGCore.PosTrackingHardware iOffsets = SG.Util.SG_Conversions.ToInternalTracking(offsets);
                     SGCore.Kinematics.Vect3D iRefPos = SG.Util.SG_Conversions.ToPosition(trackerPos), iWristPos;
                     SGCore.Kinematics.Quat iRefRot = SG.Util.SG_Conversions.ToQuaternion(trackerRot), iWristRot;
@@ -174,6 +177,44 @@ namespace SG
             wristPosition = Vector3.zero;
             wristRotation = Quaternion.identity;
             return false;
+        }
+
+
+
+        private static Vector3 openXRComp_pos_QUEST3_L = new Vector3(0.000f, -0.017f, 0.045f);
+        private static Quaternion openXRComp_rot_QUEST3_L = new Quaternion(0.497f, 0.025f, 0.030f, 0.867f);
+        private static Vector3 openXRComp_pos_QUEST3_R = new Vector3(-0.001f, -0.020f, 0.048f);
+        private static Quaternion openXRComp_rot_QUEST3_R = new Quaternion(0.500f, -0.001f, -0.002f, 0.866f);
+
+
+        public static bool GetAdditionalOffsets(TrackingHardware offsets, bool rightHand, out Vector3 extraPosOffset, out Quaternion extraRotOffset)
+        {
+            switch (offsets)
+            {
+                case TrackingHardware.Quest3Controller:
+                    extraPosOffset = rightHand ? openXRComp_pos_QUEST3_R : openXRComp_pos_QUEST3_L;
+                    extraRotOffset = rightHand ? openXRComp_rot_QUEST3_R : openXRComp_rot_QUEST3_L;
+                    return true;
+
+                default:
+                    extraPosOffset = Vector3.zero;
+                    extraRotOffset = Quaternion.identity;
+                    return false;
+            }
+        }
+
+        /// <summary> Check if additional OpenXR compensation is required. If so, then add them to TrackerPos and TrackerRot. </summary>
+        /// <param name="offsets"></param>
+        /// <param name="rightHand"></param>
+        /// <param name="trackerPos"></param>
+        /// <param name="trackerRot"></param>
+        public static void CheckOpenXRCompenstation(TrackingHardware offsets, bool rightHand, ref Vector3 trackerPos, ref Quaternion trackerRot)
+        {
+            if (SG_XR_Devices.GetTrackingPluginType() == SG_XR_Devices.TrackingPluginType.OpenXR
+                && GetAdditionalOffsets(offsets, rightHand, out Vector3 extraPosOffset, out Quaternion extraRotOffset))
+            {
+                SG.Util.SG_Util.CalculateTargetLocation(trackerPos, trackerRot, extraPosOffset, extraRotOffset, out trackerPos, out trackerRot);
+            }
         }
 
 
