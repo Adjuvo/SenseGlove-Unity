@@ -51,12 +51,9 @@ namespace SG
         /// <summary> Meta Quest 3 - Standalone HMD running Android. Requires Oculus XR Plugin </summary>
         Quest3Controller,
         /// <summary> Vive Focues 3 - Standalone HMD running Android. Requires Vive Wave SDK </summary>
-        ViveFocus3Tracker,
+        ViveWristTracker,
         /// <summary> Any of the HTC family headsets, or Valve Index. Requires OpenVRLoader plugin </summary>
         ViveTracker,
-
-        /// <summary> A Vive Ultimate Tracker; standalone solution, that still needs to be mapped to a headset(!) </summary>
-        ViveUltimateTracker,
 
         /// <summary> Pico Neo Motion Tracker. Small white cylinder inisde a strap. </summary>
         PicoMotionTracker,

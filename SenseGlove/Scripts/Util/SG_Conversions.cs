@@ -21,13 +21,10 @@ namespace SG.Util
                 case TrackingHardware.QuestProController:
                     return SGCore.PosTrackingHardware.QuestProController;
 
-                case TrackingHardware.ViveFocus3Tracker:
+                case TrackingHardware.ViveWristTracker:
                     return SGCore.PosTrackingHardware.ViveFocus3WristTracker;
                 case TrackingHardware.ViveTracker:
                     return SGCore.PosTrackingHardware.ViveTracker;
-
-                case TrackingHardware.ViveUltimateTracker:
-                    return SGCore.PosTrackingHardware.OculusTouch; //Returning OccTouch for now since both Nova 1 and 2 are defs not compatible with that yet.
 
                 case TrackingHardware.PicoMotionTracker:
                     return SGCore.PosTrackingHardware.PicoMotionTracker;
@@ -53,7 +50,7 @@ namespace SG.Util
                     return TrackingHardware.QuestProController;
 
                 case SGCore.PosTrackingHardware.ViveFocus3WristTracker:
-                    return TrackingHardware.ViveFocus3Tracker;
+                    return TrackingHardware.ViveWristTracker;
                 case SGCore.PosTrackingHardware.ViveTracker:
                     return TrackingHardware.ViveTracker;
 
