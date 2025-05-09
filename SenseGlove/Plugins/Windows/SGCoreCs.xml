@@ -2135,6 +2135,9 @@
             <summary> This is not supported in the current build of SGConnect, for this platform. </summary>
         </member>
         <!-- Badly formed XML comment ignored for member "F:SGCore.FirmwareCodes.NoConstantsReceived" -->
+        <member name="F:SGCore.FirmwareCodes.AwaitingConfirmation">
+            <summary> Firmware Process is complete, but needs confirmation from the program to proceed. </summary>
+        </member>
         <member name="T:SGCore.HapticChannelType">
             <summary> Different types of Haptic Channels - with different behaviours </summary>
         </member>
@@ -5119,6 +5122,22 @@
             <summary> Returns last FW resullt - if one exists </summary>
             <returns></returns>
         </member>
+        <member name="M:SGCore.SGConnect.I_SetSerialConnectionsEnabled(System.Boolean)">
+            <summary> Returns last FW resullt - if one exists </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.SGConnect.I_RegisterNova2BLEConnection(System.String)">
+            <summary> Returns last FW resullt - if one exists </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.SGConnect.I_UnregisterNova2BLEConnection(System.String)">
+            <summary> Returns last FW resullt - if one exists </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.SGConnect.I_GetNearbyBLEDevices(System.Text.StringBuilder)">
+            <summary> Returns last FW resullt - if one exists </summary>
+            <returns></returns>
+        </member>
         <member name="M:SGCore.SGConnect.InitCommunications">
             <summary>  Returns 1 if the communications were initialized of, 0 if this wasn't possible, -1 if the dll is missing. </summary>
             <returns></returns>
@@ -5189,6 +5208,16 @@
             <summary> 12 -- success. Anything else ==  wrong :O </summary>
             <returns></returns>
         </member>
+        <member name="M:SGCore.SGConnect.Nova2OTAFirmwareUpload_BTS_to_BLE(System.Int32,System.String,System.Int32)">
+            <summary> Attempt a firmware upload - the file will be checked. </summary>
+            <param name="deviceIndex"></param>
+            <param name="fwFilePath"></param>
+            <param name="chunkSize"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.SGConnect.CompleteNova2Nova2OTAFirmwareUpload">
+            <summary> Continue the current firmware uplaod if any is active... </summary>
+        </member>
         <member name="T:SGCore.Library">
             <summary> Contains info about this DLL </summary>
         </member>
@@ -5203,6 +5232,9 @@
         </member>
         <member name="F:SGCore.Library.BackEndType.Sockets">
             <summary> Back-end Data comes from Sockets (QuarkVR Server Mode) </summary>
+        </member>
+        <member name="F:SGCore.Library.BackEndType.AndroidBLE">
+            <summary> Android BLE integration via SGConnect </summary>
         </member>
         <member name="M:SGCore.Library.GetBackEndType">
             <summary> Check wwhat back-end connections are used for this version of SGConnect </summary>
@@ -5235,6 +5267,9 @@
         </member>
         <member name="F:SGCore.SGDevice.ConnectionType.BluetoothAndroid">
             <summary> Bluetooth Connection Via Android/Java SDK </summary>
+        </member>
+        <member name="F:SGCore.SGDevice.ConnectionType.BLE">
+            <summary> Bluetooth Low Energy </summary>
         </member>
         <member name="F:SGCore.SGDevice.deviceIndex">
             <summary> The index of this device inside the SenseComm program. Used to access shared memory. </summary>
@@ -5411,6 +5446,9 @@
         </member>
         <member name="F:SGCore.PosTrackingHardware.PicoMotionTracker">
             <summary> Pico Motion Tracker placed inside the curved plastic strap. </summary>
+        </member>
+        <member name="F:SGCore.PosTrackingHardware.ViveUltimateTracker">
+            <summary> Vive Ultimate Tracker </summary>
         </member>
         <member name="T:SGCore.Tracking">
             <summary> Utility class containing tracking offset information </summary>

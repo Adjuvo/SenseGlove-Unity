@@ -112,31 +112,31 @@ namespace SG
         /// <param name="flexions01"></param>
         public virtual void UpdateGesture(float[] flexions01)
         {
-            if (flexions01.Length > 4)
-            {
-                bool[] fingerCheck = new bool[5];
-                fingerCheck[0] = flexions01[0] >= thumbFlexMin && flexions01[0] <= thumbFlexMax;
-                fingerCheck[1] = flexions01[1] >= indexFlexMin && flexions01[1] <= indexFlexMax;
-                fingerCheck[2] = flexions01[2] >= middleFlexMin && flexions01[2] <= middleFlexMax;
-                fingerCheck[3] = flexions01[3] >= ringFlexMin && flexions01[3] <= ringFlexMax;
-                fingerCheck[4] = flexions01[4] >= pinkyFlexMin && flexions01[4] <= pinkyFlexMax;
-
-                //evaluate if the full gesture is being made
-                bool currentlyGesturing = true;
-                for (int f = 0; f < fingerCheck.Length; f++)
-                {
-                    if (!fingerCheck[f]) { currentlyGesturing = false; break; }
-                }
-                GestureMade = currentlyGesturing && !IsGesturing;
-                GestureStopped = IsGesturing && !currentlyGesturing;
-                IsGesturing = currentlyGesturing;
-            }
-            else
-            {
-                Debug.LogWarning(this.name + " gesture received insufficient values (" + flexions01.Length + "/5). It will not be updated.");
-            }
+            bool currentlyGesturing = GestureIsMade(flexions01);
+            GestureMade = currentlyGesturing && !IsGesturing;
+            GestureStopped = IsGesturing && !currentlyGesturing;
+            IsGesturing = currentlyGesturing;
         }
 
+        public virtual bool GestureIsMade(float[] flexions01)
+        {
+            if (flexions01.Length < 5)
+                return false;
+
+            bool[] fingerCheck = new bool[5];
+            fingerCheck[0] = flexions01[0] >= thumbFlexMin && flexions01[0] <= thumbFlexMax;
+            fingerCheck[1] = flexions01[1] >= indexFlexMin && flexions01[1] <= indexFlexMax;
+            fingerCheck[2] = flexions01[2] >= middleFlexMin && flexions01[2] <= middleFlexMax;
+            fingerCheck[3] = flexions01[3] >= ringFlexMin && flexions01[3] <= ringFlexMax;
+            fingerCheck[4] = flexions01[4] >= pinkyFlexMin && flexions01[4] <= pinkyFlexMax;
+
+            //evaluate if the full gesture is being made
+            for (int f = 0; f < fingerCheck.Length; f++)
+            {
+                if (!fingerCheck[f]) { return false; }
+            }
+            return true;
+        }
 
         //----------------------------------------------------------------------------------------------------------------------------------------
         // Visual "Range String" indications

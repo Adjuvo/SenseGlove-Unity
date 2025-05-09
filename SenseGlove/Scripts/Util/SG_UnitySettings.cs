@@ -51,9 +51,12 @@ namespace SG
         /// <summary> Meta Quest 3 - Standalone HMD running Android. Requires Oculus XR Plugin </summary>
         Quest3Controller,
         /// <summary> Vive Focues 3 - Standalone HMD running Android. Requires Vive Wave SDK </summary>
-        ViveWristTracker,
+        ViveFocus3Tracker,
         /// <summary> Any of the HTC family headsets, or Valve Index. Requires OpenVRLoader plugin </summary>
         ViveTracker,
+
+        /// <summary> A Vive Ultimate Tracker; standalone solution, that still needs to be mapped to a headset(!) </summary>
+        ViveUltimateTracker,
 
         /// <summary> Pico Neo Motion Tracker. Small white cylinder inisde a strap. </summary>
         PicoMotionTracker,
@@ -64,9 +67,6 @@ namespace SG
         /// <summary> Pico Neo 3 Controllers - Standalone HMD that requires PicoXR XR Plugin </summary>
         PicoNeo2Controller,
     }
-
-
-
 
 
     //[CreateAssetMenu(menuName = "SenseGlove/SenseGloveSettings")]
@@ -84,12 +84,12 @@ namespace SG
         [Tooltip("The way SenseGlove communications will be initialized / disposed on this system. On Android, Standalone will always be used.")] 
         public CommunicationSetup SGCommunications = CommunicationSetup.SenseComPreferred;
 
+        // ANDROID ONLY
+
         /// <summary> Android only: If true, we will force a permissions dialog from within the App. This is required for Quest devices, but runs into trouble with Vive Devices... </summary>
         [Tooltip("Android only: If true, we will force a permissions dialog from within the App. This is required for Quest devices, but runs into trouble for Vive Devices. We will try to aumatically adjust then when you switch Wrist Tracking Offsets.")] 
         public bool ForceBluetoothPermissionsDialog = false;
 
-
-        // ANDROID ONLY
 
         // N\\A
 

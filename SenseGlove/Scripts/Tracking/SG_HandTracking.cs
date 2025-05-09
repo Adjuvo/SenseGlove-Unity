@@ -41,6 +41,17 @@ namespace SG
             return false;
         }
 
+        public static bool GetNormalizedFlexions(bool rightHand, out float[] flexions)
+        {
+            if (SGCore.HandLayer.GetHandPose(rightHand, out SGCore.HandPose iHandPose))
+            {
+                flexions = iHandPose.GetNormalizedFlexion(true);
+                return true;
+            }
+            flexions = new float[5];
+            return false;
+        }
+
 
 
         //---------------------------------------------------------------------------------------------------------------------------------

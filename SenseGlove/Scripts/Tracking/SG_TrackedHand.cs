@@ -85,6 +85,9 @@ namespace SG
         /// <remarks> When no Passthrough Layer is present, and we're not holding only anything that overrides finger tracking, this is the same as the virtual HandPose </remarks>
         protected SG_HandPoser3D renderPoser;
 
+        /// <summary> Optional components you can add to the Hand Model </summary>
+        [SerializeField] protected SG_HandComponent[] otherComponents = new SG_HandComponent[0];
+
         /// <summary> If true, this TrackedHand uses its own transform as the Wrist location. </summary>
         [Header("Control Parameters")]
         public bool overrideWristLocation = false;
@@ -405,6 +408,21 @@ namespace SG
                 this.calibration.LinkToHand(this, true);
             }
 
+            //Link all optional components.
+            foreach (SG_HandComponent comp in otherComponents)
+            {
+                comp.LinkToHand(this, true);
+
+                if (grabScript != null)
+                    grabScript.SetIgnoreCollision(comp, true);
+                if (handPhysics != null)
+                    handPhysics.SetIgnoreCollision(comp, true);
+                if (projectionLayer != null)
+                    projectionLayer.SetIgnoreCollision(comp, true);
+                if (feedbackLayer != null)
+                    feedbackLayer.SetIgnoreCollision(comp, true);
+            }
+
             this.UpdateHandState();
 
 
@@ -453,8 +471,21 @@ namespace SG
                 {
                     otherHand.grabScript.SetIgnoreCollision(this.handPhysics, ignoreCollision);
                 }
+                //ignore collision with other hand's layer
+                foreach (SG_HandComponent otherComp in this.otherComponents)
+                {
+                    if (otherHand.grabScript != null)
+                        otherHand.grabScript.SetIgnoreCollision(otherComp, true);
+                    if (otherHand.handPhysics != null)
+                        otherHand.handPhysics.SetIgnoreCollision(otherComp, true);
+                    if (otherHand.projectionLayer != null)
+                        otherHand.projectionLayer.SetIgnoreCollision(otherComp, true);
+                    if (otherHand.feedbackLayer != null)
+                        otherHand.feedbackLayer.SetIgnoreCollision(otherComp, true);
+                }
             }
         }
+
 
 
 
@@ -1051,6 +1082,7 @@ namespace SG
                 this.HapticHardware.SetFlexionLocks(fingers, fingerFlexions);
             }
         }
+
 
         public void QueueWristSqueeze(float squeezeLevel01)
         {

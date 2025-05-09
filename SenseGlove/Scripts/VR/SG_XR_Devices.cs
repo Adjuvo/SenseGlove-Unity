@@ -427,17 +427,27 @@ namespace SG
             }
             else if (hmdName.Contains("wvr hmd")) //Legacy Vive Focus with wrist trackers (TrackedDevices). Requires Vive Input Utility?
             {
+                //TODO: Check for Vive Ultimate Trackers, which only have a TrackedDevice. No left / rights.
                 InputDevice leftDevice;
                 if (TryGetDevice(devices, InputDeviceCharacteristics.TrackedDevice | InputDeviceCharacteristics.Left, out leftDevice))
                 {
                     leftHandTracking = new SG_XR_HandReference(leftDevice, IdentifyTrackingHardware(hmdName, leftDevice.name, leftDevice.manufacturer, trackingMethod));
                     //Debug.Log("Linked SG_XR_Devices Left Hand to " + Report(leftDevice));
                 }
+                else if (GetNamedByIndex(devices, InputDeviceCharacteristics.TrackedDevice, "Ultimate", 1, out leftDevice)) //this did not work, so try to get the Xth Vive Tracker. For left, it's the 2nd
+                {
+                    leftHandTracking = new SG_XR_HandReference(leftDevice, SGCore.PosTrackingHardware.ViveUltimateTracker);
+                }
+
                 InputDevice rightDevice;
                 if (TryGetDevice(devices, InputDeviceCharacteristics.TrackedDevice | InputDeviceCharacteristics.Right, out rightDevice))
                 {
                     rightHandTracking = new SG_XR_HandReference(rightDevice, IdentifyTrackingHardware(hmdName, rightDevice.name, rightDevice.manufacturer, trackingMethod));
                     //Debug.Log("Linked SG_XR_Devices Right Hand to " + Report(rightDevice));
+                }
+                else if (GetNamedByIndex(devices, InputDeviceCharacteristics.TrackedDevice, "Ultimate", 0, out rightDevice)) //this did not work, so try to get the Xth Vive Tracker. For right, it's the 1st
+                {
+                    rightHandTracking = new SG_XR_HandReference(rightDevice, SGCore.PosTrackingHardware.ViveUltimateTracker);
                 }
             }
             else // If we get here, it's not a Vive. So just proceed as through it were controllers.
@@ -461,6 +471,29 @@ namespace SG
                     }
                 }
             }
+        }
+
+
+
+        private static bool GetNamedByIndex(List<UnityEngine.XR.InputDevice> devices, UnityEngine.XR.InputDeviceCharacteristics deviceChars,
+             string nameContains, int atIndex, out UnityEngine.XR.InputDevice device)
+        {
+            int currIndex = 0;
+            for (int i = 0; i < devices.Count; i++)
+            {
+                if ((devices[i].characteristics & deviceChars) == deviceChars //bitwise operator. if all (relevant) bits are equal, returns true
+                    && devices[i].name.Contains(nameContains, System.StringComparison.InvariantCultureIgnoreCase)) //name must also contain this...
+                {
+                    if (currIndex == atIndex) //this is the 0th, 1st, 2ndth, etc occurence of this tracker.
+                    {
+                        device = devices[i];
+                        return true;
+                    }
+                    currIndex++;
+                }
+            }
+            device = new UnityEngine.XR.InputDevice();
+            return false;
         }
 
         /// <summary> Checks the current InputDevices to see if they are (still) valid. </summary>

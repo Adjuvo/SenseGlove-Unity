@@ -21,10 +21,13 @@ namespace SG.Util
                 case TrackingHardware.QuestProController:
                     return SGCore.PosTrackingHardware.QuestProController;
 
-                case TrackingHardware.ViveWristTracker:
+                case TrackingHardware.ViveFocus3Tracker:
                     return SGCore.PosTrackingHardware.ViveFocus3WristTracker;
                 case TrackingHardware.ViveTracker:
                     return SGCore.PosTrackingHardware.ViveTracker;
+
+                case TrackingHardware.ViveUltimateTracker:
+                    return SGCore.PosTrackingHardware.ViveUltimateTracker;
 
                 case TrackingHardware.PicoMotionTracker:
                     return SGCore.PosTrackingHardware.PicoMotionTracker;
@@ -50,12 +53,11 @@ namespace SG.Util
                     return TrackingHardware.QuestProController;
 
                 case SGCore.PosTrackingHardware.ViveFocus3WristTracker:
-                    return TrackingHardware.ViveWristTracker;
+                    return TrackingHardware.ViveFocus3Tracker;
                 case SGCore.PosTrackingHardware.ViveTracker:
                     return TrackingHardware.ViveTracker;
-
-                case SGCore.PosTrackingHardware.Custom:
-                    return TrackingHardware.Custom; //Returning OccTouch for now since both Nova 1 and 2 are defs not compatible with that yet.
+                case SGCore.PosTrackingHardware.ViveUltimateTracker:
+                    return TrackingHardware.ViveUltimateTracker;
 
                 case SGCore.PosTrackingHardware.PicoMotionTracker:
                     return TrackingHardware.PicoMotionTracker;
@@ -64,6 +66,8 @@ namespace SG.Util
                 case SGCore.PosTrackingHardware.PicoNeo2:
                     return TrackingHardware.PicoNeo2Controller;
 
+                case SGCore.PosTrackingHardware.Custom:
+                    return TrackingHardware.Custom;
 
                 default:
                     return TrackingHardware.Unknown;

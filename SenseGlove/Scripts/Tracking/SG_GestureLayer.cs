@@ -15,6 +15,16 @@ namespace SG
         public float[] lastFlexions = new float[5];
 
         //-----------------------------------------------------------------------------------------------------------------------------------------------------------------
+        // Member functions
+
+        /// <summary> Ask this hand layer is a specific gesture is being made at any point. It will use the last evaluated flexions. </summary>
+        /// <param name="gesture"></param>
+        public virtual bool IsGestureMade(SG_BasicGesture gesture)
+        {
+            return gesture.GestureIsMade(this.lastFlexions);
+        }
+
+        //-----------------------------------------------------------------------------------------------------------------------------------------------------------------
         // Monobehaviour
 
         protected virtual void Update()

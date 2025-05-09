@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: SenseGloveSettings
   m_EditorClassIdentifier: 
   SGCommunications: 0
-  ForceBluetoothPermissionsDialog: 0
+  ForceBluetoothPermissionsDialog: 1
   WristTrackingMethod: 0
-  GlobalWristTrackingOffsets: 9
+  GlobalWristTrackingOffsets: 8
   customPosOffsetRight: {x: 0, y: 0, z: 0}
   customRotOffsetRight: {x: 0, y: 0, z: 0}
   customPosOffsetLeft: {x: 0, y: 0, z: 0}

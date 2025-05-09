@@ -1,17 +1,9 @@
 # Changelog
 All notable changes to the SenseGlove Prefabs will be documented in this file.
 
-You are currently using version v2.7.2
+You are currently using version v2.7.1
 
-
-## [v2.7.2] - 2025-18-25
-Wive Wrist Tracker Confusion fix
-
-### Changed
-- Removed Vive Ultimate Tracker enum to avoid confusion about compatibility.
-
-
-## [v2.7.1] - 2024-11-22
+## [v2.7.1] - 2023-11-22
 Pico Motion Tracking Offsets and OpenXR Compensation
 
 ### Added
@@ -22,7 +14,7 @@ Pico Motion Tracking Offsets and OpenXR Compensation
 - SG_XR_Devices can now detect when the OpenXR Plugin is used, and attempt to compensate for the fact it uses a different tracking reference on controllers. Currently only working for Quest 3.
 
 
-## [v2.7.0] - 2024-09-11
+## [v2.7.0] - 2023-09-11
 Wrist Tracking Refactor and Settings Menu
 
 ### Added
@@ -56,7 +48,7 @@ Wrist Tracking Refactor and Settings Menu
 
 
 
-## [v2.6.3] - 2024-07-25
+## [v2.6.3] - 2023-07-25
 Bugfixes, Quest Pro, Bluetooth Permissions
 
 ### Added
@@ -76,7 +68,7 @@ Bugfixes, Quest Pro, Bluetooth Permissions
 
 
 
-## [v2.6.2] - 2024-05-14
+## [v2.6.2] - 2023-05-14
 Diagnostics Patch, Doc update, SnapOptions Update
 
 ### Changed
@@ -93,7 +85,7 @@ Diagnostics Patch, Doc update, SnapOptions Update
 
 
 
-## [v2.6.1] - 2024-04-10
+## [v2.6.1] - 2023-04-10
 Nova 2.0 Patch
 
 ### Fixed
@@ -101,7 +93,7 @@ Nova 2.0 Patch
 - Also adds Task System Scripts (which were already included in package v2.6.0) as .cs files to the repository so we can link to their code.
 
 
-## [v2.6.0] - 2024-03-22
+## [v2.6.0] - 2023-03-22
 Nova 2.0 Update, Calibration and Haptics refactor.
 When updating from v2.5 to v2.6, consult the guide at https://senseglove.gitlab.io/SenseGloveDocs/unity/update-to-2-6.html
 

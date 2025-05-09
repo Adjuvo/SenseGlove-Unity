@@ -71,6 +71,34 @@ public class SG_XR_SceneTrackingLinks : MonoBehaviour
         return null;
     }
 
+    public static Transform GetHeadTransform()
+    {
+        if (_currentSceneLink != null && _currentSceneLink.head != null)
+        {
+            return _currentSceneLink.head;
+        }
+        return Camera.main != null ? Camera.main.transform : null;
+    }
+
+    public static Transform GetXRRigTransform()
+    {
+        if (_currentSceneLink != null)
+        {
+            return _currentSceneLink.xrRig;
+        }
+        return null;
+    }
+
+    /// <summary> Retrieve the XR Rig and head transforms, returning true only if both are valid. </summary>
+    /// <param name="xrRig"></param>
+    /// <param name="head"></param>
+    /// <returns></returns>
+    public static bool GetXRRigAndHeadTransforms(out Transform xrRig, out Transform head)
+    {
+        xrRig = GetXRRigTransform();
+        head = GetHeadTransform();
+        return xrRig != null && head != null;
+    }
 
     public void CollectComponents()
     {
