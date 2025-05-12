@@ -1,6 +1,38 @@
 # Changelog
 All notable changes to the SenseGlove Prefabs will be documented in this file.
 
+
+## [v2.8.0] - 2025-18-03
+BLE Binaries and Vive Ultimate Tracker offsets
+
+### Added
+- SG_HandTracking: Added GetNormalizedFlexion() function
+- SG_TrackedHand: The ability to add custom SG_HandComponent to an SG_TrackedHand, that will be included in the Setup phase and ignore collision.
+- SG_SceneTrackingLinks: Easier ways to get the XR Rig and Head Transform.
+- Vive Ultimate Tracker offsets based on the Vive Wave SDK.
+- SG_XR_Devices: Added Vive Ultimate Tracker detection based on Vive Wave SDK.
+
+### Changed
+- SenseCom version updated to v1.8.1 - Bluetooth Low Energy Compatibility and Pairing.
+- SGConnect Binaries updated to v2.200.0 - slight improvement to Linux IPC performance.
+- Android Binaries updated to v1.3.1 - Adds Bluetooth Low Energy compatibility.
+- SG_BasicGesture: Can now check if a set of flexions matches said gesture, rather than relying on the GestureLayer explicitly.
+
+
+
+
+
+## [v2.7.2] - 2025-03-18
+Minor Clarification and SenseCom Update
+
+### Changed
+- Removed Vive Ultimate Tracker enum to avoid confusion about compatibility.
+
+### Fixed
+- Visual glitch in SenseCom calibration of the left hand.
+
+
+
 You are currently using version v2.7.1
 
 ## [v2.7.1] - 2023-11-22
