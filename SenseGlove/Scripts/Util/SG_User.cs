@@ -198,7 +198,7 @@ namespace SG
         }
 
 
-        
+
 
         // Use this for initialization
         void Awake()

@@ -15,6 +15,7 @@ BLE Bugfixes and Standalone Mode
 - Certain Custom Waveforms causing an indexOutOfBoundsException when sent to Bluetooth Serial Devices.
 - SenseCom crashing when multiple gloves are paired, but not turned on nearby.
 - SenseCom crashing silently while gloves are charging.
+- Varjo Devices not identifying themselves as such to Unity, resulting in Controllers being seached for instead of Vive Trackers.
 
 
 

@@ -358,9 +358,10 @@ namespace SG
         private static void TryLinkHands(List<InputDevice> devices)
         {
             string hmdName = headTracking != null ? headTracking.XRDevice.name.ToLower() : "";
+            string manuf = headTracking != null ? headTracking.XRDevice.manufacturer.ToLower() : "";
 
             //It's a headset meant to be used with Vive Trackers.
-            if (hmdName.Length > 0 && (hmdName.Contains("vive") | hmdName.Contains("valve")))
+            if ((hmdName.Length > 0 && (hmdName.Contains("vive") || hmdName.Contains("valve"))) || (manuf.Length > 0 && manuf.Contains("varjo")))
             {
                 if (hmdName.Contains("streaming") || hmdName.Contains("focus")) //it's a Vive Focus... via business streaming (newer versions / OpenVR Version)
                 {
