@@ -81,6 +81,11 @@ public class SG_SettingsEditor : EditorWindow
                 {
                     EditorGUILayout.HelpBox("This disables any kind of initialization! You will be responsible for Initializing / Disposing of SenseGlove Resources. Only use this if you know what you're doing", MessageType.Warning);
                 }
+                else if (sett.SGCommunications == CommunicationSetup.StandaloneModePreferred)
+                {
+                    EditorGUILayout.HelpBox("This will host the the connection process inside your application, if SenseCom is not already running. " +
+                        "Gloves will take some time to connect to the simulation. Since Serial Communications are prone to crashing, make sure so save your work before running.", MessageType.Warning);
+                }
             }
             else if (member.Name.Equals("WristTrackingMethod"))
             {

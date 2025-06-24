@@ -128,6 +128,8 @@ namespace SG
         /// <summary> If set to true, we're also upding ConnectionStates. This is mainly relevant to Android, so it's false by default. </summary>
         public static bool andr_checkConnectionStates = false;
 
+        private static bool hostingSGConnect = false;
+
         // Instance Members
 
         /// <summary> When added into the scene manually, you can assign a 3D text to host any debug messages. </summary>
@@ -415,16 +417,43 @@ namespace SG
                 }
                 else
                 {
-                    Log("Initalizing SenseCom");
-                    if (!SGCore.SenseCom.IsRunning()) //TODO: Standalone Mode?
+                    if (Settings.SGCommunications == CommunicationSetup.SenseComPreferred)
                     {
-                        if (SGCore.SenseCom.StartupSenseCom())
+                        Log("Initalizing SenseCom");
+                        if (!SGCore.SenseCom.IsRunning()) //TODO: Standalone Mode?
                         {
-                            Log("Started up SenseCom.");
+                            if (SGCore.SenseCom.StartupSenseCom())
+                            {
+                                Log("Started up SenseCom.");
+                            }
+                            else
+                            {
+                                Log("SenseCom is not currently running. You won't be able to communicate with your glove(s) until it is running.");
+                            }
+                        }
+                    }
+                    else if (Settings.SGCommunications == CommunicationSetup.StandaloneModePreferred)
+                    {
+                        Log("Initalizing SGConnect");
+                        if (SGCore.SenseCom.IsRunning())
+                        {
+                            Log("Standalone more is preferred, but SenseCom is already running elsewhere. It will host the communication instead. " +
+                                "Please restart both SenseCom and this application for the intended performance.");
                         }
                         else
                         {
-                            Log("SenseCom is not currently running. You won't be able to communicate with your glove(s) until it is running.");
+                            int initCode = SGCore.SGConnect.InitCommunications();
+                            Log("SGConnect Initialization Code: " + initCode);
+                            if (initCode > 0)
+                            {
+                                hostingSGConnect = true;
+                                //Tell the back-end to start exchanging data with any of the Nova 2.0 BLE Devices
+                                PairedDeviceInfo[] nova2BLEs = SG_PairingList.GetDevices("Nova 2", "BLE");
+                                for (int i = 0; i < nova2BLEs.Length; i++)
+                                {
+                                    SGCore.SGConnect.RegisterNova2BLEConnection(nova2BLEs[i].Localname);
+                                }
+                            }
                         }
                     }
                 }
@@ -450,6 +479,16 @@ namespace SG
                 {
                     Log("Disposing Socket Communication");
                     SGCore.DeviceList.Dispose();
+                }
+                else
+                {
+                    if (!hostingSGConnect)
+                        return;
+
+                    //Not on Android
+                    int dispsodeCode = SGCore.SGConnect.DisposeCommunications();
+                    Log("SGConnect Dispose Code: " + dispsodeCode);
+                    hostingSGConnect = false;
                 }
             }
             else

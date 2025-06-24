@@ -10,9 +10,8 @@ namespace SG
         /// <summary> Default Option. An extenal program called SenseCom will run your SenseGlove connections when used in your scene(s). If the program is not running, an attempt is made to start it. </summary>
         SenseComPreferred,
 
-        // Not Yet Implemented...
-        ///// <summary> Default for Android. This application runs SenseGlove communications inside its own runtime.  If SenseCom is already running, ít will keep control over the runtime instead. </summary>
-        //StandaloneModePreferred,
+        /// <summary> Default for Android. This application runs SenseGlove communications inside its own runtime.  If SenseCom is already running, ít will keep control over the runtime instead. </summary>
+        StandaloneModePreferred,
 
         /// <summary> Will neither Start SenseCom nor activate internal communications. Useful for Server-side builds OR manual activation(s). </summary>
         Disabled
