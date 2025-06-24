@@ -2,6 +2,22 @@
 All notable changes to the SenseGlove Prefabs will be documented in this file.
 
 
+## [v2.8.1] - 2025-24-06
+BLE Bugfixes and Standalone Mode
+
+### Added
+- "Standalone Mode" selectable in SG_Settings to host SenseGlove communication process inside the Unity Engine or Builds instead of using SenseCom. It improves performance at the cost of stabilty.
+
+### Changed
+- SenseCom version updated to v1.8.2: CPU performance improvements and stability updates
+
+### Fixed
+- Certain Custom Waveforms causing an indexOutOfBoundsException when sent to Bluetooth Serial Devices.
+- SenseCom crashing when multiple gloves are paired, but not turned on nearby.
+- SenseCom crashing silently while gloves are charging.
+
+
+
 ## [v2.8.0] - 2025-18-03
 BLE Binaries and Vive Ultimate Tracker offsets
 
