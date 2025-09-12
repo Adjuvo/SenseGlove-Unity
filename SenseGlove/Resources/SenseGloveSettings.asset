@@ -20,7 +20,7 @@ MonoBehaviour:
   customRotOffsetRight: {x: 0, y: 0, z: 0}
   customPosOffsetLeft: {x: 0, y: 0, z: 0}
   customRotOffsetLeft: {x: 0, y: 0, z: 0}
-  leftQuat: 1
+  leftQuat: 0
   rightQuat: 0
   customLeftQuat: {x: 0, y: 0, z: 0, w: 1}
   customRightQuat: {x: 0, y: 0, z: 0, w: 1}

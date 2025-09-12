@@ -435,7 +435,7 @@ namespace SG
                     else if (Settings.SGCommunications == CommunicationSetup.StandaloneModePreferred)
                     {
                         Log("Initalizing SGConnect");
-                        if (SGCore.SenseCom.IsRunning())
+                        if (SGCore.SGConnect.ScanningActive())
                         {
                             Log("Standalone more is preferred, but SenseCom is already running elsewhere. It will host the communication instead. " +
                                 "Please restart both SenseCom and this application for the intended performance.");

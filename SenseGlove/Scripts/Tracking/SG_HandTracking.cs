@@ -190,12 +190,28 @@ namespace SG
             return false;
         }
 
-
+        //-----------
+        // These offsers are used to compensate for OpenXR's deviation from a device plugin's tracking reference location on controllers etc.
+        // Since our offsets are usually based on the HMD's native plugin tracking reference.
 
         private static Vector3 openXRComp_pos_QUEST3_L = new Vector3(0.000f, -0.017f, 0.045f);
         private static Quaternion openXRComp_rot_QUEST3_L = new Quaternion(0.497f, 0.025f, 0.030f, 0.867f);
         private static Vector3 openXRComp_pos_QUEST3_R = new Vector3(-0.001f, -0.020f, 0.048f);
         private static Quaternion openXRComp_rot_QUEST3_R = new Quaternion(0.500f, -0.001f, -0.002f, 0.866f);
+
+
+        private static Vector3 openXRComp_pos_QUEST2_L = new Vector3(0.001f, -1.218f, 0.044f);
+        private static Quaternion openXRComp_rot_QUEST2_L = new Quaternion(0.501f, 0.012f, -0.003f, 0.865f);
+
+        private static Vector3 openXRComp_pos_QUEST2_R = new Vector3(0.000f, -1.221f, 0.046f);
+        private static Quaternion openXRComp_rot_QUEST2_R = new Quaternion(0.498f, 0.020f, -0.001f, 0.867f);
+
+
+        private static Vector3 openXRComp_pos_QUESTPRO_L = new Vector3(0.003f, -1.221f, 0.043f);
+        private static Quaternion openXRComp_rot_QUESTPRO_L = new Quaternion(0.502f, -0.002f, 0.003f, 0.865f);
+
+        private static Vector3 openXRComp_pos_QUESTPRO_R = new Vector3(0.001f, -1.222f, 0.046f);
+        private static Quaternion openXRComp_rot_QUESTPRO_R = new Quaternion(0.498f, -0.003f, 0.005f, 0.867f);
 
 
         public static bool GetAdditionalOffsets(TrackingHardware offsets, bool rightHand, out Vector3 extraPosOffset, out Quaternion extraRotOffset)
@@ -205,6 +221,16 @@ namespace SG
                 case TrackingHardware.Quest3Controller:
                     extraPosOffset = rightHand ? openXRComp_pos_QUEST3_R : openXRComp_pos_QUEST3_L;
                     extraRotOffset = rightHand ? openXRComp_rot_QUEST3_R : openXRComp_rot_QUEST3_L;
+                    return true;
+
+                case TrackingHardware.Quest2Controller:
+                    extraPosOffset = rightHand ? openXRComp_pos_QUEST2_R : openXRComp_pos_QUEST2_L;
+                    extraRotOffset = rightHand ? openXRComp_rot_QUEST2_R : openXRComp_rot_QUEST2_L;
+                    return true;
+
+                case TrackingHardware.QuestProController:
+                    extraPosOffset = rightHand ? openXRComp_pos_QUESTPRO_R : openXRComp_pos_QUESTPRO_L;
+                    extraRotOffset = rightHand ? openXRComp_rot_QUESTPRO_R : openXRComp_rot_QUESTPRO_L;
                     return true;
 
                 default:

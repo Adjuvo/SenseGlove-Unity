@@ -8,6 +8,7 @@ namespace SG.Util
 		//--------------------------------------------------------------------------------------------------------------------------
 		// Member Variables
 
+		
 		/// <summary> Hotkey to reset the current scene </summary>
 		public KeyCode resetKey = KeyCode.R;
 		/// <summary> Hotkey to shut down the application </summary>

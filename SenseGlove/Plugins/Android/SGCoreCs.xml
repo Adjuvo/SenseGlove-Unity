@@ -2381,6 +2381,13 @@
             <summary> Stop any Flexion Threshold active on the chosen finger </summary>
             <returns></returns>
         </member>
+        <member name="M:SGCore.HandLayer.ClearHaptics(System.Boolean)">
+            <summary> Clears the Haptics in buffer for the left or right hand </summary>
+            <param name="rightHand"></param>
+        </member>
+        <member name="M:SGCore.HandLayer.ClearHaptics">
+            <summary> Clears the haptics in buffer for both gloves </summary>
+        </member>
         <member name="T:SGCore.IFingerFFB_SetLevels">
             <summary> Represents a device of which you can directly set the Force-Feedback level for one or more fingers. </summary>
         </member>
@@ -5413,6 +5420,9 @@
             <param name="referenceSub"></param>
             <param name="inclusive"></param>
             <returns></returns>
+        </member>
+        <member name="M:SGCore.SGDevice.ClearHaptics">
+            <summary> Clears any Haptics references so the channel(s) remain unused. For IPC methods. </summary>
         </member>
         <member name="T:SGCore.PosTrackingHardware">
             <summary> Tracking Hardware used for positional tracking. </summary>

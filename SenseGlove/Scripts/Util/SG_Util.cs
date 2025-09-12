@@ -1677,14 +1677,6 @@ namespace SG.Util
         //------------------------------------------------------------------------------------------------------------------------------------------
         // Folders / IO
 
-        /// <summary> Returns the SenseGlove directory on the system; "MyDocuments/SenseGlove/" </summary>
-        public static string SenseGloveDir
-        {
-            get
-            {
-                return CombineDir(GetDirectory(StorageDir.MyDocuments), "SenseGlove\\");
-            }
-        }
 
         /// <summary> Returns a path to a commonly used directory </summary>
         /// <param name="directory"></param>
@@ -1699,9 +1691,9 @@ namespace SG.Util
                 case StorageDir.MyDocuments:
                     return System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments);
                 case StorageDir.AppData:
-                    return Application.persistentDataPath + "\\";
+                    return Application.persistentDataPath;
                 case StorageDir.SGCommon:
-                    return SenseGloveDir;
+                    return SGCore.Util.FileIO.GetSenseGloveFileDirectory();
                 case StorageDir.ExeDir:
                     return System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName;
             }
@@ -1710,21 +1702,6 @@ namespace SG.Util
         }
 
 
-        /// <summary> Ensure a directory ends in a "\", if it has any charaters. </summary>
-        /// <param name="directory"></param>
-        /// <returns></returns>
-        public static string ValidateDir(string directory)
-        {
-            if (directory.Length > 0) //gotta check it's still there.
-            {
-                char last = directory[directory.Length - 1];
-                if (last != '\\' && last != '/')
-                {
-                    directory += "\\"; //add one last subslash
-                }
-            }
-            return directory;
-        }
 
         /// <summary> Collect the path to a subfolder in a specific Directory  </summary>
         /// <param name="directory"></param>
@@ -1732,26 +1709,9 @@ namespace SG.Util
         /// <returns></returns>
         public static string GetDirectory(StorageDir directory, string subDir)
         {
-            return CombineDir(GetDirectory(directory), subDir);
+            return System.IO.Path.Combine(GetDirectory(directory), subDir);
         }
 
-        /// <summary> Combine two directories into a valid path. Either could be empty. Ensures no duplicate entries exist. </summary>
-        /// <param name="startDir"></param>
-        /// <param name="subDir"></param>
-        /// <returns></returns>
-        public static string CombineDir(string startDir, string subDir)
-        {
-            startDir = ValidateDir(startDir); //ensure start ends in "\"
-            if (startDir.Length > 0 && subDir.Length > 0) //ensure the end one doesn't.
-            {
-                char first = subDir[0];
-                if (first == '/' || first == '\\')
-                {
-                    subDir = subDir.Substring(1);
-                }
-            }
-            return startDir + subDir;
-        }
 
         public static void ShowDirectory(string itemPath)
         {
