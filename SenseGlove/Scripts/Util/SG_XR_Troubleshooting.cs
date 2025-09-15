@@ -290,11 +290,11 @@ namespace SG
                     for (int i = 0; i < states.Length; i++)
                     {
                         //This is not YET been detected as a SenseGlove Device
-                        bool isSGDevice = states[i].LastTestState == SGCore.Util.SC_TestState.TS_NEW_SGDEVICE || states[i].LastTestState == SGCore.Util.SC_TestState.TS_EXISTING_SGDEVICE;
+                        bool isSGDevice = states[i].LastTestState == (int)SGCore.Util.SC_TestState.TS_NEW_SGDEVICE || states[i].LastTestState == (int)SGCore.Util.SC_TestState.TS_EXISTING_SGDEVICE;
                         if (!isSGDevice)
                         {
                             remainingConnections++;
-                            if (states[i].LastTestState == SGCore.Util.SC_TestState.TS_IDLING)
+                            if (states[i].LastTestState == (int)SGCore.Util.SC_TestState.TS_IDLING)
                             {
                                 idleConnections++;
                             }
@@ -305,7 +305,7 @@ namespace SG
                             //string connCode = states[i].LastConnectionCode.ToString(); //not relevant on android; it's either 1 or -1, apparently.
                             string exitCode = states[i].LastExitCode.ToString();
                             connStates += "\n" + i.ToString() + ": Test State: " + tstState.ToString();
-                            if (states[i].LastExitCode != SGCore.Util.SC_ExitCode.E_UNKNOW)
+                            if (states[i].LastExitCode != (int)SGCore.Util.SC_ExitCode.E_UNKNOW)
                             {
                                 connStates += ", Exit Code: " + states[i].LastExitCode.ToString();
                             }

@@ -82,7 +82,7 @@ public class SG_XR_ListDevices : MonoBehaviour
                     SGCore.Util.ConnectionStatus cState = SGCore.Util.ConnectionStatus.Parse(state[i]);
                     report += "\n" + ( cState.IsConnected ? "Connected" : "Disconnected")
                         + "/ State: " + cState.LastConnectionCode.ToString();
-                    if (cState.LastExitCode != SGCore.Util.SC_ExitCode.E_UNKNOW)
+                    if (cState.LastExitCode != (int)SGCore.Util.SC_ExitCode.E_UNKNOW)
                     {
                         report += " / Exit Code: " + cState.LastExitCode.ToString();
                     }
