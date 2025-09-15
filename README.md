@@ -1,7 +1,7 @@
 # SenseGlove-Unity
 The latest stable Unity SDK for the SenseGlove, built using Unity 2022.3.32f1. Can be imported into Unity 2022.3 and up, which will automatically update the assets for you. Using older Unity versions will cause issues.
 
-Current version is v2.8.1, released on the 24th of June 2025.
+Current version is v2.9.0, released on the 15th of September 2025.
 
 **Important notice**: After 4-5 years of supporting Unity 2017 and 2018, the time has come for us to raise the minimum Unity version from 2017.4 to 2019.4 (LTS version). This update will allow us to make more use of the Unity XR system, and add vr-ready examples to the plugin. This means that your Unity 2017-2018 projects will no longer be able to receive updates to the SenseGlove Unity Plugin. If you'd like to continue using Unity 2017-2018, you can still use versions 1.0.0 - 2.3.1. SenseCom operates independently from the Unity Editor, and can still be used with our plugins of v2.0 and above.
 
