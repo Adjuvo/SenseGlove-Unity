@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dfd9edaac6ad8cf47b61ed50b59aa8eb, type: 3}
+  m_Name: RampUpPalm 1
+  m_EditorClassIdentifier: 
+  intendedMotor: 7
+  amplitude: 0.235
+  waveformType: 1
+  attackTime: 0
+  sustainTime: 0.43
+  decayTime: 0.367
+  RepeatAmount: 1
+  RepeatInfinite: 0
+  startFrequency: 120
+  endFrequency: 300
+  frequencySwitchTime: 0.907
+  frequencySwitchMultiplier: 1.98
+  hapticGeneratorFile: {fileID: 0}

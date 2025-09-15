@@ -1,8 +1,30 @@
 # Changelog
 All notable changes to the SenseGlove Prefabs will be documented in this file.
 
+## [v2.9.0] - 2025-09-12
+New Calibration Void and Bug Fixes
 
-## [v2.8.1] - 2025-24-06
+### Added
+- SG_CalibrationVoid_Extended: A new Calibration logic for both XR and 2D, that uses more clear examples and motions for a more accurate tracking. It can also calibrate wrist location. Logic has been split from scene switching, so it can be placed inside a separate scene without issue. 
+- Assorted components, animations and materials used within this calibration void.
+- SG_PreloadNextScene: Loads a specific scene in the background, and only move to it when a particluar function is called. Used inside the Calibration Void.
+- SG_FadeUICanvas: Controls alpha value of a CanvasGroup to fade in/out. Used inside the Calibration Void.
+- Offset Compensation when using OpenXR with Quest 2 and Quest Pro controllers - since OpenXR does not have the same tracking reference as native Oculus.
+
+
+### Changed
+- Moved the old Calibration Void inside the CalibrationVoid/Legacy folder, for those who still prefer a 'faster' (but less accurate) calibration.
+- Removed dependency on Newtonsoft.Json package for SG_PairingList.
+
+
+### Fixed
+- False Positive where SG_Core checked if another SenseCom instance was already running in Standalone Mode.
+- Improper path combines used by a legacy SG_FileIO Class that would cause files to appear elsewhere on Linux.
+
+
+
+
+## [v2.8.1] - 2025-06-24
 BLE Bugfixes and Standalone Mode
 
 ### Added
@@ -19,7 +41,7 @@ BLE Bugfixes and Standalone Mode
 
 
 
-## [v2.8.0] - 2025-18-03
+## [v2.8.0] - 2025-05-12
 BLE Binaries and Vive Ultimate Tracker offsets
 
 ### Added

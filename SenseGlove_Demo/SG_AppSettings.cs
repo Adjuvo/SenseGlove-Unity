@@ -86,7 +86,7 @@ namespace SG.Util
 				//TODO: Load the file or, failing that, create a new instance.
 				string iniPath = iniDir + iniName;
 				string[] iniContent;
-				if (SG.Util.FileIO.ReadTxtFile(iniPath, out iniContent))
+				if (SGCore.Util.FileIO.ReadTxtFile(iniPath, out iniContent))
                 {
 					if (PortableSettings.Deserialize(iniContent, out iniValues))
                     {
@@ -107,7 +107,7 @@ namespace SG.Util
 			if (iniValues != null)
 			{
 				string[] lines = iniValues.Serialize();
-				if (SG.Util.FileIO.SaveTxtFile(iniDir, iniName, lines, false))
+				if (SGCore.Util.FileIO.SaveTxtFile(iniDir, iniName, lines, false))
                 {
 					//Debug.Log("Saved INI settings:\n" + SG.Util.SG_Util.PrintArray(lines));
                 }
