@@ -9,12 +9,7 @@ namespace SG.XR
         //--------------------------------------------------------------------------------------------------------------------------
         // Member Variables
 
-        /// <summary> Optional component to have the user assign the correct variables of a VR headset. Automatically populated if the headsetDetection finds one. </summary>
-        public SG_XR_Rig vrRig;
-
-        /// <summary> Optional component that automatically detects vr headsets. </summary>
-        public SG_XR_Setup headsetDetection;
-
+        //TODO: add an option to link via SG_XR_Devies or via manual script assignement
 
         [Header("RecenterOptions")]
         public Transform roomCenter;
@@ -59,11 +54,12 @@ namespace SG.XR
         /// <summary> Places the current headset at the target (based on this script's parameters) </summary>
         public void Recenter(Transform target)
         {
-            if (this.vrRig != null && target != null)
+            if (SG_XR_SceneTrackingLinks.CurrentSceneLinks != null && target != null)
             {
-                CalculateRigLocation(vrRig.rigRoot.transform, vrRig.headTransfrom, target);
+                CalculateRigLocation(SG_XR_SceneTrackingLinks.CurrentSceneLinks.xrRig, SG_XR_SceneTrackingLinks.CurrentSceneLinks.head, target);
             }
         }
+
 
 
 
@@ -145,27 +141,12 @@ namespace SG.XR
             }
         }
 
-        /// <summary> Notify this RoomSetup that we've found a VR Rig. Called if we're linked to a SG_XR_Setup that has detected a headset. </summary>
-        /// <param name="headset"></param>
-        public void VRHeadsetFound(SG_XR_Rig headset)
-        {
-            if (vrInit && headset != null)
-            {
-                this.vrRig = headset;
-                vrInit = false;
-                if (keepBetweenSessions)
-                {
-                    ApplyLastLocation(vrRig.rigRoot.transform);
-                    //StoreRigVariables(vrRig.rigRoot.transform); //store the new variables, in case matchRotation ect have changed since last time?
-                }
-            }
-        }
 
         private IEnumerator RecenterAfter(float timeInSeconds)
         {
             yield return new WaitForSeconds(timeInSeconds);
-            ApplyLastLocation(vrRig.rigRoot.transform);
-            //Debug.Log("Recetneren die hap!");
+            Transform rig = SG_XR_SceneTrackingLinks.CurrentSceneLinks != null ? SG_XR_SceneTrackingLinks.CurrentSceneLinks.xrRig : null;
+            ApplyLastLocation(rig);
         }
 
         //--------------------------------------------------------------------------------------------------------------------------
@@ -177,17 +158,6 @@ namespace SG.XR
             {
                 this.roomCenter = this.transform;
             }
-
-            //// Scan for VRRigs in case you load this Room Setup into an existing scene.
-            //if (this.vrRig == null && headsetDetection == null)
-            //{   // nothing's been assigned, so let's try
-            //    this.headsetDetection = GameObject.FindObjectOfType<SG_XR_Setup>();
-            //    if (headsetDetection == null) //still null
-            //    {
-            //        this.vrRig = GameObject.FindObjectOfType<SG_XR_Rig>();
-            //    }
-            //}
-
         }
 
         private void Start()
@@ -196,42 +166,12 @@ namespace SG.XR
             {
                 StartCoroutine(RecenterAfter(0.1f));
             }
-            if(recenterOnStartScene)
+            if ( recenterOnStartScene )
             {
                 Recenter();
             }
         }
 
-        void OnEnable()
-		{
-			if (this.headsetDetection != null)
-			{
-				this.headsetDetection.vrSetDetected.AddListener(VRHeadsetFound);
-			}
-		}
 
-		void OnDisable()
-		{
-			if (this.headsetDetection != null)
-			{
-				this.headsetDetection.vrSetDetected.AddListener(VRHeadsetFound);
-			}
-		}
-
-//        void Update()
-//        {
-//            if (vrInit && vrRig != null)
-//            {
-//                VRHeadsetFound(vrRig);
-//            }
-//#if ENABLE_INPUT_SYSTEM //if Unitys new Input System is enabled....
-//#else
-//                        if (Input.GetKeyDown(recenterHotKey))
-//                        {
-//                            this.Recenter();
-//                        }
-//#endif
-//            }
-
-        }
     }
+}

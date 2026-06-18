@@ -27,7 +27,7 @@ namespace SG
         {
             //Always make sure we've initialize
             SG_Core.Setup(); //ensures this is set up
-            if (SGCore.HandLayer.GetHandPose(rightHand, out SGCore.HandPose iHandPose))
+            if (SG_Core.GetHandPose(rightHand, out SGCore.HandPose iHandPose))
             {
                 handPose = new SG_HandPose(iHandPose);
                 if (HandTrackingSwapped)
@@ -43,7 +43,7 @@ namespace SG
 
         public static bool GetNormalizedFlexions(bool rightHand, out float[] flexions)
         {
-            if (SGCore.HandLayer.GetHandPose(rightHand, out SGCore.HandPose iHandPose))
+            if (SG_Core.GetHandPose(rightHand, out SGCore.HandPose iHandPose))
             {
                 flexions = iHandPose.GetNormalizedFlexion(true);
                 return true;
@@ -131,7 +131,7 @@ namespace SG
                     SGCore.Kinematics.Vect3D iRefPos = SG.Util.SG_Conversions.ToPosition(trackerPos), iGlovePos;
                     SGCore.Kinematics.Quat iRefRot = SG.Util.SG_Conversions.ToQuaternion(trackerRot), iGloveRot;
 
-                    if (SGCore.HandLayer.GetGloveInstance(rightHand, out SGCore.HapticGlove glove))
+                    if (SG_Core.GetGloveInstance(rightHand, out SGCore.HapticGlove glove))
                     {
                         glove.GetGloveLocation(iRefPos, iRefRot, iHardware, out iGlovePos, out iGloveRot);
                         glovePosition = SG.Util.SG_Conversions.ToUnityPosition(iGlovePos);

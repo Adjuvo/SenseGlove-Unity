@@ -7,6 +7,13 @@ using UnityEngine.XR;
 
 namespace SG.XR
 {
+    public enum ButtonActivationMode
+    {
+        Anytime,
+        WithGloveOnly,
+        ControllerOnly
+    }
+
     public enum XRControllerBtn
     {
         LeftTrigger = 0,
@@ -28,6 +35,8 @@ namespace SG.XR
     {
 
         [SerializeField] protected XRControllerBtn listenTo = XRControllerBtn.RightTrigger;
+
+        [SerializeField] protected ButtonActivationMode buttonActivates = ButtonActivationMode.Anytime;
 
         public UnityEvent ButtonPressed = new UnityEvent();
         public UnityEvent ButtonReleased = new UnityEvent();
@@ -95,6 +104,20 @@ namespace SG.XR
         }
 
 
+        public bool ButtonCanActivate()
+        {
+            switch (this.buttonActivates)
+            {
+                case ButtonActivationMode.WithGloveOnly:
+                    return SGCore.HandLayer.DeviceConnected(this.handedNess);
+                case ButtonActivationMode.ControllerOnly:
+                    return !SGCore.HandLayer.DeviceConnected(this.handedNess);
+                default:
+                    return true;
+            }
+
+        }
+
         protected void CheckPressed()
         {
             SG_XR_Devices.SG_XR_HandReference device;
@@ -128,7 +151,7 @@ namespace SG.XR
                         if (this.IsPressed && !pressed)
                         {
                             //Debug.Log(this.listenTo.ToString() + " - " + button.name + " is Released");
-                            if (SGCore.HandLayer.DeviceConnected(this.handedNess)) //Only if we have a glove connected....
+                            if (ButtonCanActivate())
                             {
                                 ButtonReleased.Invoke();
                             }
@@ -136,7 +159,7 @@ namespace SG.XR
                         else if (!this.IsPressed && pressed)
                         {
                             //Debug.Log(this.listenTo.ToString() + " - " + button.name + " is Pressed");
-                            if (SGCore.HandLayer.DeviceConnected(this.handedNess)) //Only if we have a glove connected....
+                            if (ButtonCanActivate())
                             {
                                 ButtonPressed.Invoke();
                             }

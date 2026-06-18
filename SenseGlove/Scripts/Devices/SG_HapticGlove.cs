@@ -7,6 +7,7 @@ using UnityEngine.Events;
 using SGCore.Haptics;
 using SGCore.CV;
 using System.Collections;
+using System;
 
 namespace SG
 {
@@ -109,18 +110,6 @@ namespace SG
         //--------------------------------------------------------------------------------------------------------
         // Connection Functions
 
-        /// <summary> Returns the first valid instance of a SGCore.HapticGlove object, based on HandSide parameters </summary>
-        /// <param name="handSide"></param>
-        /// <param name="gloveInstance"></param>
-        /// <returns></returns>
-        public static bool GetGloveInstance(HandSide handSide, out SGCore.HapticGlove gloveInstance)
-        {
-            if (handSide == HandSide.AnyHand)
-            {
-                return SGCore.HapticGlove.GetGlove(out gloveInstance); //returns the first connected glove
-            }
-            return SGCore.HapticGlove.GetGlove(handSide == HandSide.RightHand, out gloveInstance); //returns the firce connected glove that matches left/right parameters.
-        }
 
         /// <summary> The Internal HapticGlove that this glove is linked to.Is null when not connected. </summary>
         public SGCore.HapticGlove InternalGlove
@@ -144,7 +133,7 @@ namespace SG
         protected virtual void UpdateConnection()
         {
             SGCore.HapticGlove uGlove;
-            if (GetGloveInstance(this.connectsTo, out uGlove))
+            if (SG_Core.GetGloveInstance(this.connectsTo, out uGlove))
             {
                 lastGlove = uGlove; //updates the refrence
                 if (!wasConnected) //glove has reconnected
@@ -379,16 +368,11 @@ namespace SG
         /// <returns></returns>
         public bool GetHandPose(SGCore.Kinematics.BasicHandModel handDimensions, out SG_HandPose handPose)
         {
+            if (lastGlove != null)
+                return SG_HandTracking.GetSGHandPose(this.lastGlove.IsRight(), out handPose);
+
             handPose = null;
-            if (this.lastGlove != null)
-            {
-                SGCore.HandPose iPose;
-                if (this.lastGlove.GetHandPose(handDimensions, out iPose))
-                {
-                    handPose = ToUnityPose(iPose);
-                }
-            }
-            return handPose != null;
+            return false;
         }
 
         /// <summary> Convert and internal SenseGlove Pose into a Unity one, where I also add the wrist location </summary>
@@ -723,10 +707,10 @@ namespace SG
                 }
             }
 
-            if (this.lastGlove != null)
-            {
-                bool sent = this.lastGlove.SendHaptics(); // Shushing everything!
-            }
+            //if (this.lastGlove != null)
+            //{
+            //    bool sent = this.lastGlove.SendHaptics(); // Shushing everything!
+            //}
         }
 
 

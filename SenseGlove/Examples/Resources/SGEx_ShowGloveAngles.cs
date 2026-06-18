@@ -36,7 +36,7 @@ namespace SG.Examples
         {
             sensors = new float[0][];// = senseGlove.GloveData.gloveValues;
             SGCore.HapticGlove glove;
-            if (SG_HapticGlove.GetGloveInstance(hapticGlove.connectsTo, out glove))  //hapticGlove.GetInternalObject();
+            if (SG_Core.GetGloveInstance(hapticGlove.connectsTo, out glove)) 
             {
                 if (glove.GetDeviceType() == SGCore.DeviceType.SENSEGLOVE)
                 {

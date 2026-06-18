@@ -559,7 +559,7 @@ namespace SG.Util
             //translation
             Vector3 dPos = (targetPosition - obj.transform.position);
             float velocity = dPos.magnitude / deltaTime;
-            obj.velocity = dPos.normalized * velocity;
+            obj.linearVelocity = dPos.normalized * velocity;
         }
 
         /// <summary> Add a rigidbody to a GameObject if one does not exist yet and apply the desired parameters. </summary>
@@ -1456,7 +1456,7 @@ namespace SG.Util
             bool velocityBasedTranslate = RBTranslation == TranslateMode.OldVelocity || RBTranslation == TranslateMode.ImprovedVelocity;
             if (zeroVelocity && velocityBasedTranslate)
             {
-                rigidBody.velocity = Vector3.zero;
+                rigidBody.linearVelocity = Vector3.zero;
             }
             Vector3 dPos = (targetPosition - rigidBody.position);
             // Vector3 dir = dPos.normalized;
@@ -1469,7 +1469,7 @@ namespace SG.Util
                 else if (RBTranslation == TranslateMode.OldVelocity)
                 {
                     float velocity = dPos.magnitude / deltaTime;
-                    rigidBody.velocity = dPos.normalized * velocity;
+                    rigidBody.linearVelocity = dPos.normalized * velocity;
                 }
                 else if (RBTranslation == TranslateMode.OfficialMovePos)
                 {
@@ -1490,12 +1490,12 @@ namespace SG.Util
                 {
                     float velocity = dPos.magnitude / deltaTime; //the speed I need to get there.
                     velocity = Mathf.Clamp(velocity, 0, moveSpeed); //clamped to my own max speed
-                    rigidBody.velocity = dPos.normalized * velocity;
+                    rigidBody.linearVelocity = dPos.normalized * velocity;
                 }
             }
             if (zeroVelocity && velocityBasedTranslate)
             {
-                rigidBody.velocity = Vector3.zero;
+                rigidBody.linearVelocity = Vector3.zero;
             }
         }
 

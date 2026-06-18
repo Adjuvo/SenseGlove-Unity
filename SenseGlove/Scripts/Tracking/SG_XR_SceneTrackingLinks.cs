@@ -46,6 +46,17 @@ public class SG_XR_SceneTrackingLinks : MonoBehaviour
         }
     }
 
+    /// <summary> Returns the amount of valid (not null)  links in this SG_SceneTrackingLinks script. </summary>
+    /// <returns></returns>
+    public int ValidLinks()
+    {
+        int res = this.xrRig != null ? 1 : 0;
+        if (this.head != null) { res++; }
+        if (this.leftHandTrackingDevice != null) { res++; }
+        if (this.rightHandTrackingDevice != null) { res++; }
+        return res;
+    }
+
 
     /// <summary> Retrieve the XR Rig within the current scene </summary>
     public static Transform SceneXRRig
@@ -130,7 +141,13 @@ public class SG_XR_SceneTrackingLinks : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("There seems to already be a SG_XR_SceneTrackingLinks script in this scene. This may mean that your scripts aren't properly linked.", this);
+            if (_currentSceneLink != this && _currentSceneLink.ValidLinks() == 0)
+            {
+                Debug.LogWarning("There seems to already be a SG_XR_SceneTrackingLinks script in this scene. But it isn' properly linked. So we'd rather use this one instead.", this);
+                _currentSceneLink = this;
+            }
+            else
+                Debug.LogWarning("There seems to already be a SG_XR_SceneTrackingLinks script in this scene. This may mean that your scripts aren't properly linked.", this);
         }
     }
 

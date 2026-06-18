@@ -49,6 +49,9 @@ namespace SG
         /// <summary> Optional component to snap the hand to this Grabable. </summary>
         public SG_SnapOptions snapOptions;
 
+        /// <summary> Optional component to make it easier or more difficult to grab object(s) </summary>
+        public SG_CustomGrabLimit grabLimits;
+
         /// <summary> If true, this object will still keep track of its own Velocity, even if it's not moved by Physics. </summary>
         public bool alwaysTrackVelocity = false;
 
@@ -162,7 +165,7 @@ namespace SG
             SG.Util.SG_Util.GetCurrentBaseLocation(myTransf, baseStartParent, this.baseStartPosition, this.baseStartRotation, out currBasePos, out currBaseRot);
             if (this.physicsBody != null)
             {
-                this.physicsBody.velocity = Vector3.zero;
+                this.physicsBody.linearVelocity = Vector3.zero;
                 this.physicsBody.angularVelocity = Vector3.zero;
                 if (resetRBStats && this.rbDefaults != null)
                 {
@@ -361,13 +364,13 @@ namespace SG
                     //Unity absolutely refuses to zero any velocity until I set the body to Kinematic
                     //  this.IsKinematic = true;
                     physicsBody.angularVelocity = Vector3.zero;
-                    physicsBody.velocity = Vector3.zero;
+                    physicsBody.linearVelocity = Vector3.zero;
                     RestorePhysicsBody(); //return it back to the original states with velocities of 0
                     if (!this.physicsBody.isKinematic) //and add my last velocity if I'm not kinemtaics.
                     {
                         //Add veloctiy of either this object or of the hand...
                         this.physicsBody.angularVelocity = this.SmoothedAngularVelocity;
-                        this.physicsBody.velocity = this.SmoothedVelocity;
+                        this.physicsBody.linearVelocity = this.SmoothedVelocity;
                     }
                 }
             }
@@ -378,7 +381,7 @@ namespace SG
                     //bool currKin = this.physicsBody.isKinematic;
                     // this.IsKinematic = true;
                     physicsBody.angularVelocity = Vector3.zero;
-                    physicsBody.velocity = Vector3.zero;
+                    physicsBody.linearVelocity = Vector3.zero;
                     // this.IsKinematic = currKin;
                    // Debug.Log("Tranferring. Zeroien velocity");
                 }
@@ -498,12 +501,17 @@ namespace SG
             base.SetupScript();
             this.UpdateRigidbodyDefaults(); //physicsBody should have been assigned in base.
             this.SaveCurrentLocation();
-            if (this.snapOptions == null)
-            {
-                this.snapOptions = this.GetComponent<SG_SnapOptions>();
-            }
+            if (snapOptions == null)
+                snapOptions = this.GetComponent<SG_SnapOptions>();
+            if (grabLimits == null)
+                grabLimits = this.GetComponent<SG_CustomGrabLimit>();
         }
 
+
+        public virtual bool WithinGrabLimits(float[] normalizedFlexions)
+        {
+            return this.grabLimits == null || this.grabLimits.WithinGrabLimits(normalizedFlexions);
+        }
 
 
         //-------------------------------------------------------------------------------------------------------------------------

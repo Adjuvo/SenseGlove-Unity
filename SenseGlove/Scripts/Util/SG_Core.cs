@@ -1,4 +1,6 @@
-﻿/************************************************************************************
+﻿#define USE_WORKER_THREAD
+
+/************************************************************************************
 Filename    :   SG_Core.cs
 Content     :   Ensures the connection between your Unity App and SenseGlove devices. Holds important references.
 Author      :   Max Lammers
@@ -10,6 +12,8 @@ using UnityEngine;
 using SG.Util;
 using System.Collections.Generic;
 using UnityEngine.UI;
+using System.Threading;
+using SGCore;
 #if UNITY_ANDROID && !UNITY_EDITOR && UNITY_2020_2_OR_NEWER
 	using UnityEngine.Android;
 #endif
@@ -21,15 +25,15 @@ namespace SG
 		Unknown,
 		Nova2,
 		Nova1,
-		DK1Exoskeleton
-	}
+        DK1Exoskeleton
+    }
 
     /// <summary> A Core part of the SenseGlove API that exist in the scene. Manages the chosen communication method, and allows access to Settings. </summary>
     public sealed class SG_Core : MonoBehaviour
     {
         //---------------------------------------------------------------------------------------------------------------------------------------------------------------
         // Singleton Pattern
-
+       
         /// <summary> Singleton pattern for the SG_Core Class. You're not supposed to referencing this class anywhere. Use GetInstance() instead. </summary>
         private static SG_Core _instance = null;
 
@@ -83,8 +87,9 @@ namespace SG
 		// Public Functions
 
 
-		/// <summary> Ensures an instance of SG_Core is running in the background </summary>
-		public static void Setup()
+
+        /// <summary> Ensures an instance of SG_Core is running in the background </summary>
+        public static void Setup()
 		{
 			GetInstance(); //this will create one if it doesn't exist yet..
 		}
@@ -136,6 +141,25 @@ namespace SG
         public TextMesh debugText;
         /// <summary> When added into the scene manually, you can assign a 2D UI text to host any debug messages. </summary>
         public Text debugUIText;
+
+
+
+#if USE_WORKER_THREAD
+        //--------------------------------------------------------------
+        // Worker Thread related topics
+
+
+        // I'm Offloading sending of Haptics to a Worker thread (on Windows) so  
+
+        /// <summary> Wotker thread to try and stop any FPS impacts from SenseGlove IPC methods. </summary>
+        private static SG_HapticGloveThread sgWorkerThread = null;
+
+
+        private static SGCore.HapticGlove s_leftGlove = null, s_rightGlove = null;
+        private static readonly object gloveInstanceLock = new object();
+        private static SGCore.HandPose s_leftPose = null, s_rightPose = null;
+        private static readonly object gloveDataLock = new object();
+#endif
 
 
 #if UNITY_ANDROID && !UNITY_EDITOR
@@ -322,19 +346,18 @@ namespace SG
         private static void Andr_TryDispose()
         {
 #if UNITY_ANDROID && !UNITY_EDITOR
-        			if (libraryInit == 1) //we did initialize the library!
-        			{
-        				int disposeCode = SG.Util.SG_IAndroid.Andr_Dispose(); //TDOD: Something with the code
-        				SGCore.Util.SGConnect_Android.An_Dispose(); //let our back-end know we've finished.
-        				Log("Disposed of Android Back-End with code " + disposeCode);
-        			}
-        			if (classLinked)
-        			{
-        				bool unlinked = SG.Util.SG_IAndroid.DisposeLink(); //explicitly remove the link
-        				classLinked = false;
-        			}
-        			SGCore.Util.SGConnect_Android.AndroidHapticEvent -= SGConnect_Android_AndroidHapticEvent; //Unsubscribe from the event.
-
+        	if (libraryInit == 1) //we did initialize the library!
+        	{
+        		int disposeCode = SG.Util.SG_IAndroid.Andr_Dispose(); //TDOD: Something with the code
+        		SGCore.Util.SGConnect_Android.An_Dispose(); //let our back-end know we've finished.
+        		Log("Disposed of Android Back-End with code " + disposeCode);
+        	}
+        	if (classLinked)
+        	{
+        		bool unlinked = SG.Util.SG_IAndroid.DisposeLink(); //explicitly remove the link
+        		classLinked = false;
+        	}
+        	SGCore.Util.SGConnect_Android.AndroidHapticEvent -= SGConnect_Android_AndroidHapticEvent; //Unsubscribe from the event.
 #endif
         }
 
@@ -415,9 +438,9 @@ namespace SG
                     Log("Initalizing Socket Communication");
                     SGCore.DeviceList.Initialize();
                 }
-                else
+                else //this is the Default a.k.a. IPC Strings
                 {
-                    if (Settings.SGCommunications == CommunicationSetup.SenseComPreferred)
+                    //if (Settings.SGCommunications == CommunicationSetup.SenseComPreferred) //now we're all doing the same thing
                     {
                         Log("Initalizing SenseCom");
                         if (!SGCore.SenseCom.IsRunning()) //TODO: Standalone Mode?
@@ -431,32 +454,46 @@ namespace SG
                                 Log("SenseCom is not currently running. You won't be able to communicate with your glove(s) until it is running.");
                             }
                         }
+
+                        //TODO: Initialize Client side IPC Communications for this application
+                        bool clientInit = SGCore.SGConnect.InitializeClient(out int initCode);
+                        Log("Initialized of Client-side communications: " + clientInit.ToString() + " -> " + initCode.ToString());
                     }
-                    else if (Settings.SGCommunications == CommunicationSetup.StandaloneModePreferred)
-                    {
-                        Log("Initalizing SGConnect");
-                        if (SGCore.SGConnect.ScanningActive())
-                        {
-                            Log("Standalone more is preferred, but SenseCom is already running elsewhere. It will host the communication instead. " +
-                                "Please restart both SenseCom and this application for the intended performance.");
-                        }
-                        else
-                        {
-                            int initCode = SGCore.SGConnect.InitCommunications();
-                            Log("SGConnect Initialization Code: " + initCode);
-                            if (initCode > 0)
-                            {
-                                hostingSGConnect = true;
-                                //Tell the back-end to start exchanging data with any of the Nova 2.0 BLE Devices
-                                PairedDeviceInfo[] nova2BLEs = SG_PairingList.GetDevices("Nova 2", "BLE");
-                                for (int i = 0; i < nova2BLEs.Length; i++)
-                                {
-                                    SGCore.SGConnect.RegisterNova2BLEConnection(nova2BLEs[i].Localname);
-                                }
-                            }
-                        }
-                    }
+                    //else if (Settings.SGCommunications == CommunicationSetup.StandaloneModePreferred)
+                    //{
+                    //    Log("Initalizing SGConnect");
+                    //    if (SGCore.SGConnect.ScanningActive())
+                    //    {
+                    //        Log("Standalone more is preferred, but SenseCom is already running elsewhere. It will host the communication instead. " +
+                    //            "Please restart both SenseCom and this application for the intended performance.");
+                    //    }
+                    //    else
+                    //    {
+                    //        int initCode = SGCore.SGConnect.InitCommunications();
+                    //        Log("SGConnect Initialization Code: " + initCode);
+                    //        if (initCode > 0)
+                    //        {
+                    //            hostingSGConnect = true;
+                    //            //Tell the back-end to start exchanging data with any of the Nova 2.0 BLE Devices
+                    //            PairedDeviceInfo[] nova2BLEs = SG_PairingList.GetDevices("Nova 2", "BLE");
+                    //            for (int i = 0; i < nova2BLEs.Length; i++)
+                    //            {
+                    //                SGCore.SGConnect.RegisterNova2BLEConnection(nova2BLEs[i].Localname);
+                    //            }
+                    //        }
+                    //    }
+                    //}
                 }
+#if USE_WORKER_THREAD
+                if (sgWorkerThread == null)
+                {
+                    Debug.Log("SGCore: Started Worker thread for data collection");
+                    sgWorkerThread = new SG_HapticGloveThread();
+                    sgWorkerThread.StartThread();
+                }
+                sgWorkerThread.ConnectionsUpdated.AddListener(OnConnectionsUpdated);
+                sgWorkerThread.HandPosesUpdated.AddListener(OnPosesUpdated);
+#endif      
             }
             else
             {
@@ -464,12 +501,26 @@ namespace SG
             }
         }
 
+
         /// <summary> Dispose of any Android resources. </summary>
         private static void Dispose()
         {
             if (initialized)
             {
                 initialized = false;
+
+#if USE_WORKER_THREAD
+                if (sgWorkerThread != null)
+                {
+                    Debug.Log("SGCore: Cleaning up worker thread");
+                    sgWorkerThread.ConnectionsUpdated.RemoveListener(OnConnectionsUpdated);
+                    sgWorkerThread.HandPosesUpdated.RemoveListener(OnPosesUpdated);
+                    sgWorkerThread.DisposeThread();
+                    sgWorkerThread = null;
+                    Debug.Log("SGCore: Worker thread disposed.");
+                }
+#endif
+
                 if (SGCore.Library.GetBackEndType() == SGCore.Library.BackEndType.AndroidStrings)
                 {
                     Andr_TryDispose();
@@ -482,6 +533,10 @@ namespace SG
                 }
                 else
                 {
+                    //To this regardless
+                    bool clientDisp = SGCore.SGConnect.DisposeClient(out int dispCode);
+                    Log("Disposed of Client-side communications: " + clientDisp.ToString() + " -> " + dispCode.ToString());
+
                     if (!hostingSGConnect)
                         return;
 
@@ -498,6 +553,161 @@ namespace SG
         }
 
 
+
+        //----------------------------------------------------------------------------------------------------
+        // Desktop IPC Optimation
+
+//These callbacks are coming in from a different thread. For now, I'm simply caching the devices here too, in a thred-safe manner.
+
+#if USE_WORKER_THREAD
+        private static void OnConnectionsUpdated(SGCore.HapticGlove leftGlove, SGCore.HapticGlove rightGlove)
+        {
+            //Debug.Log("SGCore: OnConnectionsUpdated ");
+            lock (gloveInstanceLock)
+            {
+                s_leftGlove = leftGlove;
+                s_rightGlove = rightGlove;
+            }
+        }
+
+        private static void OnPosesUpdated(SGCore.HandPose leftPose, SGCore.HandPose rightPose)
+        {
+            //Debug.Log("SGCore: HandPosesUpdated ");
+            lock (gloveInstanceLock)
+            {
+                s_leftPose = leftPose;
+                s_rightPose = rightPose;
+            }
+        }
+#endif
+        
+        public static bool GetGloveInstance(HandSide handSide, out SGCore.HapticGlove glove)
+        {
+#if USE_WORKER_THREAD
+            lock (gloveInstanceLock)
+            {
+                if (handSide == HandSide.AnyHand)
+                    glove = s_rightGlove == null ? s_leftGlove : s_rightGlove;
+                else
+                    glove = handSide == HandSide.RightHand ? s_rightGlove : s_leftGlove;
+            }
+            return glove != null;
+#else
+            if (handSide == HandSide.AnyHand)
+            {
+                return SGCore.HapticGlove.GetGlove(out glove); //returns the first connected glove
+            }
+            return SGCore.HapticGlove.GetGlove(handSide == HandSide.RightHand, out glove); //returns the firce connected glove that matches left/right parameters.
+#endif
+        }
+
+        public static bool GetGloveInstance(bool rightHand, out SGCore.HapticGlove glove)
+        {
+#if USE_WORKER_THREAD
+            lock (gloveInstanceLock)
+            {
+                glove = rightHand ? s_rightGlove : s_leftGlove;
+            }
+            return glove != null;
+#else
+            return SGCore.HapticGlove.GetGlove(rightHand, out glove); //returns the firce connected glove that matches left/right parameters.
+#endif
+        }
+
+        public static bool GetHandPose(HandSide handSide, out SGCore.HandPose pose)
+        {
+#if USE_WORKER_THREAD
+            lock (gloveInstanceLock)
+            {
+                if (handSide == HandSide.AnyHand)
+                    pose = s_rightPose == null ? s_leftPose : s_rightPose;
+                else
+                    pose = handSide == HandSide.RightHand ? s_rightPose : s_leftPose;
+            }
+            return pose != null;
+#else
+            if (GetGloveInstance(handSide, out SGCore.HapticGlove glove))
+            {
+                return glove.GetHandPose(out pose);
+            }
+            pose = null;
+            return false;
+#endif
+        }
+
+        public static bool GetHandPose(bool rightHand, out SGCore.HandPose pose)
+        {
+#if USE_WORKER_THREAD
+            lock (gloveInstanceLock)
+            {
+                pose = rightHand ? s_rightPose : s_leftPose;
+            }
+            return pose != null;
+#else
+            if (GetGloveInstance(rightHand, out SGCore.HapticGlove glove))
+            {
+                return glove.GetHandPose(out pose);
+            }
+            pose = null;
+            return false;
+#endif
+        }
+
+
+        public static bool SendCustomWaveform(bool rightHand, SG_CustomWaveform waveform, HapticLocation location)
+        {
+#if USE_WORKER_THREAD
+            if (sgWorkerThread == null)
+                return false;
+            return sgWorkerThread.QueueWaveform(rightHand, waveform.GetWaveform(), location);
+#else
+            return SGCore.HandLayer.SendCustomWaveform(rightHand, waveform.GetWaveform(), location);
+#endif
+        }
+
+        public static bool SendCustomWaveform(bool rightHand, SGCore.CustomWaveform waveform, HapticLocation location)
+        {
+#if USE_WORKER_THREAD
+            if (Application.isPlaying) //since, at some points, we might try to call custom waveform(s) from the editor to test them
+            {
+                if (sgWorkerThread == null)
+                    return false;
+                return sgWorkerThread.QueueWaveform(rightHand, waveform, location);
+            }
+#endif
+            return SGCore.HandLayer.SendCustomWaveform(rightHand, waveform, location);
+        }
+
+        public static bool DeviceConnected(HandSide handSide)
+        {
+            bool res = false;
+            if (handSide == HandSide.AnyHand)
+            {
+                lock (gloveInstanceLock)
+                {
+                    res = (s_rightGlove != null) || (s_leftGlove != null);
+                }
+            }
+            else
+            {
+                lock (gloveInstanceLock)
+                {
+                    res = handSide == HandSide.RightHand ? (s_rightGlove != null) : (s_leftGlove != null);
+                }
+            }
+            return res;
+        }
+
+        public static bool DeviceConnected(bool rightHand)
+        {
+            bool res = false;
+            lock (gloveInstanceLock)
+            {
+                res = rightHand ? (s_rightGlove != null) : (s_leftGlove != null);
+            }
+            return res;
+        }
+
         //----------------------------------------------------------------------------------------------------
         // Monobehaviour
 
@@ -513,6 +723,8 @@ namespace SG
                 {
                     Initialize(); //initialized me!
                 }
+                SG_ConfigSettings.TryLoadConfig();
+                SG_OffsetSelector.SpawnSelector(true);
             }
         }
 
@@ -543,7 +755,7 @@ namespace SG
 #if !UNITY_ANDROID || UNITY_EDITOR
             if (hasFocus && loadProfilesOnFocus)
             {
-                //Debug.Log("Reloaded SenseGlove Profiles from disk...");
+                Debug.Log("Reloaded SenseGlove Profiles from disk...");
                 SGCore.HandLayer.LoadCalibrationFromDisk(); //reload profiles. Done here because this script is always there when using SenseGlove scripts.
             }
 #endif

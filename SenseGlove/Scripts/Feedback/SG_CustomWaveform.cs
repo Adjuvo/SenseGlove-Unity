@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -153,29 +154,24 @@ namespace SG
             if (glove.GetDeviceType() == SGCore.DeviceType.UNKNOWN || glove.GetDeviceType() == SGCore.DeviceType.BETADEVICE || glove.GetDeviceType() == SGCore.DeviceType.SENSEGLOVE)
                 return; //only works for Nova gloves.
 
+            SGCore.HapticLocation iLoc = ToLocation(location);
             if (glove is SGCore.Nova.NovaGlove)
             {
-                SGCore.Nova.NovaGlove.Nova_VibroMotor motor = ToNova1Location(location);
-                if (motor != SGCore.Nova.NovaGlove.Nova_VibroMotor.Unknown)
+                if (location == VibrationLocation.Palm_IndexSide || location == VibrationLocation.Palm_PinkySide || location == VibrationLocation.WholeHand)
                 {
-                    if (motor == SGCore.Nova.NovaGlove.Nova_VibroMotor.BackOfHand && (location == VibrationLocation.Palm_IndexSide || location == VibrationLocation.Palm_PinkySide) )
-                    {
-                        //reduce intensity of the Nova 1 Thumper so it's more manageable
-                        wf.Amplitude *= 0.2f; //reduced by 20% to avoid mega pulse.
-                    }
-                    ((SGCore.Nova.NovaGlove)glove).SendCustomWaveform(wf, motor);
+                    //reduce intensity of the Nova 1 Thumper so it's more manageable
+                    wf.Amplitude *= 0.2f; //reduced by 20% to avoid mega pulse.
                 }
+                    
             }
-            else if (glove is SGCore.Nova.Nova2Glove)
-            {
-                SGCore.Nova.Nova2Glove.Nova2_VibroMotors motor = ToNova2Location(location);
-                if (motor != SGCore.Nova.Nova2Glove.Nova2_VibroMotors.Unknown)
-                {
-                    ((SGCore.Nova.Nova2Glove)glove).SendCustomWaveform(wf, motor);
-                }
-            }
+            SG_Core.SendCustomWaveform(glove.IsRight(), wf, iLoc);
         }
 
+
+        public static SGCore.HapticLocation ToLocation(VibrationLocation location)
+        {
+            return (SGCore.HapticLocation)((int)location); //So far, they remain 1:1, fortunately. Need to make sure to check if this changes!
+        }
 
 
         protected void LoadFromFileContents(string fileContents)

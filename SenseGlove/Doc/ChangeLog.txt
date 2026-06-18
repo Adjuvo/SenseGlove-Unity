@@ -1,6 +1,28 @@
 # Changelog
 All notable changes to the SenseGlove Prefabs will be documented in this file.
 
+
+## [v2.10.0] - 2026-06-18
+Unity 6, Performance and Offset Detection updates
+
+### Added
+- Config file that will live next to your executable. Can be used to configure the SenseGlove Settings (offsets, tracking method, etc) after a build.
+- "Prompt User" option as a Tracking Offset, which will spawn a menu to select your tracking device. 
+- OffsetSelection Prefab menu to be 'gazed' at to select an offset, then confirmed with the tracker / controller. No glove required for this step. Result is stored in the config file. Should remove the need for builds for each head variant.
+- SG_CustomGrabLimit script, optional component to make it more difficult to accidentally grab specific objects.
+
+
+### Changed
+- Minimum version update to Unity 6000.3. Code corrections required for Unity 6 (e.g. velocity -> linearVelocity).
+- Default Hand Model Shader set to a basic 'blue' material, since the Hologram shader is no longer compatible with most render pipelines.
+- Moved Glove IPC functions into a separate worker thread, improving performance when significant commands are sent.
+
+
+### Fixed
+- OpenXR HMD obfuscation conflicts with the tracking detection in SG_XR_Devices. (E.g. Varjo -> "OpenXR hmd", which defaults to 'controllers', not 'trackers').
+
+
+
 ## [v2.9.0] - 2025-09-12
 New Calibration Void and Bug Fixes
 
