@@ -5145,6 +5145,30 @@
             <summary> Returns last FW resullt - if one exists </summary>
             <returns></returns>
         </member>
+        <member name="M:SGCore.SGConnect.I_SetDefaultIPCMethod(System.Byte)">
+            <summary> Gets the use of alternate IPC addresses for Reading / Writing </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.SGConnect.I_GetDefaultIPCMethod">
+            <summary> Gets the use of alternate IPC addresses for Reading / Writing </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.SGConnect.I_ReconfigureIPCMethod(System.Byte)">
+            <summary> Sets the use of alternate IPC addresses for Reading / Writing </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.SGConnect.I_InitializeClient">
+            <summary> Sets the use of alternate IPC addresses for Reading / Writing </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.SGConnect.I_DisposeClient">
+            <summary> Sets the use of alternate IPC addresses for Reading / Writing </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SGCore.SGConnect.ScanningActive">
+            <summary> Returns true if SenseCom Scanning process is currently active anywhere </summary>
+            <returns></returns>
+        </member>
         <member name="M:SGCore.SGConnect.InitCommunications">
             <summary>  Returns 1 if the communications were initialized of, 0 if this wasn't possible, -1 if the dll is missing. </summary>
             <returns></returns>

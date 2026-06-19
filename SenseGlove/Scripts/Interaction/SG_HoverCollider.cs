@@ -127,7 +127,7 @@ namespace SG
 			base.FixedUpdate();
 			//ToDo: Call a wellness check on existsing objects?
 			int deletedElements = interactablesTouched.ValidateDetectedObjects(this);
-			if (deletedElements > 0)
+			if (deletedElements > 0) //deletedelements is > 0 if there was a change.
             {
 				UpdateDebugger();
 			}

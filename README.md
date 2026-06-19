@@ -1,9 +1,8 @@
 # SenseGlove-Unity
-The latest stable Unity SDK for the SenseGlove, built using Unity 2022.3.32f1. Can be imported into Unity 2022.3 and up, which will automatically update the assets for you. Using older Unity versions will cause issues.
+The latest stable Unity SDK for the SenseGlove, built using Unity 6000.3.6f1. Can be imported into Unity 6000.3 and up, which will automatically update the assets for you. Using older Unity versions will cause issues.
 
-Current version is v2.9.0, released on the 15th of September 2025.
+Current version is v2.10.0, released on the 19th of September 2026.
 
-**Important notice**: After 4-5 years of supporting Unity 2017 and 2018, the time has come for us to raise the minimum Unity version from 2017.4 to 2019.4 (LTS version). This update will allow us to make more use of the Unity XR system, and add vr-ready examples to the plugin. This means that your Unity 2017-2018 projects will no longer be able to receive updates to the SenseGlove Unity Plugin. If you'd like to continue using Unity 2017-2018, you can still use versions 1.0.0 - 2.3.1. SenseCom operates independently from the Unity Editor, and can still be used with our plugins of v2.0 and above.
 
 Furthermore; you can find more extensive documentation of the Unity Plugin at [docs.senseglove.com/unity](https://senseglove.gitlab.io/SenseGloveDocs/unity/overview.html)
 
@@ -22,7 +21,7 @@ The SenseGlove Unity Plugin is compatible with both the SenseGlove DK1 - exoskel
 The SenseCom software is compatible with plugin version 2.0 and above. When using older versions of the plugin, SenseCom should not be running in the background.
 
 ## Platform Compatability
-The SenseGlove Unity API is compatible with Windows, with Linux support currently only working for the DK1 blue exoskeleton gloves. It is also compatible with Android devices, such as the Oculus Quest and Pico Neo 2.
+The SenseGlove Unity API is compatible with Windows, with Linux support currently only working for the DK1 blue exoskeleton gloves. It is also compatible with Android devices, such as the Oculus Quest and Pico Neo.
 
 ## Getting Started
 The first thing one should do is ensure that their Sense Glove is working.

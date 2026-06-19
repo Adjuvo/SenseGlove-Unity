@@ -65,7 +65,13 @@ namespace SG
 
         /// <summary> Pico Neo 3 Controllers - Standalone HMD that requires PicoXR XR Plugin </summary>
         PicoNeo2Controller,
+
+
+        /// <summary> Asks the user once during startup / launching the OffsetSelection Scene. Stores said variable in a device-wide location so it can be accessed by other apps. </summary>
+        PromptUser,
     }
+
+
 
 
     //[CreateAssetMenu(menuName = "SenseGlove/SenseGloveSettings")]
@@ -82,6 +88,7 @@ namespace SG
         /// <summary> Controls when / if the communications for SenseGlove are initialized.  </summary>
         [Tooltip("The way SenseGlove communications will be initialized / disposed on this system. On Android, Standalone will always be used.")] 
         public CommunicationSetup SGCommunications = CommunicationSetup.SenseComPreferred;
+
 
         // ANDROID ONLY
 

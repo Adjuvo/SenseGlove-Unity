@@ -83,8 +83,10 @@ public class SG_SettingsEditor : EditorWindow
                 }
                 else if (sett.SGCommunications == CommunicationSetup.StandaloneModePreferred)
                 {
-                    EditorGUILayout.HelpBox("This will host the the connection process inside your application, if SenseCom is not already running. " +
-                        "Gloves will take some time to connect to the simulation. Since Serial Communications are prone to crashing, make sure so save your work before running.", MessageType.Warning);
+                    //EditorGUILayout.HelpBox("This will host the the connection process inside your application, if SenseCom is not already running. " +
+                    //    "Gloves will take some time to connect to the simulation. Since Serial Communications are prone to crashing, make sure so save your work before running.", MessageType.Warning);
+                    EditorGUILayout.HelpBox("To account for changes in IPC behaviour, this option is disabled in the current version of the Unity Plugin. It will do the same as "
+                        + CommunicationSetup.SenseComPreferred.ToString(), MessageType.Error);
                 }
             }
             else if (member.Name.Equals("WristTrackingMethod"))

@@ -42,6 +42,7 @@ public class SG_PhysicsButton : MonoBehaviour
     [Header("The table or other object this button is placed on, so it can ignore its collision")]
     public GameObject table;
 
+
     // private vars
     private float timerLength = 1F;
     private bool switched = false;
@@ -64,7 +65,8 @@ public class SG_PhysicsButton : MonoBehaviour
 
     public float ButtonSpeed
     {
-        get { return buttonSpeed; } private set { }
+        get { return buttonSpeed; }
+        private set { }
     }
 
     private void Awake()
@@ -108,30 +110,27 @@ public class SG_PhysicsButton : MonoBehaviour
         buttonSpeed = (buttonTop.transform.localPosition.y - prevLocalButtonTopPos) / Time.deltaTime;
         prevLocalButtonTopPos = buttonTop.transform.localPosition.y;
 
-        ButtonPressure = SG.Util.SG_Util.Map(buttonTop.transform.localPosition.y, localStartPos.y, localStartPos.y - maxButtonMovement, 0.0f, 1.0f, true );
+        ButtonPressure = SG.Util.SG_Util.Map(buttonTop.transform.localPosition.y, localStartPos.y, localStartPos.y - maxButtonMovement, 0.0f, 1.0f, true);
     }
 
     // The button is pushed further than the distance to activate it then complete the activation
     private void ButtonPushed()
     {
-        
-        onOrOff = !onOrOff;
-
         if (switched)
         {
-            SendHapticCommand();
-            ButtonPressed.Invoke();
             switched = false;
-        }
-            
-        if (this.isActiveAndEnabled)
+
+            SendHapticCommand();
+            onOrOff = !onOrOff;
+            ButtonPressed.Invoke();
             StartCoroutine(Timer(timerLength));
+        }
     }
 
     // timer to make sure the button doesn't fire multiple time in quick succession
     private IEnumerator Timer(float waitTime)
     {
-        yield return new WaitForSeconds(waitTime);
+        yield return new WaitForSeconds(waitTime); //TODO heck if back above a certain level
         switched = true;
     }
 
@@ -152,6 +151,11 @@ public class SG_PhysicsButton : MonoBehaviour
     {
         buttonTop.transform.localPosition = localStartPos;
         switched = false;
+    }
+
+    private void OnEnable()
+    {
+        switched = true;
     }
 
 

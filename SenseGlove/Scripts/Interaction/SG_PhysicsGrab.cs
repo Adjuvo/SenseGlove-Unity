@@ -200,10 +200,28 @@ namespace SG
         }
 
 
+        protected void FilterGrabables(ref List<SG_Interactable> objToGrab)
+        {
+            //Objects that appear in objToGrab are already grabable in our useable limit(s).
+            for (int i=0; i<objToGrab.Count;)
+            {
+                if (objToGrab[i] is SG_Grabable)
+                {
+                    if ( !((SG_Grabable)objToGrab[i]).WithinGrabLimits(lastNormalized) ) //not within grab limits :(
+                    {
+                        objToGrab.RemoveAt(i);
+                        continue;
+                    }
+                }
+                i++;
+            }
+        }
+
         protected void EvaluateGrab()
         {
             // Collect objects that we're allowed to grab.
             List<SG_Interactable> objToGrab = this.ObjectsGrabableNow();
+            FilterGrabables(ref objToGrab);
 
             //TODO; Check for a littlest bit of intent. Some for of flexion. Because now you can still slam your hand into something.
             if (objToGrab.Count > 0)

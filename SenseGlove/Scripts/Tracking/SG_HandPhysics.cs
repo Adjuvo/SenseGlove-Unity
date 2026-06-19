@@ -302,17 +302,17 @@ namespace SG
         /// <summary> Manually enables / disables collision on this hand's RigidBody. </summary>
         public bool CollisionsEnabled
         {
-            get 
-            { 
-                return this.handRigidbody != null && handRigidbody.detectCollisions; 
+            get
+            {
+                return this.handRigidbody != null && handRigidbody.detectCollisions;
             }
-            set 
+            set
             {
                 //if (value != this.CollisionsEnabled)
                 //{
                 //    Debug.Log("Setting " + (this.TrackedHand != null && this.TrackedHand.TracksRightHand() ? "Right" : "Left") + " Hand Collision to " + value);
                 //}
-                if (this.handRigidbody != null) { handRigidbody.detectCollisions = value; } 
+                if (this.handRigidbody != null) { handRigidbody.detectCollisions = value; }
             }
         }
 
@@ -499,7 +499,15 @@ namespace SG
             }
         }
 
-
+        public void PlaceHandAtRealLocation()
+        {
+            if (this.TrackedHand != null)
+            {
+                Transform realWrist = this.TrackedHand.GetTransform(SG_TrackedHand.TrackingLevel.RealHandPose, HandJoint.Wrist);
+                this.transform.rotation = realWrist.rotation;
+                this.transform.position = realWrist.position;
+            }
+        }
 
         //--------------------------------------------------------------------------------------------------------------------
         // Monobehaviour
