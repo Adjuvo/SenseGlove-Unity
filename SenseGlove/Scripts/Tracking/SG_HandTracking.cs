@@ -200,18 +200,17 @@ namespace SG
         private static Quaternion openXRComp_rot_QUEST3_R = new Quaternion(0.500f, -0.001f, -0.002f, 0.866f);
 
 
-        private static Vector3 openXRComp_pos_QUEST2_L = new Vector3(0.001f, -1.218f, 0.044f);
-        private static Quaternion openXRComp_rot_QUEST2_L = new Quaternion(0.501f, 0.012f, -0.003f, 0.865f);
+        private static Vector3 openXRComp_pos_QUEST2_L = new Vector3(-0.005f, -0.023f, 0.051f);
+        private static Quaternion openXRComp_rot_QUEST2_L = new Quaternion(0.494f, 0.003f, -0.007f, 0.869f);
+        private static Vector3 openXRComp_pos_QUEST2_R = new Vector3(0.001f, -0.021f, 0.046f);
+        private static Quaternion openXRComp_rot_QUEST2_R = new Quaternion(0.501f, -0.006f, 0.004f, 0.866f);
 
-        private static Vector3 openXRComp_pos_QUEST2_R = new Vector3(0.000f, -1.221f, 0.046f);
-        private static Quaternion openXRComp_rot_QUEST2_R = new Quaternion(0.498f, 0.020f, -0.001f, 0.867f);
 
+        private static Vector3 openXRComp_pos_QUESTPRO_L = new Vector3(-0.005f, -0.023f, 0.051f);
+        private static Quaternion openXRComp_rot_QUESTPRO_L = new Quaternion(0.494f, 0.003f, -0.007f, 0.869f);
 
-        private static Vector3 openXRComp_pos_QUESTPRO_L = new Vector3(0.003f, -1.221f, 0.043f);
-        private static Quaternion openXRComp_rot_QUESTPRO_L = new Quaternion(0.502f, -0.002f, 0.003f, 0.865f);
-
-        private static Vector3 openXRComp_pos_QUESTPRO_R = new Vector3(0.001f, -1.222f, 0.046f);
-        private static Quaternion openXRComp_rot_QUESTPRO_R = new Quaternion(0.498f, -0.003f, 0.005f, 0.867f);
+        private static Vector3 openXRComp_pos_QUESTPRO_R = new Vector3(0.001f, -0.021f, 0.046f);
+        private static Quaternion openXRComp_rot_QUESTPRO_R = new Quaternion(0.501f, -0.006f, 0.004f, 0.866f);
 
 
         public static bool GetAdditionalOffsets(TrackingHardware offsets, bool rightHand, out Vector3 extraPosOffset, out Quaternion extraRotOffset)

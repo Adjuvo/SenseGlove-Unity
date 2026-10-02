@@ -18,7 +18,7 @@ namespace SG.Util
 
         /// <summary> The waveform to be sent through the Interactable to the IHandFeedbackDevice. </summary>
 #pragma warning disable CS0618 // Type or member is obsolete
-        public SG_Waveform waveformToSend;
+        public SG_CustomWaveform waveformToSend;
 #pragma warning restore CS0618 // Type or member is obsolete
 
         public bool fallBackToLastGrabbed = true;
@@ -54,17 +54,17 @@ namespace SG.Util
         /// <param name="interactable"></param>
         /// <param name="fallBackToLastGrab">If true, we fall back to the last GrabScript that was holding on to me. </param>
 #pragma warning disable CS0618 // Type or member is obsolete
-        public static void SendThroughObject(SG.SG_Waveform waveform, SG.SG_Interactable interactable, bool fallBackToLastGrab = true)
+        public static void SendThroughObject(SG.SG_CustomWaveform waveform, SG.SG_Interactable interactable, bool fallBackToLastGrab = true)
 #pragma warning restore CS0618 // Type or member is obsolete
         {
             //Debug.LogError("TODO: Implement Timing!");
             if (interactable.IsGrabbed())
             {
-                interactable.SendLegacyWaveform(waveform);
+                interactable.SendCustomWaveform(waveform, waveform.intendedMotor);
             }
             else if (fallBackToLastGrab && interactable.LastGrabbedBy != null)
             {
-                interactable.LastGrabbedBy.SendLegacyWaveform(waveform);
+                interactable.LastGrabbedBy.SendCustomWaveform(waveform, waveform.intendedMotor);
             }
         }
 
@@ -80,7 +80,7 @@ namespace SG.Util
         /// <param name="customWaveform"></param>
         /// <param name="fallBackToLastGrab"></param>
 #pragma warning disable CS0618 // Type or member is obsolete
-        public void SendWaveForm(SG_Waveform customWaveform)
+        public void SendWaveForm(SG_CustomWaveform customWaveform)
 #pragma warning restore CS0618 // Type or member is obsolete
         {
             SendThroughObject(customWaveform, this.sendThroughObject, this.fallBackToLastGrabbed);

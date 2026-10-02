@@ -15,12 +15,12 @@ MonoBehaviour:
   SGCommunications: 0
   ForceBluetoothPermissionsDialog: 1
   WristTrackingMethod: 0
-  GlobalWristTrackingOffsets: 12
-  customPosOffsetRight: {x: 0, y: 0, z: 0}
-  customRotOffsetRight: {x: 0, y: 0, z: 0}
-  customPosOffsetLeft: {x: 0, y: 0, z: 0}
-  customRotOffsetLeft: {x: 0, y: 0, z: 0}
+  GlobalWristTrackingOffsets: 3
+  customPosOffsetRight: {x: 0.05, y: 0.06, z: 0}
+  customRotOffsetRight: {x: 180, y: 150, z: 0}
+  customPosOffsetLeft: {x: -0.05, y: 0.06, z: 0}
+  customRotOffsetLeft: {x: 180, y: 30, z: 0}
   leftQuat: 0
   rightQuat: 0
-  customLeftQuat: {x: 0, y: 0, z: 0, w: 1}
-  customRightQuat: {x: 0, y: 0, z: 0, w: 1}
+  customLeftQuat: {x: 0.9659258, y: -0.00000001131334, z: -0.25881904, w: -0.00000004222196}
+  customRightQuat: {x: 0.25881907, y: -0.00000004222196, z: -0.9659258, w: -0.000000011313341}

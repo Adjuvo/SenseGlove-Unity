@@ -1,4 +1,6 @@
-﻿using UnityEngine;
+﻿using NUnit.Framework;
+using System.Collections.Generic;
+using UnityEngine;
 
 namespace SG
 {
@@ -9,7 +11,7 @@ namespace SG
         // Member Variables
 
         /// <summary> The list of gestures that this GrabLayer will attmept to detect.  </summary>
-        public SG_BasicGesture[] gestures = new SG_BasicGesture[0];
+        public List<SG_BasicGesture> gestures = new List<SG_BasicGesture>();
 
         /// <summary> The last flexions used to evaluate the gestures, for debugging, and convienient access </summary>
         public float[] lastFlexions = new float[5];
@@ -24,12 +26,20 @@ namespace SG
             return gesture.GestureIsMade(this.lastFlexions);
         }
 
+        public virtual bool AddGesture(SG_BasicGesture gesture)
+        {
+            if (gesture == null || gestures.Contains(gesture))
+                return false;
+            gestures.Add(gesture);
+            return true;
+        }
+
         //-----------------------------------------------------------------------------------------------------------------------------------------------------------------
         // Monobehaviour
 
         protected virtual void Update()
         {
-            if (gestures.Length > 0 && TrackedHand != null && TrackedHand.IsConnected())
+            if (gestures.Count > 0 && TrackedHand != null && TrackedHand.IsConnected())
             {
                 if (TrackedHand.GetNormalizedFlexion(out lastFlexions))
                 {

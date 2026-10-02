@@ -20,11 +20,11 @@ using SGCore;
 
 namespace SG
 {
-	public enum SenseGloveDevice
-	{
-		Unknown,
-		Nova2,
-		Nova1,
+    public enum SenseGloveDevice
+    {
+        Unknown,
+        Nova2,
+        Nova1,
         DK1Exoskeleton
     }
 
@@ -33,7 +33,7 @@ namespace SG
     {
         //---------------------------------------------------------------------------------------------------------------------------------------------------------------
         // Singleton Pattern
-       
+
         /// <summary> Singleton pattern for the SG_Core Class. You're not supposed to referencing this class anywhere. Use GetInstance() instead. </summary>
         private static SG_Core _instance = null;
 
@@ -83,27 +83,27 @@ namespace SG
         }
 
 
-		//---------------------------------------------------------------------------------------------------------------------------------------------------------------
-		// Public Functions
+        //---------------------------------------------------------------------------------------------------------------------------------------------------------------
+        // Public Functions
 
 
 
         /// <summary> Ensures an instance of SG_Core is running in the background </summary>
         public static void Setup()
-		{
-			GetInstance(); //this will create one if it doesn't exist yet..
-		}
+        {
+            GetInstance(); //this will create one if it doesn't exist yet..
+        }
 
 
-		//---------------------------------------------------------------------------------------------------------------------------------------------------------------
-		// Public Functions
+        //---------------------------------------------------------------------------------------------------------------------------------------------------------------
+        // Public Functions
 
 
-		/// <summary> Access SenseGlove-related Settings </summary>
-		public static SG_UnitySettings Settings
-		{
-			get { return SG_Core.GetSettings(); }
-		}
+        /// <summary> Access SenseGlove-related Settings </summary>
+        public static SG_UnitySettings Settings
+        {
+            get { return SG_Core.GetSettings(); }
+        }
 
 
 
@@ -144,7 +144,7 @@ namespace SG
 
 
 
-#if USE_WORKER_THREAD
+#if USE_WORKER_THREAD && (UNITY_EDITOR || !UNITY_ANDROID)
         //--------------------------------------------------------------
         // Worker Thread related topics
 
@@ -396,7 +396,7 @@ namespace SG
         /// <returns></returns>
         public static BluetoothPermissionCode CheckBluetoothPermissions()
         {
-			// 0 = no, 1 = yes, 2 = unable to determine. 3 = not required.
+            // 0 = no, 1 = yes, 2 = unable to determine. 3 = not required.
 #if UNITY_ANDROID && !UNITY_EDITOR
 #if UNITY_2020_2_OR_NEWER
             return UnityEngine.Android.Permission.HasUserAuthorizedPermission("android.permission.BLUETOOTH_CONNECT") ? BluetoothPermissionCode.PermissionGranted : BluetoothPermissionCode.NoPermission;
@@ -404,7 +404,7 @@ namespace SG
             return BluetoothPermissionCode.Unknown;
 #endif
 #else
-			return BluetoothPermissionCode.NoPermissionNeeded;
+            return BluetoothPermissionCode.NoPermissionNeeded;
 #endif
         }
 
@@ -484,7 +484,7 @@ namespace SG
                     //    }
                     //}
                 }
-#if USE_WORKER_THREAD
+#if USE_WORKER_THREAD && (UNITY_EDITOR || !UNITY_ANDROID) 
                 if (sgWorkerThread == null)
                 {
                     Debug.Log("SGCore: Started Worker thread for data collection");
@@ -509,7 +509,7 @@ namespace SG
             {
                 initialized = false;
 
-#if USE_WORKER_THREAD
+#if USE_WORKER_THREAD && (UNITY_EDITOR || !UNITY_ANDROID)
                 if (sgWorkerThread != null)
                 {
                     Debug.Log("SGCore: Cleaning up worker thread");
@@ -557,9 +557,9 @@ namespace SG
         //----------------------------------------------------------------------------------------------------
         // Desktop IPC Optimation
 
-//These callbacks are coming in from a different thread. For now, I'm simply caching the devices here too, in a thred-safe manner.
+        //These callbacks are coming in from a different thread. For now, I'm simply caching the devices here too, in a thred-safe manner.
 
-#if USE_WORKER_THREAD
+#if USE_WORKER_THREAD && (UNITY_EDITOR || !UNITY_ANDROID)
         private static void OnConnectionsUpdated(SGCore.HapticGlove leftGlove, SGCore.HapticGlove rightGlove)
         {
             //Debug.Log("SGCore: OnConnectionsUpdated ");
@@ -580,10 +580,10 @@ namespace SG
             }
         }
 #endif
-        
+
         public static bool GetGloveInstance(HandSide handSide, out SGCore.HapticGlove glove)
         {
-#if USE_WORKER_THREAD
+#if USE_WORKER_THREAD && (UNITY_EDITOR || !UNITY_ANDROID)
             lock (gloveInstanceLock)
             {
                 if (handSide == HandSide.AnyHand)
@@ -603,7 +603,7 @@ namespace SG
 
         public static bool GetGloveInstance(bool rightHand, out SGCore.HapticGlove glove)
         {
-#if USE_WORKER_THREAD
+#if USE_WORKER_THREAD && (UNITY_EDITOR || !UNITY_ANDROID)
             lock (gloveInstanceLock)
             {
                 glove = rightHand ? s_rightGlove : s_leftGlove;
@@ -616,7 +616,7 @@ namespace SG
 
         public static bool GetHandPose(HandSide handSide, out SGCore.HandPose pose)
         {
-#if USE_WORKER_THREAD
+#if USE_WORKER_THREAD && (UNITY_EDITOR || !UNITY_ANDROID)
             lock (gloveInstanceLock)
             {
                 if (handSide == HandSide.AnyHand)
@@ -637,7 +637,7 @@ namespace SG
 
         public static bool GetHandPose(bool rightHand, out SGCore.HandPose pose)
         {
-#if USE_WORKER_THREAD
+#if USE_WORKER_THREAD && (UNITY_EDITOR || !UNITY_ANDROID)
             lock (gloveInstanceLock)
             {
                 pose = rightHand ? s_rightPose : s_leftPose;
@@ -656,7 +656,7 @@ namespace SG
 
         public static bool SendCustomWaveform(bool rightHand, SG_CustomWaveform waveform, HapticLocation location)
         {
-#if USE_WORKER_THREAD
+#if USE_WORKER_THREAD && (UNITY_EDITOR || !UNITY_ANDROID)
             if (sgWorkerThread == null)
                 return false;
             return sgWorkerThread.QueueWaveform(rightHand, waveform.GetWaveform(), location);
@@ -667,7 +667,7 @@ namespace SG
 
         public static bool SendCustomWaveform(bool rightHand, SGCore.CustomWaveform waveform, HapticLocation location)
         {
-#if USE_WORKER_THREAD
+#if USE_WORKER_THREAD && (UNITY_EDITOR || !UNITY_ANDROID)
             if (Application.isPlaying) //since, at some points, we might try to call custom waveform(s) from the editor to test them
             {
                 if (sgWorkerThread == null)
@@ -680,6 +680,7 @@ namespace SG
 
         public static bool DeviceConnected(HandSide handSide)
         {
+#if USE_WORKER_THREAD && (UNITY_EDITOR || !UNITY_ANDROID)
             bool res = false;
             if (handSide == HandSide.AnyHand)
             {
@@ -696,17 +697,28 @@ namespace SG
                 }
             }
             return res;
+#else
+            return SGCore.HandLayer.DeviceConnected(handSide == HandSide.RightHand);
+#endif
+
         }
 
         public static bool DeviceConnected(bool rightHand)
         {
+#if USE_WORKER_THREAD && (UNITY_EDITOR || !UNITY_ANDROID)
             bool res = false;
             lock (gloveInstanceLock)
             {
                 res = rightHand ? (s_rightGlove != null) : (s_leftGlove != null);
             }
             return res;
+#else
+            return SGCore.HandLayer.DeviceConnected(rightHand);
+#endif
+
         }
+
+
 
         //----------------------------------------------------------------------------------------------------
         // Monobehaviour
@@ -761,9 +773,11 @@ namespace SG
 #endif
         }
 
+
+#if UNITY_ANDROID && !UNITY_EDITOR
         void Update()
         {
-#if UNITY_ANDROID && !UNITY_EDITOR
+
         	if (classLinked)
         	{
         		hwTime += Time.deltaTime;
@@ -774,9 +788,20 @@ namespace SG
         		}
         		Andr_FrameUpdate();
         	}
-#endif
+
         }
 
+        private void LateUpdate()
+        {
+            if (classLinked)
+        	{
+                SGCore.HandLayer.SendHaptics(true);
+                SGCore.HandLayer.SendHaptics(false);
+            }
+        }
+#endif
+
     }
+
 
 }

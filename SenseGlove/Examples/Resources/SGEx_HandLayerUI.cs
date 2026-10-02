@@ -373,7 +373,7 @@ namespace SG.Examples
                 activeHand.gestureLayer.DebugEnabled = false;
 
                 this.gestureUI.gestureLayer = activeHand.gestureLayer;
-                this.gestureUI.gestureToCheck = activeHand.gestureLayer.gestures.Length > 0 ? activeHand.gestureLayer.gestures[0] : null;
+                this.gestureUI.gestureToCheck = activeHand.gestureLayer.gestures.Count > 0 ? activeHand.gestureLayer.gestures[0] : null;
                 handSelector.ActiveHand.calibration.CalibrationFinished.AddListener(CalibrationFinished);
                 DisableAllNoneEssentialsExcept(this.currStep < 0 ? ShowingLayer.None : this.instructions[currStep].activeLayer);
             }

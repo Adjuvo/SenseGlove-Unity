@@ -73,6 +73,9 @@ namespace SG
         /// <summary> A visual indication of the hand state. </summary>
         public SG_HandStateIndicator statusIndicator;
 
+        /// <summary> Optional Teleport layer to move around the level. </summary>
+        public SG_TeleportLayer teleportLayer;
+
         /// <summary> Represents the real world hand- and finger tracking, as Transforms in your Unity Scene. Used as a refrence for moving colliders. </summary>
         /// <remarks> Does not take into account anything the virtual world, and should mainly be used for intention / tracking. </remarks>
         protected SG_HandPoser3D realHandPoser;
@@ -311,6 +314,10 @@ namespace SG
             {
                 this.deviceSelector = this.GetComponent<SG_DeviceSelector>();
             }
+            if (this.teleportLayer == null)
+            {
+                this.teleportLayer = this.GetComponent<SG_TeleportLayer>();
+            }
 
             //// Grab the Interfaces off the objects
             //if (handRealHandSource != null)
@@ -407,6 +414,9 @@ namespace SG
             {
                 this.calibration.LinkToHand(this, true);
             }
+
+            if (this.teleportLayer != null)
+                this.teleportLayer.LinkToHand(this, true);
 
             //Link all optional components.
             foreach (SG_HandComponent comp in otherComponents)

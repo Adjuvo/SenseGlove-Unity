@@ -1,6 +1,23 @@
 # Changelog
 All notable changes to the SenseGlove Prefabs will be documented in this file.
 
+## [v2.11.0] - 2026-10-02
+Teleport Integration and Meta Quest bugfixes
+
+### Added
+- Teleport Layer to the TrackedHand, allows users to Teleport through the level by aiming at the ground. Many configurable options.
+- SG_VibrationInZone: Sends a vibration (SG_CustomWaveform) to any hand that enters into a specific SG_HandDetector.
+- SG_SliderController: Controls a UnityEngine.UI.Slider though a 0 ... 1 value. Can also be read as 0..1 value. Hooks into simple 01 Logic.
+- SG_RequireInterfaceAttribute and SG_RequireInterfaceDrawer, utility scripts to ensure a script assigned through the inspector implements a specific interface.
+
+### Changed
+- Added a zone to trigger vibration and a grabable with Squeeze Feedback to the XR Template
+- ObjectVibration, used to send a vibration signal to all hands holding an object, now uses CustomWaveForms instead of legacy SG_Waveform
+
+### Fixed
+- BLE Gloves not receiving Haptics when sent though Meta Quest.
+- Quest 2 and Quest Pro wrist tracking being off when using OpenXR.
+
 
 ## [v2.10.0] - 2026-06-18
 Unity 6, Performance and Offset Detection updates
